@@ -12,6 +12,7 @@ from dataclasses import dataclass, replace
 from contextlib import contextmanager, ExitStack, nullcontext
 import json
 import logging
+import time
 
 # The worker must be ready (or fail startup) before accepting any work (#176).
 from cj_feasibility import solver as _solver_runtime
@@ -94,6 +95,11 @@ class _Stopped(Exception):
     def __init__(self, state):
         super().__init__('original RUN is terminal')
         self.state = state
+
+
+# An optional effect that fails is logged and left out of the answer (#1989, #1990, #1999, #2001); a run that was stopped,
+# denied, or whose lease or budget is unknown is not 'an optional effect failing': those go on to the run's own handlers.
+_NEVER_SWALLOWED = (_Stopped, Denied, LeaseUnavailable, BudgetUnknown)
 
 
 @dataclass(frozen=True)
@@ -547,6 +553,7 @@ class RunWorker:
         phase='answer_preparation'
         try:
             from cj_message.lio_context import LioCitation, LioDestination, LioDestinationUnclear, LioFollowups, LioLayout, LioToolProgress, answer_prompt
+            from cj_message.lio_followups import FollowupHint
 
             if lio_replacement:
                 phase='lio_edit'
@@ -580,9 +587,13 @@ class RunWorker:
             answered = ''
             split_layout = False
             destinations = []
+            hint_missing = None
             for chunk in chunks:
                 if isinstance(chunk, (LioDestination, LioDestinationUnclear)):
                     destinations.append(chunk)
+                    continue
+                if isinstance(chunk, FollowupHint):
+                    hint_missing = chunk.missing
                     continue
                 if isinstance(chunk, (LioCitation, LioToolProgress, LioLayout)):
                     split_layout |= isinstance(chunk, LioLayout) and chunk.value == 'split'
@@ -599,24 +610,74 @@ class RunWorker:
                 missing = supplement(text, answered, locale)
                 if missing:
                     state = self._event(binding, state, 'text_delta', missing)
+            # A taxi destination only when the answer's map tools returned exactly one distinct place.
+            destination = destinations[0] if destinations and len(set(destinations)) == 1 and isinstance(destinations[0], LioDestination) else None
+            if split_layout and state.text.strip():
+                # #1989 (D-1, LIO-answer-rich.1): the library places this answer names, bound to its final text.
+                # Off unless CJ_LIO_ENTITIES=on; a failure here never touches the answer.
+                try:
+                    from cj_message.lio_entities import entity_effect
+                    city = self.lio_city_context
+                    linked = entity_effect(state.text, getattr(city, 'adcode', None))
+                    if linked is not None:
+                        state = self._event(binding, state, 'effect_committed', linked)
+                except _NEVER_SWALLOWED:
+                    raise
+                except Exception as error:
+                    logging.getLogger('cj_usage.audit').info('LIO_ENTITIES_UNAVAILABLE run_id=%s error=%s', binding.run_id, type(error).__name__)
+                # #1990 (D-2): tool cards from a fixed table and this turn's own results. Off unless CJ_LIO_CARDS=on.
+                try:
+                    from cj_message.lio_cards import card_effect
+                    from cj_message.lio_followups import topics as question_topics
+                    drawn = card_effect(text, locale, destination=destination, adcode=getattr(self.lio_city_context, 'adcode', None),
+                                        taxi_topic='taxi' in question_topics(text), now=time.time())
+                    if drawn is not None:
+                        state = self._event(binding, state, 'effect_committed', drawn)
+                except _NEVER_SWALLOWED:
+                    raise
+                except Exception as error:
+                    logging.getLogger('cj_usage.audit').info('LIO_CARDS_UNAVAILABLE run_id=%s error=%s', binding.run_id, type(error).__name__)
             if split_layout and (answered or state.text).strip():
                 # W2-1 (#1727): fixed action buttons for a two-bubble answer; none when nothing applies.
                 from cj_message.lio_followups import allowed_actions, chips_for, followups_payload
-                # A taxi destination only when the answer's map tools returned exactly one distinct place.
-                destination = destinations[0] if destinations and len(set(destinations)) == 1 and isinstance(destinations[0], LioDestination) else None
                 actions = [action.wire() for action in allowed_actions(text, locale, destination=destination)]
                 # Tap-to-ask chips need a one-time ticket stored with the message; without one (no store,
                 # or the write failed) the chips are left out, never shown untappable.
-                labels = chips_for(text, locale)
+                labels = chips_for(text, locale, missing=hint_missing)
                 tickets = None
                 if labels and hasattr(self.messages, 'issue_lio_chips'):
                     try:
                         tickets = self.messages.issue_lio_chips(binding.message_id, labels)
+                    except _NEVER_SWALLOWED:
+                        raise
                     except Exception as error:
                         logging.getLogger('cj_usage.audit').info('LIO_CHIPS_UNAVAILABLE run_id=%s error=%s', binding.run_id, type(error).__name__)
                 if actions or tickets:
                     state = self._event(binding, state, 'effect_committed',
                                         LioFollowups(followups_payload(actions, zip(labels, tickets) if tickets else ())).effect())
+            if split_layout and state.text.strip() and self.memory_run is not None:
+                # #2001 (M-3): the ids of the memories this turn really gave the model (the server's own payload, never the
+                # model's claim); ids and a count only. Off unless CJ_LIO_MEMORY_USED=on; a failure never touches the answer.
+                try:
+                    from cj_memory.titles import used_effect
+                    used = used_effect(self.memory_run)
+                    if used is not None:
+                        state = self._event(binding, state, 'effect_committed', used)
+                except _NEVER_SWALLOWED:
+                    raise
+                except Exception as error:
+                    logging.getLogger('cj_usage.audit').info('LIO_MEMORY_USED_UNAVAILABLE run_id=%s error=%s', binding.run_id, type(error).__name__)
+            if split_layout and state.text.strip() and self.lio_memory is not None and hasattr(self.lio_memory, 'consent_prompt'):
+                # #1999 (M-1): the one-time "may Lio remember your preferences?" marker; code only, no model, nothing stored
+                # about the preference. A failure here never touches the answer.
+                try:
+                    marker = self.lio_memory.consent_prompt(binding, text)
+                    if marker is not None:
+                        state = self._event(binding, state, 'effect_committed', marker)
+                except _NEVER_SWALLOWED:
+                    raise
+                except Exception as error:
+                    logging.getLogger('cj_usage.audit').info('LIO_MEMORY_PROMPT_UNAVAILABLE run_id=%s error=%s', binding.run_id, type(error).__name__)
             if self.drafts is not None and command['creation_intent'] == 'consider_trip':
                 phase='draft'
                 state, proposal_id = self._draft(binding, state, text, stored)

@@ -22,6 +22,8 @@ extension LioService {
                             continuation.yield(.text(part))
                         }
                         if let layout = reply.layout { continuation.yield(.layout(layout.0, layout.1, layout.2)) }
+                        if let places = reply.places { continuation.yield(.places(places)) }
+                        if let cards = reply.cards { continuation.yield(.cards(cards)) }
                         if let source = reply.source { continuation.yield(.source(source)) }
                         if let itinerary = reply.itinerary {
                             await session.save(itinerary)
@@ -58,7 +60,40 @@ enum LioDemo {
         var itinerary: LioItinerary? = nil
         /// Debug preview of #1727 (`--lio-answer-layout-preview`): the layout and the buttons.
         var layout: (LioTimelineWire.AnswerLayout, [LioTimelineWire.Followup], [LioTimelineWire.Chip])? = nil
+        /// Debug preview of #1991 (`--lio-answer-rich-preview`): the places named in the answer.
+        var places: [LioPlaceSpan]? = nil
+        /// Debug preview of #1993: the tool cards under the answer.
+        var cards: [LioTimelineWire.Card]? = nil
     }
+
+    #if DEBUG
+    /// Debug preview of #1991: a two-bubble answer that names three places of the development samples, with the ranges
+    /// worked out the way the server does (Unicode scalar values over the whole answer).
+    static func richPreview(_ lang: LioLanguage) -> Reply {
+        let first = lang.text("Start at The Palace Museum in the morning 😀, then walk to Jingshan Park for the view.",
+                              "上午先去故宫博物院😀，再走到景山公园看全景。")
+        let second = lang.text("In the evening, the Temple of Heaven is quiet and lovely.", "晚上去天坛公园走走很舒服。")
+        let answer = first + "\n\n" + second
+        let names = [(lang.text("The Palace Museum", "故宫博物院"), "pl_bj_gugong"),
+                     (lang.text("Jingshan Park", "景山公园"), "pl_bj_jingshan"),
+                     (lang.text("Temple of Heaven", "天坛公园"), "pl_bj_tiantan")]
+        let scalars = Array(answer.unicodeScalars)
+        let entities = names.compactMap { name, id -> LioTimelineWire.Entity? in
+            let needle = Array(name.unicodeScalars)
+            guard let at = scalars.indices.first(where: { scalars[$0...].starts(with: needle) }) else { return nil }
+            return LioTimelineWire.Entity(start: at, end: at + needle.count, placeID: id)
+        }
+        return Reply(parts: [first, "\n\n" + second],
+                     layout: (.split, [], []),
+                     places: LioPlaceMentions.resolve(answer: answer, entities: entities, in: .samples),
+                     cards: [
+                        .init(kind: .taxi, parameters: ["destination": "故宫博物院", "lat": "39.918058", "lng": "116.397026",
+                                                        "destinationEN": "The Palace Museum"]),
+                        .init(kind: .metro, detail: .metro(city: .init(id: "beijing", zh: "北京", en: "Beijing"))),
+                        .init(kind: .currency, detail: .currency(quote: "USD", cnyPerUnit: "7.1234", asOf: "2026-11-26")),
+                     ])
+    }
+    #endif
 
     actor Session {
         private var askedAboutPace = false
@@ -130,6 +165,12 @@ enum LioDemo {
     private static func reply(to question: LioQuestion) -> Reply {
         let lang = question.language
         let text = question.text.lowercased()
+        #if DEBUG
+        if ProcessInfo.processInfo.arguments.contains("--lio-answer-rich-preview"),
+           text.contains("palace") || text.contains("故宫") {
+            return richPreview(lang)
+        }
+        #endif
         if text.contains("metro") || text.contains("地铁") {
             #if DEBUG
             let preview = ProcessInfo.processInfo.arguments.contains("--lio-answer-layout-preview")

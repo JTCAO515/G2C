@@ -1,6 +1,6 @@
 # ADR-0012：聊天回答自动保存到行程（来源标记、撤销、审计）
 
-- 状态：**accepted**（以统筹审定合并为准；合并前是待批草稿。Claude 服务端线起草。规则主体由 JT 2026-11-27 确认，见「决定来源」）
+- 状态：**accepted**（以统筹审定合并为准；合并前是待批草稿。Claude 服务端线起草。规则主体由 JT 2026-11-27 确认，见「决定来源」）；修订 1：2026-11-27，新建行程首次保存的撤销（统筹按 JT 预授权批准，停点 5）
 - 日期：2026-11-27
 - Issue：[#1983](https://github.com/JTCAO515/G2C/issues/1983)（F-1，总票 [#1974](https://github.com/JTCAO515/G2C/issues/1974)）
 - 关联：[ADR-0003](0003-state-and-recovery.md)（单一业务权威、确认与版本、幂等与未知结果）、[ADR-0007](0007-issue-closure-workflow.md)（证据级别、红线审查）、[CJ-TRIP-INTERNAL](../../contracts/trip/README.md)（Proposal / Action / confirm）、[TRIP structured.4 与 `TRIP-lio-undo.3`](../../contracts/trip/STRUCTURED-V4.md)、[LIO-trip-history.4](../../contracts/message/LIO-TRIP-HISTORY-V4.md)；后续票 F-2 [#1984](https://github.com/JTCAO515/G2C/issues/1984)（`LIO-answer-rich.1` 的 `trip_receipt`）、T-1 [#1994](https://github.com/JTCAO515/G2C/issues/1994)（实现，迁移 0061）、T-5 [#1998](https://github.com/JTCAO515/G2C/issues/1998)（隐私政策）
@@ -65,6 +65,12 @@ JT 要 58.1 的回答「和行程有关就自动进画布，可以撤销」，�
    - 按点撤销（只去掉那次加的、还没被动过的 `lio` 点）和逐个往回撤都需要新的撤销扩展，改 `_append_undo` 和路由。先不做，记成 T-1 的后续项，到时另写 ADR 修订。
    - 24 小时检查放在所有撤销入口共用的那层处理里（`_append_undo` 和 rich undo）。只要被撤的那一版是自动写入的，不管从哪个路由进来，都按数据库时钟检查，旧路由 `/v4/lio/trip-undos` 也绕不过去。
    - 撤销本身不是「用户动过」，不会把任何点改成 `user`。
+   - **新建行程第一次保存的撤销**（修订 1，统筹 2026-11-27 按 JT 预授权批准）：自动保存新建了这一趟（committed_version = 1）时也出回执、可以撤销，但**不删除行程**。撤销追加一个新版本，把这份行程标成「已撤回」：这一版的内容是撤回标记，具体形式（状态字段或墓碑）由 T-1 定，App 不再显示这份行程；历史版本、回执、origin 和审计记录全部保留。
+     - 只有同时满足两个条件才允许：这一趟只有这一版；里面没有任何 `user` 点。否则不能撤，回执显示「之后有改动，已不能撤销」。
+     - 24 小时窗口、数据库时钟、只撤当前版本、按同一 action_id 对账，这几条和其他撤销一样。
+     - 撤回之后，这个对话绑定（`cj_trip_needs_current`）标成已撤回，Lio 不再往这一趟回写；之后的规划另建新的一趟。
+     - 撤回不算删除用户数据。真正的删除仍然只走注销账号的清理。
+     - 回执在 wire 上的形状见 `LIO-answer-rich.1`（`undo.kind = withdraw_created`，请求 `LIO-trip-undo.5`）。
 
 6. **审计链。**
    - 每次自动写入和撤销都留下：scope、action_id、消息（message_scope、run_id、message_id、sequence，沿用 `cj_trip_needs_basis` 和 `cj_message_receipt` 的关联）、candidate_hash、trip_id、committed_version、**提交时的数据库时间**（0061 新增，现在没有）、这一版的 origin 记录。
@@ -86,7 +92,7 @@ JT 要 58.1 的回答「和行程有关就自动进画布，可以撤销」，�
 2. origin 只能 `lio` → `user`，由服务端计算，数据库强制，按版本只追加。
 3. 只写本账号当前对话绑定的 Trip；模型输出和 App 标记不是写入授权。
 4. 唯一提交路径、proposal 不可变、哈希绑定、版本 CAS、NEEDS 租约、`fixed` 保护全部照旧。
-5. 每次自动写入都有回执；撤销按数据库时钟限 24 小时，所有撤销入口都检查；只有当前版本能撤，追加新版本，不覆盖历史。
+5. 每次自动写入都有回执；撤销按数据库时钟限 24 小时，所有撤销入口都检查；只有当前版本能撤，追加新版本，不覆盖历史。新建行程的撤销只追加「已撤回」版本，不删除。
 6. 外部接受仍要 `tc1.` 确认引用，不因自动保存放宽。
 7. 开关默认关，关着时行为与今天一致；打开前隐私政策已上线读回。
 

@@ -18,6 +18,7 @@ struct DemoBetaRootView: View {
                         chatLibrary: trip.messages.lioChats, tripLibrary: trip.lioTripLibrary,
                         tripHistory: trip.messages.lioTripHistory,
                         memoryActions: trip.messages.lioMemoryActions,
+                        memoryConsent: trip.messages.lioMemoryConsent,
                         savedMemory: trip.typedMemory.map { AnyView(LioSavedMemoryView(host: $0.host, language: shell.language).id(trip.id)) },
                         recordedMap: { document in
                     AnyView(LioRecordedTripMap(document: document, language: shell.language))
@@ -42,7 +43,7 @@ struct DemoBetaRootView: View {
                    toolsSessionIsCurrent: {
                     guard case .signedIn = root.accounts.state else { return false }
                     return root.trip === trip
-                }, answerFeedback: trip.feedback?.lioAnswer,
+                }, answerFeedback: trip.feedback?.lioAnswer, leaveToSignIn: signOut,
                    chatTripPlaces: trip.messages.lioChatTripPlaces) {
                     LioMenuSettings(shell: shell)
                     NavigationLink(shell.language.text("Delete account", "注销账号")) {

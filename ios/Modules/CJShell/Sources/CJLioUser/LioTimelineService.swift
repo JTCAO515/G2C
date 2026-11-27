@@ -14,6 +14,16 @@ struct LioTimelineTurn: Sendable {
     let layout: LioTimelineWire.AnswerLayout?
     let followups: [LioTimelineWire.Followup]
     let chips: [LioTimelineWire.Chip]
+    /// Places the server named in the answer (LIO-answer-rich.1, #1991), checked against the text and the App's library.
+    let places: [LioPlaceSpan]
+    /// #1999: the server says this answer holds a preference and the account has never chosen about memory.
+    let memoryPrompt: Bool
+    /// Tool cards under the answer (LIO-answer-rich.1, #1993).
+    let cards: [LioTimelineWire.Card]
+    /// #2001: which remembered preferences the answer was based on (nil unless rich and the note are both on).
+    let memoryNote: LioMemoryUsedNote?
+    /// #2010: the saved memories the server says this plan was based on. Passive data: nothing shows it by itself.
+    let memoryUsed: LioTimelineWire.MemoryUsed?
 
     var isActive: Bool {
         switch status {
@@ -22,7 +32,9 @@ struct LioTimelineTurn: Sendable {
         }
     }
 
-    init(_ message: LioTimelineWire.Message) {
+    init(_ message: LioTimelineWire.Message, richEnabled: Bool = LioAnswerRichFeature.enabledInBuild,
+         memoryNoteEnabled: Bool = LioMemoryNoteFeature.enabledInBuild,
+         places repository: LioPlaceRepository = .bundled) {
         messageID = message.id
         text = message.question
         answer = message.answer
@@ -31,6 +43,12 @@ struct LioTimelineTurn: Sendable {
         layout = message.layout
         followups = message.followups
         chips = message.chips
+        places = richEnabled
+            ? LioPlaceMentions.resolve(answer: message.answer, entities: message.rich?.entities ?? [], in: repository) : []
+        memoryPrompt = richEnabled && message.rich?.memoryPrompt == true
+        cards = richEnabled ? message.rich?.cards ?? [] : []
+        memoryNote = richEnabled && memoryNoteEnabled ? LioMemoryUsedNote(message.rich?.memoryUsed) : nil
+        memoryUsed = richEnabled ? Self.displayable(message.rich?.memoryUsed) : nil
         memoryTags = message.memoryTags.filter { LioPublicDisplay.permitsText($0.text) }
         sources = Self.projectSources(message.sources.map { ($0.title, $0.link) }, messageID: message.id)
         status = Self.status(message.state, activity: message.activity, answer: message.answer)
@@ -44,11 +62,24 @@ struct LioTimelineTurn: Sendable {
         layout = nil
         followups = []
         chips = []
+        places = []
+        memoryPrompt = false
+        cards = []
+        memoryNote = nil
+        memoryUsed = nil
         // Native calendar/rich summaries keep their actual type and binding in exploration.trip.
         itinerary = nil
         memoryTags = message.memoryTags.filter { LioPublicDisplay.permitsText($0.text) }
         sources = Self.projectSources(message.sources.map { ($0.title, $0.link) }, messageID: message.id)
         status = Self.status(message.state, activity: message.activity, answer: message.answer)
+    }
+
+    /// A title the App may show, as with the memory tags: one that fails the public-display check is dropped alone.
+    private static func displayable(_ used: LioTimelineWire.MemoryUsed?) -> LioTimelineWire.MemoryUsed? {
+        guard let used else { return nil }
+        let shown = used.items.filter { LioPublicDisplay.permitsText($0.title) }
+        guard !shown.isEmpty else { return nil }
+        return LioTimelineWire.MemoryUsed(items: shown, total: max(used.total, shown.count))
     }
 
     private static func projectSources(_ values: [(String, URL?)], messageID: String) -> [LioSource] {
@@ -85,14 +116,14 @@ struct LioTimelinePage: Sendable {
     let conversationID: String?
     static let empty = Self(turns: [], nextBefore: nil, conversationID: nil)
 
-    private init(turns: [LioTimelineTurn], nextBefore: String?, conversationID: String?) {
+    init(turns: [LioTimelineTurn], nextBefore: String?, conversationID: String?) {
         self.conversationID = conversationID
         self.turns = turns
         self.nextBefore = nextBefore
     }
 
     init(_ page: LioTimelineWire.Page) {
-        turns = page.messages.map(LioTimelineTurn.init)
+        turns = page.messages.map { LioTimelineTurn($0) }
         nextBefore = page.nextBefore
         conversationID = page.conversationID
     }
@@ -128,6 +159,7 @@ extension LioService {
     public static func signedConversation(_ client: LioTimelineHTTP, destination: LioTimelineWire.V2Destination,
                                           version: LioTimelineWire.Version = .v2,
                                           answerLayout: Bool = false,
+                                          answerRich: Bool = false,
                                           readFailed: (@MainActor @Sendable (any Error) -> Void)? = nil,
                                           didCreate: @escaping @Sendable (String) async -> Void) -> LioService {
         timeline(send: { original in
@@ -135,7 +167,7 @@ extension LioService {
         }, read: { id, before in
             try await noted(readFailed) {
                 try await client.timeline(conversationID: id, before: before, version: version,
-                                          declaresAnswerLayout: answerLayout)
+                                          declaresAnswerLayout: answerLayout, declaresAnswerRich: answerRich)
             }
         }, destination: destination, scopedVersion: version, recoverFirst: { id in
             try await noted(readFailed, stage: .firstSendLookup) {

@@ -14,7 +14,7 @@ from jt.eval.drills.report import make_report
 from jt.eval.drills.runner import Drill, prepare_arrivals
 from jt.workbench.app import SESSION_COOKIE, create_app
 from jt.workbench.auth import Auth
-from jt.workbench.security import PasswordHash, totp_at_step
+from jt.workbench.security import PasswordHash
 from jt.workbench.store import Account, AuditAction, MemoryStore, Role
 
 
@@ -58,9 +58,9 @@ def _post(client, path, nonce, **fields):
     return client.post(path, data={"csrf": nonce, **fields}, headers={"Origin": _ORIGIN})
 
 
-def _login(auth, user, role, seed):
-    auth.store.save_account(Account(user, role, PasswordHash.make(_PASSWORD), seed))
-    return auth.login(user, _PASSWORD, totp_at_step(seed, int(auth.clock()) // 30))
+def _login(auth, user, role):
+    auth.store.save_account(Account(user, role, PasswordHash.make(_PASSWORD)))
+    return auth.login(user, _PASSWORD)
 
 
 def _workflow(drill, operator, case_id, nonce):
@@ -90,8 +90,8 @@ def test_actual_workbench_audit_supplies_five_level_drill_example():
     arrivals = asyncio.run(prepare_arrivals(5, 0, 1, starts_at=datetime.now(UTC)))
     drill = Drill(arrivals, MemoryStore())
     auth = Auth(drill.store)
-    operator_token = _login(auth, "synthetic-operator", Role.OPERATOR, b"a" * 20)
-    reviewer_token = _login(auth, "synthetic-reviewer", Role.REVIEWER, b"b" * 20)
+    operator_token = _login(auth, "synthetic-operator", Role.OPERATOR)
+    reviewer_token = _login(auth, "synthetic-reviewer", Role.REVIEWER)
     app = create_app(auth, queue=drill.queue, cases=drill.workspace)
 
     initial = make_report(drill)

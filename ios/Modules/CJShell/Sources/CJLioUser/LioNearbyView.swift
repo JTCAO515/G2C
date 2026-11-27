@@ -37,8 +37,12 @@ extension EnvironmentValues {
 }
 
 struct LioNearbyView: View {
+    /// Which kinds of places the page offers (#1980). `.all` is the page as it was, with the switch between them.
+    enum Group { case all, leisure, essentials }
+
     let language: LioLanguage
     let service: LioNearbyService
+    private let group: Group
     @Environment(\.lioTaxiEntry) private var taxiEntry
     @State private var here: LioTaxiPlace?
     @State private var address: String?
@@ -46,6 +50,13 @@ struct LioNearbyView: View {
     /// Essentials are searched one kind at a time (luggage storage only on its own).
     @State private var essential: LioNearbyPlace.Category?
     private let essentialsEnabled = LioNearbyPlace.essentialsEnabled
+
+    init(language: LioLanguage, service: LioNearbyService, group: Group = .all) {
+        self.language = language
+        self.service = service
+        self.group = group
+        _essential = State(initialValue: group == .essentials ? .atm : nil)
+    }
     @State private var radius = 1000
     @State private var nearest = false
     @State private var places: [LioNearbyPOI] = []
@@ -71,7 +82,8 @@ struct LioNearbyView: View {
         .background(LioTheme.paper)
         .foregroundStyle(LioTheme.ink)
         .tint(LioTheme.vermilion)
-        .navigationTitle(language.text("Nearby", "附近"))
+        .navigationTitle(group == .essentials ? language.text("Nearby Essentials", "附近便利")
+                         : language.text("Nearby", "附近"))
         .navigationBarTitleDisplayMode(.inline)
         .task { await locate() }
         .task(id: query) { await search() }
@@ -101,12 +113,12 @@ struct LioNearbyView: View {
 
     private var filters: some View {
         VStack(alignment: .leading, spacing: 8) {
-            if essentialsEnabled {
+            if essentialsEnabled && group == .all {
                 Picker(language.text("Kind of places", "地点类型"), selection: Binding(
                     get: { essential != nil },
                     set: { essentials in essential = essentials ? (essential ?? .atm) : nil })) {
                     Text(language.text("Eat & explore", "吃喝玩逛")).tag(false)
-                    Text(language.text("Essentials", "必需品")).tag(true)
+                    Text(LioNearbyPlace.convenienceTitle(language)).tag(true)
                 }
                 .pickerStyle(.segmented)
                 .accessibilityIdentifier("lio.nearby.group")
@@ -267,6 +279,7 @@ struct LioNearbyView: View {
         case .pharmacy: "cross.case.fill"
         case .toilet: "toilet.fill"
         case .luggage: "suitcase.fill"
+        case .community: "building.2.fill"
         case nil: "mappin"
         }
     }
@@ -321,7 +334,7 @@ struct LioNearbyView: View {
         case .quotaExceeded: language.text("Nearby has reached its lookup limit for now. Try again later.", "附近的查找次数已达上限，请稍后再试。")
         case .rateLimited: language.text("Too many lookups right now. Try again later.", "查找太频繁，请稍后再试。")
         case .timedOut: language.text("This took too long. Try again.", "查找超时，请重试。")
-        case .unavailable: language.text("Nearby isn’t available right now. Try again.", "附近暂时不可用，请重试。")
+        case .unavailable: LioNearbyPlace.unavailableText(language, community: essential == .community)
         case .consentNeeded: language.text("Use your location to see places around you.", "使用你的位置，才能显示周围的地点。")
         }
     }
@@ -448,6 +461,9 @@ extension LioNearbyService {
                 .init(id: "7", name: "示例行李寄存", address: "王府井大街", category: .luggage,
                       coordinate: .init(latitude: 39.9140, longitude: 116.4100, referenceSystem: .gcj02),
                       meters: 480, rating: nil, cost: nil, hours: nil, photo: nil),
+                .init(id: "8", name: "示例社区服务中心", address: "东华门街道", category: .community,
+                      coordinate: .init(latitude: 39.9135, longitude: 116.4090, referenceSystem: .gcj02),
+                      meters: 380, rating: nil, cost: nil, hours: "09:00-17:00", photo: nil),
             ]
             let matching = all.filter { $0.category.map(query.categories.contains) ?? false && ($0.meters ?? 0) <= query.radius }
             return query.nearest ? matching.sorted { ($0.meters ?? .max) < ($1.meters ?? .max) } : matching

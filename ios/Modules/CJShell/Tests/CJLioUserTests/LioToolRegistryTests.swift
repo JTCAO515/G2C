@@ -21,24 +21,24 @@ struct LioToolRegistryTests {
     }
 
     @Test func registryKeepsTheCardOrderAndNamesFromBeforeTheRegistry() {
-        #expect(LioTool.allCases == [.returnHotel, .arrival, .localSupport, .taxi, .hotels, .roadbook, .transport,
-                                     .attractionBooking, .menuOrder, .nearby, .currency, .metro, .payment,
-                                     .translation, .showCards])
+        #expect(LioTool.allCases == [.showCards, .translation, .taxi, .metro, .transport, .hotels, .eatPlay,
+                                     .convenience, .money, .nearby, .attractionBooking, .menuOrder, .payment,
+                                     .currency, .returnHotel, .arrival, .roadbook, .localSupport])
         #expect(Set(LioTool.allCases.map(\.rawValue)).count == LioTool.allCases.count)
-        #expect(LioTool.metro.name(.chinese) == "地铁指南")
-        #expect(LioTool.transport.summary(.english) == "Compare trains, flights and buses")
+        #expect(LioTool.metro.name(.chinese) == "地铁")
+        #expect(LioTool.transport.summary(.english) == "Flights, trains, airports and stations")
         #expect(LioTool.hotels.symbol == "bed.double")
     }
 
     @Test func onlyTaxiHotelsTransportBookingAndShowCardsTakeParametersSoFar() {
         let taking = LioToolRegistry.entries.filter { !$0.parameters.isEmpty }
-        #expect(taking.map(\.tool) == [.taxi, .hotels, .transport, .attractionBooking, .showCards])
+        #expect(taking.map(\.tool) == [.showCards, .taxi, .transport, .hotels, .attractionBooking])
         // #1765: the trip home's meeting item lands on Show Cards' Business section.
         #expect(LioToolRegistry.entry(for: .showCards)?.parameters == ["section"])
         // #1740: a trip place opens the taxi with its destination and the booking tool with its sight.
         #expect(LioToolRegistry.entry(for: .taxi)?.parameters == ["destination", "destinationEN", "address", "lat", "lng"])
         #expect(LioToolRegistry.entry(for: .attractionBooking)?.parameters == ["sight"])
-        #expect(LioToolRegistry.entry(for: .transport)?.parameters == ["from", "to"])
+        #expect(LioToolRegistry.entry(for: .transport)?.parameters == ["from", "to", "tab", "flight", "train"])
         #expect(LioToolRegistry.entry(for: .hotels)?.parameters == ["city"])
     }
 

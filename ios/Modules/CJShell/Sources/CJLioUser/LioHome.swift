@@ -37,6 +37,10 @@ public struct LioHome<MenuContent: View>: View {
     private let chatLibrary: LioChatLibrary?
     private let tripLibrary: LioTripLibrary?
     private let memoryActions: LioMemoryActionsClient?
+    /// #1999: carries the traveller's memory choice to the server. Nil where the host has no signed Lio client.
+    private let memoryConsent: LioMemoryConsentClient?
+    /// #1999: whether this build asks before showing memory suggestions (`G2CMemoryConsentEnabled`); off means as before.
+    private let memoryConsentOn = LioMemoryConsentFeature.enabledInBuild
     private let savedMemory: AnyView?
     private let recordedMap: (@MainActor (StructuredTripDocument) -> AnyView)?
     @State private var conversation: LioConversation
@@ -77,9 +81,15 @@ public struct LioHome<MenuContent: View>: View {
     /// #1727: shown when a button's tool is not in this build.
     @State private var followupUnavailable = false
     private let answerLayoutOn = LioAnswerLayoutFeature.enabledInBuild
+    /// #1991: places the server named in an answer are tappable words (`G2CAnswerRichEnabled`).
+    private let answerRichOn = LioAnswerRichFeature.enabledInBuild
     @State private var feedbackDetails: FeedbackDetails?
     /// #1748: the account's in-app location choice, when the build asks for it (`G2CLocationConsentEnabled`).
     @State private var locationConsent: LioLocationConsent?
+    /// #1747: the first-launch consent and the AI processing choice, when the build asks for it (`G2CConsentEnabled`).
+    @State private var consent: LioConsent?
+    /// Leaves for the sign-in page; the consent page's "Leave".
+    private let leaveToSignIn: (@MainActor () -> Void)?
     private var tab: LioTab {
         get { router.tab }
         nonmutating set { router.tab = newValue }
@@ -91,6 +101,8 @@ public struct LioHome<MenuContent: View>: View {
     @State private var memoryBusy = false
     @State private var memoryPending = false
     @State private var memoryNotice: String?
+    /// #2001: "My memory" opened from the line under an answer.
+    @State private var showsMemoryNotePage = false
     @State private var activeMemory: LioMemoryWire.Tag?
     @State private var activeMemoryTurn: Data?
     @State private var memoryFeedback: [LioMemoryWire.Tag: LioMemoryFeedback] = [:]
@@ -119,6 +131,13 @@ public struct LioHome<MenuContent: View>: View {
         let session: UUID?
         let ready: Bool
     }
+    /// What starts (or restarts) the write of the memory choice to the server (#1999).
+    private struct MemoryConsentWrite: Equatable {
+        let active: Bool
+        let session: UUID?
+        let ready: Bool
+        let request: String?
+    }
     private struct TripObservation: Equatable {
         let active: Bool
         let card: LioTripCard?
@@ -145,6 +164,7 @@ public struct LioHome<MenuContent: View>: View {
                 tripLibrary: LioTripLibrary? = nil,
                 tripHistory: LioTripHistoryClient? = nil,
                 memoryActions: LioMemoryActionsClient? = nil,
+                memoryConsent: LioMemoryConsentClient? = nil,
                 savedMemory: AnyView? = nil,
                 recordedMap: (@MainActor (StructuredTripDocument) -> AnyView)? = nil,
                 session: LioSessionAvailability? = nil,
@@ -164,9 +184,11 @@ public struct LioHome<MenuContent: View>: View {
                 toolsDraftStorage: LocalSupportDraftStorage? = nil,
                 toolsSessionIsCurrent: @escaping @MainActor () -> Bool = { true },
                 answerFeedback: (any LioAnswerFeedbackSending)? = nil,
+                leaveToSignIn: (@MainActor () -> Void)? = nil,
                 chatTripPlaces: LioChatTripPlaces? = nil,
                 @ViewBuilder menu: () -> MenuContent) {
         self.language = language
+        self.leaveToSignIn = leaveToSignIn
         self.isDemo = isDemo
         self.showsTools = showsTools
         _router = State(initialValue: LioRouter(toolsShown: showsTools))
@@ -200,6 +222,8 @@ public struct LioHome<MenuContent: View>: View {
                 LioLocationConsentStore(directory: LioLocationConsentStore.storageDirectory(inMessageDirectory: $0),
                                         isCurrent: toolsSessionIsCurrent)
             }, isCurrent: toolsSessionIsCurrent) : nil)
+        _consent = State(initialValue: LioConsentFeature.enabledInBuild ? LioConsent(
+            store: messageDirectory.map { LioConsentStore(directory: LioConsentStore.storageDirectory(inMessageDirectory: $0)) }) : nil)
         _savedPlans = State(initialValue: LioSavedPlansModel(store: plans))
         self.toolsSessionIsCurrent = toolsSessionIsCurrent
         self.answerFeedback = LioAnswerFeedbackFeature.enabledInBuild ? answerFeedback : nil
@@ -213,6 +237,7 @@ public struct LioHome<MenuContent: View>: View {
         self.chatLibrary = chatLibrary
         self.tripLibrary = tripLibrary
         self.memoryActions = memoryActions
+        self.memoryConsent = memoryConsent
         self.savedMemory = savedMemory
         self.recordedMap = recordedMap
         _conversation = State(initialValue: LioConversation(service: service))
@@ -235,9 +260,26 @@ public struct LioHome<MenuContent: View>: View {
         return LioTripCard(turnID: turn.id, itinerary: itinerary)
     }
 
+    /// #1999: shown as buttons, asked about first, or not shown (withdrawn). Always `.show` with the flag off.
+    private var memoryGate: LioMemoryCandidateGate { consent.memoryCandidateGate(featureOn: memoryConsentOn) }
+
+    /// The turn that gets the one-time question: the newest answer that has a suggestion waiting, or that the server
+    /// marked `memory.prompt = consent` (a preference was said and the account has never chosen).
+    private var memoryAskTurnID: Data? {
+        conversation.turns.last(where: { turn in
+            turn.memoryPrompt || turn.memoryTags.contains { !handledTags.contains($0) }
+        })?.id
+    }
+
+    /// At most two suggestions under an answer (LIO-answer-rich.1); the cap only applies with the flag on.
+    private func visibleMemoryTags(_ turn: LioTurn) -> [LioMemoryWire.Tag] {
+        let waiting = turn.memoryTags.filter { !handledTags.contains($0) }
+        return memoryConsentOn ? Array(waiting.prefix(2)) : waiting
+    }
+
     private var memorySuggestions: [String] {
         guard memoryActions != nil, session?.available != false, !restoringChat,
-              conversation.timelineFailure == nil else { return [] }
+              conversation.timelineFailure == nil, memoryGate == .show else { return [] }
         return conversation.turns.reversed().flatMap { turn in
             turn.memoryTags.filter { !handledTags.contains($0) }.map(\.text)
         }
@@ -304,11 +346,16 @@ public struct LioHome<MenuContent: View>: View {
         }
         .environment(\.lioTaxiEntry, taxiEntry)
         .environment(\.lioLocationConsent, locationConsent)
+        .environment(\.lioConsent, consent)
+        // The latest check, not the one from when this screen was first made: the app going to the background and
+        // coming back builds a new session for the same account without rebuilding this screen.
+        .environment(\.lioConsentSessionIsCurrent, toolsSessionIsCurrent)
         .environment(\.lioNearbyService, nearbyService)
         .environment(\.lioMetroNearby, metroNearby)
         .environment(\.lioHotelFinder, hotelRelay.map { .internalBeta(relay: $0) })
         .environment(\.lioTransportRelay, transportRelay)
-        .lioRoadbookEnricher(roadbookRelay.map { LioRoadbookEnricher.internalBeta(relay: $0) })
+        // #1747: with AI processing off nothing is sent to the model, so the roadbook's extra place details are not asked for.
+        .lioRoadbookEnricher((consent.allowsAIProcessing ? roadbookRelay : nil).map { LioRoadbookEnricher.internalBeta(relay: $0) })
         // Menu ordering (#1606): the signed-in relay when the build enables it, or Debug's `--lio-menu-preview`.
         .environment(\.lioMenuService, menuService)
         .tint(LioTheme.vermilion)
@@ -373,6 +420,12 @@ public struct LioHome<MenuContent: View>: View {
             LioEmergencySupportSheet(language: language, draftStorage: activeSupportDraft)
         }
         .sheet(isPresented: $showsProblemNotes) { problemNotesSheet }
+        .sheet(isPresented: $showsMemoryNotePage) {
+            if let savedMemory {
+                savedMemory.environment(\.lioMemorySuggestions, memorySuggestions)
+                    .environment(\.lioCloseMemory) { showsMemoryNotePage = false }
+            }
+        }
         .safeAreaInset(edge: .top, spacing: 0) {
             if restoringChat && warmRestoration { sessionRecoveryBanner }
         }
@@ -450,6 +503,12 @@ public struct LioHome<MenuContent: View>: View {
             }
             if let pending { memoryPending = pending }
         }
+        .task(id: MemoryConsentWrite(active: scenePhase == .active, session: session?.revision,
+                                     ready: session?.available != false, request: consent?.memoryUnsynced?.requestID)) {
+            guard memoryConsentOn, scenePhase == .active, session?.available != false, let consent,
+                  consent.memoryUnsynced != nil else { return }
+            _ = await LioMemoryConsentSync.run(consent: consent, client: memoryConsent, isCurrent: toolsSessionIsCurrent)
+        }
         .task(id: memoryPending && scenePhase == .active && session?.available != false) {
             // Wait for the session after returning from the background, like the resume check above (#1450).
             guard memoryPending, scenePhase == .active, session?.available != false, let memoryActions else { return }
@@ -488,6 +547,9 @@ public struct LioHome<MenuContent: View>: View {
         if LioTripHomePreview.requested {
             // #1647 screenshots only (Debug launch argument; always false in Release): the trip home with sample data.
             LioTripHomePreview.home(language: language) { tab = .chat }
+        } else if LioTripMapPreview.requested {
+            // #1996 screenshots only (Debug launch argument; always false in Release): the trip map on sample data.
+            LioTripMapPreview.page(language: language)
         } else if LioItineraryTimelineView.previewRequested {
             // #1453 proposal screenshots only (Debug launch argument).
             NavigationStack {
@@ -512,6 +574,8 @@ public struct LioHome<MenuContent: View>: View {
     }
 
     private func planActions(_ plan: LioPlanSummary) -> LioItineraryTimelineView.Actions {
+        // #2010: a plan saved from here keeps the memories its answer was based on (unchanged with the label switch off).
+        let plan = conversation.carryingMemoryUsed(plan)
         var actions = LioItineraryTimelineView.Actions()
         if savedPlans.writable {
             if let places = chatTripPlaces, let reference = chatTripReference(for: plan) {
@@ -522,6 +586,14 @@ public struct LioHome<MenuContent: View>: View {
             } else {
                 actions.saved = savedPlans.isSaved(plan)
                 actions.save = { savedPlans.save(plan) }
+            }
+        }
+        actions.saveFailed = savedPlans.saveFailed(plan)
+        // #1976: once saved, one tap goes to the Trips tab (the trip home, or the list when it is showing).
+        if actions.saved {
+            actions.openTrips = {
+                planSheet = nil
+                tab = .trips
             }
         }
         // Changing a day goes back to the chat as an ordinary message the user finishes and sends. That is only
@@ -658,10 +730,16 @@ public struct LioHome<MenuContent: View>: View {
                 if let continuity = chatLibrary?.continuity, continuity.positionIssue != nil {
                     positionSaveNotice(continuity)
                 }
+                if !consent.allowsAIProcessing { LioAIOffNotice(language: language) }
                 composer
             }
         }
         .background(LioTheme.paper)
+        .fullScreenCover(isPresented: Binding(get: { consent.map { !$0.storageAgreed } ?? false }, set: { _ in })) {
+            if let consent {
+                LioConsentView(language: language, consent: consent) { leaveToSignIn?() }
+            }
+        }
         .sheet(isPresented: $menuOpen) {
             NavigationStack {
                 List {
@@ -1014,7 +1092,7 @@ public struct LioHome<MenuContent: View>: View {
     }
 
     private func sendQuestion(_ text: String, chipTicket: String? = nil) -> Bool {
-        guard !chatFading, scenePhase == .active else { return false }
+        guard !chatFading, scenePhase == .active, consent.allowsAIProcessing else { return false }
         let showedWelcome = opening == .beforeNext && conversation.turns.isEmpty && conversation.hasLoadedTimeline
         guard conversation.send(text, language: language, chipTicket: chipTicket) else { return false }
         followsAnswer = true
@@ -1059,7 +1137,7 @@ public struct LioHome<MenuContent: View>: View {
     private var composer: some View {
         let placeholder = language.text("Start chatting", "开始聊天")
         let canSend = !draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && conversation.pending == nil
-            && !chatFading
+            && !chatFading && consent.allowsAIProcessing
         let showsJump = !followsAnswer && !conversation.turns.isEmpty
         return HStack(alignment: .center, spacing: 10) {
             TextField(placeholder, text: Binding(get: { draft }, set: { setDraft($0) }), prompt: Text(placeholder).foregroundStyle(LioTheme.inkSecondary), axis: .vertical)
@@ -1116,7 +1194,7 @@ public struct LioHome<MenuContent: View>: View {
 
     private func chooseMemory(_ choice: LioMemoryWire.Choice, tag: LioMemoryWire.Tag, turnID: Data,
                               client: LioMemoryActionsClient) async {
-        guard !memoryBusy, !memoryPending, !handledTags.contains(tag) else { return }
+        guard !memoryBusy, !memoryPending, !handledTags.contains(tag), memoryGate == .show else { return }
         memoryBusy = true
         defer { memoryBusy = false }
         memoryNotice = nil
@@ -1134,6 +1212,16 @@ public struct LioHome<MenuContent: View>: View {
         } catch {
             showMemoryFeedback(.saveUnavailable)
         }
+    }
+
+    /// The answer to the one-time question (#1999). It is saved on this device before it takes effect; the server is told
+    /// by the write task. "Not now" is an answer too: the account has chosen, and nothing is asked again.
+    private func answerMemoryQuestion(_ granted: Bool) {
+        guard let consent, consent.setMemory(granted, isCurrent: toolsSessionIsCurrent) else {
+            memoryNotice = LioMemoryConsentCopy.settingFailed(language)
+            return
+        }
+        memoryNotice = nil
     }
 
     private func awaitMemoryChoice(_ client: LioMemoryActionsClient) async {
@@ -1193,7 +1281,7 @@ public struct LioHome<MenuContent: View>: View {
         return VStack(alignment: .leading, spacing: 10) {
             HStack(alignment: .top, spacing: 4) {
                 Spacer(minLength: dynamicTypeSize.isAccessibilitySize ? 12 : 64)
-                if turn.status == .failed(.notSent) {
+                if turn.status == .failed(.notSent), consent.allowsAIProcessing {
                     Button {
                         if turn.id == conversation.turns.last?.id { followsAnswer = true }
                         conversation.resend(turn.id)
@@ -1234,8 +1322,10 @@ public struct LioHome<MenuContent: View>: View {
                 // #1727: with the build's flag on and the server's `split`, two bubbles cut at the first blank line.
                 let parts = (answerLayoutOn && turn.layout == .split) ? LioAnswerParts(turn.answer) : LioAnswerParts(whole: turn.answer)
                 let tailKey = LioEntranceKey(turn: turn.id, part: .answerTail)
-                let answerText: (String, String, Bool, LioEntranceKey) -> LioStreamingText = { source, identifier, completes, key in
-                    LioStreamingText(source: source, streaming: turn.status == .answering,
+                // #1991: the server's place ranges count the whole answer; each bubble gets its own.
+                let spans = answerRichOn ? parts.places(turn.places) : (head: [], tail: [])
+                let answerText: (String, [LioPlaceSpan], String, Bool, LioEntranceKey) -> LioStreamingText = { source, places, identifier, completes, key in
+                    LioStreamingText(source: source, places: places, streaming: turn.status == .answering,
                                      animate: entering.contains(key), language: language,
                                      presentationActive: !chatFading && !menuOpen && tab == .chat,
                                      identifier: identifier,
@@ -1252,11 +1342,20 @@ public struct LioHome<MenuContent: View>: View {
                         scroll.scrollTo("lio.bottom", anchor: .bottom)
                     })
                 }
-                lioReply { answerText(parts.head, "lio.answer", parts.tail == nil, answerKey) }
+                lioReply { placeHosted(spans.head) { answerText(parts.head, spans.head, "lio.answer", parts.tail == nil, answerKey) } }
                     .lioEntrance(.fade, active: entering.contains(answerKey)) { entering.remove(answerKey) }
                 if let tail = parts.tail {
-                    lioReply(byline: false) { answerText(tail, "lio.answer.2", true, tailKey) }
+                    lioReply(byline: false) { placeHosted(spans.tail) { answerText(tail, spans.tail, "lio.answer.2", true, tailKey) } }
                         .lioEntrance(.fade, active: entering.contains(tailKey)) { entering.remove(tailKey) }
+                }
+                // #1993: the server's tool cards; a tap opens the card's tool with the card's parameters.
+                if answerRichOn, turn.status == .finished, !turn.cards.isEmpty {
+                    LioAnswerCards(cards: turn.cards, language: language, routable: chatRoutableTools,
+                                   open: { openCard($0) })
+                }
+                if turn.status == .finished, let note = turn.memoryNote {
+                    LioMemoryNoteLine(note: note, language: language,
+                                      open: savedMemory == nil ? nil : { showsMemoryNotePage = true })
                 }
                 if answerLayoutOn, turn.status == .finished, !(turn.followups.isEmpty && turn.chips.isEmpty) {
                     LioAnswerFollowups(actions: turn.followups, chips: turn.chips, open: { openFollowup($0) },
@@ -1268,7 +1367,12 @@ public struct LioHome<MenuContent: View>: View {
                 LioAnswerFooter(language: language, showsDisclosure: showsAIDisclosure, feedback: feedbackControl(turn))
             }
             if let memoryActions {
-                ForEach(turn.memoryTags.filter { !handledTags.contains($0) }) { tag in
+                if memoryGate == .ask, turn.id == memoryAskTurnID {
+                    LioMemoryConsentCard(language: language,
+                                         turnOn: { answerMemoryQuestion(true) },
+                                         notNow: { answerMemoryQuestion(false) })
+                }
+                ForEach(memoryGate == .show ? visibleMemoryTags(turn) : []) { tag in
                     memorySuggestion(tag, turnID: turn.id, client: memoryActions)
                         .lioEntrance(.rise, active: entering.contains(LioEntranceKey(turn: turn.id, part: .memory))
                             && !seenMemoryTags.contains(tag) && scenePhase == .active)
@@ -1410,6 +1514,45 @@ public struct LioHome<MenuContent: View>: View {
             guard case .notSent(let step) = feedbackPhases[id] else { return }
             sendFeedback(step, turnID: id, messageID: messageID, retry: true)
         })
+    }
+
+    /// #1991: the bubble's words are tappable places when the build asks for them; otherwise the text as it was.
+    @ViewBuilder
+    private func placeHosted<Content: View>(_ spans: [LioPlaceSpan], @ViewBuilder _ content: () -> Content) -> some View {
+        if answerRichOn {
+            LioPlaceMentionHost(spans: spans, language: language, addToTrip: placeAdder, content: content)
+        } else {
+            content()
+        }
+    }
+
+    /// "Add to trip" on a place card: the trip canvas's "Want to go" list of the current plan, only when the canvas
+    /// is on in this build (`G2CTripCanvasEnabled`) and the phone has a trip folder.
+    private var placeAdder: (@MainActor @Sendable (LioPlace) -> LioPlaceTripAdd)? {
+        guard LioTripCanvasFeature.enabledInBuild, let store = LioTripCanvasStore(tripHome: tripHomeStore) else { return nil }
+        let plans = savedPlans.plans
+        return { place in
+            let today = LioTripDay(date: Date(), timeZone: LioTripChecklist.beijing)
+            return store.addWish(place, plan: LioTripChecklist.currentPlan(profile: nil, plans: plans, today: today))
+        }
+    }
+
+    /// The tools a card or a button can open from the chat: the router must show the Tools tab, and this build must show
+    /// the tool with the services the chat has (the same rule as the Tools tab's own cards).
+    private var chatRoutableTools: Set<LioTool> {
+        guard router.toolsShown else { return [] }
+        var context = LioToolContext(language: language)
+        context.currencyRelay = currencyRelay
+        context.taxiEntry = taxiEntry
+        context.nearbyService = nearbyService
+        context.hotelFinder = hotelRelay.map { .internalBeta(relay: $0) }
+        context.menuService = menuService
+        return Set(LioToolCatalog.visible(context.availability()))
+    }
+
+    /// #1993: a card opens its tool through the router; if the router will not, the same "not in this version" notice.
+    private func openCard(_ route: LioRoute) {
+        if !router.open(route) { followupUnavailable = true }
     }
 
     /// #1727: a server button opens its tool through the router; a tool this build does not have says so.
@@ -1563,7 +1706,7 @@ public struct LioHome<MenuContent: View>: View {
                 .buttonStyle(.bordered)
                 .accessibilityIdentifier("lio.failure.problems")
             }
-            if failure == .unfinished {
+            if failure == .unfinished, consent.allowsAIProcessing {
                 Button(language.text("Ask again", "重新问")) {
                     followsAnswer = true
                     conversation.askAgain(turn.id)

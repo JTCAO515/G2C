@@ -55,6 +55,10 @@ enum LioEvent: Sendable {
     case savedItinerary(LioItinerary)
     /// Debug preview only (#1727): the answer's layout and buttons.
     case layout(LioTimelineWire.AnswerLayout, [LioTimelineWire.Followup], [LioTimelineWire.Chip])
+    /// Debug preview only (#1991): the places named in the answer.
+    case places([LioPlaceSpan])
+    /// Debug preview only (#1993): the tool cards under the answer.
+    case cards([LioTimelineWire.Card])
     case finished
     case failed(LioFailure)
 }
@@ -93,6 +97,16 @@ struct LioTurn: Identifiable {
     var layout: LioTimelineWire.AnswerLayout?
     var followups: [LioTimelineWire.Followup] = []
     var chips: [LioTimelineWire.Chip] = []
+    /// #1991: words of `answer` the server named as places (empty unless the build asked for them).
+    var places: [LioPlaceSpan] = []
+    /// #1999: the server says the account has never chosen about memory and this answer holds a preference.
+    var memoryPrompt = false
+    /// #1993: tool cards under the answer (empty unless the build asked for them).
+    var cards: [LioTimelineWire.Card] = []
+    /// #2001: the line "based on what you asked me to remember" under the answer.
+    var memoryNote: LioMemoryUsedNote?
+    /// #2010: the saved memories this plan was based on (empty unless the build asked for rich answers).
+    var memoryUsed: LioTimelineWire.MemoryUsed?
     var fromTimeline = false
     var readFailure: LioRequestProblem?
     var id: Data { question.id }
@@ -118,6 +132,20 @@ final class LioConversation {
             guard let trip = turn.itinerary, seen.insert(trip.id).inserted else { return nil }
             return trip
         }.reversed())
+    }
+    /// #2010: the plan, with the memories its answer was based on when this chat's row for that trip said so. A plan
+    /// the chat has no row for (opened from Trips), or a row without memories, keeps what the plan already had; with the
+    /// label switch off the plan is returned as it is, so nothing new is ever stored.
+    func carryingMemoryUsed(_ plan: LioPlanSummary, enabled: Bool = LioTripMemoryLabelFeature.enabledInBuild) -> LioPlanSummary {
+        guard enabled else { return plan }
+        let used = turns.last { turn in
+            guard turn.memoryUsed != nil else { return false }
+            return turn.itinerary?.id == plan.tripID || turn.exploration?.trip.map { LioPlanSummary($0).tripID } == plan.tripID
+        }?.memoryUsed
+        guard let used else { return plan }
+        var carried = plan
+        carried.memoryUsed = used
+        return carried
     }
     private(set) var pending: LioQuestion?
     private(set) var nextBefore: String?
@@ -239,6 +267,10 @@ final class LioConversation {
                 turns[index].layout = layout
                 turns[index].followups = followups
                 turns[index].chips = chips
+            case .places(let places):
+                turns[index].places = places
+            case .cards(let cards):
+                turns[index].cards = cards
             case .finished:
                 turns[index].status = .finished
                 return
@@ -350,6 +382,7 @@ final class LioConversation {
         return LioTurn(question: question, status: row.status, answer: row.answer,
                        sources: row.sources, itinerary: row.itinerary, memoryTags: row.memoryTags,
                        exploration: row.exploration, layout: row.layout, followups: row.followups, chips: row.chips,
-                       fromTimeline: true)
+                       places: row.places, memoryPrompt: row.memoryPrompt, cards: row.cards,
+                       memoryNote: row.memoryNote, memoryUsed: row.memoryUsed, fromTimeline: true)
     }
 }

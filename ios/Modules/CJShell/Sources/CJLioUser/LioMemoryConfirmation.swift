@@ -47,10 +47,13 @@ struct LioMemoryConfirmation: View {
     let dismiss: () -> Void
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
-    private var prompt: String {
+    private var preferenceText: String {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        let preference = trimmed.last.map { ".。!?！？".contains($0) } == true ? String(trimmed.dropLast()) : trimmed
-        return language.text("Remember: \(preference)?", "记住：\(preference)？")
+        return trimmed.last.map { ".。!?！？".contains($0) } == true ? String(trimmed.dropLast()) : trimmed
+    }
+
+    private var prompt: String {
+        language.text("Remember: \(preferenceText)?", "记住：\(preferenceText)？")
     }
 
     var body: some View {
@@ -81,13 +84,22 @@ struct LioMemoryConfirmation: View {
                                     .accessibilityHidden(true)
                             }
                     }
+                    .accessibilityLabel(language.text("Remember: \(preferenceText)", "记住：\(preferenceText)"))
                     .accessibilityIdentifier("lio.memory.remember")
+                    // #1999: both are visible buttons (an outline each), not a button and a bare word; 44 pt at least.
                     Button(action: dismiss) {
                         Text(language.text("Dismiss", "不用"))
                             .foregroundStyle(LioTheme.inkSecondary)
                             .frame(minWidth: 44, minHeight: 44)
+                            .padding(.horizontal, LioTheme.Spacing.xs)
+                            .overlay {
+                                RoundedRectangle(cornerRadius: LioTheme.Radius.small)
+                                    .stroke(LioTheme.hairline, lineWidth: LioTheme.outlineWidth)
+                                    .accessibilityHidden(true)
+                            }
                             .contentShape(Rectangle())
                     }
+                    .accessibilityLabel(language.text("Don’t remember: \(preferenceText)", "不用记：\(preferenceText)"))
                     .accessibilityIdentifier("lio.memory.dismiss")
                 }
                 .buttonStyle(.plain)

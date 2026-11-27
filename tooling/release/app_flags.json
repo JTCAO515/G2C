@@ -30,6 +30,10 @@
       "plist": "G2CTransportEnabled"
     },
     {
+      "setting": "G2C_TRANSPORT_HUBS_DRAFT_ENABLED",
+      "plist": "G2CTransportHubsDraftEnabled"
+    },
+    {
       "setting": "G2C_METRO_NEARBY_ENABLED",
       "plist": "G2CMetroNearbyEnabled"
     },
@@ -52,6 +56,10 @@
     {
       "setting": "G2C_MENU_ORDER_ENABLED",
       "plist": "G2CMenuOrderEnabled"
+    },
+    {
+      "setting": "G2C_PLACE_TOOLS_ENABLED",
+      "plist": "G2CPlaceToolsEnabled"
     },
     {
       "setting": "G2C_TRIP_HOME_ENABLED",
@@ -82,8 +90,32 @@
       "plist": "G2CTripBusinessEnabled"
     },
     {
+      "setting": "G2C_CONSENT_ENABLED",
+      "plist": "G2CConsentEnabled"
+    },
+    {
       "setting": "G2C_CHAT_TRIP_PLACES_ENABLED",
       "plist": "G2CChatTripPlacesEnabled"
+    },
+    {
+      "setting": "G2C_TRIP_CANVAS_ENABLED",
+      "plist": "G2CTripCanvasEnabled"
+    },
+    {
+      "setting": "G2C_ANSWER_RICH_ENABLED",
+      "plist": "G2CAnswerRichEnabled"
+    },
+    {
+      "setting": "G2C_MEMORY_CONSENT_ENABLED",
+      "plist": "G2CMemoryConsentEnabled"
+    },
+    {
+      "setting": "G2C_MEMORY_NOTE_ENABLED",
+      "plist": "G2CMemoryNoteEnabled"
+    },
+    {
+      "setting": "G2C_TRIP_MEMORY_LABEL_ENABLED",
+      "plist": "G2CTripMemoryLabelEnabled"
     }
   ],
   "release": {
@@ -99,6 +131,7 @@
       "G2C_HOTEL_ENABLED",
       "G2C_ROADBOOK_ENABLED",
       "G2C_TRANSPORT_ENABLED",
+      "G2C_TRANSPORT_HUBS_DRAFT_ENABLED",
       "G2C_METRO_NEARBY_ENABLED",
       "G2C_NEARBY_ESSENTIALS_ENABLED",
       "G2C_ARRIVAL_MODE_ENABLED",

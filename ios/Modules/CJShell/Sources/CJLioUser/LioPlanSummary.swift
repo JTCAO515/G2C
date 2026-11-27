@@ -34,17 +34,26 @@ struct LioPlanSummary: Equatable, Identifiable, Sendable {
     /// Nil for an undated plan.
     let startDate: String?
     let itinerary: LioRichItinerary
+    /// #2010 (M-5): the saved memories the answer this plan came from was based on, as that answer showed them; nil
+    /// when it had none (or the label switch was off when the plan was saved). Display only, so it is not part of
+    /// what makes two plans the same (`==`): a trip is saved or not by its content, as before.
+    var memoryUsed: LioTimelineWire.MemoryUsed? = nil
 
     var id: String { tripID }
+
+    static func == (left: Self, right: Self) -> Bool {
+        left.tripID == right.tripID && left.tripVersion == right.tripVersion && left.source == right.source
+            && left.startDate == right.startDate && left.itinerary == right.itinerary
+    }
     var title: String { itinerary.title }
     var undated: Bool { itinerary.undated }
-    /// The itinerary's days as names and times (Chinese names, as the booking rules match them; a template's
-    /// English names ride along for the English trip home).
+    /// The itinerary's days as names and times (Chinese names, as the booking rules match them; a template's, or a
+    /// checked chat place's, English names ride along for the English trip home).
     var days: [Day] {
         itinerary.days.map { day in
             Day(number: day.number, date: day.date, items: day.stops.map {
                 Item(id: $0.id, label: $0.place.nameZH, startTime: $0.time, endTime: nil, fixed: $0.fixed,
-                     labelEN: source == .template ? $0.place.nameEN : nil)
+                     labelEN: source == .template || $0.place.nameEN != $0.place.nameZH ? $0.place.nameEN : nil)
             })
         }
     }
@@ -170,9 +179,13 @@ extension LioRichItinerary {
         let source: LioPlanSummary.Source
         let startDate: String?
         let trip: Trip
+        /// #2010: absent in every file written before, and left out when the plan has none, so such a file is
+        /// byte-for-byte what it was. Read on its own: a damaged value costs the label, never the trip.
+        let memoryUsed: LenientMemoryUsed?
 
         init(savedAt: Date, plan: LioPlanSummary) {
             self.savedAt = savedAt
+            memoryUsed = plan.memoryUsed.map { LenientMemoryUsed(value: MemoryUsedRecord($0)) }
             tripID = plan.tripID; tripVersion = plan.tripVersion; source = plan.source; startDate = plan.startDate
             let itinerary = plan.itinerary
             trip = Trip(title: itinerary.title, undated: itinerary.undated, days: LioRoadbookArchive.days(itinerary),
@@ -181,11 +194,35 @@ extension LioRichItinerary {
 
         func plan() throws -> LioPlanSummary {
             guard !tripID.isEmpty else { throw LioRoadbookArchive.Failure.invalidValue }
-            return LioPlanSummary(tripID: tripID, tripVersion: tripVersion, source: source, startDate: startDate,
-                                  itinerary: try LioRoadbookArchive.itinerary(title: trip.title, undated: trip.undated,
-                                                                              days: trip.days, lodgingArea: trip.lodgingArea,
-                                                                              hotels: trip.hotels))
+            var plan = LioPlanSummary(tripID: tripID, tripVersion: tripVersion, source: source, startDate: startDate,
+                                      itinerary: try LioRoadbookArchive.itinerary(title: trip.title, undated: trip.undated,
+                                                                                  days: trip.days, lodgingArea: trip.lodgingArea,
+                                                                                  hotels: trip.hotels))
+            plan.memoryUsed = memoryUsed?.value?.memoryUsed
+            return plan
         }
+    }
+    /// #2010: the stored form of `LioPlanSummary.memoryUsed`. Read again through the wire's rules, so a file edited
+    /// by hand (or from a newer app) cannot put a longer list or a bad id on the screen.
+    private struct MemoryUsedRecord: Codable {
+        struct Item: Codable { let itemID: String; let title: String }
+        let items: [Item]
+        let total: Int
+
+        init(_ used: LioTimelineWire.MemoryUsed) {
+            items = used.items.map { Item(itemID: $0.itemID, title: $0.title) }
+            total = used.total
+        }
+
+        var memoryUsed: LioTimelineWire.MemoryUsed? {
+            LioTimelineWire.MemoryUsed.validated(items.map { .init(itemID: $0.itemID, title: $0.title) }, total: total)
+        }
+    }
+    private struct LenientMemoryUsed: Codable {
+        let value: MemoryUsedRecord?
+        init(value: MemoryUsedRecord?) { self.value = value }
+        init(from decoder: Decoder) throws { value = try? MemoryUsedRecord(from: decoder) }
+        func encode(to encoder: Encoder) throws { try value?.encode(to: encoder) }
     }
     private struct Header: Codable { let version: Int }
     private struct ArchiveV1: Codable { let version: Int; let records: [RecordV1] }
@@ -321,11 +358,20 @@ final class LioSavedPlansModel {
         return plans.contains { $0.tripID == id }
     }
 
+    /// #1976: trips whose last save did not reach the phone (a full disk, a locked phone). Cleared by a save that does.
+    private(set) var failedTripIDs: Set<String> = []
+    func saveFailed(_ plan: LioPlanSummary) -> Bool { failedTripIDs.contains(plan.tripID) }
+
     func save(_ plan: LioPlanSummary) {
         guard let store else { return }
         do {
             try store.save(plan)
-        } catch {}
+            failedTripIDs.remove(plan.tripID)
+        } catch is CancellationError {
+            // The account is no longer current: nothing to show.
+        } catch {
+            failedTripIDs.insert(plan.tripID)
+        }
         reload()
     }
 
@@ -347,7 +393,10 @@ final class LioSavedPlansModel {
         guard store != nil, savingTripIDs.insert(plan.tripID).inserted else { return nil }
         defer { savingTripIDs.remove(plan.tripID) }
         let result = await places.plan(for: reference, summary: plan)
-        save(result.plan)
+        // #2010: the read replaces the places (or the whole trip), not what the answer was based on.
+        var saved = result.plan
+        saved.memoryUsed = plan.memoryUsed
+        save(saved)
         return result.outcome
     }
 

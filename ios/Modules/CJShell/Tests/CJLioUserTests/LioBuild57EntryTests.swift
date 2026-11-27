@@ -5,12 +5,13 @@ import Testing
 /// #1606: build 57's entries. Every new card and the trip home stay hidden unless the build sets its flag to YES,
 /// and no build configuration in the project sets one (the release script passes them for build 57 only).
 struct LioBuild57EntryTests {
-    @Test func arrivalCardStaysHiddenUntilTheFlagIsOnAndThenComesFirst() {
+    @Test func arrivalStaysHiddenUntilTheFlagIsOnAndThenOnlyOpensByRoute() {
         #expect(LioTool.arrival.identifier == "lio.tools.arrival")
         #expect(!LioToolCatalog.visible(.init()).contains(.arrival))
         var on = LioToolCatalog.Availability()
         on.arrival = true
-        #expect(LioToolCatalog.visible(on) == [.arrival, .localSupport, .metro, .payment, .translation, .showCards])
+        #expect(LioToolCatalog.visible(on).contains(.arrival))
+        #expect(!LioToolCatalog.cards(on).contains(.arrival), "#1980: Arrival Mode moved to the trip day page")
         #expect(LioTool.arrival.name(.chinese) == "落地模式")
         #expect(LioTool.arrival.name(.english) == "Arrival Mode")
         #expect(LioTool.arrival.summary(.chinese) == "落地首日要做的事")
@@ -27,23 +28,26 @@ struct LioBuild57EntryTests {
         #expect(LioTool.attractionBooking.summary(.chinese) == "预约规则与放票提醒")
     }
 
-    @Test func turningNewCardsOnKeepsTheOtherToolsInTheirOrder() {
-        let before = LioToolCatalog.visible(.init(taxi: true, currency: true, hotels: true, nearby: true, roadbook: true,
-                                                  transport: true))
-        let after = LioToolCatalog.visible(.init(taxi: true, currency: true, hotels: true, nearby: true, roadbook: true,
-                                                 transport: true, arrival: true, attractionBooking: true, menuOrder: true,
-                                                 returnHotel: true))
-        let added: Set<LioTool> = [.arrival, .attractionBooking, .menuOrder, .returnHotel]
-        #expect(after.filter { !added.contains($0) } == before)
-        #expect(Array(after.prefix(2)) == [.returnHotel, .arrival])
-        #expect(after.firstIndex(of: .attractionBooking) == after.firstIndex(of: .transport).map { $0 + 1 })
+    @Test func turningRouteOnlyToolsOnNeverChangesTheCards() {
+        let before = LioToolCatalog.cards(.init(taxi: true, currency: true, hotels: true, nearby: true, roadbook: true,
+                                                transport: true))
+        let after = LioToolCatalog.cards(.init(taxi: true, currency: true, hotels: true, nearby: true, roadbook: true,
+                                               transport: true, arrival: true, attractionBooking: true, menuOrder: true,
+                                               returnHotel: true))
+        #expect(after == before)
+        let all = LioToolCatalog.visible(.init(taxi: true, currency: true, hotels: true, nearby: true, roadbook: true,
+                                               transport: true, arrival: true, attractionBooking: true, menuOrder: true,
+                                               returnHotel: true))
+        #expect(Set(all).isSuperset(of: [.arrival, .attractionBooking, .menuOrder, .returnHotel, .roadbook, .nearby]))
     }
 
     @Test func menuCardShowsOnlyWithAServiceAndFitsTheCard() {
         #expect(!LioToolCatalog.visible(.init()).contains(.menuOrder))
         #expect(LioToolCatalog.visible(.init(menuOrder: true)).contains(.menuOrder))
-        let all = LioToolCatalog.visible(.init(transport: true, attractionBooking: true, menuOrder: true))
-        #expect(all.firstIndex(of: .menuOrder) == all.firstIndex(of: .attractionBooking).map { $0 + 1 })
+        // #1980: the menu helper and sight bookings are rows of the Eat & Play card, not cards.
+        let on = LioToolCatalog.Availability(transport: true, attractionBooking: true, menuOrder: true)
+        #expect(LioToolCatalog.cards(on).contains(.eatPlay))
+        #expect(!LioToolCatalog.cards(on).contains(.menuOrder) && !LioToolCatalog.cards(on).contains(.attractionBooking))
         #expect(LioTool.menuOrder.identifier == "lio.tools.menu-order")
         #expect(LioTool.menuOrder.symbol == "fork.knife")
         #expect(LioTool.menuOrder.name(.chinese) == "点餐")
@@ -96,6 +100,7 @@ struct LioBuild57EntryTests {
             ("G2CAttractionBookingEnabled", "G2C_ATTRACTION_BOOKING_ENABLED"),
             ("G2CShowCardEnabled", "G2C_SHOW_CARD_ENABLED"),
             ("G2CMenuOrderEnabled", "G2C_MENU_ORDER_ENABLED"),
+            ("G2CPlaceToolsEnabled", "G2C_PLACE_TOOLS_ENABLED"),
             ("G2CTripHomeEnabled", "G2C_TRIP_HOME_ENABLED"),
         ]
         for (key, setting) in flags {
