@@ -340,3 +340,61 @@ def test_no_marker_for_a_single_answer_nothing_to_say_or_a_failing_reader():
     assert not any(e.startswith('lio_memory_prompt') for e in _prompt_run(PromptMemory('lio_memory_prompt:consent'), layout='single').effects)
     assert not any(e.startswith('lio_memory_prompt') for e in _prompt_run(PromptMemory(None)).effects)
     assert not any(e.startswith('lio_memory_prompt') for e in _prompt_run(PromptMemory(fail=True)).effects)   # the answer still completes
+
+
+# --- #2001 (M-3): the ids of the memories used ---------------------------------------------------------------
+
+class MemoryTools(Tools):
+    """The memory run belongs to the worker that owns the message; the answer step sees it there."""
+    def __init__(self, memory_run, text):
+        super().__init__('split', text)
+        self.memory_run = memory_run
+
+    def answer(self, worker, binding, inputs, **kwargs):
+        worker.memory_run = self.memory_run
+        yield from super().answer(worker, binding, inputs, **kwargs)
+
+
+from contextlib import contextmanager
+
+
+@contextmanager
+def _hold(binding):
+    yield lambda: None
+
+
+def _memory_run(source_ids, items):
+    import json as _json
+    from types import SimpleNamespace
+    return SimpleNamespace(payload=_json.dumps(dict(items=[dict(source_id=s) for s in source_ids])).encode(), hold=_hold,
+                           snapshot=SimpleNamespace(items=tuple(SimpleNamespace(command=SimpleNamespace(source_id=s, item_id=i)) for s, i in items)))
+
+
+def _used_run(memory_run, switch=True):
+    runs = Service(MemoryRepository(), lambda _: True)
+    worker = RunWorker(scope='scope', messages=Messages('推荐酒店', TICKETS), runs=runs, provider=None,
+                       tools=MemoryTools(memory_run, '好的。\n\n推荐这几家。'), drafts=Drafts(), lio_original=lambda binding: LioOriginal('zh', None))
+    with patch.dict(os.environ, {'CJ_LIO_MEMORY_USED': 'on'} if switch else {}):
+        outcome, = worker.process()
+    assert outcome.status == 'completed'
+    return runs.snapshot(Binding('scope', 'chat', 'g', 'm', 'r', 1))
+
+
+def test_the_used_ids_are_written_after_the_followups_with_the_switch_on():
+    state = _used_run(_memory_run(['s1', 's2'], [('s1', 'mem-1'), ('s2', 'mem-2'), ('s3', 'mem-3')]))
+    assert state.effects[-1] == 'lio_memory_used:{"item_ids":["mem-1","mem-2"],"total":2}'
+    assert state.effects[-2].startswith(FOLLOWUPS_EFFECT)
+
+
+def test_nothing_is_written_with_the_switch_off_no_run_or_nothing_used():
+    run = _memory_run(['s1'], [('s1', 'mem-1')])
+    assert not any(e.startswith('lio_memory_used:') for e in _used_run(run, switch=False).effects)
+    assert not any(e.startswith('lio_memory_used:') for e in _used_run(None).effects)
+    assert not any(e.startswith('lio_memory_used:') for e in _used_run(_memory_run([], [])).effects)
+    assert not any(e.startswith('lio_memory_used:') for e in _used_run(_memory_run(['zz'], [('s1', 'mem-1')])).effects)
+
+
+def test_a_broken_memory_run_never_fails_the_answer():
+    from types import SimpleNamespace
+    state = _used_run(SimpleNamespace(payload=object(), snapshot=None, hold=_hold))
+    assert not any(e.startswith('lio_memory_used:') for e in state.effects)

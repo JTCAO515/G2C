@@ -172,7 +172,8 @@ def _rich(answer, entities, cards=None, receipt=None, prompt=None, used=None):
         if used is not None:
             parsed = parse_used(used[0])
             titles = used[1](parsed[0]) if parsed is not None else {}
-            rows = [dict(item_id=i, title=titles[i]) for i in (parsed[0] if parsed else []) if i in titles]
+            rows = [dict(item_id=i, title=titles[i]) for i in (parsed[0] if parsed else [])
+                    if type(titles.get(i)) is str and 0 < len(titles[i]) <= 40 and '\n' not in titles[i]]
             if rows:
                 # the traveler may have taken some back since: the count never claims more than is still shown
                 memory['used'] = rows
