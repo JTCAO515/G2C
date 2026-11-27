@@ -317,6 +317,58 @@ def main(config, conninfo):
     refused('user_item_changed', lambda: commit(LIO_PLAN, document(retext('item-1', 'x')), trip='trip-old'))
     print('PASS Trip points without an origin record (before 0061) are user; Lio can only add')
 
+    # --- withdrawn Trip (ADR-0012 revision 1): read-only at the sole commit point, not listed --------
+    from cj_trip.autosave import WITHDRAW_BASIS, WithdrawnConflict
+    repo.autosave = True
+    made = commit(LIO_PLAN, document(), trip='trip-wd')
+    wd1 = repo.detail('trip-wd')
+    mark = Proposal('wd-p', 'trip-wd', 1, WITHDRAW_BASIS, int(time.time()) + 3600, wd1.content)
+    marked = act(mark, repo.publish(mark), 'wd-1')
+    assert (marked.committed_version, committed('wd-1'), origins(2, 'trip-wd')) == (2, (False,), origins(1, 'trip-wd'))
+    with owner_db() as conn:
+        expect('42501', lambda: conn.execute('INSERT INTO cj_trip_withdrawal(scope,trip_id,withdrawn_version,undo_action_id) '
+                                             "VALUES(%s,'trip-wd',2,%s)", (scope, made.action_id)))
+        conn.rollback()
+        expect('42501', lambda: conn.execute('INSERT INTO cj_trip_withdrawal(scope,trip_id,withdrawn_version,undo_action_id) '
+                                             "VALUES(%s,'trip-auto',2,'wd-1')", (scope,)))
+        conn.rollback()
+        conn.execute('INSERT INTO cj_trip_withdrawal(scope,trip_id,withdrawn_version,undo_action_id,created_at) '
+                     "VALUES(%s,'trip-wd',2,'wd-1','2000-01-01')", (scope,))
+        assert conn.execute('SELECT created_at>clock_timestamp()-interval %s FROM cj_trip_withdrawal WHERE scope=%s',
+                            ('1 minute', scope)).fetchone() == (True,)   # DB clock, never the caller's value
+    before = (repo.detail('trip-wd'), rows('cj_trip_receipt'), rows('cj_trip_item_origin'), rows('cj_trip_commit_time'))
+    for basis, content in ((USER_EDIT, document(retext('item-1', 'mine'))), (LIO_PLAN, document(add('item-w'))),
+                           (LIO_UNDO, document()), (WITHDRAW_BASIS, document())):
+        try:
+            commit(basis, content, trip='trip-wd')
+        except WithdrawnConflict as error:
+            assert isinstance(error, Conflict) and str(error) == 'withdrawn Trip is read-only'
+        else:
+            raise AssertionError('withdrawn Trip accepted a write: ' + basis)
+    stale = publish(USER_EDIT, document(retext('item-2', 'x')), trip='trip-wd')
+    try:
+        repo.act(Action('wd-reject', 'reject', stale[0].proposal_id, stale[1], 'ref'))
+    except WithdrawnConflict:
+        pass
+    else:
+        raise AssertionError('withdrawn Trip took an action')
+    assert act(mark, repo.publish(mark), 'wd-1') == marked   # replay: the original receipt
+    assert (repo.detail('trip-wd'), rows('cj_trip_receipt'), rows('cj_trip_item_origin'), rows('cj_trip_commit_time')) == before
+    assert 'trip-wd' not in [trip.trip_id for trip in repo.list_trips(limit=100)]
+    assert 'trip-auto' in [trip.trip_id for trip in repo.list_trips(limit=100)]
+    assert repo.detail('trip-wd').version == 2 and len(repo.lio_revisions('trip-wd', None, 10)) == 2
+    with owner_db() as conn:
+        expect('42501', lambda: conn.execute('UPDATE cj_trip_withdrawal SET scope=scope'))
+        conn.rollback()
+        expect('42501', lambda: conn.execute('TRUNCATE cj_trip_withdrawal CASCADE'))
+        conn.rollback()
+    with psycopg.connect(**runtime) as conn:
+        for statement in ('DELETE FROM cj_trip_withdrawal', 'UPDATE cj_trip_withdrawal SET scope=scope', 'TRUNCATE cj_trip_withdrawal'):
+            expect('42501', lambda: conn.execute(statement))
+            conn.rollback()
+    print('PASS withdrawn Trip: withdrawal version keeps origins, mark bound to its receipt and DB clock; every write '
+          'and action refused (WithdrawnConflict), replay returns the original; not listed, detail and history kept')
+
     # --- trip_receipt projection (LIO-answer-rich.1, part 2): table truth, undo state at read -----------
     from cj_api.lio_trip_receipt import project, read, undo_action_id
     from cj_api.lio_trip_routes import _rich_target

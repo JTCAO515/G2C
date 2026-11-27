@@ -37,7 +37,8 @@ def _write_types():
     from .lio_history import Undo
     from .calendar_history import CalendarUndo
     from .rich_undo import RichUndo
-    return {'act': Action, 'undo_calendar': CalendarUndo, 'undo_rich': RichUndo, 'save_manual': ManualSave, 'prepare_manual': ManualEdit,
+    from .withdrawal import Withdraw
+    return {'act': Action, 'undo_calendar': CalendarUndo, 'undo_rich': RichUndo, 'withdraw_created': Withdraw, 'save_manual': ManualSave, 'prepare_manual': ManualEdit,
             'prepare_initialization': Initialization, 'save_initialization': InitializationSave,
             'act_needs': NeedsAction, 'act_scoped': ScopedAction, 'prepare_needs': NeedsEdit,
             'save_needs': NeedsSave, 'prepare_source_initialization': SourceInitialization,
@@ -85,6 +86,9 @@ class OperationContext(FencedOperation):
     def rich_plan_receipt(self, binding): return self._call('rich_plan_receipt', binding)
     def rich_undo_receipt(self, request): return self._call('rich_undo_receipt', request)
     def undo_rich(self, request): return self._call('undo_rich', request)
+    def withdraw_created(self, request): return self._call('withdraw_created', request)
+    def withdraw_receipt(self, request, needs_scope, needs_id):
+        return self._call('withdraw_receipt', request, needs_scope, needs_id)
     def lio_revisions(self, trip_id, *, before=None, limit=10): return self._call('lio_revisions', trip_id, before, limit)
     def lio_current_trip(self, needs_scope, needs_id): return self._call('lio_current_trip', needs_scope, needs_id)
     def lio_plan_receipt(self, binding): return self._call('lio_plan_receipt', binding)

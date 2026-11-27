@@ -258,6 +258,10 @@ class Repository:
             raise Denied('trusted review and confirmation unavailable')
         cur.execute('SELECT version,content FROM cj_trip_record WHERE scope=%s AND trip_id=%s', (self.scope,p.trip_id))
         row = cur.fetchone()
+        if row is not None:
+            # ADR-0012 revision 1: a withdrawn Trip is read-only for every writer, checked here once.
+            from .autosave import refuse_withdrawn
+            refuse_withdrawn(self, cur, p.trip_id)
         if (row[0] if row else 0) != p.expected_version: raise Conflict('trip version conflict')
         version = commit = None
         if action.kind == 'accept':
@@ -402,6 +406,14 @@ class Repository:
         with self.transaction() as cur:
             return autosave_receipt(self, cur, identifier(action_id))
 
+    def withdraw_created(self, request):
+        from .withdrawal import withdraw
+        return withdraw(self, request)
+
+    def withdraw_receipt(self, request, needs_scope, needs_id):
+        from .withdrawal import receipt
+        return receipt(self, request, needs_scope, needs_id)
+
     def undo_lio(self, request):
         from .lio_history import undo
         return undo(self, request)
@@ -436,5 +448,10 @@ class Repository:
                     '(substring(content from 1 for %s)=%s AND substring(content from %s for %s)=%s))')
                 parameters+=(len(_RICH_UNDATED),_RICH_UNDATED,len(_RICH_DATED_BEGIN),_RICH_DATED_BEGIN,
                              len(_RICH_DATED_BEGIN)+len(_DATE_MARKER)+1,len(_RICH_DATED_END),_RICH_DATED_END)
+            # ADR-0012 revision 1: a withdrawn Trip is not listed (detail and history still read it).
+            cur.execute("SELECT to_regclass('public.cj_trip_withdrawal') IS NOT NULL")
+            if cur.fetchone()[0] is True:
+                representation+=(' AND NOT EXISTS(SELECT 1 FROM cj_trip_withdrawal w '
+                                 'WHERE w.scope=cj_trip_record.scope AND w.trip_id=cj_trip_record.trip_id)')
             cur.execute('SELECT trip_id,version,content FROM cj_trip_record WHERE scope=%s AND trip_id COLLATE "C">%s COLLATE "C"'+representation+' ORDER BY trip_id COLLATE "C" LIMIT %s', (*parameters,limit))
             return [Trip(r[0],r[1],self._content(bytes(r[2]))) for r in cur.fetchall()]

@@ -186,3 +186,45 @@ class Writer(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class Withdrawal(unittest.TestCase):
+    """#1994 part 3: LIO-trip-undo.5 beside LIO-trip-undo.4 on the same v4 routes (ADR-0012 revision 1)."""
+    TARGET = dict(trip_id='trip-r1', expected_version=1, original_hash='a' * 64, content_version='structured.4')
+    RESTORE = dict(TARGET, expected_version=2, restore_version=1, restore_hash='b' * 64, restore_content_version='structured.4')
+
+    def body(self, version, target):
+        return dict(version=version, action_id=undo_action_id('lio-plan-r1'), conversation_id='lio-dialogue-' + 'a' * 32,
+                    target=target)
+
+    def test_version_tells_the_two_requests_apart(self):
+        from cj_api.lio_rich_undo_routes import _original
+        from cj_trip.rich_undo import RichUndo
+        from cj_trip.withdrawal import Withdraw
+        withdraw, _, target = _original(self.body('LIO-trip-undo.5', self.TARGET))
+        self.assertIsInstance(withdraw, Withdraw)
+        self.assertEqual((withdraw.trip_id, withdraw.expected_version, withdraw.content_version, target),
+                         ('trip-r1', 1, 'structured.4', self.TARGET))
+        restore, _, _ = _original(self.body('LIO-trip-undo.4', self.RESTORE))
+        self.assertIsInstance(restore, RichUndo)
+        for version, target in (('LIO-trip-undo.5', self.RESTORE), ('LIO-trip-undo.5', dict(self.TARGET, expected_version=2)),
+                                ('LIO-trip-undo.5', dict(self.TARGET, content_version='structured.9')),
+                                ('LIO-trip-undo.5', {k: v for k, v in self.TARGET.items() if k != 'original_hash'}),
+                                ('LIO-trip-undo.4', self.TARGET), ('LIO-trip-undo.6', self.TARGET)):
+            with self.subTest(version=version, target=target), self.assertRaises(ValueError):
+                _original(self.body(version, target))
+
+    def test_private_input_is_canonical_and_only_version_one(self):
+        from cj_trip.withdrawal import Withdraw
+        built = Withdraw.build('undo-x', 'trip-r1', 1, 'a' * 64, 'structured.2')
+        self.assertEqual(Withdraw.parse(built.raw), built)
+        for raw in (built.raw.replace(b'"expected_version":1', b'"expected_version":2'), built.raw + b' ',
+                    built.raw.replace(b'TRIP-lio-withdraw.1', b'TRIP-lio-undo.3')):
+            with self.subTest(raw=raw), self.assertRaises(ValueError):
+                Withdraw.parse(raw)
+
+    def test_a_withdrawn_trip_reads_as_a_conflict(self):
+        from cj_trip.autosave import UNDO_BASES, WITHDRAW_BASIS, WithdrawnConflict, writer
+        self.assertEqual(reason(WithdrawnConflict()), 'conflict')
+        self.assertIn(WITHDRAW_BASIS, UNDO_BASES)
+        self.assertEqual(writer(WITHDRAW_BASIS), 'undo')

@@ -22,14 +22,14 @@ def _enabled(repository):
 
 def reason(error):
     """The contract reason of a refused write, or None: version conflict, protected points, too large."""
-    from cj_trip.autosave import AutosaveConflict
+    from cj_trip.autosave import AutosaveConflict, WithdrawnConflict
     from cj_trip.domain import Conflict
     seen = set()
     while error is not None and id(error) not in seen:
         seen.add(id(error))
         if isinstance(error, AutosaveConflict):
             return 'too_large' if error.code == 'too_large' else 'protected'
-        if isinstance(error, Conflict) and error.args == ('trip version conflict',):
+        if isinstance(error, WithdrawnConflict) or (isinstance(error, Conflict) and error.args == ('trip version conflict',)):
             return 'conflict'
         error = error.__cause__ or error.__context__
     return None

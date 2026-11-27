@@ -9,7 +9,7 @@ rows: a Lio write is not compared and an undo has no 24 hour limit (unless the v
 was itself committed as an autosave, which only happens with the switch on).
 
 Writer of a commit, decided by the Proposal's ``basis_version`` only (never by model, App or
-request fields). Every basis_version on main at 1fd4ad55:
+request fields). Every basis_version on main at 1fd4ad55, plus the withdrawal of #1994 part 3:
 
 ====================================  ==========  =================================================
 basis_version                          writer      path
@@ -22,6 +22,7 @@ basis_version                          writer      path
 ``lio-undo.1``                         undo        cj_trip.lio_history._append_undo (structured.1/2)
 ``lio-calendar-undo.1``                undo        cj_trip.calendar_history.undo
 ``lio-rich-undo.1``                    undo        cj_trip.rich_history.undo
+``lio-withdraw.1``                     undo        cj_trip.withdrawal.withdraw (LIO-trip-undo.5)
 ``lio-date-convert.1``                 user        cj_draft.calendar_dates (date the person stated)
 ``needs-manual.1`` / ``needs-manual.2`` user       NEEDS edit/save (/v1/trip-needs-saves)
 ``manual-unbound.1``                   user        manual edit (manual_storage.save_manual)
@@ -38,7 +39,13 @@ still present stays ``user``. Lio write: new items and previous ``lio`` items ar
 write: a new item or one whose bytes changed (``packed(item)``) is ``user``, an unchanged one keeps
 its origin. Undo: each item keeps the origin of the restored version, except that an item that was
 ``user`` in the undone version stays ``user``. An item without a record (any version committed
-before 0061) counts as ``user``.
+before 0061) counts as ``user``. A withdrawal (ADR-0012 revision 1) appends the bytes of version 1 as
+version 2 and keeps every origin of version 1.
+
+Withdrawn Trips (``cj_trip_withdrawal``): :func:`refuse_withdrawn` is called by ``_act_in_tx`` for every
+action on an existing Trip, so every writer (Lio, NEEDS, manual, scoped, ``/v1/trip-actions``, undo) is
+refused there with :class:`WithdrawnConflict`. Selection (``planning_context.current_in_tx``) and the
+Trip list read a withdrawn Trip as absent.
 """
 from dataclasses import dataclass
 from datetime import datetime, timedelta
@@ -54,7 +61,8 @@ UNDO_WINDOW = timedelta(hours=24)
 
 LIO_BASES = frozenset({'lio-plan.1', 'lio-edit.1', 'lio-calendar-plan.1', 'lio-calendar-edit.1',
                        'lio-rich-plan.1'})
-UNDO_BASES = frozenset({'lio-undo.1', 'lio-calendar-undo.1', 'lio-rich-undo.1'})
+WITHDRAW_BASIS = 'lio-withdraw.1'
+UNDO_BASES = frozenset({'lio-undo.1', 'lio-calendar-undo.1', 'lio-rich-undo.1', WITHDRAW_BASIS})
 LIO, USER, UNDO = 'lio', 'user', 'undo'
 
 
@@ -67,6 +75,13 @@ class AutosaveConflict(Conflict):
             raise ValueError('unknown autosave refusal')
         super().__init__(code)
         self.code = code
+
+
+class WithdrawnConflict(Conflict):
+    """The Trip was withdrawn (its creating autosave was undone): read-only, every write refused."""
+
+    def __init__(self):
+        super().__init__('withdrawn Trip is read-only')
 
 
 def writer(basis_version):
@@ -184,8 +199,24 @@ def schema_present(cur):
     behaviour with the switch off. With the switch on, a missing table refuses instead of skipping."""
     cur.execute("SELECT to_regclass('public.cj_trip_item_origin') IS NOT NULL AND "
                 "to_regclass('public.cj_trip_item_tombstone') IS NOT NULL AND "
-                "to_regclass('public.cj_trip_commit_time') IS NOT NULL")
+                "to_regclass('public.cj_trip_commit_time') IS NOT NULL AND "
+                "to_regclass('public.cj_trip_withdrawal') IS NOT NULL")
     return cur.fetchone()[0] is True
+
+
+def withdrawn(repository, cur, trip_id):
+    """True when the Trip carries a withdrawal mark; False without 0061 (nothing can be withdrawn there)."""
+    cur.execute("SELECT to_regclass('public.cj_trip_withdrawal') IS NOT NULL")
+    if cur.fetchone()[0] is not True:
+        return False
+    cur.execute('SELECT 1 FROM cj_trip_withdrawal WHERE scope=%s AND trip_id=%s', (repository.scope, trip_id))
+    return cur.fetchone() is not None
+
+
+def refuse_withdrawn(repository, cur, trip_id):
+    """The sole commit point's check: a withdrawn Trip takes no new version from any writer."""
+    if withdrawn(repository, cur, trip_id):
+        raise WithdrawnConflict()
 
 
 @dataclass(frozen=True)
@@ -225,7 +256,13 @@ def record_commit(repository, cur, proposal, previous_content):
     previous_items, new_items = items(before), items(after)
     previous_origins = _origins_at(repository, cur, proposal.trip_id, proposal.expected_version)
     restored = None
-    if kind == UNDO:
+    if kind == UNDO and proposal.basis_version == WITHDRAW_BASIS:
+        # A withdrawal appends the exact bytes of version 1 again and keeps its origins.
+        if proposal.expected_version == 1 and previous_content == proposal.content:
+            restored = previous_origins
+        else:
+            kind = USER
+    elif kind == UNDO:
         # Undo appends the exact bytes of version-1. Anything else is treated as a person's write.
         if _accepted_content(repository, cur, proposal.trip_id, proposal.expected_version - 1) == proposal.content:
             restored = _origins_at(repository, cur, proposal.trip_id, proposal.expected_version - 1)
