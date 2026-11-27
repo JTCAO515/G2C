@@ -228,15 +228,16 @@ enum LioToolRegistry {
             #endif
         },
         LioToolEntry(.transport, symbol: "train.side.front.car",
-                     name: ("Intercity Travel", "城际交通"),
-                     summary: ("Compare trains, flights and buses", "比较火车、飞机和大巴"),
-                     gate: .availability { $0.transport }, parameters: ["from", "to"]) { context, route in
+                     name: ("Transport", "大交通"),
+                     summary: ("Flights, trains, airports and stations", "航班车次、机场车站"),
+                     gate: .availability { $0.transport },
+                     parameters: ["from", "to", "tab", "flight", "train"]) { context, route in
             #if os(iOS)
             if let service = LioTransportService.fromBuild() {
                 let (profile, today) = context.travelProfile()
                 let trip = profile.transport(routeFrom: route["from"], routeTo: route["to"], today: today)
-                LioTransportView(language: context.language, service: service, from: trip.from, to: trip.to,
-                                 date: trip.date)
+                LioBigTransportView(language: context.language, service: service, from: trip.from, to: trip.to,
+                                    date: trip.date, tab: route["tab"], flight: route["flight"], train: route["train"])
             }
             #endif
         },

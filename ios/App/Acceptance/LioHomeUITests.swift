@@ -46,6 +46,78 @@ import CryptoKit
         }
     }
 
+    /// #2009: the two amount boxes are linked, quick amounts fill the top one, and the currencies swap.
+    /// Sample rates: 1 EUR = 8 CNY = 1.25 USD, so 100 CNY = 15.63 USD.
+    func testCurrencyConverterLinksTheTwoAmounts() throws {
+        continueAfterFailure = false
+        for (language, appearance) in [("en", "light"), ("zh-Hans", "light"), ("en", "dark")] {
+            let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
+            app.launchArguments = ["--lio-preview", "--lio-currency-acceptance", "-cj.ui.language.v1", language,
+                                   "-lio.ui.appearance.v1", appearance, "-UIPreferredContentSizeCategoryName",
+                                   "UICTContentSizeCategoryL"]
+            app.launch()
+            defer { app.terminate() }
+            let top = app.textFields["lio.currency.amount"]
+            let bottom = app.textFields["lio.currency.result"]
+            XCTAssertTrue(top.waitForExistence(timeout: 8))
+            XCTAssertTrue(bottom.exists)
+            XCTAssertEqual(top.value as? String, "100")
+            XCTAssertEqual(bottom.value as? String, "15.63")
+            capture(app, "currency-\(language)-\(appearance)")
+            // A quick amount fills the top box and the bottom follows.
+            app.buttons["lio.currency.quick.500"].tap()
+            XCTAssertEqual(top.value as? String, "500")
+            XCTAssertEqual(bottom.value as? String, "78.13")
+            // Typing in the bottom box converts back into the top one.
+            bottom.coordinate(withNormalizedOffset: CGVector(dx: 0.99, dy: 0.5)).tap() // caret at the end
+            let current = (bottom.value as? String) ?? ""
+            bottom.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: current.count) + "10")
+            XCTAssertEqual(bottom.value as? String, "10")
+            XCTAssertEqual(top.value as? String, "64.00")
+            capture(app, "currency-typing-bottom-\(language)-\(appearance)")
+            // Swapping exchanges the two rows: each amount stays with its currency.
+            app.buttons["lio.currency.swap"].tap()
+            XCTAssertEqual(top.value as? String, "10")
+            XCTAssertEqual(bottom.value as? String, "64.00")
+            XCTAssertEqual(app.staticTexts["lio.currency.unitRate"].label, "1 USD ≈ 6.400 CNY")
+        }
+    }
+
+    /// #2006: "Essentials" is now "Convenience" and gains community services (searched on their own, by name).
+    func testNearbyConvenienceOffersCommunityServices() throws {
+        continueAfterFailure = false
+        for language in ["en", "zh-Hans"] {
+            let english = language == "en"
+            let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
+            app.launchArguments = ["--lio-preview", "--lio-tools-preview", "--lio-nearby-preview", "--lio-nearby-essentials",
+                                   "-cj.ui.language.v1", language,
+                                   "-lio.ui.appearance.v1", "light", "-UIPreferredContentSizeCategoryName",
+                                   "UICTContentSizeCategoryL"]
+            app.launch()
+            defer { app.terminate() }
+            let tools = app.tabBars.buttons[english ? "Tools" : "工具"]
+            XCTAssertTrue(tools.waitForExistence(timeout: 8))
+            tools.tap()
+            let entry = app.buttons["lio.tools.nearby"].exists ? app.buttons["lio.tools.nearby"] : app.buttons["lio.tools.convenience"]
+            XCTAssertTrue(entry.waitForExistence(timeout: 6))
+            entry.tap()
+            let group = app.descendants(matching: .any)["lio.nearby.group"]
+            if !group.waitForExistence(timeout: 8) { capture(app, "nearby-no-group-\(language)") }
+            XCTAssertTrue(group.exists)
+            XCTAssertFalse(app.buttons[english ? "Essentials" : "必需品"].exists)
+            app.buttons[english ? "Convenience" : "便利"].tap()
+            for kind in ["atm", "toilet", "luggage", "community"] {
+                XCTAssertTrue(app.buttons["lio.nearby.category.\(kind)"].waitForExistence(timeout: 6), kind)
+            }
+            app.buttons["lio.nearby.category.community"].tap()
+            XCTAssertTrue(app.staticTexts["lio.nearby.essential-heading"].waitForExistence(timeout: 8))
+            XCTAssertTrue(app.staticTexts[english ? "Community services (found by name; some may be missing)"
+                                                  : "社区服务（按“社区服务中心”名称搜索，结果可能不全）"].exists)
+            XCTAssertTrue(app.staticTexts["示例社区服务中心"].waitForExistence(timeout: 8))
+            capture(app, "nearby-convenience-community-\(language)")
+        }
+    }
+
     /// #1450 item 2: the interactive map opens from a city, finds a station and shows its lines,
     /// the taxi and directions actions, and the operator source with its check date.
     func testMetroMapFindsAStationAndShowsItsLines() throws {

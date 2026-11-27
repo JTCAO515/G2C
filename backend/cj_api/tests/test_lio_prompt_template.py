@@ -75,7 +75,7 @@ class Template(unittest.TestCase):
                 for kept in ('110 (police)', '120 (ambulance)', 'no length limit', 'Never invent prices',
                              'Live prices, ticket availability and whether a place is open today get no numbers',
                              'never infer a traveler\'s personal eligibility', 'eligible countries from memory',
-                             'taps Remember', 'Do not offer to book tickets or take payment',
+                             'asks to save it', 'Never tell the traveler to tap Remember', 'Do not offer to book tickets or take payment',
                              'keep internal identifiers, coordinates, providers and interfaces out of the answer',
                              'Never invent personal facts', 'never fill missing planning fields'):
                     self.assertIn(kept, text)
