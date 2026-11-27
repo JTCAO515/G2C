@@ -37,7 +37,7 @@ QUOTES = {
 _TOPICS = {
     'metro': re.compile(r'地铁|轨道交通|metro|subway', re.I),
     'transport': re.compile(r'高铁|火车|动车|航班|机票|train|flight|high-speed', re.I),
-    'currency': re.compile(r'汇率|换钱|兑换|exchange rate|convert|currency', re.I),
+    'currency': re.compile(r'汇率|换钱|兑换|\bexchange\b|\bconvert|currency', re.I),
 }
 _DATE = re.compile(r'[0-9]{4}-[0-9]{2}-[0-9]{2}')
 _TEXT_LIMIT = 40
