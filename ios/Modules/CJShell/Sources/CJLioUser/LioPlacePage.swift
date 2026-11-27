@@ -37,7 +37,8 @@ struct LioPlacePage: View {
         ScrollView {
             VStack(alignment: .leading, spacing: LioTheme.Spacing.lg) {
                 if let place = repository.place(id: placeID) {
-                    content(LioPlacePresentation(place, language: language), place)
+                    content(LioPlacePresentation(place, language: language,
+                                                 developmentData: repository.isDevelopmentData(place)), place)
                 } else {
                     notFound
                 }
@@ -78,8 +79,27 @@ struct LioPlacePage: View {
         .accessibilityIdentifier("lio.place.image")
     }
 
+    /// Places from the unreviewed development pack (Debug builds only) say so, in words VoiceOver reads out.
+    @ViewBuilder private func developmentBadge(_ page: LioPlacePresentation) -> some View {
+        if let label = page.developmentLabel, let note = page.developmentNote {
+            VStack(alignment: .leading, spacing: LioTheme.Spacing.xxs) {
+                Label(label, systemImage: "hammer.fill")
+                    .font(.footnote.weight(.semibold))
+                    .padding(.horizontal, LioTheme.Spacing.sm).padding(.vertical, LioTheme.Spacing.xxs)
+                    .background(Capsule().fill(LioTheme.surfaceSunken))
+                    .overlay(Capsule().stroke(LioTheme.vermilion, lineWidth: 1))
+                Text(note).font(.footnote).foregroundStyle(LioTheme.inkSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(note)
+            .accessibilityIdentifier("lio.place.devdata")
+        }
+    }
+
     private func header(_ page: LioPlacePresentation) -> some View {
         VStack(alignment: .leading, spacing: LioTheme.Spacing.xs) {
+            developmentBadge(page)
             Label(page.kindLabel, systemImage: page.symbol)
                 .font(.subheadline).foregroundStyle(LioTheme.inkSecondary)
                 .accessibilityIdentifier("lio.place.kind")
@@ -222,7 +242,8 @@ struct LioPlacePage: View {
     }
 
     @ViewBuilder private func nearbyRow(_ neighbour: LioPlaceRepository.Neighbour) -> some View {
-        let other = LioPlacePresentation(neighbour.place, language: language)
+        let other = LioPlacePresentation(neighbour.place, language: language,
+                                         developmentData: repository.isDevelopmentData(neighbour.place))
         let label = VStack(alignment: .leading, spacing: LioTheme.Spacing.xxs) {
             HStack(alignment: .firstTextBaseline) {
                 Text(other.title).font(.headline).fixedSize(horizontal: false, vertical: true)
@@ -233,6 +254,10 @@ struct LioPlacePage: View {
             if let line = other.oneLiner {
                 Text(line).font(.subheadline).foregroundStyle(LioTheme.inkSecondary)
                     .fixedSize(horizontal: false, vertical: true)
+            }
+            if let dev = other.developmentLabel {
+                Label(dev, systemImage: "hammer.fill").font(.caption.weight(.semibold))
+                    .foregroundStyle(LioTheme.vermilion)
             }
         }
         .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)

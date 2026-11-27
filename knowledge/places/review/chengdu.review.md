@@ -1,6 +1,6 @@
 # chengdu 收录审核（2026-11-27）
 
-共 126 条待审，按批次排列，每批可一天审完。决定写在 CSV 的 decision 列：accept、reject 或 edit（edit 在 note 里写要改什么）。
+共 154 条待审，按批次排列，每批可一天审完。决定写在 CSV 的 decision 列：accept、reject 或 edit（edit 在 note 里写要改什么）。
 
 ## 第 1 批
 
@@ -100,12 +100,178 @@
 - 来源：https://www.sjfmuseum.com/
 - [ ] accept　[ ] reject　[ ] edit：
 
+### 成都高新万豪万枫酒店 · Fairfield by Marriott Chengdu Hi-Tech Zone  `pl_cd_gaoxinwanfeng`
+- hotel/hotel · main · 分数 31 · 高新区
+- 高德：未查询
+- 简介：吉龙路的万枫，陆肖站可换乘地铁6号线。 / A southern Chengdu hotel with Luxiao on Line 6 listed for transport.
+- 开放时间：—
+- 来源：https://www.marriott.com/en-us/hotels/ctufh-fairfield-chengdu-hi-tech-zone/overview/
+- 提醒：pl_cd_gaoxinwanfeng: unknown field 'hotel_class' is dropped on import
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 成都领地希尔顿嘉悦里酒店 · Canopy by Hilton Chengdu City Centre  `pl_cd_lingdijiayueli`
+- hotel/hotel · main · 分数 31 · 青羊区
+- 高德：未查询
+- 简介：天府广场片区的嘉悦里，可安排人民公园散步。 / A city-center Canopy close to People's Park.
+- 开放时间：—
+- 来源：https://www.hilton.com.cn/zh-cn/hotels/ctulcpy-canopy-by-hilton-chengdu-city-centre
+- 提醒：pl_cd_lingdijiayueli: unknown field 'hotel_class' is dropped on import
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 成都太古里 · Taikoo Li Chengdu  `pl_cd_cd_taikoo_li_retail`
+- shopping/mall · main · 分数 30 · 锦江区
+- 高德：未查询
+- 简介：可把街区逛店、喝咖啡和附近的大慈寺安排在半天。 / Open-air shopping lanes with a coffee stop and Daci Temple nearby.
+- 开放时间：—
+- 来源：https://www.swireproperties.com/zh-cn/portfolio/current-developments/taikoo-li-chengdu/taikoo-li-chengdu/
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 成都安仁福朋喜来登酒店 · Four Points by Sheraton Chengdu, Anren  `pl_cd_anrenfupeng`
+- hotel/hotel · main · 分数 29 · 区未知
+- 高德：未查询
+- 简介：安仁镇迎宾路的门店，适合给古镇单独留一晚。 / An overnight option on Yingbin Road in Anren.
+- 开放时间：—
+- 来源：https://www.marriott.com/en-us/hotels/ctuaf-four-points-chengdu-anren/overview/
+- 提醒：pl_cd_anrenfupeng: unknown field 'hotel_class' is dropped on import
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 成都东站福朋喜来登酒店 · Four Points by Sheraton Chengdu East Station  `pl_cd_dongzhanfupeng`
+- hotel/hotel · main · 分数 29 · 锦江区
+- 高德：未查询
+- 简介：百日红西路门店，官网列海桐街地铁站与成都东站。 / An eastern Chengdu option with Haitong Street listed for metro access.
+- 开放时间：—
+- 来源：https://www.marriott.com/en-us/hotels/ctuep-four-points-chengdu-east-station/overview/
+- 提醒：pl_cd_dongzhanfupeng: unknown field 'hotel_class' is dropped on import
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 成都首座万豪酒店 · Chengdu Marriott Hotel Financial Centre  `pl_cd_gaoxinwanhao`
+- hotel/hotel · main · 分数 29 · 高新区
+- 高德：未查询
+- 简介：天府大道北段的万豪，可从金融城站或高新站到店。 / A south Chengdu hotel with several metro approaches in the Financial City area.
+- 开放时间：—
+- 来源：https://www.marriott.com/en-us/hotels/ctumc-chengdu-marriott-hotel-financial-centre/overview/
+- 提醒：pl_cd_gaoxinwanhao: unknown field 'hotel_class' is dropped on import
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 成都华尔道夫酒店 · Waldorf Astoria Chengdu  `pl_cd_huaerdaofu`
+- hotel/hotel · main · 分数 29 · 高新区
+- 高德：未查询
+- 简介：成都金融城的高层酒店，可安排双子塔一带的行程。 / A Financial City hotel near Chengdu's Twin Towers.
+- 开放时间：—
+- 来源：https://www.hilton.com.cn/zh-cn/hotels/ctuwawa-waldorf-astoria-chengdu
+- 提醒：pl_cd_huaerdaofu: unknown field 'hotel_class' is dropped on import
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 成都宽窄巷子希尔顿花园酒店 · Hilton Garden Inn Chengdu Kuanzhai Alley  `pl_cd_kuanzhaixiangzixierdun`
+- hotel/hotel · main · 分数 29 · 金牛区
+- 高德：未查询
+- 简介：西安南路门店，从宽窄巷子一路逛到枣子巷。 / A central stay for Kuanzhai Alley and food around Zaozi Lane.
+- 开放时间：—
+- 来源：https://www.hilton.com.cn/zh-cn/hotels/ctukzgi-hilton-garden-inn-chengdu-kuanzhai-alley
+- 提醒：pl_cd_kuanzhaixiangzixierdun: unknown field 'hotel_class' is dropped on import
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 成都富力丽思卡尔顿酒店 · The Ritz-Carlton, Chengdu  `pl_cd_lisi`
+- hotel/hotel · main · 分数 29 · 青羊区
+- 高德：未查询
+- 简介：品牌列有英语服务，到成都东站可先查接驳。 / A central Chengdu hotel with English listed and an indoor pool.
+- 开放时间：—
+- 来源：https://www.ritzcarlton.com/en/hotels/cturz-the-ritz-carlton-chengdu/overview/
+- 提醒：pl_cd_lisi: unknown field 'hotel_class' is dropped on import
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 成都龙泉驿百悦希尔顿酒店 · Hilton Chengdu Longquanyi  `pl_cd_longquanyixierdun`
+- hotel/hotel · main · 分数 29 · 龙泉驿区
+- 高德：未查询
+- 简介：龙泉驿金桉路的希尔顿，住客可用室内泳池。 / An east Chengdu stay in Longquanyi with an indoor pool.
+- 开放时间：—
+- 来源：https://www.hilton.com.cn/zh-cn/hotels/ctulohi-hilton-chengdu-longquanyi
+- 提醒：pl_cd_longquanyixierdun: unknown field 'hotel_class' is dropped on import
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 谧寻茶室 · Mi Xun Teahouse  `pl_cd_mixun_chashi`
+- food/vegetarian · main · 分数 29 · 锦江区
+- 高德：未查询
+- 简介：走过大慈寺和太古里时，可安排一顿以植物食材为主的川味素食。 / Plan a plant-forward Sichuan meal near Daci Temple and Taikoo Li.
+- 开放时间：—
+- 来源：https://www.upperhouse.com/en/chengdu/restaurants-and-bars/mi-xun-teahouse/
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 青城山六善酒店 · Six Senses Qing Cheng Mountain  `pl_cd_qingchengshanliushan`
+- hotel/hotel · main · 分数 29 · 都江堰市
+- 高德：未查询
+- 简介：在青城山脚住一晚，可把都江堰熊猫谷排入周边行程。 / A Qingcheng Mountain stay for separate outings to the mountain and Panda Valley.
+- 开放时间：—
+- 来源：https://www.sixsenses.com/zh/hotels-resorts/asia-the-pacific/china/qing-cheng-mountain/
+- 提醒：pl_cd_qingchengshanliushan: unknown field 'hotel_class' is dropped on import
+- [ ] accept　[ ] reject　[ ] edit：
+
+### Ralph’s Bar（成都太古里） · Ralph’s Bar (Taikoo Li Chengdu)  `pl_cd_ralph_taiguli`
+- food/western · main · 分数 29 · 锦江区
+- 高德：未查询
+- 简介：在太古里安排小聚或简餐时，可留作一站。 / An option for a casual stop in Taikoo Li.
+- 开放时间：—
+- 来源：https://www.swireproperties.com/-/media/images/swireproperties/media/media-library/factsheets/taikoo-li-chengdu/taikoo-li-chengdu-factsheet_202510.ashx?sc_lang=zh-cn
+- [ ] accept　[ ] reject　[ ] edit：
+
+## 第 2 批
+
+### 成都天府广场万豪万枫酒店 · Fairfield by Marriott Chengdu Tianfu Square  `pl_cd_tianfuguangchangwanfeng`
+- hotel/hotel · main · 分数 29 · 武侯区
+- 高德：未查询
+- 简介：人民南路三段的万枫，可从华西坝或新南门规划抵达。 / A Renmin South Road stay with two metro stops in the hotel guide.
+- 开放时间：—
+- 来源：https://www.marriott.com/en-us/hotels/ctutf-fairfield-chengdu-tianfu-square/overview/
+- 提醒：pl_cd_tianfuguangchangwanfeng: unknown field 'hotel_class' is dropped on import
+- [ ] accept　[ ] reject　[ ] edit：
+
+### TIVANO意大利餐厅 · TIVANO  `pl_cd_tivano_taiguli`
+- food/western · main · 分数 29 · 锦江区
+- 高德：未查询
+- 简介：太古里附近的意式正餐选择，可以点手工意面。 / Try house-made pasta at this Italian restaurant near Taikoo Li.
+- 开放时间：—
+- 来源：https://www.upperhouse.com/en/chengdu/restaurants-and-bars/tivano/
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 成都香格里拉 · Shangri-La Chengdu  `pl_cd_xianggelila`
+- hotel/hotel · main · 分数 29 · 区未知
+- 高德：未查询
+- 简介：住在锦江边，把安顺廊桥和合江亭安排在一次散步里。 / A riverside stay near Anshun Bridge and Hejiang Pavilion.
+- 开放时间：—
+- 来源：https://www.shangri-la.com/cn/shangrila/city/chengdu/
+- 提醒：pl_cd_xianggelila: unknown field 'hotel_class' is dropped on import
+- [ ] accept　[ ] reject　[ ] edit：
+
 ### 成都自然博物馆 · Chengdu Natural History Museum  `pl_cd_chengdu_ziran`
 - attraction/museum · main · 分数 28 · 成华区
 - 高德：未查询
 - 简介：从化石和骨架接触四川自然史 / See fossils and skeletons at the Chengdu Natural History Museum.
 - 开放时间：—
 - 来源：https://www.cdmnh.com/?id=aboutus&name=page
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 抚琴夜市 · Fuqin Night Market  `pl_cd_fuqin_night_market`
+- shopping/market · main · 分数 28 · 金牛区
+- 高德：未查询
+- 简介：夜间可看成都社区摊档，顺手试几样小吃。 / Browse a neighborhood evening market for small bites and local stalls.
+- 开放时间：—
+- 来源：https://dzswgf.mofcom.gov.cn/news/123/2025/12/1764558462549.html
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 皇三爷火锅（双流机场T2店） · Huang Sanye Hotpot (Shuangliu T2)  `pl_cd_huangsan_shuangliu`
+- food/local_cuisine · main · 分数 28 · 双流区
+- 高德：未查询
+- 简介：抵达双流后，想先吃一顿火锅可按到达大厅找。 / A hotpot option near the T2 arrivals hall.
+- 开放时间：—
+- 来源：https://www.cdairport.com/en/businesss.aspx?cid=10&k=&t=175&ter=0
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 成都IFS购物中心 · Chengdu IFS  `pl_cd_ifs_chengdu_retail`
+- shopping/mall · main · 分数 28 · 锦江区
+- 高德：未查询
+- 简介：在春熙片区集中看时装与生活品牌，天气不好也可室内逛。 / An indoor stop for fashion and lifestyle shops near Chunxi Road.
+- 开放时间：—
+- 来源：https://www.wharfholdings.com/file/140114%20CDIFS%20Opening%20Eng%20P%20FW.pdf
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 锦里 · Jinli Ancient Street  `pl_cd_jinli`
@@ -116,6 +282,39 @@
 - 来源：https://www.cdjinli.com/
 - [ ] accept　[ ] reject　[ ] edit：
 
+### 成都居舍 · Upper House Chengdu  `pl_cd_jushe`
+- hotel/hotel · main · 分数 28 · 锦江区
+- 高德：未查询
+- 简介：笔帖式街上的院落酒店，出门便能逛大慈寺和太古里。 / A courtyard hotel tucked into Taikoo Li, next to Daci Temple.
+- 开放时间：—
+- 来源：https://www.upperhouse.com/en/chengdu/
+- 提醒：pl_cd_jushe: unknown field 'hotel_class' is dropped on import
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 宽门（双流机场T2店） · Kuanmen (Shuangliu T2)  `pl_cd_kuanmen_shuangliu`
+- food/local_cuisine · main · 分数 28 · 双流区
+- 高德：未查询
+- 简介：候机时想找中式餐食，可按T2门店导向查找。 / A Chinese dining option in the T2 departure area.
+- 开放时间：—
+- 来源：https://www.cdairport.com/en/businesss.aspx?cid=10&k=&t=175&ter=0
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 成都万象城 · The MixC Chengdu  `pl_cd_mixc_chengdu_shop`
+- shopping/mall · main · 分数 28 · 成华区
+- 高德：未查询
+- 简介：在成华一带给购物、喝咖啡和吃饭留半天。 / Set aside part of the day for shopping, coffee and a meal in Chenghua.
+- 开放时间：—
+- 来源：https://www.itotravel.com/zh-hk/pages/store-locations
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 成都来福士广场 · Raffles City Chengdu  `pl_cd_raffles_chengdu_retail`
+- shopping/mall · main · 分数 28 · 武侯区
+- 高德：未查询
+- 简介：在人民南路可一站看零售、书店或找个室内歇脚点。 / An indoor shopping break on Renmin South Road.
+- 开放时间：—
+- 来源：https://www.capitaland.com/en/find-a-property/global-property-listing/retail/raffles-city-chengdu.html
+- [ ] accept　[ ] reject　[ ] edit：
+
 ### 四川科技馆 · Sichuan Science and Technology Museum  `pl_cd_sichuan_kejiguan`
 - attraction/museum · main · 分数 28 · 青羊区
 - 高德：未查询
@@ -124,12 +323,89 @@
 - 来源：https://www.scstm.com/
 - [ ] accept　[ ] reject　[ ] edit：
 
-### TIVANO意大利餐厅 · TIVANO  `pl_cd_tivano_taiguli`
-- food/western · main · 分数 28 · 锦江区
+### 天府二十一城（双流机场店） · Tianfu Twenty-One Cities (Shuangliu Airport)  `pl_cd_tianfuershiyi_shuangliu`
+- food/local_cuisine · main · 分数 28 · 双流区
 - 高德：未查询
-- 简介：太古里附近的意式正餐选择，可以点手工意面。 / Try house-made pasta at this Italian restaurant near Taikoo Li.
+- 简介：出发候机时可把它作为一处中餐选择。 / A Chinese meal option near the departure gates.
 - 开放时间：—
-- 来源：https://www.upperhouse.com/en/chengdu/restaurants-and-bars/tivano/
+- 来源：https://www.cdairport.com/en/businesss.aspx?cid=10&k=&t=175&ter=0
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 王记肥肠粉（双流机场T2店） · Wang Ji Pork Intestine Noodles (Shuangliu T2)  `pl_cd_wangji_shuangliu`
+- food/local_cuisine · main · 分数 28 · 双流区
+- 高德：未查询
+- 简介：到达双流机场后，可以吃一碗成都风味肥肠粉。 / Try a Chengdu noodle specialty on arrival at Shuangliu Airport.
+- 开放时间：—
+- 来源：https://www.cdairport.com/en/businesss.aspx?cid=10&k=&t=175&ter=0
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 成都武侯渝江皇冠假日酒店 · Crowne Plaza Chengdu Wuhou  `pl_cd_wuhou_yujiang_huangguan`
+- hotel/hotel · main · 分数 28 · 武侯区
+- 高德：未查询
+- 简介：武侯潮音路酒店，出发可计划地铁9号线或17号线。 / A Wuhou hotel with access to Metro lines 9 and 17 listed nearby.
+- 开放时间：—
+- 来源：https://www.ihg.com/crowneplaza/hotels/us/en/chengdu/ctuza/hoteldetail
+- 提醒：pl_cd_wuhou_yujiang_huangguan: unknown field 'hotel_class' is dropped on import
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 宜必思成都火车东站酒店 · ibis Chengdu East Railway Station Hotel  `pl_cd_yibisi_dongzhan`
+- hotel/hotel · main · 分数 28 · 成华区
+- 高德：未查询
+- 简介：成华建材路的经济型酒店，可安排火车行程前后住宿。 / A Jiancai Road hotel for a trip involving Chengdu East Railway Station.
+- 开放时间：—
+- 来源：https://all.accor.com/hotel/B375/index.en.shtml
+- 提醒：pl_cd_yibisi_dongzhan: unknown field 'hotel_class' is dropped on import
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 宜必思成都宽窄巷子中心酒店 · ibis Chengdu China Lane Central  `pl_cd_yibisi_kuanzhai_central`
+- hotel/hotel · main · 分数 28 · 青羊区
+- 高德：未查询
+- 简介：青羊国信广场的宜必思，骡马市可搭地铁1号线或4号线。 / A Qingyang ibis with Luomashi station listed for metro access.
+- 开放时间：—
+- 来源：https://all.accor.com/hotel/B8T8/index.en.shtml
+- 提醒：pl_cd_yibisi_kuanzhai_central: unknown field 'hotel_class' is dropped on import
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 宜必思成都美洲中心酒店 · ibis Chengdu American Center Hotel  `pl_cd_yibisi_meiguoling`
+- hotel/hotel · main · 分数 28 · 武侯区
+- 高德：未查询
+- 简介：多住几天的实用选择，门店有自助洗衣房。 / A Chengdu ibis with self-service laundry for a longer visit.
+- 开放时间：—
+- 来源：https://all.accor.com/hotel/A8N9/index.en.shtml
+- 提醒：pl_cd_yibisi_meiguoling: unknown field 'hotel_class' is dropped on import
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 宜必思成都武侯祠酒店 · ibis Chengdu Temple of Marquis  `pl_cd_yibisi_wuhouci`
+- hotel/hotel · main · 分数 28 · 武侯区
+- 高德：未查询
+- 简介：在武侯区住一晚，可给锦里和少陵路多留一点时间。 / A Wuhou option for visiting Jinli and dining around Shaoling Road.
+- 开放时间：—
+- 来源：https://all.accor.com/hotel/B107/index.en.shtml
+- 提醒：pl_cd_yibisi_wuhouci: unknown field 'hotel_class' is dropped on import
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 紫悦·四川名小吃（双流机场T1店） · Ziyue Sichuan Snacks (Shuangliu T1)  `pl_cd_ziyue_shuangliu`
+- food/local_cuisine · main · 分数 28 · 双流区
+- 高德：未查询
+- 简介：T1候机时想吃四川小吃，可按机场导向找。 / Look for Sichuan snacks near the T1 departure gates.
+- 开放时间：—
+- 来源：https://www.cdairport.com/en/businesss.aspx?cid=10&k=&t=175&ter=0
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 成都大悦城 · Chengdu Joy City  `pl_cd_cd_joy_city_shop`
+- shopping/mall · main · 分数 26 · 武侯区
+- 高德：未查询
+- 简介：城西南的综合商场，适合把逛店和亲子休闲放在一起。 / A southwest Chengdu mall for shopping and time with children.
+- 开放时间：—
+- 来源：https://www.grandjoy.com/detail/340.html
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 柴门荟（中海店） · Chaimen Hui  `pl_cd_chaimenhui_chengdu`
+- food/local_cuisine · main · 分数 26 · 武侯区
+- 高德：未查询
+- 简介：想在成都尝精致川菜，可考虑这家。 / Consider this restaurant for a more elaborate Sichuan meal.
+- 开放时间：—
+- 来源：https://www.chaimencanyin.com/store-information.aspx?t=12
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 成都站 · Chengdu Railway Station  `pl_cd_chengduzhan`
@@ -140,13 +416,15 @@
 - 来源：https://www.chengdu.gov.cn/gkml/uploadfiles/1607625235320909825/156242597416586444824.pdf
 - [ ] accept　[ ] reject　[ ] edit：
 
-### 成都春熙路福朋喜来登酒店 · Four Points by Sheraton Chengdu, Chunxi Road  `pl_cd_chunxilufupeng`
-- hotel/hotel · main · 分数 26 · 区未知
+### 荷花池大成市场 · Dacheng Market, Hehuachi  `pl_cd_dacheng_market_cd`
+- shopping/market · main · 分数 26 · 金牛区
 - 高德：未查询
-- 简介：可从春熙路一带开始游览。 / A hotel near the Chunxi Road shopping area.
+- 简介：从成衣档口试着挑一件，可先问是否单件零售。 / Browse clothing stalls and ask which vendors sell single pieces.
 - 开放时间：—
-- 来源：https://www.marriott.com/en-us/hotels/ctuuc-four-points-chengdu-chunxi-road/overview/
+- 来源：https://news.chengdu.cn/2026/0930/6abcc39c44deea573f294130.shtml
 - [ ] accept　[ ] reject　[ ] edit：
+
+## 第 3 批
 
 ### 大龙燚火锅（玉林店） · Da Long Yi Hotpot (Yulin)  `pl_cd_dalongyi_yulin`
 - food/local_cuisine · main · 分数 26 · 武侯区
@@ -156,28 +434,12 @@
 - 来源：https://news.chengdu.cn/2025/0927/68d72f62d8cb1a1ec027bc09.shtml
 - [ ] accept　[ ] reject　[ ] edit：
 
-### 成都东站福朋喜来登酒店 · Four Points by Sheraton Chengdu East Station  `pl_cd_dongzhanfupeng`
-- hotel/hotel · main · 分数 26 · 区未知
+### 夫妻肺片（总店） · Fuqi Feipian (Flagship)  `pl_cd_fuqifeipian_zongdian`
+- food/local_cuisine · main · 分数 26 · 锦江区
 - 高德：未查询
-- 简介：可作为成都东站附近的住宿候选。 / A hotel option near Chengdu East Railway Station.
+- 简介：可试成都传统红油凉菜，和热菜搭着点。 / Try a cold, chili-oil dish alongside a hot meal.
 - 开放时间：—
-- 来源：https://www.marriott.com/en-us/hotels/ctuep-four-points-chengdu-east-station/overview/
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 成都高新万豪万枫酒店 · Fairfield by Marriott Chengdu Hi-Tech Zone  `pl_cd_gaoxinwanfeng`
-- hotel/hotel · main · 分数 26 · 区未知
-- 高德：未查询
-- 简介：在成都高新区停留时可考虑。 / A Fairfield hotel in the Chengdu Hi-Tech Zone.
-- 开放时间：—
-- 来源：https://www.marriott.com/en-us/hotels/ctufh-fairfield-chengdu-hi-tech-zone/overview/
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 成都首座万豪酒店 · Chengdu Marriott Hotel Financial Centre  `pl_cd_gaoxinwanhao`
-- hotel/hotel · main · 分数 26 · 区未知
-- 高德：未查询
-- 简介：成都南部的一家万豪酒店。 / A Marriott hotel in southern Chengdu.
-- 开放时间：—
-- 来源：https://www.marriott.com/en-us/hotels/ctumc-chengdu-marriott-hotel-financial-centre/overview/
+- 来源：https://www.sccdysgs.com/
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 鹤鸣茶社（人民公园） · Heming Teahouse (People's Park)  `pl_cd_heming_renmin`
@@ -188,14 +450,6 @@
 - 来源：https://news.chengdu.cn/2026/0703/6a4701022e768511f6ad74a8.shtml
 - [ ] accept　[ ] reject　[ ] edit：
 
-### 成都华尔道夫酒店 · Waldorf Astoria Chengdu  `pl_cd_huaerdaofu`
-- hotel/hotel · main · 分数 26 · 区未知
-- 高德：未查询
-- 简介：在成都南部游览时可考虑这里。 / A Waldorf Astoria hotel in southern Chengdu.
-- 开放时间：—
-- 来源：https://www.hilton.com.cn/zh-cn/hotels/ctuwawa-waldorf-astoria-chengdu
-- [ ] accept　[ ] reject　[ ] edit：
-
 ### 皇城坝百年清真牛肉火锅（领地中心旗舰店） · Huangchengba Halal Beef Hotpot (Leading Center)  `pl_cd_huangchengba_lingdi`
 - food/halal · main · 分数 26 · 青羊区
 - 高德：未查询
@@ -204,38 +458,12 @@
 - 来源：https://www.cdich.cn/index.php/cms/dbxxm/3229.html
 - [ ] accept　[ ] reject　[ ] edit：
 
-## 第 2 批
-
-### 成都宽窄巷子希尔顿花园酒店 · Hilton Garden Inn Chengdu Kuanzhai Alley  `pl_cd_kuanzhaixiangzixierdun`
-- hotel/hotel · main · 分数 26 · 区未知
-- 高德：未查询
-- 简介：想逛宽窄巷子，可从这家酒店出发。 / A hotel option for exploring the Kuanzhai Alley area.
-- 开放时间：—
-- 来源：https://www.hilton.com.cn/zh-cn/hotels/ctukzgi-hilton-garden-inn-chengdu-kuanzhai-alley
-- [ ] accept　[ ] reject　[ ] edit：
-
 ### 赖汤圆（总府路店） · Lai Tangyuan (Zongfu Road)  `pl_cd_laitangyuan_zongfu`
 - food/local_cuisine · main · 分数 26 · 锦江区
 - 高德：未查询
 - 简介：逛春熙路一带，可以停下来吃一碗甜汤圆。 / Stop for sweet glutinous rice balls near Chunxi Road.
 - 开放时间：—
 - 来源：https://www.sclty.com/about.html
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 成都领地希尔顿嘉悦里酒店 · Canopy by Hilton Chengdu City Centre  `pl_cd_lingdijiayueli`
-- hotel/hotel · main · 分数 26 · 区未知
-- 高德：未查询
-- 简介：在成都中心城区安排一晚的候选。 / A Canopy hotel in central Chengdu.
-- 开放时间：—
-- 来源：https://www.hilton.com.cn/zh-cn/hotels/ctulcpy-canopy-by-hilton-chengdu-city-centre
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 成都富力丽思卡尔顿酒店 · The Ritz-Carlton, Chengdu  `pl_cd_lisi`
-- hotel/hotel · main · 分数 26 · 区未知
-- 高德：未查询
-- 简介：在成都中心城区停留时可考虑。 / A Ritz-Carlton hotel in central Chengdu.
-- 开放时间：—
-- 来源：https://www.ritzcarlton.com/en/hotels/cturz-the-ritz-carlton-chengdu/overview/
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 龙抄手（总店） · Long Chaoshou (Flagship)  `pl_cd_longchaoshou_zongdian`
@@ -254,20 +482,28 @@
 - 来源：https://www.12306.cn/mormhweb/zxdt_news/202611/t20261110_46610.html
 - [ ] accept　[ ] reject　[ ] edit：
 
-### 青城山六善酒店 · Six Senses Qing Cheng Mountain  `pl_cd_qingchengshanliushan`
-- hotel/hotel · main · 分数 26 · 都江堰市
+### 马旺子（锦江店） · Ma Wang Zi (Jinjiang)  `pl_cd_mawangzi_jinjiang`
+- food/local_cuisine · main · 分数 26 · 锦江区
 - 高德：未查询
-- 简介：可把这处度假酒店安排在青城山或都江堰行程。 / A resort for a visit to Qingcheng Mountain or Dujiangyan.
+- 简介：在锦江可安排一顿更完整的川菜正餐。 / A sit-down Sichuan meal in Jinjiang.
 - 开放时间：—
-- 来源：https://www.sixsenses.com/zh/hotels-resorts/asia-the-pacific/china/qing-cheng-mountain/
+- 来源：https://www.mawangzi.cn/
 - [ ] accept　[ ] reject　[ ] edit：
 
-### Ralph’s Bar（成都太古里） · Ralph’s Bar (Taikoo Li Chengdu)  `pl_cd_ralph_taiguli`
-- food/western · main · 分数 26 · 锦江区
+### 盘飧市 · Pansunshi  `pl_cd_pansunshi_zongdian`
+- food/local_cuisine · main · 分数 26 · 锦江区
 - 高德：未查询
-- 简介：在太古里安排小聚或简餐时，可留作一站。 / An option for a casual stop in Taikoo Li.
+- 简介：对成都传统卤味感兴趣，可以安排这里。 / Try Chengdu-style braised meats at this long-running eatery.
 - 开放时间：—
-- 来源：https://www.swireproperties.com/-/media/images/swireproperties/media/media-library/factsheets/taikoo-li-chengdu/taikoo-li-chengdu-factsheet_202510.ashx?sc_lang=zh-cn
+- 来源：https://www.sccdysgs.com/
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 青石桥海鲜市场 · Qingshiqiao Seafood Market  `pl_cd_qingshiqiao_seafood`
+- shopping/market · main · 分数 26 · 锦江区
+- 高德：未查询
+- 简介：可在锦江看成都居民怎么买水产和生鲜。 / See how locals shop for fish and other fresh goods in central Chengdu.
+- 开放时间：—
+- 来源：https://scjgj.sc.gov.cn/scsjgj/c104536/2025/9/26/bba021463f6444b2949cc4a51e5a2755/files/%E5%90%88%E6%A0%BC-2025%E5%B9%B4%E7%AC%AC16%E5%8F%B7%E9%A3%9F%E5%93%81%E6%8A%BD%E6%A3%80%E4%BF%A1%E6%81%AF.pdf
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 荣乐园（文殊院片区） · Rongleyuan (Wenshu Monastery Area)  `pl_cd_rongleyuan_wenshu`
@@ -278,16 +514,16 @@
 - 来源：https://lzhbwg.mofcom.gov.cn/edi_ecms_web_front/thb/detail/bd7e69f0ffff4fd586431e2b1792a59c
 - [ ] accept　[ ] reject　[ ] edit：
 
-### 成都太古里希尔顿花园酒店 · Hilton Garden Inn Chengdu Taikoo Li  `pl_cd_taigulixierdun`
-- hotel/hotel · main · 分数 26 · 区未知
+### 西西弗书店（水厂1946店） · Sisyphe Bookstore, Waterworks 1946  `pl_cd_sisyphe_waterworks_1946`
+- shopping/boutique · main · 分数 26 · 青羊区
 - 高德：未查询
-- 简介：可作为太古里一带游览的住宿点。 / A base for exploring the Taikoo Li area.
+- 简介：在旧水厂改造的街区逛书店，能找中文书和小礼物。 / Browse books and small gifts in the former waterworks complex.
 - 开放时间：—
-- 来源：https://www.hilton.com.cn/zh-cn/hotels/ctutlgi-hilton-garden-inn-chengdu-taikoo-li
+- 来源：https://news.chengdu.cn/2026/0923/6ab31edc44deea573f27a8a7.shtml
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 饕林（水厂1946店） · Taolin (Waterworks 1946)  `pl_cd_taolin_shuichang`
-- food/local_cuisine · main · 分数 26 · 成都城西
+- food/local_cuisine · main · 分数 26 · 青羊区
 - 高德：未查询
 - 简介：在老厂区改造的街区里，可留一餐川菜。 / A Sichuan meal in a repurposed industrial district.
 - 开放时间：—
@@ -302,20 +538,62 @@
 - 来源：https://www.swireproperties.com/-/media/images/swireproperties/media/media-library/factsheets/taikoo-li-chengdu/taikoo-li-chengdu-factsheet_202510.ashx?sc_lang=zh-cn
 - [ ] accept　[ ] reject　[ ] edit：
 
-### 成都天府广场万豪万枫酒店 · Fairfield by Marriott Chengdu Tianfu Square  `pl_cd_tianfuguangchangwanfeng`
-- hotel/hotel · main · 分数 26 · 区未知
+### 水厂1946 · Waterworks 1946  `pl_cd_waterworks_1946_shops`
+- shopping/mall · main · 分数 26 · 青羊区
 - 高德：未查询
-- 简介：可把天府广场一带作为行程起点。 / A stay near Tianfu Square.
+- 简介：逛旧水厂改造的店街，可顺路找文创、餐饮和休息处。 / Explore shops, cafés and design goods set in a former waterworks.
 - 开放时间：—
-- 来源：https://www.marriott.com/en-us/hotels/ctutf-fairfield-chengdu-tianfu-square/overview/
+- 来源：https://www2.xinhuanet.com/20261015/0c8cde63b5594fe8937d492ea2f87b74/c.html
 - [ ] accept　[ ] reject　[ ] edit：
 
-### 成都W酒店 · W Chengdu  `pl_cd_wjiudian`
-- hotel/hotel · main · 分数 26 · 区未知
+### 天府得物·耀华1938（宽窄巷子旗舰店） · Tianfu Gifts × Yaohua 1938, Kuanzhai Flagship  `pl_cd_yaohua_kuanzhai_shop`
+- shopping/time_honored_brand · main · 分数 26 · 青羊区
 - 高德：未查询
-- 简介：可作为成都高新区行程的住宿点。 / A stay in Chengdu's Hi-Tech Zone.
+- 简介：在老字号旗舰店挑成都糕点或四川竹编陶器。 / Browse Chengdu pastries and Sichuan crafts at this heritage-brand flagship.
 - 开放时间：—
-- 来源：https://www.marriott.com/en-us/hotels/ctuwh-w-chengdu/overview/
+- 来源：https://sc.people.com.cn/n2/2025/0731/c407319-41308875.html
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 宜必思成都春熙路蜀都大厦酒店 · ibis Chengdu Chunxi Road Shudu Mansion Hotel  `pl_cd_yibisi_shududasha`
+- hotel/hotel · main · 分数 26 · 锦江区
+- 高德：未查询
+- 简介：蜀都大厦门店，适合从春熙路逛到大慈寺。 / A simple base for Chunxi Road and an outing to Daci Temple.
+- 开放时间：—
+- 来源：https://all.accor.com/hotel/B255/index.en.shtml
+- 提醒：pl_cd_yibisi_shududasha: unknown field 'hotel_class' is dropped on import
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 成都银泰中心in99 · Chengdu Yintai Centre in99  `pl_cd_yintai_in99_cd`
+- shopping/mall · main · 分数 26 · 高新区
+- 高德：未查询
+- 简介：在金融城一带集中看时装和配饰，适合室内慢逛。 / An indoor Financial City stop for fashion and accessories.
+- 开放时间：—
+- 来源：https://www.china-yintai.com/zh-CN/news/detail/185
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 永乐饭店 · Yongle Restaurant  `pl_cd_yongle_fandian`
+- food/local_cuisine · main · 分数 26 · 武侯区
+- 高德：未查询
+- 简介：可用一桌家常做法认识成都川菜。 / Try a home-style Sichuan meal at this local restaurant.
+- 开放时间：—
+- 来源：https://static.cdsb.com/micropub/Articles/202509/18cd004a212ff18db689ba1051672ee2.html
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 竹记制面铺（水厂1946店） · Zhu Ji Noodle Shop (Waterworks 1946)  `pl_cd_zhujizhimian_shuichang`
+- food/local_cuisine · main · 分数 26 · 青羊区
+- 高德：未查询
+- 简介：逛改造后的街区想吃一碗面时可考虑。 / A noodle option while visiting Waterworks 1946.
+- 开放时间：—
+- 来源：https://news.chengdu.cn/2026/0923/6ab31edc44deea573f27a8a7.shtml
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 成都总府皇冠假日酒店 · Crowne Plaza Chengdu City Center  `pl_cd_zongfu_huangguan`
+- hotel/hotel · main · 分数 26 · 锦江区
+- 高德：未查询
+- 简介：总府街出门，可把春熙路和太古里放进同一天。 / A Zongfu Street base near Chunxi Road, IFS and Taikoo Li.
+- 开放时间：—
+- 来源：https://www.ihg.com/crowneplaza/hotels/us/en/chengdu/ctuch/hoteldetail
+- 提醒：pl_cd_zongfu_huangguan: unknown field 'hotel_class' is dropped on import
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 安仁古镇景区 · Anren Ancient Town Scenic Area  `pl_cd_anren`
@@ -324,14 +602,6 @@
 - 简介：在安仁看川西老街和公馆建筑 / Walk old streets past mansion compounds in Anren.
 - 开放时间：—
 - 来源：https://lyfw.mct.gov.cn/site/special/province?pkey=sichuan
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 柴门荟 · Chaimen Hui  `pl_cd_chaimenhui_chengdu`
-- food/local_cuisine · main · 分数 25 · 成都市
-- 高德：未查询
-- 简介：想在成都尝精致川菜，可考虑这家。 / Consider this restaurant for a more elaborate Sichuan meal.
-- 开放时间：—
-- 来源：https://news.chengdu.cn/2025/0902/68b6a15e3eb2f3537bf1404e.shtml?phone=yes
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 陈麻婆豆腐（总店） · Chen Mapo Tofu (Flagship)  `pl_cd_chenmapo_zongdian`
@@ -343,78 +613,22 @@
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 带江草堂 · Daijiang Caotang  `pl_cd_daijiangcaotang_cd`
-- food/local_cuisine · main · 分数 25 · 成都市
+- food/local_cuisine · main · 分数 25 · 区未知
 - 高德：未查询
 - 简介：想吃一桌川菜时，可以考虑这家成都老字号。 / A traditional Chengdu restaurant for a shared Sichuan meal.
 - 开放时间：—
 - 来源：https://www.sccdysgs.com/
 - [ ] accept　[ ] reject　[ ] edit：
 
-### 夫妻肺片（总店） · Fuqi Feipian (Flagship)  `pl_cd_fuqifeipian_zongdian`
-- food/local_cuisine · main · 分数 25 · 锦江区
-- 高德：未查询
-- 简介：可试成都传统红油凉菜，和热菜搭着点。 / Try a cold, chili-oil dish alongside a hot meal.
-- 开放时间：—
-- 来源：https://www.sccdysgs.com/
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 芙蓉凰 · Furong Huang  `pl_cd_furonghuang_chengdu`
-- food/local_cuisine · main · 分数 25 · 成都市
-- 高德：未查询
-- 简介：成都的一处精致川味正餐选择。 / An option for a more elaborate Sichuan dinner.
-- 开放时间：—
-- 来源：https://news.chengdu.cn/2025/0902/68b6a15e3eb2f3537bf1404e.shtml?phone=yes
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 耗子洞鸭店 · Haozidong Duck Restaurant  `pl_cd_haozidong_yadian`
-- food/local_cuisine · main · 分数 25 · 成都市
-- 高德：未查询
-- 简介：喜欢吃鸭，可以把成都老字号的鸭菜排在一餐里。 / Try a duck dish from a traditional Chengdu brand.
-- 开放时间：—
-- 来源：https://www.sccdysgs.com/
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 马旺子（锦江店） · Ma Wang Zi (Jinjiang)  `pl_cd_mawangzi_jinjiang`
-- food/local_cuisine · main · 分数 25 · 锦江区
-- 高德：未查询
-- 简介：在锦江可安排一顿更完整的川菜正餐。 / A sit-down Sichuan meal in Jinjiang.
-- 开放时间：—
-- 来源：https://news.chengdu.cn/2025/0902/68b6a15e3eb2f3537bf1404e.shtml?phone=yes
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 盘飧市 · Pansunshi  `pl_cd_pansunshi_zongdian`
-- food/local_cuisine · main · 分数 25 · 锦江区
-- 高德：未查询
-- 简介：对成都传统卤味感兴趣，可以安排这里。 / Try Chengdu-style braised meats at this long-running eatery.
-- 开放时间：—
-- 来源：https://www.sccdysgs.com/
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 许家菜 · Xu's Cuisine  `pl_cd_xujiacai_chengdu`
-- food/local_cuisine · main · 分数 25 · 成都市
-- 高德：未查询
-- 简介：想分食几道川菜时，可把许家菜纳入候选。 / A sit-down option for sharing Sichuan dishes.
-- 开放时间：—
-- 来源：https://news.chengdu.cn/2025/0902/68b6a15e3eb2f3537bf1404e.shtml?phone=yes
-- [ ] accept　[ ] reject　[ ] edit：
-
 ### 银锅 · Silver Pot  `pl_cd_yinguo_chengdu`
-- food/local_cuisine · main · 分数 25 · 成都市
+- food/local_cuisine · main · 分数 25 · 区未知
 - 高德：未查询
 - 简介：适合为精致川菜单独留出用餐时间。 / Allow time for a full Sichuan meal at Silver Pot.
 - 开放时间：—
-- 来源：https://news.chengdu.cn/2025/0902/68b6a15e3eb2f3537bf1404e.shtml?phone=yes
+- 来源：https://www.yintancy.cn/4
 - [ ] accept　[ ] reject　[ ] edit：
 
-## 第 3 批
-
-### 永乐饭店 · Yongle Restaurant  `pl_cd_yongle_fandian`
-- food/local_cuisine · main · 分数 25 · 成都市
-- 高德：未查询
-- 简介：可用一桌家常做法认识成都川菜。 / Try a home-style Sichuan meal at this local restaurant.
-- 开放时间：—
-- 来源：https://news.chengdu.cn/2026/0425/69ecd17b8f007a160c619def.shtml
-- [ ] accept　[ ] reject　[ ] edit：
+## 第 4 批
 
 ### 钟水饺（总店） · Zhong Shuijiao (Flagship)  `pl_cd_zhongshuijiao_zongdian`
 - food/local_cuisine · main · 分数 25 · 青羊区
@@ -456,20 +670,12 @@
 - 来源：https://news.chengdu.cn/2026/0215/6991bca7bda5fc6bcf80f2c5.shtml?phone=yes
 - [ ] accept　[ ] reject　[ ] edit：
 
-### 皇三爷火锅（双流机场T2店） · Huang Sanye Hotpot (Shuangliu T2)  `pl_cd_huangsan_shuangliu`
-- food/local_cuisine · main · 分数 21 · 双流区
+### 金荷花国际时装城 · Jinhehua International Fashion City  `pl_cd_jinhehua_fashion_cd`
+- shopping/market · main · 分数 21 · 金牛区
 - 高德：未查询
-- 简介：抵达双流后，想先吃一顿火锅可按到达大厅找。 / A hotpot option near the T2 arrivals hall.
+- 简介：喜欢逛衣服档口，可在荷花池的金荷花多对比几家。 / Compare styles at several fashion stalls in Hehuachi.
 - 开放时间：—
-- 来源：https://www.cdairport.com/en/businesss.aspx?cid=10&k=&t=175&ter=0
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 宽门（双流机场T2店） · Kuanmen (Shuangliu T2)  `pl_cd_kuanmen_shuangliu`
-- food/local_cuisine · main · 分数 21 · 双流区
-- 高德：未查询
-- 简介：候机时想找中式餐食，可按T2门店导向查找。 / A Chinese dining option in the T2 departure area.
-- 开放时间：—
-- 来源：https://www.cdairport.com/en/businesss.aspx?cid=10&k=&t=175&ter=0
+- 来源：https://news.chengdu.cn/2026/0930/6abcc39c44deea573f294130.shtml
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 老黄记手撕烤兔（玉林北街店） · Lao Huang Ji Hand-Pulled Roast Rabbit  `pl_cd_laohuangji_yulinbei`
@@ -496,14 +702,6 @@
 - 来源：https://news.chengdu.cn/2025/0927/68d72f62d8cb1a1ec027bc09.shtml
 - [ ] accept　[ ] reject　[ ] edit：
 
-### 谧寻茶室 · Mi Xun Teahouse  `pl_cd_mixun_chashi`
-- food/vegetarian · main · 分数 21 · 锦江区
-- 高德：未查询
-- 简介：走过大慈寺和太古里时，可安排一顿以植物食材为主的川味素食。 / Plan a plant-forward Sichuan meal near Daci Temple and Taikoo Li.
-- 开放时间：—
-- 来源：https://www.upperhouse.com/en/chengdu/restaurants-and-bars/mi-xun-teahouse/
-- [ ] accept　[ ] reject　[ ] edit：
-
 ### 三只耳冷锅鱼火锅（玉林南路店） · Sanzhier Fish Hotpot (South Yulin Road)  `pl_cd_sanzhier_yulinnan`
 - food/local_cuisine · main · 分数 21 · 武侯区
 - 高德：未查询
@@ -520,36 +718,36 @@
 - 来源：https://www.swireproperties.com/-/media/images/swireproperties/media/media-library/factsheets/taikoo-li-chengdu/taikoo-li-chengdu-factsheet_202510.ashx?sc_lang=zh-cn
 - [ ] accept　[ ] reject　[ ] edit：
 
-### 天府二十一城（双流机场店） · Tianfu Twenty-One Cities (Shuangliu Airport)  `pl_cd_tianfuershiyi_shuangliu`
-- food/local_cuisine · main · 分数 21 · 双流区
+### 成都SKP · Chengdu SKP  `pl_cd_skp_chengdu_shop`
+- shopping/mall · main · 分数 21 · 高新区
 - 高德：未查询
-- 简介：出发候机时可把它作为一处中餐选择。 / A Chinese meal option near the departure gates.
+- 简介：想在成都南部看国际时装和配饰，可安排交子一带这家商场。 / A south Chengdu stop for international fashion and accessories.
 - 开放时间：—
-- 来源：https://www.cdairport.com/en/businesss.aspx?cid=10&k=&t=175&ter=0
+- 来源：https://skp-beijing.com/shop?c=chengdu
 - [ ] accept　[ ] reject　[ ] edit：
 
-### 王记肥肠粉（双流机场T2店） · Wang Ji Pork Intestine Noodles (Shuangliu T2)  `pl_cd_wangji_shuangliu`
-- food/local_cuisine · main · 分数 21 · 双流区
+### 协盛隆川饼（玉林东路店） · Xieshenglong Sichuan Pastries (East Yulin Road)  `pl_cd_xieshenglong_yulindong`
+- food/local_cuisine · main · 分数 21 · 武侯区
 - 高德：未查询
-- 简介：到达双流机场后，可以吃一碗成都风味肥肠粉。 / Try a Chengdu noodle specialty on arrival at Shuangliu Airport.
+- 简介：逛玉林时可顺路带走一些川式糕饼。 / Pick up Sichuan pastries for a walk through Yulin.
 - 开放时间：—
-- 来源：https://www.cdairport.com/en/businesss.aspx?cid=10&k=&t=175&ter=0
+- 来源：https://news.chengdu.cn/2025/0927/68d72f62d8cb1a1ec027bc09.shtml
 - [ ] accept　[ ] reject　[ ] edit：
 
-### 芝乐坊餐厅（成都太古里店） · The Cheesecake Factory (Taikoo Li Chengdu)  `pl_cd_zhilefang_taiguli`
-- food/western · main · 分数 21 · 锦江区
+### 玉林二巷菜市场 · Yulin Second Lane Market  `pl_cd_yulin_erxiang_market`
+- shopping/market · main · 分数 21 · 武侯区
 - 高德：未查询
-- 简介：想找适合分食的西式主菜和甜点，可以考虑这里。 / Share Western mains and dessert at Taikoo Li.
+- 简介：买菜摊点夹在小店之间，适合步行看看玉林的日常。 / Walk past produce stalls and small shops in a lived-in Yulin lane.
 - 开放时间：—
-- 来源：https://www.swireproperties.com/-/media/images/swireproperties/media/media-library/factsheets/taikoo-li-chengdu/taikoo-li-chengdu-factsheet_202510.ashx?sc_lang=zh-cn
+- 来源：https://m.thepaper.cn/newsDetail_forward_33397055
 - [ ] accept　[ ] reject　[ ] edit：
 
-### 紫悦·四川名小吃（双流机场T1店） · Ziyue Sichuan Snacks (Shuangliu T1)  `pl_cd_ziyue_shuangliu`
-- food/local_cuisine · main · 分数 21 · 双流区
+### 运·中餐厅 · YUN Chinese Restaurant  `pl_cd_yun_gaoxin`
+- food/local_cuisine · main · 分数 21 · 高新区
 - 高德：未查询
-- 简介：T1候机时想吃四川小吃，可按机场导向找。 / Look for Sichuan snacks near the T1 departure gates.
+- 简介：偏好精致川菜时，可以考虑这处正餐选择。 / A fine-dining Sichuan option in southern Chengdu.
 - 开放时间：—
-- 来源：https://www.cdairport.com/en/businesss.aspx?cid=10&k=&t=175&ter=0
+- 来源：https://www.hilton.com.cn/CTUWAWA
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 明婷饭店 · Mingting Restaurant  `pl_cd_mingting_fandian`
@@ -608,8 +806,6 @@
 - 来源：https://www.cdjrc.com/news/722.html
 - [ ] accept　[ ] reject　[ ] edit：
 
-## 第 4 批
-
 ### 宽窄巷子 · Kuanzhai Alley  `pl_cd_kuanzhai_xiangzi`
 - attraction/street · main · 分数 18 · 青羊区
 - 高德：未查询
@@ -633,6 +829,8 @@
 - 开放时间：—
 - 来源：https://www.sctyzx.gov.cn/tzyw/202509/54318826.html
 - [ ] accept　[ ] reject　[ ] edit：
+
+## 第 5 批
 
 ### 成都市人民公园 · Chengdu People's Park  `pl_cd_renmin_gongyuan`
 - attraction/park · main · 分数 18 · 青羊区
@@ -810,8 +1008,6 @@
 - 来源：https://wwj.sc.gov.cn/scwwj/zcwjgk/2020/3/11/7f900c3044994f5186d48f4e2675ed66.shtml
 - [ ] accept　[ ] reject　[ ] edit：
 
-## 第 5 批
-
 ### 兴隆湖湿地公园 · Xinglong Lake Wetland Park  `pl_cd_xinglonghu`
 - attraction/park · main · 分数 10 · 天府新区
 - 高德：未查询
@@ -828,36 +1024,75 @@
 - 来源：https://www.jinshasitemuseum.com/info/4707
 - [ ] accept　[ ] reject　[ ] edit：
 
+### 成都宽窄巷子福朋喜来登酒店 · Four Points by Sheraton Chengdu Kuanzhai Alley  `pl_cd_kuanzhaifupeng`
+- hotel/hotel · backup · 分数 31 · 青羊区
+- 高德：未查询
+- 简介：实业街的门店，宽窄巷子站在酒店交通指南里。 / A Shiye Street hotel for exploring the old city by subway.
+- 开放时间：—
+- 来源：https://www.marriott.com/en-us/hotels/ctukm-four-points-chengdu-kuanzhai-alley/overview/
+- 提醒：pl_cd_kuanzhaifupeng: unknown field 'hotel_class' is dropped on import
+- [ ] accept　[ ] reject　[ ] edit：
+
+## 第 6 批
+
+### 成都春熙路福朋喜来登酒店 · Four Points by Sheraton Chengdu, Chunxi Road  `pl_cd_chunxilufupeng`
+- hotel/hotel · backup · 分数 29 · 锦江区
+- 高德：未查询
+- 简介：复兴街的福朋，出行可选春熙路站或市二医院站。 / A Jinjiang hotel with Chunxi Road and Second Municipal Hospital stations nearby.
+- 开放时间：—
+- 来源：https://www.marriott.com/en-us/hotels/ctuuc-four-points-chengdu-chunxi-road/overview/
+- 提醒：pl_cd_chunxilufupeng: unknown field 'hotel_class' is dropped on import
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 成都太古里希尔顿花园酒店 · Hilton Garden Inn Chengdu Taikoo Li  `pl_cd_taigulixierdun`
+- hotel/hotel · backup · 分数 29 · 成华区
+- 高德：未查询
+- 简介：成华双林路的门店，可把天府熊猫塔排在附近行程中。 / A Shuanglin Road base near the Tianfu Panda Tower.
+- 开放时间：—
+- 来源：https://www.hilton.com.cn/zh-cn/hotels/ctutlgi-hilton-garden-inn-chengdu-taikoo-li
+- 提醒：pl_cd_taigulixierdun: unknown field 'hotel_class' is dropped on import
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 成都W酒店 · W Chengdu  `pl_cd_wjiudian`
+- hotel/hotel · backup · 分数 29 · 高新区
+- 高德：未查询
+- 简介：交子大道的W，金融城站和交子大道站都可查。 / A Jiaozi Avenue option with two metro stops listed by Marriott.
+- 开放时间：—
+- 来源：https://www.marriott.com/en-us/hotels/ctuwh-w-chengdu/overview/
+- 提醒：pl_cd_wjiudian: unknown field 'hotel_class' is dropped on import
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 东郊记忆北二巷 · Eastern Suburb Memory North Lane 2  `pl_cd_east_memory_north_lane`
+- shopping/boutique · backup · 分数 28 · 成华区
+- 高德：未查询
+- 简介：在北二巷集中看四川不同地方的文创与伴手礼。 / Browse souvenirs and designs from different parts of Sichuan in North Lane 2.
+- 开放时间：—
+- 来源：https://sc.cri.cn/n/20260806/8934452a-d0d5-4fbf-b3be-706c36337acb.html
+- [ ] accept　[ ] reject　[ ] edit：
+
 ### 成都非遗博览园缇沃丽酒店 · Tivoli Chengdu at Cultural Heritage Park  `pl_cd_feiyibolanyuantiwoli`
 - hotel/hotel · backup · 分数 28 · 青羊区
 - 高德：未查询
-- 简介：在成都非遗博览园一带游览时可作为住宿点。 / A hotel for a visit to the Intangible Cultural Heritage Park.
+- 简介：非遗博览园旁的酒店，可结合成都生态绿道。 / A west Chengdu stay beside the Intangible Cultural Heritage Expo Park.
 - 开放时间：—
 - 来源：https://www.tivolihotels.com/en/tivoli-chengdu
+- 提醒：pl_cd_feiyibolanyuantiwoli: unknown field 'hotel_class' is dropped on import
 - [ ] accept　[ ] reject　[ ] edit：
 
-### 成都安仁福朋喜来登酒店 · Four Points by Sheraton Chengdu, Anren  `pl_cd_anrenfupeng`
-- hotel/hotel · backup · 分数 26 · 区未知
+### 龙湖成都驿都天街 · Longfor Chengdu Yidu Paradise Walk  `pl_cd_yidu_paradise_walk_cd`
+- shopping/mall · backup · 分数 28 · 龙泉驿区
 - 高德：未查询
-- 简介：可安排在安仁古镇行程里。 / A hotel for a visit to Anren.
+- 简介：去龙泉驿时，可按地铁出口找到这家新开的购物中心。 / A newer Longquanyi mall by Exit B of Chengdu Administration Institute station.
 - 开放时间：—
-- 来源：https://www.marriott.com/en-us/hotels/ctuaf-four-points-chengdu-anren/overview/
+- 来源：https://www.thepaper.cn/newsDetail_forward_34476104
 - [ ] accept　[ ] reject　[ ] edit：
 
-### 成都宽窄巷子福朋喜来登酒店 · Four Points by Sheraton Chengdu Kuanzhai Alley  `pl_cd_kuanzhaifupeng`
-- hotel/hotel · backup · 分数 26 · 区未知
+### 贵厨（水厂1946店） · Gui Chu (Waterworks 1946)  `pl_cd_guichu_shuichang`
+- food/local_cuisine · backup · 分数 26 · 青羊区
 - 高德：未查询
-- 简介：在宽窄巷子一带可选择福朋喜来登。 / A Four Points hotel in the Kuanzhai Alley area.
+- 简介：城西看展逛街后，可留作一处餐饮候补。 / A restaurant fallback after visiting the renovated district.
 - 开放时间：—
-- 来源：https://www.marriott.com/en-us/hotels/ctukm-four-points-chengdu-kuanzhai-alley/overview/
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 成都龙泉驿百悦希尔顿酒店 · Hilton Chengdu Longquanyi  `pl_cd_longquanyixierdun`
-- hotel/hotel · backup · 分数 26 · 龙泉驿区
-- 高德：未查询
-- 简介：龙泉驿区的一家希尔顿酒店。 / A Hilton hotel in Longquanyi.
-- 开放时间：—
-- 来源：https://www.hilton.com.cn/zh-cn/hotels/ctulohi-hilton-chengdu-longquanyi
+- 来源：https://news.chengdu.cn/2026/0923/6ab31edc44deea573f27a8a7.shtml
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### AHEM餐吧（春熙路店） · AHEM (Chunxi Road)  `pl_cd_ahem_chunxi`
@@ -876,12 +1111,12 @@
 - 来源：https://news.chengdu.cn/2025/0927/68d72f62d8cb1a1ec027bc09.shtml
 - [ ] accept　[ ] reject　[ ] edit：
 
-### 贵厨（水厂1946店） · Gui Chu (Waterworks 1946)  `pl_cd_guichu_shuichang`
-- food/local_cuisine · backup · 分数 21 · 成都城西
+### 荷花池韩国城 · Hehuachi Korea Fashion Market  `pl_cd_korea_fashion_hehuachi`
+- shopping/market · backup · 分数 21 · 金牛区
 - 高德：未查询
-- 简介：城西看展逛街后，可留作一处餐饮候补。 / A restaurant fallback after visiting the renovated district.
+- 简介：在荷花池可以把这座服装市场作为另一处挑衣地点。 / Another clothing market to explore in the Hehuachi neighborhood.
 - 开放时间：—
-- 来源：https://news.chengdu.cn/2026/0923/6ab31edc44deea573f27a8a7.shtml
+- 来源：https://news.chengdu.cn/2026/0930/6abcc39c44deea573f294130.shtml
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### PappaKOPI马来茶餐室（骡马市店） · PappaKOPI (Luomashi)  `pl_cd_pappakopi_luomashi`
@@ -892,28 +1127,12 @@
 - 来源：https://news.chengdu.cn/2025/0927/68d72f62d8cb1a1ec027bc09.shtml
 - [ ] accept　[ ] reject　[ ] edit：
 
-### 成都香格里拉 · Shangri-La Chengdu  `pl_cd_xianggelila`
-- hotel/hotel · backup · 分数 21 · 区未知
-- 高德：未查询
-- 简介：酒店邻近合江亭一带。 / A hotel in the Hejiang Pavilion area.
-- 开放时间：—
-- 来源：https://www.shangri-la.com/cn/shangrila/city/chengdu/
-- [ ] accept　[ ] reject　[ ] edit：
-
 ### 小南堂（交子商圈） · Xiao Nan Tang (Jiaozi District)  `pl_cd_xiaonantang_jiaozi`
 - food/local_cuisine · backup · 分数 21 · 高新区
 - 高德：未查询
 - 简介：逛交子商圈时可把新派川菜作为一餐候补。 / A Sichuan dining fallback around the Tianfu Twin Towers.
 - 开放时间：—
 - 来源：https://news.chengdu.cn/2026/0128/6979d009202cf21f3197675b.shtml
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 协盛隆川饼（玉林东路店） · Xieshenglong Sichuan Pastries (East Yulin Road)  `pl_cd_xieshenglong_yulindong`
-- food/local_cuisine · backup · 分数 21 · 武侯区
-- 高德：未查询
-- 简介：逛玉林时可顺路带走一些川式糕饼。 / Pick up Sichuan pastries for a walk through Yulin.
-- 开放时间：—
-- 来源：https://news.chengdu.cn/2025/0927/68d72f62d8cb1a1ec027bc09.shtml
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 雪绒花阿尔卑斯风情餐厅（东大街店） · Edelweiss (East Street)  `pl_cd_xueronghua_dongdajie`
@@ -924,20 +1143,12 @@
 - 来源：https://news.chengdu.cn/2025/0927/68d72f62d8cb1a1ec027bc09.shtml
 - [ ] accept　[ ] reject　[ ] edit：
 
-### 运·中餐厅 · YUN Chinese Restaurant  `pl_cd_yun_gaoxin`
-- food/local_cuisine · backup · 分数 21 · 高新区
+### 正山堂（成都金沙遗址路店） · Zhengshantang, Chengdu Jinsha  `pl_cd_zhengshantang_jinsha`
+- shopping/boutique · backup · 分数 21 · 青羊区
 - 高德：未查询
-- 简介：偏好精致川菜时，可以考虑这处正餐选择。 / A fine-dining Sichuan option in southern Chengdu.
+- 简介：到金沙一带可以看盒装茶叶与门店茶品。 / Browse packaged tea near Jinsha at this shop listed by the tea maker.
 - 开放时间：—
-- 来源：https://www.hilton.com.cn/CTUWAWA
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 竹记制面铺（水厂1946店） · Zhu Ji Noodle Shop (Waterworks 1946)  `pl_cd_zhujizhimian_shuichang`
-- food/local_cuisine · backup · 分数 21 · 成都城西
-- 高德：未查询
-- 简介：逛改造后的街区想吃一碗面时可考虑。 / A noodle option while visiting Waterworks 1946.
-- 开放时间：—
-- 来源：https://news.chengdu.cn/2026/0923/6ab31edc44deea573f27a8a7.shtml
+- 来源：https://lapsang.cn/Customer.Asp
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 双流老妈兔头（总店） · Shuangliu Laoma Rabbit Head (Flagship)  `pl_cd_laomatoutou_shuangliu`
@@ -946,6 +1157,46 @@
 - 简介：对四川麻辣兔头有兴趣时，可以把总店列入行程。 / Try Sichuan's spicy rabbit head at the Shuangliu flagship.
 - 开放时间：—
 - 来源：https://swt.sc.gov.cn/sccom/tzgg/2022/9/23/e5fd9c9526a44c969ac7fb104ecd4520/files/%E5%9B%9B%E5%B7%9D%E7%9C%81%E4%B9%A1%E6%9D%91%E5%90%8D%E8%8F%9C%E5%8F%8A%E4%BD%93%E9%AA%8C%E5%BA%97%E5%90%8D%E5%8D%95.pdf
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 诗婢家（宽窄巷子） · Shibijia, Kuanzhai Alley  `pl_cd_shibijia_kuanzhai_shop`
+- shopping/time_honored_brand · backup · 分数 18 · 青羊区
+- 高德：未查询
+- 简介：在老街找本地书画纸笔和小型文创。 / A place to look for brushes, paper and art gifts in the old lanes.
+- 开放时间：—
+- 来源：https://paper.people.com.cn/rmrbhwb/pc/content/202502/13/content_30056313.html
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 芝乐坊餐厅（成都太古里店） · The Cheesecake Factory (Taikoo Li Chengdu)  `pl_cd_zhilefang_taiguli`
+- food/western · backup · 分数 18 · 锦江区
+- 高德：未查询
+- 简介：想找适合分食的西式主菜和甜点，可以考虑这里。 / Share Western mains and dessert at Taikoo Li.
+- 开放时间：—
+- 来源：https://www.swireproperties.com/-/media/images/swireproperties/media/media-library/factsheets/taikoo-li-chengdu/taikoo-li-chengdu-factsheet_202510.ashx?sc_lang=zh-cn
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 芙蓉凰 · Furong Huang  `pl_cd_furonghuang_chengdu`
+- food/local_cuisine · backup · 分数 17 · 区未知
+- 高德：未查询
+- 简介：成都的一处精致川味正餐选择。 / An option for a more elaborate Sichuan dinner.
+- 开放时间：—
+- 来源：https://news.chengdu.cn/2025/0902/68b6a15e3eb2f3537bf1404e.shtml?phone=yes
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 耗子洞鸭店 · Haozidong Duck Restaurant  `pl_cd_haozidong_yadian`
+- food/local_cuisine · backup · 分数 17 · 区未知
+- 高德：未查询
+- 简介：喜欢吃鸭，可以把成都老字号的鸭菜排在一餐里。 / Try a duck dish from a traditional Chengdu brand.
+- 开放时间：—
+- 来源：https://lzhbwg.mofcom.gov.cn/edi_ecms_web_front/thb/detail/8f6b58ce9e57494ea1039872d43fee8c
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 许家菜 · Xu's Cuisine  `pl_cd_xujiacai_chengdu`
+- food/local_cuisine · backup · 分数 17 · 区未知
+- 高德：未查询
+- 简介：想分食几道川菜时，可把许家菜纳入候选。 / A sit-down option for sharing Sichuan dishes.
+- 开放时间：—
+- 来源：https://jyc.mypt.edu.cn/index/index/employdetail.html?data=MDAwMDAwMDAwMJG6n3_Ed6imi4qQtLh5eNyKqLKvsoizpsp5u9GGrZ6ujs6WZMKGcdKLoJDStXqn1ZDPqaE
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 白鹿音乐小镇 · Bailu Music Town  `pl_cd_bailu_yinyue`
@@ -988,6 +1239,8 @@
 - 来源：https://wwj.sc.gov.cn/scwwj/zcwjgk/2020/3/11/7f900c3044994f5186d48f4e2675ed66.shtml
 - [ ] accept　[ ] reject　[ ] edit：
 
+## 第 7 批
+
 ### 铁像寺水街 · Tiexiang Temple Water Street  `pl_cd_tiexiangsi_shuijie`
 - attraction/street · backup · 分数 12 · 高新区
 - 高德：未查询
@@ -1011,8 +1264,6 @@
 - 开放时间：—
 - 来源：https://wlt.sc.gov.cn/scwlt/c100297/introduce.shtml
 - [ ] accept　[ ] reject　[ ] edit：
-
-## 第 6 批
 
 ### 彭州丹景山 · Danjing Mountain  `pl_cd_danjingshan`
 - attraction/park · backup · 分数 10 · 彭州市
