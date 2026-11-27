@@ -312,12 +312,13 @@ def test_copies_are_generated_and_checked_byte_for_byte(tmp_path):
 
 
 def test_app_copy_carries_a_hotels_filter_fields_and_every_places_amap_id():
-    hotel = library_entry(C8_HOTEL, id='pl_bj_hotel_demo', rank=3)
-    text = generate.render_app([city_doc(library_entry(C1), hotel)])
+    located = lambda amap_id: {**library_entry(C1)['location'], 'amap_id': amap_id}   # noqa: E731
+    hotel = library_entry(C8_HOTEL, id='pl_bj_hotel_demo', rank=3, location=located('B0HOTEL'))
+    text = generate.render_app([city_doc(library_entry(C1, location=located('B0GUGONG')), hotel)])
     places = {p['id']: p for p in json.loads(text)['places']}
     stay = places['pl_bj_hotel_demo']
     assert (stay['price_band'], stay['star'], stay['accepts_foreigners']) == ('>2000', 5, True)
-    assert stay['amap_id'] == 'B000A8UIN8' and places['pl_bj_gugong']['amap_id'] == 'B000A8UIN8'
+    assert stay['amap_id'] == 'B0HOTEL' and places['pl_bj_gugong']['amap_id'] == 'B0GUGONG'
     sight = places['pl_bj_gugong']                                   # not a hotel: the three fields are null
     assert (sight['price_band'], sight['star'], sight['accepts_foreigners']) == (None, None, None)
     assert list(stay) == list(generate.APP_KEYS) == list(sight)

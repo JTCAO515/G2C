@@ -20,11 +20,6 @@ struct LioPlace: Equatable, Identifiable, Sendable {
         case notNeeded = "none"
     }
 
-    /// A hotel's nightly price band, as the library writes it (`price_band`).
-    enum PriceBand: String, Sendable {
-        case under500 = "<500", from500 = "500-1000", from1000 = "1000-2000", over2000 = ">2000"
-    }
-
     struct Ticket: Equatable, Sendable {
         let booking: BookingRequirement?
         let passportRequired: Bool?
@@ -63,14 +58,6 @@ struct LioPlace: Equatable, Identifiable, Sendable {
     let nearestMetro: Metro?
     /// The checked GCJ-02 coordinate, when the library has one.
     let point: LioItinerary.Point?
-    /// The Amap POI id (`location.amap_id` of a library entry, `amap_id` of the slim copy), to intersect with
-    /// Amap results; nil when the library has none (an address-only or hand-placed entry).
-    let amapID: String?
-    /// Hotels only (nil for every other category): the price band, the star rating 1...5 and whether the hotel
-    /// takes foreign guests. "Stay" filters on these.
-    let priceBand: PriceBand?
-    let star: Int?
-    let acceptsForeigners: Bool?
     let introShortZH: String?
     let introShortEN: String?
     let introLongZH: String?
@@ -157,10 +144,6 @@ extension LioPlace: Decodable {
         districtZH = text("district_zh")
         nearestMetro = root.value(MetroWire.self, "nearest_metro")?.metro
         point = Self.point(root)
-        amapID = Self.amapID(root)
-        priceBand = text("price_band").flatMap(PriceBand.init(rawValue:))
-        star = root.value(Int.self, "star").flatMap { (1...5).contains($0) ? $0 : nil }
-        acceptsForeigners = root.value(Bool.self, "accepts_foreigners")
         introShortZH = text("intro_short_zh")
         introShortEN = text("intro_short_en")
         introLongZH = text("intro_long_zh")
@@ -208,17 +191,6 @@ extension LioPlace: Decodable {
               (-90...90).contains(latitude), (-180...180).contains(longitude),
               !(latitude == 0 && longitude == 0) else { return nil }
         return LioItinerary.Point(latitude: latitude, longitude: longitude)
-    }
-
-    /// `location.amap_id` of a library entry or the dev pack, else `amap_id` of the slim copy.
-    private static func amapID(_ root: KeyedDecodingContainer<Key>) -> String? {
-        struct Location: Decodable {
-            let amapID: String?
-            init(from decoder: Decoder) throws {
-                amapID = try decoder.container(keyedBy: Key.self).value(String.self, "amap_id")
-            }
-        }
-        return clean(root.value(Location.self, "location")?.amapID) ?? clean(root.value(String.self, "amap_id"))
     }
 
     private struct MetroWire: Decodable {
