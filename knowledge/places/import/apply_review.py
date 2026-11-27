@@ -89,9 +89,17 @@ def apply(city, decisions, candidates_doc, library_path, reviewer, today, allow_
         in_library = ident in places
         if decision == 'accept' and in_library and not allow_replace:
             problems.append(f'{ident}: already in the library (reviewed {places[ident]["review"]["reviewed_on"]} by {places[ident]["review"]["reviewer"]}); '
-                            'run with --replace to overwrite it')
+                            '--replace overwrites it with this review. If an earlier run was cut off after writing the library, '
+                            "do not replace: set this candidate's status to accepted in the candidate file instead")
             continue
-        if cand['status'] != 'pending' and not (decision == 'accept' and in_library and allow_replace):
+        if decision == 'edit' and in_library:
+            problems.append(f'{ident}: it is in the library; edit the library file, not the candidate')
+            continue
+        replacing = decision == 'accept' and in_library and allow_replace
+        if replacing and cand['status'] != 'accepted':
+            problems.append(f'{ident}: --replace only re-reviews an entry whose candidate is accepted (this one is {cand["status"]})')
+            continue
+        if cand['status'] != 'pending' and not replacing:
             problems.append(f'{ident}: the candidate is {cand["status"]}, not pending; only a pending candidate can be decided on '
                             '(put it back to pending in the candidate file if you changed your mind)')
             continue
@@ -108,6 +116,8 @@ def apply(city, decisions, candidates_doc, library_path, reviewer, today, allow_
                 accepted[ident] = library_entry(cand, rank, reviewer, today, note)
             except placelib.Invalid as error:
                 problems.append(str(error))
+            except (KeyError, TypeError) as error:
+                problems.append(f'{ident}: the candidate record is malformed (missing or wrong {error})')
     replaced = [ident for ident in accepted if ident in places]
     places.update(accepted)
     library = {'version': placelib.VERSION, 'city': city, 'places': sorted(places.values(), key=lambda p: p['id'])}
@@ -152,8 +162,11 @@ def main(argv=None):
         decisions = read_decisions(table)
         doc = json.loads(cand_path.read_text(encoding='utf-8'))
         library, doc, edits, problems, replaced = apply(args.city, decisions, doc, library_path, args.reviewer, args.on, args.replace)
-    except (placelib.Invalid, OSError, ValueError, KeyError, TypeError) as error:
+    except (placelib.Invalid, OSError, ValueError) as error:
         print(f'FAIL: {error}', file=sys.stderr)
+        return 1
+    except (KeyError, TypeError) as error:
+        print(f'FAIL: {cand_path.name} is not a candidate file this script can read (missing or wrong {error})', file=sys.stderr)
         return 1
     for problem in problems:
         print(f'FAIL: {problem}', file=sys.stderr)

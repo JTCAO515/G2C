@@ -167,4 +167,30 @@ def test_a_renamed_header_or_a_broken_candidate_file_is_a_clean_failure(tmp_path
     del doc['candidates'][0]['location']
     (out2 / 'beijing.cand.json').write_text(json.dumps(doc), encoding='utf-8')
     (tmp_path / 'lib').mkdir(exist_ok=True)
-    assert run(tmp_path, out2, review2) == 1 and 'FAIL' in capsys.readouterr().err
+    assert run(tmp_path, out2, review2) == 1
+    message = capsys.readouterr().err
+    assert 'pl_bj_gugong' in message and 'malformed' in message
+    del doc['candidates']
+    (out2 / 'beijing.cand.json').write_text(json.dumps(doc), encoding='utf-8')
+    assert run(tmp_path, out2, review2) == 1 and 'beijing.cand.json' in capsys.readouterr().err
+
+
+def test_replace_only_re_reviews_an_accepted_candidate_and_an_edit_never_touches_the_library(tmp_path, capsys):
+    out, review = imported(tmp_path, [C1, second()])
+    (tmp_path / 'lib').mkdir()
+    fill(review, {'pl_bj_gugong': ('accept', 1, None), 'pl_bj_tiantan': ('reject', '', '不要')})
+    assert run(tmp_path, out, review) == 0
+    capsys.readouterr()
+    fill(review, {'pl_bj_gugong': ('edit', '', '改一下')})
+    assert run(tmp_path, out, review, '--replace') == 1 and 'edit the library file' in capsys.readouterr().err
+    # a cut-off run: the library has the entry but the candidate still says pending -> the message says what to do
+    doc = json.loads((out / 'beijing.cand.json').read_text(encoding='utf-8'))
+    next(c for c in doc['candidates'] if c['id'] == 'pl_bj_gugong')['status'] = 'pending'
+    (out / 'beijing.cand.json').write_text(json.dumps(doc), encoding='utf-8')
+    fill(review, {'pl_bj_gugong': ('accept', 1, None)})
+    assert run(tmp_path, out, review) == 1 and 'set this candidate' in capsys.readouterr().err
+    # --replace on a rejected candidate whose id is in the library is refused too
+    doc = json.loads((out / 'beijing.cand.json').read_text(encoding='utf-8'))
+    next(c for c in doc['candidates'] if c['id'] == 'pl_bj_gugong')['status'] = 'rejected'
+    (out / 'beijing.cand.json').write_text(json.dumps(doc), encoding='utf-8')
+    assert run(tmp_path, out, review, '--replace') == 1 and 'only re-reviews' in capsys.readouterr().err
