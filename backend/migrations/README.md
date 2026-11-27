@@ -59,6 +59,7 @@ refuses any file whose bytes differ from the manifest.
 | 58 | service_ops_console | `backend/migrations/0058_service_ops_console.sql` (operations console role `cj_ops_console`: SELECT service request tables only, note-clear-only UPDATE, append-only staff audit with erasure de-link; login used only by the ops API path; #1771) |
 | 59 | lio_chip_ticket | `backend/migrations/0059_lio_chip_ticket.sql` (one-time tap-to-ask tickets for Lio answers, RLS by message scope, INSERT/redeem-only; the daily question count skips the receipt a ticket was spent for in the same transaction; 20 free per Beijing day, one per answer, three levels; #1727) |
 | 60 | lio_memory_consent | `backend/migrations/0060_lio_memory_consent.sql` (append-only per-account record of consent to Lio memory suggestions, RLS by message scope, SELECT/INSERT only, ordered by trigger; #1970) |
+| 61 | trip_autosave | `backend/migrations/0061_trip_autosave.sql` (new tables only: per-version item origin lio/user with a monotonic user trigger, tombstones of items a person removed, database commit time of each accepted receipt with an autosave flag, the withdrawal mark of a Trip whose creating autosave was undone (ADR-0012 revision 1); RLS by Trip scope, SELECT/INSERT only, UPDATE/TRUNCATE refused, account cleanup deletes; #1994, ADR-0012) |
 
 Domain SQL stays in each domain directory so tests and the chain use the same bytes.
 Changing a registered file requires updating its manifest sha256 in the same PR; once a

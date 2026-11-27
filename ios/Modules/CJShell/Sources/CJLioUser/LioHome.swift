@@ -339,6 +339,7 @@ public struct LioHome<MenuContent: View>: View {
                 // Roadbooks (Tools) read the account's saved plans and keep copies in its folder.
                 .environment(\.lioSavedPlans, savedPlans.available ? savedPlans : nil)
                 .environment(\.lioRoadbookDirectory, roadbookDirectory)
+                .environment(\.lioAddPlaceToTrip, toolsPlaceAdder)
         } me: {
             LioMeView(language: language,
                       memory: savedMemory.map { AnyView($0.environment(\.lioMemorySuggestions, memorySuggestions)) },
@@ -1537,12 +1538,14 @@ public struct LioHome<MenuContent: View>: View {
     /// "Add to trip" on a place card: the trip canvas's "Want to go" list of the current plan, only when the canvas
     /// is on in this build (`G2CTripCanvasEnabled`) and the phone has a trip folder.
     private var placeAdder: (@MainActor @Sendable (LioPlace) -> LioPlaceTripAdd)? {
-        guard LioTripCanvasFeature.enabledInBuild, let store = LioTripCanvasStore(tripHome: tripHomeStore) else { return nil }
-        let plans = savedPlans.plans
-        return { place in
-            let today = LioTripDay(date: Date(), timeZone: LioTripChecklist.beijing)
-            return store.addWish(place, plan: LioTripChecklist.currentPlan(profile: nil, plans: plans, today: today))
-        }
+        LioPlaceTripAdd.adder(canvasOn: LioTripCanvasFeature.enabledInBuild, store: LioTripCanvasStore(tripHome: tripHomeStore),
+                              plans: savedPlans.plans)
+    }
+
+    /// #2004, #2005: "Add to trip" in Stay and Explore, the same add as the place card's.
+    private var toolsPlaceAdder: (@MainActor (LioPlace) -> Bool)? {
+        LioPlaceTripAdd.toolAdder(canvasOn: LioTripCanvasFeature.enabledInBuild, store: LioTripCanvasStore(tripHome: tripHomeStore),
+                                  plans: savedPlans.plans)
     }
 
     /// The tools a card or a button can open from the chat: the router must show the Tools tab, and this build must show

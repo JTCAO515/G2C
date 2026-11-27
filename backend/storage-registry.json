@@ -1,5 +1,5 @@
 {
-  "version": "1.29.0",
+  "version": "1.30.0",
   "stores": [
     {
       "id": "business",
@@ -153,7 +153,11 @@
             "cj_trip_needs_plan_context",
             "cj_trip_scoped_basis",
             "cj_trip_scoped_action",
-            "cj_trip_scoped_result"
+            "cj_trip_scoped_result",
+            "cj_trip_item_origin",
+            "cj_trip_item_tombstone",
+            "cj_trip_commit_time",
+            "cj_trip_withdrawal"
           ],
           "source": "backend/trip/sql/candidate.sql@5fd115fc97e542bc8776a445d8245fd272000e56",
           "status": "provided/local_runtime_only; production_not_provisioned",
@@ -161,7 +165,8 @@
           "sensitive_fields": [
             "exact private itinerary/proposal content and evidence references",
             "scope/trip/proposal/action identifiers, basis/version/expiry/status and scoped candidate digest",
-            "canonical original action bytes including confirmation_ref and historical receipt"
+            "canonical original action bytes including confirmation_ref and historical receipt",
+            "cj_trip_item_origin / cj_trip_item_tombstone / cj_trip_commit_time / cj_trip_withdrawal (#1994, migration 0061, ADR-0012 and revision 1): per committed version the item ids and whether Lio or the person wrote each one; item id and Gaode place id of items the person removed; database time of each accepted commit receipt and whether it was an automatic Lio save; Trip id, version, undo action id and database time of a Trip whose creating automatic save the person undid (withdrawn: kept read-only, not listed). Computed by the server in the sole commit transaction, append-only (SELECT/INSERT runtime grant, UPDATE/TRUNCATE refused by trigger); erased with the account by the existing business/trip-authoritative account hook (cj_local_cleanup, purpose account); no item text or content is copied"
           ],
           "retention": "Until explicit user deletion/account deletion; no automatic TTL",
           "cleanup_hook": "cj_memory_withdrawal.item_cleanup.erasure_hooks: account retains existing exact account hook; memory purpose uses original intent + canonical Trip lock, clears owned derived scoped results and nonaccepted proposals/drafts, preserves accepted formal Trip. M30 has no item FK: explicitly owned_trip_derived_scope, never precise item-match claim.",

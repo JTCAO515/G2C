@@ -606,6 +606,8 @@ class NeedsActionChecks(unittest.TestCase):
 
     def test_lio_travel_message_saves_one_replacement_and_can_undo_it(self):
         from copy import deepcopy
+        import psycopg
+        from cj_trip.domain import Denied
         from datetime import datetime, timezone
         from hashlib import sha256
         from cj_api.local_needs import protected_reader
@@ -696,6 +698,20 @@ class NeedsActionChecks(unittest.TestCase):
         repository.needs_edits=NeedsEdits(CurrentNeedsSource(db,checker,token,protected_reader(db,checker)))
         action=Undo.parse(packed(dict(version='TRIP-lio-undo.1',action_id='undo-lio-edit',
             trip_id=original.trip_id,expected_version=2,original_hash=sha256(edited.content).hexdigest())))
+        # #1994: the switch was off, so this Lio edit is no autosave and has no undo window. Forge it as
+        # an autosave committed 25 h / 1 h ago (DB clock, test-only): the shared undo layer refuses, then allows.
+        def forge(hours):
+            with psycopg.connect(**json.loads(Path(CONNINFO).read_text()),autocommit=True) as admin:
+                self.assertEqual(admin.execute('SELECT autosave FROM cj_trip_commit_time WHERE scope=%s AND action_id=%s',
+                    (repository.scope,receipt.action_id)).fetchone(),(hours!=25,))
+                admin.execute('SET session_replication_role=replica')
+                admin.execute('UPDATE cj_trip_commit_time SET autosave=true,committed_at=clock_timestamp()-make_interval(hours=>%s) '
+                              'WHERE scope=%s AND action_id=%s',(hours,repository.scope,receipt.action_id))
+        forge(25)
+        with self.assertRaisesRegex(Denied,'autosave undo window expired'):
+            repository.undo_lio(action)
+        self.assertEqual(repository.detail(original.trip_id),edited)
+        forge(1)
         self.assertEqual(repository.undo_lio(action).committed_version,3)
         restored=repository.detail(original.trip_id)
         self.assertEqual(restored.content,original.content)

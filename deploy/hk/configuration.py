@@ -60,6 +60,14 @@ QWEATHER_KEY='CJ_QWEATHER_KEY'
 VARIFLIGHT_MCP_KEY='CJ_VARIFLIGHT_MCP_KEY'
 ECB_INTERNAL_SUBJECTS='CJ_ECB_INTERNAL_SUBJECTS_JSON'
 ASSEMBLY_CLEANUP={'CJ_SUPABASE_CLEANUP_URI','CJ_BETA_CLEANUP_B64'}
+# 58.1 Lio switches (coord/58.1-flags-on.md, ADR-0012): optional keys of both api.env and worker.env so a
+# switch can be written to the process that reads it. Only the names are registered; absent means the
+# default (off). Each module validates its own value when it reads it. A rollback target must already
+# know a key before Hong Kong writes it (deploy roster rule), so these ship before any switch is set.
+LIO_SWITCHES=frozenset({
+    'CJ_LIO_PLAN_DEGRADED_SAVE','CJ_LIO_ANSWER_LAYOUT','CJ_LIO_ANSWER_LAYOUT_SUBJECTS_JSON','CJ_LIO_TASKS',
+    'CJ_LIO_ANSWER_RICH','CJ_LIO_ENTITIES','CJ_LIO_CARDS','CJ_LIO_MEMORY_CONSENT_REQUIRED','CJ_LIO_MEMORY_USED',
+    'CJ_LIO_PLAN_MEMORY','CJ_LIO_TRIP_AUTOSAVE'})
 
 
 def load_secret_environment(role,*,root=Path('/run/secrets')):
@@ -67,10 +75,10 @@ def load_secret_environment(role,*,root=Path('/run/secrets')):
     expected=SECRET_FILES[role];values={}
     for file,names in expected.items():
         optional=({TYPED_POLICY,TYPED_POLICY_GZIP,TYPED_MESSAGE_SUBJECTS,TAXI_INTERNAL_SUBJECTS,DIDI_MCP_KEY,ECB_INTERNAL_SUBJECTS,
-                   QWEATHER_KEY,VARIFLIGHT_MCP_KEY}|ASSEMBLY_CLEANUP if role=='api' and file=='api' else
+                   QWEATHER_KEY,VARIFLIGHT_MCP_KEY}|ASSEMBLY_CLEANUP|LIO_SWITCHES if role=='api' and file=='api' else
                   {MEMORY_RUN_POLICY,MEMORY_RUN_POLICY_GZIP,MODEL_STREAM_SUBJECT,ASSEMBLY_RUN_CREDENTIAL_SUBJECTS,ASSEMBLY_MODEL_STREAM_SUBJECTS,
                    ASSEMBLY_PROBE_MESSAGE,'CJ_BETA_CONFIRMATION_B64',TRANSLATION_INTERNAL_SUBJECTS,
-                   NEARBY_INTERNAL_SUBJECTS,HOTEL_INTERNAL_SUBJECTS,TRANSIT_INTERNAL_SUBJECTS,ROADBOOK_INTERNAL_SUBJECTS,METRO_NEARBY_INTERNAL_SUBJECTS,MENU_INTERNAL_SUBJECTS,TRANSLATION_TTS_ENABLED,TRANSLATION_IMAGE_LAYOUT_ENABLED}
+                   NEARBY_INTERNAL_SUBJECTS,HOTEL_INTERNAL_SUBJECTS,TRANSIT_INTERNAL_SUBJECTS,ROADBOOK_INTERNAL_SUBJECTS,METRO_NEARBY_INTERNAL_SUBJECTS,MENU_INTERNAL_SUBJECTS,TRANSLATION_TTS_ENABLED,TRANSLATION_IMAGE_LAYOUT_ENABLED}|LIO_SWITCHES
                   if role=='worker' and file=='worker' else set())
         allowed=names|optional
         if any(name in os.environ for name in allowed):raise ValueError('persistent_container_secret_environment_refused')
@@ -351,6 +359,11 @@ class Runtime:
                 candidates=lio_candidates(database,boundary,self.demo_subjects,self.typed_memory)
                 return LioMemoryCards(candidates.collection,candidates.current)
 
+        lio_undo_sources=None
+        if self.demo_subjects:
+            # #1994: the v4 undo routes for autosave receipts, only while CJ_LIO_TRIP_AUTOSAVE is on.
+            from cj_api.lio_trip_autosave import undo_sources
+            lio_undo_sources=undo_sources(database,self.typed_memory)
         app=create_local_app(conninfo_path=None,auth_dir=self.auth,database=database,run_context=self.context,
             confirmation_signer=signer,history_configuration=history,
             account_admission=True,needs_profile=needs_profile,message_subjects=message_subjects,
@@ -359,7 +372,8 @@ class Runtime:
             lio_dialogue_subjects=self.demo_subjects or None,lio_memory_factory=lio_memory_factory,
             lio_calendar_subjects=self.demo_subjects or None,
             lio_exploration_subjects=self.demo_subjects or None,
-            lio_profile_epoch_reader=lio_profile_epoch_reader)
+            lio_profile_epoch_reader=lio_profile_epoch_reader,
+            lio_rich_undo_sources=lio_undo_sources)
         if self.typed_memory is not None:
             from cj_memory.typed_api import register_typed_routes
             typed_memory=self.typed_memory

@@ -37,7 +37,7 @@ JT 要 58.1 的回答「和行程有关就自动进画布，可以撤销」，�
      - 用户通过手动编辑或 NEEDS 编辑（改文字、改时间、换天、拖动顺序、标为固定）动过的点，从那一版起是 `user`。
      - origin 只能从 `lio` 变成 `user`，不能反过来。数据库用触发器强制：同一个 item_id，前一版是 `user`，后一版只要它还在，就必须还是 `user`。
      - 0061 之前就有的点没有 origin 记录，一律按 `user` 处理。宁可让 Lio 少改，也不误改用户的点。
-   - **用户删除**：用户删掉的点记一条 `user` 删除记录（墓碑），键是 item_id，有高德地点 ID 的再加上 amap_id。没有 amap_id 的点只按 item_id 拦，不按名称比对，免得同名的不同地点被误拦。之后自动保存不再把同一个地点加回这一趟，Lio 只能在文字里建议；用户点了建议再加，这个点算 `user`。
+   - **用户删除**：用户删掉的点记一条 `user` 删除记录（墓碑），键是 item_id，有高德地点 ID 的再加上 amap_id。没有 amap_id 的点只按 item_id 拦，不按名称比对，免得同名的不同地点被误拦。有 amap_id 的点按地点拦：任何点（不论 item_id）都不能指向这个地点；新点只是沿用了它的 item_id（模型生成的 `item-3` 这类序号）但地点不同，不算加回（#2041 P3）。撤销不记墓碑：现有撤销入口都是精确恢复上一版（会改动固定点的撤销由 `protect_fixed` 直接拒绝）；作为防御，撤销类提交即使字节和上一版不同，也仍按撤销处理，被撤掉的 Lio 点不记墓碑，与被撤版本相同的点沿用原 origin（#2041 P2，对应决定 5「撤销不是用户动过」）。之后自动保存不再把同一个地点加回这一趟，Lio 只能在文字里建议；用户点了建议再加，这个点算 `user`。
 
 3. **Lio 能做什么。**
    - 可以：新增点；修改或删除 `origin=lio` 的点；规划类回答新建或重排「Lio 草拟」的天，但只动这一天里 `lio` 的点；只提到某个地方的回答，把它放进「想去」（具体结构由 F-2 和 T-2 定，规则一样）；路线类回答更新相邻两点之间的路段。
@@ -71,6 +71,7 @@ JT 要 58.1 的回答「和行程有关就自动进画布，可以撤销」，�
      - 撤回之后，这个对话绑定（`cj_trip_needs_current`）标成已撤回，Lio 不再往这一趟回写；之后的规划另建新的一趟。
      - 撤回不算删除用户数据。真正的删除仍然只走注销账号的清理。
      - 回执在 wire 上的形状见 `LIO-answer-rich.1`（`undo.kind = withdraw_created`，请求 `LIO-trip-undo.5`）。
+     - **T-1 的实现**（#1994 第三部分）：撤回标记是迁移 0061 里的 `cj_trip_withdrawal` 表，放在 structured.4 内容之外；撤回追加的版本 2 与版本 1 逐字节相同（basis `lio-withdraw.1`，属于撤销类，origin 照抄版本 1），和标记在同一事务写入。「已撤回」的行程只读：所有写入口（Lio 自动保存、手动编辑、NEEDS、scoped、`/v1/trip-actions`、各种撤销）都在唯一提交点 `_act_in_tx` 被拒绝，按版本冲突处理（Lio 回执读成 `not_saved`，reason `conflict`）；行程列表不再返回它，App 不显示；详情、历史版本、回执、origin、墓碑和审计照旧保留。Lio 下次保存时视同这个对话没有行程：对话的行程选择（`cj_trip_needs_current` 经 `planning_context`）把已撤回的行程读成「没有」，下一次规划另建新的一趟并把对话绑定改指向它，不按 conflict 处理。
 
 6. **审计链。**
    - 每次自动写入和撤销都留下：scope、action_id、消息（message_scope、run_id、message_id、sequence，沿用 `cj_trip_needs_basis` 和 `cj_message_receipt` 的关联）、candidate_hash、trip_id、committed_version、**提交时的数据库时间**（0061 新增，现在没有）、这一版的 origin 记录。

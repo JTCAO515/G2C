@@ -534,6 +534,9 @@ def _publish_scoped_adjustment(worker,binding,bundle,authorization,document):
     previous=worker.drafts
     worker.drafts=publisher
     try:
-        return worker._step(binding,publish,lambda receipt:'trip_proposal:'+receipt.proposal_id,draft=True)
+        from cj_agent.trip_autosave import publish as autosave_publish
+        from cj_trip.lio_history import plan_action_id
+        return autosave_publish(worker,binding,publisher.repository,plan_action_id(binding.run_id),
+            lambda:worker._step(binding,publish,lambda receipt:'trip_proposal:'+receipt.proposal_id,draft=True))
     finally:
         worker.drafts=previous

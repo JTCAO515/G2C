@@ -482,6 +482,14 @@
       "sha256": "d5324f41843585c96f59c31afa151bee60d4cc14d1b55f4a0aa9a80a5a75d89c",
       "down": "backend/migrations/down/0060_lio_memory_consent.down.sql",
       "down_sha256": "f543a8c935d2189fe28096bf5f9b64045e9346469a0425199033740fb1dac74e"
+    },
+    {
+      "version": 61,
+      "name": "trip_autosave",
+      "file": "backend/migrations/0061_trip_autosave.sql",
+      "sha256": "6ecf8b8bd3e7cbc8c2853a8d0b98f33c71ce7754f31a7c0ce0af3be2bfded89b",
+      "down": "backend/migrations/down/0061_trip_autosave.down.sql",
+      "down_sha256": "0048689d3ed0d6aa23b9f9538009acbb6eedfcd64af8ed05643d48cfa66d7a14"
     }
   ]
 }
