@@ -1,4 +1,4 @@
-# chengdu 收录审核（2026-11-27）
+# chengdu 收录审核（2026-11-28）
 
 共 154 条待审，按批次排列，每批可一天审完。决定写在 CSV 的 decision 列：accept、reject 或 edit（edit 在 note 里写要改什么）。
 
@@ -10,6 +10,7 @@
 - 简介：走武侯祠的红墙小路与三国祠院 / Follow red walls and Three Kingdoms stories at Wuhou Shrine.
 - 开放时间：—
 - 来源：https://www.wuhouci.net.cn/
+- 示意图：有（AI 生成，须标「示意图」；预览见 --preview-dir 生成的页面）
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 成都双流国际机场 · Chengdu Shuangliu International Airport  `pl_cd_ctu`
@@ -74,6 +75,7 @@
 - 简介：用成博的展品串起成都城与市井生活 / Explore Chengdu's city history and everyday life at Chengdu Museum.
 - 开放时间：周二至周四及周日09:00–17:00，16:30停止入馆。周五、周六09:00–20:30，20:00停止入馆。通常周一闭馆，法定节假日除外。
 - 来源：https://wwj.sc.gov.cn/scwwj/zcwjgk/2020/3/11/7f900c3044994f5186d48f4e2675ed66.shtml
+- 示意图：有（AI 生成，须标「示意图」；预览见 --preview-dir 生成的页面）
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 成都大熊猫繁育研究基地 · Chengdu Research Base of Giant Panda Breeding  `pl_cd_daxiongmao_jidi`
@@ -82,6 +84,7 @@
 - 简介：沿林间步道观察大熊猫 / Watch giant pandas from paths through a landscaped reserve.
 - 开放时间：11月–次年2月08:00–16:30可入园，17:30开始清园。3–10月07:30–17:00可入园，18:00开始清园。
 - 来源：https://wlt.sc.gov.cn/scwlt/c100297/introduce.shtml
+- 示意图：有（AI 生成，须标「示意图」；预览见 --preview-dir 生成的页面）
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 成都杜甫草堂博物馆 · Du Fu Thatched Cottage  `pl_cd_dufu_caotang`
@@ -90,6 +93,7 @@
 - 简介：在杜甫草堂从竹径走到诗人纪念院落 / Walk bamboo-lined paths through Du Fu Thatched Cottage.
 - 开放时间：—
 - 来源：https://www.cddfct.cn/
+- 示意图：有（AI 生成，须标「示意图」；预览见 --preview-dir 生成的页面）
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 成都水井坊博物馆 · Shuijingfang Museum  `pl_cd_shuijingfang`
@@ -98,6 +102,7 @@
 - 简介：在水井坊看酿酒作坊与出土遗迹 / See distilling history and workshop remains at Shuijingfang.
 - 开放时间：—
 - 来源：https://www.sjfmuseum.com/
+- 示意图：有（AI 生成，须标「示意图」；预览见 --preview-dir 生成的页面）
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 成都高新万豪万枫酒店 · Fairfield by Marriott Chengdu Hi-Tech Zone  `pl_cd_gaoxinwanfeng`
@@ -106,7 +111,22 @@
 - 简介：吉龙路的万枫，陆肖站可换乘地铁6号线。 / A southern Chengdu hotel with Luxiao on Line 6 listed for transport.
 - 开放时间：—
 - 来源：https://www.marriott.com/en-us/hotels/ctufh-fairfield-chengdu-hi-tech-zone/overview/
-- 提醒：pl_cd_gaoxinwanfeng: unknown field 'hotel_class' is dropped on import
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 成都首座万豪酒店 · Chengdu Marriott Hotel Financial Centre  `pl_cd_gaoxinwanhao`
+- hotel/hotel · main · 分数 31 · 高新区
+- 高德：未查询
+- 简介：天府大道北段的万豪，可从金融城站或高新站到店。 / A south Chengdu hotel with several metro approaches in the Financial City area.
+- 开放时间：—
+- 来源：https://www.marriott.com/en-us/hotels/ctumc-chengdu-marriott-hotel-financial-centre/overview/
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 鹤鸣茶社（人民公园） · Heming Teahouse (People's Park)  `pl_cd_heming_renmin`
+- food/local_cuisine · main · 分数 31 · 青羊区
+- 高德：未查询
+- 简介：在人民公园坐下来喝盖碗茶，感受成都茶馆日常。 / Take a seat for covered-bowl tea in People's Park.
+- 开放时间：09:30–21:30
+- 来源：https://news.chengdu.cn/2026/0703/6a4701022e768511f6ad74a8.shtml
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 成都领地希尔顿嘉悦里酒店 · Canopy by Hilton Chengdu City Centre  `pl_cd_lingdijiayueli`
@@ -115,7 +135,6 @@
 - 简介：天府广场片区的嘉悦里，可安排人民公园散步。 / A city-center Canopy close to People's Park.
 - 开放时间：—
 - 来源：https://www.hilton.com.cn/zh-cn/hotels/ctulcpy-canopy-by-hilton-chengdu-city-centre
-- 提醒：pl_cd_lingdijiayueli: unknown field 'hotel_class' is dropped on import
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 成都太古里 · Taikoo Li Chengdu  `pl_cd_cd_taikoo_li_retail`
@@ -126,13 +145,20 @@
 - 来源：https://www.swireproperties.com/zh-cn/portfolio/current-developments/taikoo-li-chengdu/taikoo-li-chengdu/
 - [ ] accept　[ ] reject　[ ] edit：
 
+### 成都来福士广场 · Raffles City Chengdu  `pl_cd_raffles_chengdu_retail`
+- shopping/mall · main · 分数 30 · 武侯区
+- 高德：未查询
+- 简介：在人民南路可一站看零售、书店或找个室内歇脚点。 / An indoor shopping break on Renmin South Road.
+- 开放时间：—
+- 来源：https://www.capitaland.com/en/find-a-property/global-property-listing/retail/raffles-city-chengdu.html
+- [ ] accept　[ ] reject　[ ] edit：
+
 ### 成都安仁福朋喜来登酒店 · Four Points by Sheraton Chengdu, Anren  `pl_cd_anrenfupeng`
 - hotel/hotel · main · 分数 29 · 区未知
 - 高德：未查询
 - 简介：安仁镇迎宾路的门店，适合给古镇单独留一晚。 / An overnight option on Yingbin Road in Anren.
 - 开放时间：—
 - 来源：https://www.marriott.com/en-us/hotels/ctuaf-four-points-chengdu-anren/overview/
-- 提醒：pl_cd_anrenfupeng: unknown field 'hotel_class' is dropped on import
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 成都东站福朋喜来登酒店 · Four Points by Sheraton Chengdu East Station  `pl_cd_dongzhanfupeng`
@@ -141,16 +167,6 @@
 - 简介：百日红西路门店，官网列海桐街地铁站与成都东站。 / An eastern Chengdu option with Haitong Street listed for metro access.
 - 开放时间：—
 - 来源：https://www.marriott.com/en-us/hotels/ctuep-four-points-chengdu-east-station/overview/
-- 提醒：pl_cd_dongzhanfupeng: unknown field 'hotel_class' is dropped on import
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 成都首座万豪酒店 · Chengdu Marriott Hotel Financial Centre  `pl_cd_gaoxinwanhao`
-- hotel/hotel · main · 分数 29 · 高新区
-- 高德：未查询
-- 简介：天府大道北段的万豪，可从金融城站或高新站到店。 / A south Chengdu hotel with several metro approaches in the Financial City area.
-- 开放时间：—
-- 来源：https://www.marriott.com/en-us/hotels/ctumc-chengdu-marriott-hotel-financial-centre/overview/
-- 提醒：pl_cd_gaoxinwanhao: unknown field 'hotel_class' is dropped on import
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 成都华尔道夫酒店 · Waldorf Astoria Chengdu  `pl_cd_huaerdaofu`
@@ -159,7 +175,6 @@
 - 简介：成都金融城的高层酒店，可安排双子塔一带的行程。 / A Financial City hotel near Chengdu's Twin Towers.
 - 开放时间：—
 - 来源：https://www.hilton.com.cn/zh-cn/hotels/ctuwawa-waldorf-astoria-chengdu
-- 提醒：pl_cd_huaerdaofu: unknown field 'hotel_class' is dropped on import
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 成都宽窄巷子希尔顿花园酒店 · Hilton Garden Inn Chengdu Kuanzhai Alley  `pl_cd_kuanzhaixiangzixierdun`
@@ -168,7 +183,6 @@
 - 简介：西安南路门店，从宽窄巷子一路逛到枣子巷。 / A central stay for Kuanzhai Alley and food around Zaozi Lane.
 - 开放时间：—
 - 来源：https://www.hilton.com.cn/zh-cn/hotels/ctukzgi-hilton-garden-inn-chengdu-kuanzhai-alley
-- 提醒：pl_cd_kuanzhaixiangzixierdun: unknown field 'hotel_class' is dropped on import
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 成都富力丽思卡尔顿酒店 · The Ritz-Carlton, Chengdu  `pl_cd_lisi`
@@ -177,7 +191,6 @@
 - 简介：品牌列有英语服务，到成都东站可先查接驳。 / A central Chengdu hotel with English listed and an indoor pool.
 - 开放时间：—
 - 来源：https://www.ritzcarlton.com/en/hotels/cturz-the-ritz-carlton-chengdu/overview/
-- 提醒：pl_cd_lisi: unknown field 'hotel_class' is dropped on import
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 成都龙泉驿百悦希尔顿酒店 · Hilton Chengdu Longquanyi  `pl_cd_longquanyixierdun`
@@ -186,7 +199,6 @@
 - 简介：龙泉驿金桉路的希尔顿，住客可用室内泳池。 / An east Chengdu stay in Longquanyi with an indoor pool.
 - 开放时间：—
 - 来源：https://www.hilton.com.cn/zh-cn/hotels/ctulohi-hilton-chengdu-longquanyi
-- 提醒：pl_cd_longquanyixierdun: unknown field 'hotel_class' is dropped on import
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 谧寻茶室 · Mi Xun Teahouse  `pl_cd_mixun_chashi`
@@ -197,13 +209,14 @@
 - 来源：https://www.upperhouse.com/en/chengdu/restaurants-and-bars/mi-xun-teahouse/
 - [ ] accept　[ ] reject　[ ] edit：
 
+## 第 2 批
+
 ### 青城山六善酒店 · Six Senses Qing Cheng Mountain  `pl_cd_qingchengshanliushan`
 - hotel/hotel · main · 分数 29 · 都江堰市
 - 高德：未查询
 - 简介：在青城山脚住一晚，可把都江堰熊猫谷排入周边行程。 / A Qingcheng Mountain stay for separate outings to the mountain and Panda Valley.
 - 开放时间：—
 - 来源：https://www.sixsenses.com/zh/hotels-resorts/asia-the-pacific/china/qing-cheng-mountain/
-- 提醒：pl_cd_qingchengshanliushan: unknown field 'hotel_class' is dropped on import
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### Ralph’s Bar（成都太古里） · Ralph’s Bar (Taikoo Li Chengdu)  `pl_cd_ralph_taiguli`
@@ -214,15 +227,12 @@
 - 来源：https://www.swireproperties.com/-/media/images/swireproperties/media/media-library/factsheets/taikoo-li-chengdu/taikoo-li-chengdu-factsheet_202510.ashx?sc_lang=zh-cn
 - [ ] accept　[ ] reject　[ ] edit：
 
-## 第 2 批
-
 ### 成都天府广场万豪万枫酒店 · Fairfield by Marriott Chengdu Tianfu Square  `pl_cd_tianfuguangchangwanfeng`
 - hotel/hotel · main · 分数 29 · 武侯区
 - 高德：未查询
 - 简介：人民南路三段的万枫，可从华西坝或新南门规划抵达。 / A Renmin South Road stay with two metro stops in the hotel guide.
 - 开放时间：—
 - 来源：https://www.marriott.com/en-us/hotels/ctutf-fairfield-chengdu-tianfu-square/overview/
-- 提醒：pl_cd_tianfuguangchangwanfeng: unknown field 'hotel_class' is dropped on import
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### TIVANO意大利餐厅 · TIVANO  `pl_cd_tivano_taiguli`
@@ -239,7 +249,6 @@
 - 简介：住在锦江边，把安顺廊桥和合江亭安排在一次散步里。 / A riverside stay near Anshun Bridge and Hejiang Pavilion.
 - 开放时间：—
 - 来源：https://www.shangri-la.com/cn/shangrila/city/chengdu/
-- 提醒：pl_cd_xianggelila: unknown field 'hotel_class' is dropped on import
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 成都自然博物馆 · Chengdu Natural History Museum  `pl_cd_chengdu_ziran`
@@ -248,6 +257,7 @@
 - 简介：从化石和骨架接触四川自然史 / See fossils and skeletons at the Chengdu Natural History Museum.
 - 开放时间：—
 - 来源：https://www.cdmnh.com/?id=aboutus&name=page
+- 示意图：有（AI 生成，须标「示意图」；预览见 --preview-dir 生成的页面）
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 抚琴夜市 · Fuqin Night Market  `pl_cd_fuqin_night_market`
@@ -280,6 +290,7 @@
 - 简介：沿锦里的窄巷看老式店面与灯笼 / Walk Jinli's narrow lanes past lanterns and shopfronts.
 - 开放时间：—
 - 来源：https://www.cdjinli.com/
+- 示意图：有（AI 生成，须标「示意图」；预览见 --preview-dir 生成的页面）
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 成都居舍 · Upper House Chengdu  `pl_cd_jushe`
@@ -288,7 +299,7 @@
 - 简介：笔帖式街上的院落酒店，出门便能逛大慈寺和太古里。 / A courtyard hotel tucked into Taikoo Li, next to Daci Temple.
 - 开放时间：—
 - 来源：https://www.upperhouse.com/en/chengdu/
-- 提醒：pl_cd_jushe: unknown field 'hotel_class' is dropped on import
+- 提醒：no price band: it cannot enter the library until the operator's own page gives a rate
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 宽门（双流机场T2店） · Kuanmen (Shuangliu T2)  `pl_cd_kuanmen_shuangliu`
@@ -307,20 +318,13 @@
 - 来源：https://www.itotravel.com/zh-hk/pages/store-locations
 - [ ] accept　[ ] reject　[ ] edit：
 
-### 成都来福士广场 · Raffles City Chengdu  `pl_cd_raffles_chengdu_retail`
-- shopping/mall · main · 分数 28 · 武侯区
-- 高德：未查询
-- 简介：在人民南路可一站看零售、书店或找个室内歇脚点。 / An indoor shopping break on Renmin South Road.
-- 开放时间：—
-- 来源：https://www.capitaland.com/en/find-a-property/global-property-listing/retail/raffles-city-chengdu.html
-- [ ] accept　[ ] reject　[ ] edit：
-
 ### 四川科技馆 · Sichuan Science and Technology Museum  `pl_cd_sichuan_kejiguan`
 - attraction/museum · main · 分数 28 · 青羊区
 - 高德：未查询
 - 简介：在四川科技馆安排亲子互动展览 / Choose hands-on exhibits at the Sichuan Science and Technology Museum.
 - 开放时间：—
 - 来源：https://www.scstm.com/
+- 示意图：有（AI 生成，须标「示意图」；预览见 --preview-dir 生成的页面）
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 天府二十一城（双流机场店） · Tianfu Twenty-One Cities (Shuangliu Airport)  `pl_cd_tianfuershiyi_shuangliu`
@@ -345,7 +349,7 @@
 - 简介：武侯潮音路酒店，出发可计划地铁9号线或17号线。 / A Wuhou hotel with access to Metro lines 9 and 17 listed nearby.
 - 开放时间：—
 - 来源：https://www.ihg.com/crowneplaza/hotels/us/en/chengdu/ctuza/hoteldetail
-- 提醒：pl_cd_wuhou_yujiang_huangguan: unknown field 'hotel_class' is dropped on import
+- 提醒：no price band: it cannot enter the library until the operator's own page gives a rate
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 宜必思成都火车东站酒店 · ibis Chengdu East Railway Station Hotel  `pl_cd_yibisi_dongzhan`
@@ -354,7 +358,7 @@
 - 简介：成华建材路的经济型酒店，可安排火车行程前后住宿。 / A Jiancai Road hotel for a trip involving Chengdu East Railway Station.
 - 开放时间：—
 - 来源：https://all.accor.com/hotel/B375/index.en.shtml
-- 提醒：pl_cd_yibisi_dongzhan: unknown field 'hotel_class' is dropped on import
+- 提醒：no price band: it cannot enter the library until the operator's own page gives a rate
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 宜必思成都宽窄巷子中心酒店 · ibis Chengdu China Lane Central  `pl_cd_yibisi_kuanzhai_central`
@@ -363,7 +367,7 @@
 - 简介：青羊国信广场的宜必思，骡马市可搭地铁1号线或4号线。 / A Qingyang ibis with Luomashi station listed for metro access.
 - 开放时间：—
 - 来源：https://all.accor.com/hotel/B8T8/index.en.shtml
-- 提醒：pl_cd_yibisi_kuanzhai_central: unknown field 'hotel_class' is dropped on import
+- 提醒：no price band: it cannot enter the library until the operator's own page gives a rate
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 宜必思成都美洲中心酒店 · ibis Chengdu American Center Hotel  `pl_cd_yibisi_meiguoling`
@@ -372,7 +376,7 @@
 - 简介：多住几天的实用选择，门店有自助洗衣房。 / A Chengdu ibis with self-service laundry for a longer visit.
 - 开放时间：—
 - 来源：https://all.accor.com/hotel/A8N9/index.en.shtml
-- 提醒：pl_cd_yibisi_meiguoling: unknown field 'hotel_class' is dropped on import
+- 提醒：no price band: it cannot enter the library until the operator's own page gives a rate
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 宜必思成都武侯祠酒店 · ibis Chengdu Temple of Marquis  `pl_cd_yibisi_wuhouci`
@@ -381,7 +385,7 @@
 - 简介：在武侯区住一晚，可给锦里和少陵路多留一点时间。 / A Wuhou option for visiting Jinli and dining around Shaoling Road.
 - 开放时间：—
 - 来源：https://all.accor.com/hotel/B107/index.en.shtml
-- 提醒：pl_cd_yibisi_wuhouci: unknown field 'hotel_class' is dropped on import
+- 提醒：no price band: it cannot enter the library until the operator's own page gives a rate
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 紫悦·四川名小吃（双流机场T1店） · Ziyue Sichuan Snacks (Shuangliu T1)  `pl_cd_ziyue_shuangliu`
@@ -390,6 +394,15 @@
 - 简介：T1候机时想吃四川小吃，可按机场导向找。 / Look for Sichuan snacks near the T1 departure gates.
 - 开放时间：—
 - 来源：https://www.cdairport.com/en/businesss.aspx?cid=10&k=&t=175&ter=0
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 成都总府皇冠假日酒店 · Crowne Plaza Chengdu City Center  `pl_cd_zongfu_huangguan`
+- hotel/hotel · main · 分数 28 · 锦江区
+- 高德：未查询
+- 简介：总府街出门，可把春熙路和太古里放进同一天。 / A Zongfu Street base near Chunxi Road, IFS and Taikoo Li.
+- 开放时间：—
+- 来源：https://www.ihg.com/crowneplaza/hotels/us/en/chengdu/ctuch/hoteldetail
+- 提醒：no price band: it cannot enter the library until the operator's own page gives a rate
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 成都大悦城 · Chengdu Joy City  `pl_cd_cd_joy_city_shop`
@@ -408,6 +421,8 @@
 - 来源：https://www.chaimencanyin.com/store-information.aspx?t=12
 - [ ] accept　[ ] reject　[ ] edit：
 
+## 第 3 批
+
 ### 成都站 · Chengdu Railway Station  `pl_cd_chengduzhan`
 - hub/rail · main · 分数 26 · 区未知
 - 高德：未查询
@@ -424,8 +439,6 @@
 - 来源：https://news.chengdu.cn/2026/0930/6abcc39c44deea573f294130.shtml
 - [ ] accept　[ ] reject　[ ] edit：
 
-## 第 3 批
-
 ### 大龙燚火锅（玉林店） · Da Long Yi Hotpot (Yulin)  `pl_cd_dalongyi_yulin`
 - food/local_cuisine · main · 分数 26 · 武侯区
 - 高德：未查询
@@ -440,14 +453,6 @@
 - 简介：可试成都传统红油凉菜，和热菜搭着点。 / Try a cold, chili-oil dish alongside a hot meal.
 - 开放时间：—
 - 来源：https://www.sccdysgs.com/
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 鹤鸣茶社（人民公园） · Heming Teahouse (People's Park)  `pl_cd_heming_renmin`
-- food/local_cuisine · main · 分数 26 · 青羊区
-- 高德：未查询
-- 简介：在人民公园坐下来喝盖碗茶，感受成都茶馆日常。 / Take a seat for covered-bowl tea in People's Park.
-- 开放时间：—
-- 来源：https://news.chengdu.cn/2026/0703/6a4701022e768511f6ad74a8.shtml
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 皇城坝百年清真牛肉火锅（领地中心旗舰店） · Huangchengba Halal Beef Hotpot (Leading Center)  `pl_cd_huangchengba_lingdi`
@@ -560,7 +565,7 @@
 - 简介：蜀都大厦门店，适合从春熙路逛到大慈寺。 / A simple base for Chunxi Road and an outing to Daci Temple.
 - 开放时间：—
 - 来源：https://all.accor.com/hotel/B255/index.en.shtml
-- 提醒：pl_cd_yibisi_shududasha: unknown field 'hotel_class' is dropped on import
+- 提醒：no price band: it cannot enter the library until the operator's own page gives a rate
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 成都银泰中心in99 · Chengdu Yintai Centre in99  `pl_cd_yintai_in99_cd`
@@ -587,21 +592,13 @@
 - 来源：https://news.chengdu.cn/2026/0923/6ab31edc44deea573f27a8a7.shtml
 - [ ] accept　[ ] reject　[ ] edit：
 
-### 成都总府皇冠假日酒店 · Crowne Plaza Chengdu City Center  `pl_cd_zongfu_huangguan`
-- hotel/hotel · main · 分数 26 · 锦江区
-- 高德：未查询
-- 简介：总府街出门，可把春熙路和太古里放进同一天。 / A Zongfu Street base near Chunxi Road, IFS and Taikoo Li.
-- 开放时间：—
-- 来源：https://www.ihg.com/crowneplaza/hotels/us/en/chengdu/ctuch/hoteldetail
-- 提醒：pl_cd_zongfu_huangguan: unknown field 'hotel_class' is dropped on import
-- [ ] accept　[ ] reject　[ ] edit：
-
 ### 安仁古镇景区 · Anren Ancient Town Scenic Area  `pl_cd_anren`
 - attraction/history · main · 分数 25 · 大邑县
 - 高德：未查询
 - 简介：在安仁看川西老街和公馆建筑 / Walk old streets past mansion compounds in Anren.
 - 开放时间：—
 - 来源：https://lyfw.mct.gov.cn/site/special/province?pkey=sichuan
+- 示意图：有（AI 生成，须标「示意图」；预览见 --preview-dir 生成的页面）
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 陈麻婆豆腐（总店） · Chen Mapo Tofu (Flagship)  `pl_cd_chenmapo_zongdian`
@@ -636,6 +633,14 @@
 - 简介：一份钟水饺适合当小吃，可先尝红油的甜辣味。 / Try Chengdu dumplings with sweet, spicy red chili oil.
 - 开放时间：—
 - 来源：https://www.sccdysgs.com/
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 成都SKP · Chengdu SKP  `pl_cd_skp_chengdu_shop`
+- shopping/mall · main · 分数 23 · 高新区
+- 高德：未查询
+- 简介：想在成都南部看国际时装和配饰，可安排交子一带这家商场。 / A south Chengdu stop for international fashion and accessories.
+- 开放时间：—
+- 来源：https://skp-beijing.com/shop?c=chengdu
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 必胜汉堡（高新花园城店） · Pizza Hut Burger (Gaoxin Garden City)  `pl_cd_bishenghanbao_gaoxin`
@@ -718,14 +723,6 @@
 - 来源：https://www.swireproperties.com/-/media/images/swireproperties/media/media-library/factsheets/taikoo-li-chengdu/taikoo-li-chengdu-factsheet_202510.ashx?sc_lang=zh-cn
 - [ ] accept　[ ] reject　[ ] edit：
 
-### 成都SKP · Chengdu SKP  `pl_cd_skp_chengdu_shop`
-- shopping/mall · main · 分数 21 · 高新区
-- 高德：未查询
-- 简介：想在成都南部看国际时装和配饰，可安排交子一带这家商场。 / A south Chengdu stop for international fashion and accessories.
-- 开放时间：—
-- 来源：https://skp-beijing.com/shop?c=chengdu
-- [ ] accept　[ ] reject　[ ] edit：
-
 ### 协盛隆川饼（玉林东路店） · Xieshenglong Sichuan Pastries (East Yulin Road)  `pl_cd_xieshenglong_yulindong`
 - food/local_cuisine · main · 分数 21 · 武侯区
 - 高德：未查询
@@ -750,6 +747,46 @@
 - 来源：https://www.hilton.com.cn/CTUWAWA
 - [ ] accept　[ ] reject　[ ] edit：
 
+### 成都欢乐谷 · Chengdu Happy Valley  `pl_cd_chengdu_huanlegu`
+- attraction/experience · main · 分数 20 · 金牛区
+- 高德：未查询
+- 简介：在成都欢乐谷为不同年龄选游乐项目 / Plan rides for different ages at Chengdu Happy Valley.
+- 开放时间：2026年11月16日–12月23日10:00–18:00，游乐设施和后续日期看官网当日公告。
+- 来源：https://wlt.sc.gov.cn/scwlt/c100297/introduce.shtml
+- 示意图：有（AI 生成，须标「示意图」；预览见 --preview-dir 生成的页面）
+- 提醒：ticket.price_cny: Codex could not confirm it from an official page; check by hand；ticket.booking: Codex could not confirm it from an official page; check by hand
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 成都川菜博物馆 · Sichuan Cuisine Museum  `pl_cd_chuancai_bowuguan`
+- attraction/experience · main · 分数 20 · 郫都区
+- 高德：未查询
+- 简介：从厨具和食材认识川菜的做法 / Explore the tools and flavors behind Sichuan cooking.
+- 开放时间：09:00–18:00。
+- 来源：https://wlt.sc.gov.cn/scwlt/c100297/introduce.shtml
+- 示意图：有（AI 生成，须标「示意图」；预览见 --preview-dir 生成的页面）
+- 提醒：ticket.price_cny: Codex could not confirm it from an official page; check by hand；ticket.booking: Codex could not confirm it from an official page; check by hand
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 成都海昌极地海洋世界 · Chengdu Haichang Polar Ocean Park  `pl_cd_haichang_haiyang`
+- attraction/experience · main · 分数 20 · 双流区
+- 高德：未查询
+- 简介：在海昌极地海洋世界看亲子海洋展区 / Plan an aquatic-themed family visit to Chengdu Haichang Polar Ocean Park.
+- 开放时间：常规日场：1、2、11、12月09:30–17:00；3–6月及9、10月09:30–17:30；7、8月09:00–18:45。闭园前一小时停止售检票；节假日、夜场和临时调整见当日公告。
+- 来源：https://wlt.sc.gov.cn/scwlt/c100297/introduce.shtml
+- 示意图：有（AI 生成，须标「示意图」；预览见 --preview-dir 生成的页面）
+- 提醒：ticket.price_cny: Codex could not confirm it from an official page; check by hand；ticket.booking: Codex could not confirm it from an official page; check by hand
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 建川博物馆聚落 · Jianchuan Museum Cluster  `pl_cd_jianchuan`
+- attraction/museum · main · 分数 20 · 大邑县
+- 高德：未查询
+- 简介：在建川博物馆聚落挑专题馆参观 / Choose a few themed halls at the Jianchuan Museum Cluster.
+- 开放时间：09:00–17:30，16:30停售，17:00停止入馆。
+- 来源：https://wwj.sc.gov.cn/scwwj/zcwjgk/2020/3/11/7f900c3044994f5186d48f4e2675ed66.shtml
+- 示意图：有（AI 生成，须标「示意图」；预览见 --preview-dir 生成的页面）
+- 提醒：ticket.booking: Codex could not confirm it from an official page; check by hand
+- [ ] accept　[ ] reject　[ ] edit：
+
 ### 明婷饭店 · Mingting Restaurant  `pl_cd_mingting_fandian`
 - food/local_cuisine · main · 分数 20 · 金牛区
 - 高德：未查询
@@ -772,6 +809,7 @@
 - 简介：沿春熙路走进成都中心商圈 / Walk Chunxi Road through central Chengdu's shopping district.
 - 开放时间：—
 - 来源：https://www.cdairport.com/en/traffic3.aspx?t=169
+- 示意图：有（AI 生成，须标「示意图」；预览见 --preview-dir 生成的页面）
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 大慈寺 · Daci Temple  `pl_cd_dacisi`
@@ -780,6 +818,7 @@
 - 简介：在大慈寺看老寺院与新商圈相接 / Find Daci Temple within a busy modern shopping district.
 - 开放时间：—
 - 来源：https://www.sctyzx.gov.cn/cd/202409/54308756.html
+- 示意图：有（AI 生成，须标「示意图」；预览见 --preview-dir 生成的页面）
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 都江堰景区 · Dujiangyan Irrigation System  `pl_cd_dujiangyan`
@@ -788,6 +827,7 @@
 - 简介：在都江堰看岷江如何被分流 / See how the Dujiangyan system divides the Min River.
 - 开放时间：—
 - 来源：https://www.cdairport.com/en/traffic3.aspx?t=169
+- 示意图：有（AI 生成，须标「示意图」；预览见 --preview-dir 生成的页面）
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 浣花溪公园 · Huanhuaxi Park  `pl_cd_huanhua_xi`
@@ -796,7 +836,10 @@
 - 简介：沿浣花溪用步行串起水岸与林地 / Slow down on the paths of Huanhuaxi Park.
 - 开放时间：—
 - 来源：https://www.forestry.gov.cn/c/www/lcpd/610164.jhtml
+- 示意图：有（AI 生成，须标「示意图」；预览见 --preview-dir 生成的页面）
 - [ ] accept　[ ] reject　[ ] edit：
+
+## 第 5 批
 
 ### 成都金融城双子塔 · Chengdu Financial City Twin Towers  `pl_cd_jiaozi_shuangta`
 - attraction/landmark · main · 分数 18 · 区未知
@@ -804,6 +847,7 @@
 - 简介：从公共步道看交子双塔的对称轮廓 / See the two Jiaozi towers along the financial district's main axis.
 - 开放时间：—
 - 来源：https://www.cdjrc.com/news/722.html
+- 示意图：有（AI 生成，须标「示意图」；预览见 --preview-dir 生成的页面）
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 宽窄巷子 · Kuanzhai Alley  `pl_cd_kuanzhai_xiangzi`
@@ -812,6 +856,7 @@
 - 简介：用宽窄巷子认识成都老城的院门和街巷 / Explore old lanes and courtyard entrances in Kuanzhai Alley.
 - 开放时间：—
 - 来源：https://www.cdairport.com/en/traffic3.aspx?t=169
+- 示意图：有（AI 生成，须标「示意图」；预览见 --preview-dir 生成的页面）
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 青城山前山 · Mount Qingcheng (Front Mountain)  `pl_cd_qingchengshan`
@@ -820,6 +865,7 @@
 - 简介：在青城前山沿林间台阶走道观 / Climb wooded paths and see Taoist temples on Mount Qingcheng.
 - 开放时间：—
 - 来源：https://lcj.sc.gov.cn/scslyt/c1055/2025/8/28/f7bef53fa5fc48a4b92d9bdc85b4eed2/files/%E9%9D%92%E5%9F%8E%E5%B1%B1%E2%80%94%E9%83%BD%E6%B1%9F%E5%A0%B0%E9%A3%8E%E6%99%AF%E5%90%8D%E8%83%9C%E5%8C%BA%E4%B8%AD%E9%83%A8%E7%89%87%E5%8C%BA%E8%AF%A6%E7%BB%86%E8%A7%84%E5%88%92%E8%A7%84%E5%88%92%E6%96%87%E6%9C%AC.pdf
+- 示意图：有（AI 生成，须标「示意图」；预览见 --preview-dir 生成的页面）
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 青羊宫 · Qingyang Palace  `pl_cd_qingyanggong`
@@ -828,9 +874,8 @@
 - 简介：在青羊宫用庭院和殿宇认识道教场所 / Explore Taoist temple architecture at Qingyang Palace.
 - 开放时间：—
 - 来源：https://www.sctyzx.gov.cn/tzyw/202509/54318826.html
+- 示意图：有（AI 生成，须标「示意图」；预览见 --preview-dir 生成的页面）
 - [ ] accept　[ ] reject　[ ] edit：
-
-## 第 5 批
 
 ### 成都市人民公园 · Chengdu People's Park  `pl_cd_renmin_gongyuan`
 - attraction/park · main · 分数 18 · 青羊区
@@ -838,6 +883,7 @@
 - 简介：在人民公园沿湖看茶馆与日常生活 / Walk past lakefront teahouses in Chengdu People's Park.
 - 开放时间：—
 - 来源：https://www.sctyzx.gov.cn/cd/202610/54322726.html
+- 示意图：有（AI 生成，须标「示意图」；预览见 --preview-dir 生成的页面）
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 蜀风雅韵 · Shufeng Yayun Sichuan Opera  `pl_cd_shufeng_yayun`
@@ -846,6 +892,17 @@
 - 简介：看一场演出认识川剧舞台技巧 / See Sichuan opera techniques in a theater setting.
 - 开放时间：—
 - 来源：https://cdsfyy.com/
+- 示意图：有（AI 生成，须标「示意图」；预览见 --preview-dir 生成的页面）
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 四川博物院 · Sichuan Museum  `pl_cd_sichuan_bowuyuan`
+- attraction/museum · main · 分数 18 · 青羊区
+- 高德：未查询
+- 简介：在四川博物院比较巴蜀器物与地方艺术 / Compare regional artifacts and art at the Sichuan Museum.
+- 开放时间：—
+- 来源：https://wwj.sc.gov.cn/scwwj/zcwjgk/2020/3/11/7f900c3044994f5186d48f4e2675ed66.shtml
+- 示意图：有（AI 生成，须标「示意图」；预览见 --preview-dir 生成的页面）
+- 提醒：hours_zh: Codex could not confirm it from an official page; check by hand；ticket.price_cny: Codex could not confirm it from an official page; check by hand；ticket.booking: Codex could not confirm it from an official page; check by hand
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 天府广场 · Tianfu Square  `pl_cd_tianfu_guangchang`
@@ -854,6 +911,7 @@
 - 简介：从天府广场看成都中心区的尺度 / Get oriented in central Chengdu at Tianfu Square.
 - 开放时间：—
 - 来源：https://www.cdmuseum.com/zhinan/
+- 示意图：有（AI 生成，须标「示意图」；预览见 --preview-dir 生成的页面）
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 成都市天府美术馆 · Chengdu Tianfu Art Museum  `pl_cd_tianfu_meishuguan`
@@ -862,6 +920,7 @@
 - 简介：到天府美术馆把展览与园区步行搭配 / Pair an exhibition at Tianfu Art Museum with a park walk.
 - 开放时间：—
 - 来源：https://www.cdamuseum.com/
+- 示意图：有（AI 生成，须标「示意图」；预览见 --preview-dir 生成的页面）
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 文殊院 · Wenshu Monastery  `pl_cd_wenshuyuan`
@@ -870,6 +929,17 @@
 - 简介：从文殊院街巷走进佛寺院落 / Explore the Buddhist courtyards of Wenshu Monastery.
 - 开放时间：—
 - 来源：https://www.cdairport.com/en/traffic3.aspx?t=169
+- 示意图：有（AI 生成，须标「示意图」；预览见 --preview-dir 生成的页面）
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 西岭雪山 · Xiling Snow Mountain  `pl_cd_xiling_xueshan`
+- attraction/park · main · 分数 18 · 大邑县
+- 高德：未查询
+- 简介：到西岭雪山看成都西部的高山景观 / Explore the high mountain landscape around Xiling Snow Mountain.
+- 开放时间：—
+- 来源：https://wlt.sc.gov.cn/scwlt/c100297/introduce.shtml
+- 示意图：有（AI 生成，须标「示意图」；预览见 --preview-dir 生成的页面）
+- 提醒：hours_zh: Codex could not confirm it from an official page; check by hand；ticket.price_cny: Codex could not confirm it from an official page; check by hand
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 熊猫谷 · Panda Valley  `pl_cd_xiongmaogu`
@@ -878,6 +948,7 @@
 - 简介：在都江堰的熊猫谷沿坡地看熊猫 / Observe pandas on hillside paths at Panda Valley.
 - 开放时间：—
 - 来源：https://www.panda.org.cn/yd/about/
+- 示意图：有（AI 生成，须标「示意图」；预览见 --preview-dir 生成的页面）
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 成都一号防空洞 · Chengdu No. 1 Air-Raid Shelter  `pl_cd_yihao_fangkongdong`
@@ -886,22 +957,7 @@
 - 简介：走进成都一号防空洞了解地下遗址 / Explore an underground civil-defense site in Chengdu.
 - 开放时间：—
 - 来源：https://www.mod.gov.cn/gfbw/gfdy/rmfk/16490022.html
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 成都欢乐谷 · Chengdu Happy Valley  `pl_cd_chengdu_huanlegu`
-- attraction/experience · main · 分数 12 · 金牛区
-- 高德：未查询
-- 简介：在成都欢乐谷为不同年龄选游乐项目 / Plan rides for different ages at Chengdu Happy Valley.
-- 开放时间：—
-- 来源：https://wlt.sc.gov.cn/scwlt/c100297/introduce.shtml
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 成都川菜博物馆 · Sichuan Cuisine Museum  `pl_cd_chuancai_bowuguan`
-- attraction/experience · main · 分数 12 · 郫都区
-- 高德：未查询
-- 简介：从厨具和食材认识川菜的做法 / Explore the tools and flavors behind Sichuan cooking.
-- 开放时间：—
-- 来源：https://wlt.sc.gov.cn/scwlt/c100297/introduce.shtml
+- 示意图：有（AI 生成，须标「示意图」；预览见 --preview-dir 生成的页面）
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 东郊记忆 · Eastern Suburb Memory  `pl_cd_dongjiao_jiyi`
@@ -910,6 +966,8 @@
 - 简介：在东郊记忆看工业厂房变成文化街区 / Explore cultural spaces in the old factory grounds of Eastern Suburb Memory.
 - 开放时间：—
 - 来源：https://wlt.sc.gov.cn/scwlt/c100297/introduce.shtml
+- 示意图：有（AI 生成，须标「示意图」；预览见 --preview-dir 生成的页面）
+- 提醒：hours_zh: Codex could not confirm it from an official page; check by hand；ticket.price_cny: Codex could not confirm it from an official page; check by hand；ticket.booking: Codex could not confirm it from an official page; check by hand；official_url: Codex could not confirm it from an official page; check by hand
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 灌县古城 · Guanxian Ancient City  `pl_cd_guanxian`
@@ -918,14 +976,8 @@
 - 简介：在灌县古城沿老街走到南桥一带 / Walk Guanxian's old streets toward the riverside bridge.
 - 开放时间：—
 - 来源：https://wlt.sc.gov.cn/scwlt/c100297/introduce.shtml
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 成都海昌极地海洋世界 · Chengdu Haichang Polar Ocean Park  `pl_cd_haichang_haiyang`
-- attraction/experience · main · 分数 12 · 双流区
-- 高德：未查询
-- 简介：在海昌极地海洋世界看亲子海洋展区 / Plan an aquatic-themed family visit to Chengdu Haichang Polar Ocean Park.
-- 开放时间：—
-- 来源：https://wlt.sc.gov.cn/scwlt/c100297/introduce.shtml
+- 示意图：有（AI 生成，须标「示意图」；预览见 --preview-dir 生成的页面）
+- 提醒：hours_zh: Codex could not confirm it from an official page; check by hand；ticket.price_cny: Codex could not confirm it from an official page; check by hand；ticket.booking: Codex could not confirm it from an official page; check by hand；official_url: Codex could not confirm it from an official page; check by hand
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 成都市双流区黄龙溪旅游区 · Huanglongxi Tourist Area  `pl_cd_huanglongxi`
@@ -934,14 +986,8 @@
 - 简介：沿黄龙溪古镇看河道、窄巷和老屋 / Explore the waterside lanes of Huanglongxi Ancient Town.
 - 开放时间：—
 - 来源：https://wlt.sc.gov.cn/scwlt/c100297/introduce.shtml
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 建川博物馆聚落 · Jianchuan Museum Cluster  `pl_cd_jianchuan`
-- attraction/museum · main · 分数 12 · 大邑县
-- 高德：未查询
-- 简介：在建川博物馆聚落挑专题馆参观 / Choose a few themed halls at the Jianchuan Museum Cluster.
-- 开放时间：—
-- 来源：https://wwj.sc.gov.cn/scwwj/zcwjgk/2020/3/11/7f900c3044994f5186d48f4e2675ed66.shtml
+- 示意图：有（AI 生成，须标「示意图」；预览见 --preview-dir 生成的页面）
+- 提醒：hours_zh: Codex could not confirm it from an official page; check by hand；ticket.price_cny: Codex could not confirm it from an official page; check by hand；ticket.booking: Codex could not confirm it from an official page; check by hand；official_url: Codex could not confirm it from an official page; check by hand
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 街子古镇 · Jiezi Ancient Town  `pl_cd_jiezi`
@@ -950,6 +996,8 @@
 - 简介：在街子古镇找山脚的旧街与水边 / Explore the old streets where Jiezi meets the foothills.
 - 开放时间：—
 - 来源：https://wlt.sc.gov.cn/scwlt/c100297/introduce.shtml
+- 示意图：有（AI 生成，须标「示意图」；预览见 --preview-dir 生成的页面）
+- 提醒：hours_zh: Codex could not confirm it from an official page; check by hand；ticket.price_cny: Codex could not confirm it from an official page; check by hand；ticket.booking: Codex could not confirm it from an official page; check by hand；official_url: Codex could not confirm it from an official page; check by hand
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 麓湖水城 · Luxelakes  `pl_cd_luhu`
@@ -958,6 +1006,8 @@
 - 简介：从麓湖岸边看社区建筑与水面 / Explore public waterside spaces around Luxelakes.
 - 开放时间：—
 - 来源：https://wlt.sc.gov.cn/scwlt/c100297/introduce.shtml
+- 示意图：有（AI 生成，须标「示意图」；预览见 --preview-dir 生成的页面）
+- 提醒：hours_zh: Codex could not confirm it from an official page; check by hand；ticket.price_cny: Codex could not confirm it from an official page; check by hand；ticket.booking: Codex could not confirm it from an official page; check by hand；official_url: Codex could not confirm it from an official page; check by hand
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 洛带古镇 · Luodai Ancient Town  `pl_cd_luodai`
@@ -966,6 +1016,8 @@
 - 简介：在洛带古镇用会馆了解客家文化 / Explore Hakka assembly halls in Luodai Ancient Town.
 - 开放时间：—
 - 来源：https://wlt.sc.gov.cn/scwlt/c100297/introduce.shtml
+- 示意图：有（AI 生成，须标「示意图」；预览见 --preview-dir 生成的页面）
+- 提醒：hours_zh: Codex could not confirm it from an official page; check by hand；ticket.price_cny: Codex could not confirm it from an official page; check by hand；ticket.booking: Codex could not confirm it from an official page; check by hand；official_url: Codex could not confirm it from an official page; check by hand
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 邛崃市平乐古镇 · Pingle Ancient Town  `pl_cd_pingle`
@@ -974,6 +1026,8 @@
 - 简介：在平乐古镇沿河看桥和老街 / Walk riverside lanes and bridges in Pingle Ancient Town.
 - 开放时间：—
 - 来源：https://wlt.sc.gov.cn/scwlt/c100297/introduce.shtml
+- 示意图：有（AI 生成，须标「示意图」；预览见 --preview-dir 生成的页面）
+- 提醒：hours_zh: Codex could not confirm it from an official page; check by hand；ticket.price_cny: Codex could not confirm it from an official page; check by hand；ticket.booking: Codex could not confirm it from an official page; check by hand；official_url: Codex could not confirm it from an official page; check by hand
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 成都蜀锦织绣博物馆 · Shu Brocade and Embroidery Museum  `pl_cd_shujin`
@@ -982,22 +1036,8 @@
 - 简介：在蜀锦织绣博物馆观察纹样和织法 / Look at patterns and looms at the Shu brocade museum.
 - 开放时间：—
 - 来源：https://wwj.sc.gov.cn/scwwj/zcwjgk/2020/3/11/7f900c3044994f5186d48f4e2675ed66.shtml
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 四川博物院 · Sichuan Museum  `pl_cd_sichuan_bowuyuan`
-- attraction/museum · main · 分数 12 · 青羊区
-- 高德：未查询
-- 简介：在四川博物院比较巴蜀器物与地方艺术 / Compare regional artifacts and art at the Sichuan Museum.
-- 开放时间：—
-- 来源：https://wwj.sc.gov.cn/scwwj/zcwjgk/2020/3/11/7f900c3044994f5186d48f4e2675ed66.shtml
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 西岭雪山 · Xiling Snow Mountain  `pl_cd_xiling_xueshan`
-- attraction/park · main · 分数 12 · 大邑县
-- 高德：未查询
-- 简介：到西岭雪山看成都西部的高山景观 / Explore the high mountain landscape around Xiling Snow Mountain.
-- 开放时间：—
-- 来源：https://wlt.sc.gov.cn/scwlt/c100297/introduce.shtml
+- 示意图：有（AI 生成，须标「示意图」；预览见 --preview-dir 生成的页面）
+- 提醒：hours_zh: Codex could not confirm it from an official page; check by hand；ticket.price_cny: Codex could not confirm it from an official page; check by hand；ticket.booking: Codex could not confirm it from an official page; check by hand；official_url: Codex could not confirm it from an official page; check by hand
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 成都永陵博物馆 · Yongling Museum  `pl_cd_yongling`
@@ -1006,6 +1046,8 @@
 - 简介：到永陵看前蜀王建的墓葬与雕刻 / Explore Wang Jian's tomb and stone carvings at Yongling.
 - 开放时间：—
 - 来源：https://wwj.sc.gov.cn/scwwj/zcwjgk/2020/3/11/7f900c3044994f5186d48f4e2675ed66.shtml
+- 示意图：有（AI 生成，须标「示意图」；预览见 --preview-dir 生成的页面）
+- 提醒：hours_zh: Codex could not confirm it from an official page; check by hand；ticket.price_cny: Codex could not confirm it from an official page; check by hand；ticket.booking: Codex could not confirm it from an official page; check by hand；official_url: Codex could not confirm it from an official page; check by hand
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 兴隆湖湿地公园 · Xinglong Lake Wetland Park  `pl_cd_xinglonghu`
@@ -1014,6 +1056,8 @@
 - 简介：沿兴隆湖湿地走一段开阔水岸 / Take a lakeside walk at Xinglong Lake Wetland Park.
 - 开放时间：—
 - 来源：https://wlt.sc.gov.cn/scwlt/c100297/introduce.shtml
+- 示意图：有（AI 生成，须标「示意图」；预览见 --preview-dir 生成的页面）
+- 提醒：hours_zh: Codex could not confirm it from an official page; check by hand；ticket.price_cny: Codex could not confirm it from an official page; check by hand；ticket.booking: Codex could not confirm it from an official page; check by hand；official_url: Codex could not confirm it from an official page; check by hand
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 成都金沙遗址博物馆 · Jinsha Ruins Museum  `pl_cd_jinsha_yizhi`
@@ -1030,7 +1074,6 @@
 - 简介：实业街的门店，宽窄巷子站在酒店交通指南里。 / A Shiye Street hotel for exploring the old city by subway.
 - 开放时间：—
 - 来源：https://www.marriott.com/en-us/hotels/ctukm-four-points-chengdu-kuanzhai-alley/overview/
-- 提醒：pl_cd_kuanzhaifupeng: unknown field 'hotel_class' is dropped on import
 - [ ] accept　[ ] reject　[ ] edit：
 
 ## 第 6 批
@@ -1041,7 +1084,6 @@
 - 简介：复兴街的福朋，出行可选春熙路站或市二医院站。 / A Jinjiang hotel with Chunxi Road and Second Municipal Hospital stations nearby.
 - 开放时间：—
 - 来源：https://www.marriott.com/en-us/hotels/ctuuc-four-points-chengdu-chunxi-road/overview/
-- 提醒：pl_cd_chunxilufupeng: unknown field 'hotel_class' is dropped on import
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 成都太古里希尔顿花园酒店 · Hilton Garden Inn Chengdu Taikoo Li  `pl_cd_taigulixierdun`
@@ -1050,7 +1092,6 @@
 - 简介：成华双林路的门店，可把天府熊猫塔排在附近行程中。 / A Shuanglin Road base near the Tianfu Panda Tower.
 - 开放时间：—
 - 来源：https://www.hilton.com.cn/zh-cn/hotels/ctutlgi-hilton-garden-inn-chengdu-taikoo-li
-- 提醒：pl_cd_taigulixierdun: unknown field 'hotel_class' is dropped on import
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 成都W酒店 · W Chengdu  `pl_cd_wjiudian`
@@ -1059,7 +1100,6 @@
 - 简介：交子大道的W，金融城站和交子大道站都可查。 / A Jiaozi Avenue option with two metro stops listed by Marriott.
 - 开放时间：—
 - 来源：https://www.marriott.com/en-us/hotels/ctuwh-w-chengdu/overview/
-- 提醒：pl_cd_wjiudian: unknown field 'hotel_class' is dropped on import
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 东郊记忆北二巷 · Eastern Suburb Memory North Lane 2  `pl_cd_east_memory_north_lane`
@@ -1076,7 +1116,7 @@
 - 简介：非遗博览园旁的酒店，可结合成都生态绿道。 / A west Chengdu stay beside the Intangible Cultural Heritage Expo Park.
 - 开放时间：—
 - 来源：https://www.tivolihotels.com/en/tivoli-chengdu
-- 提醒：pl_cd_feiyibolanyuantiwoli: unknown field 'hotel_class' is dropped on import
+- 提醒：no price band: it cannot enter the library until the operator's own page gives a rate
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 龙湖成都驿都天街 · Longfor Chengdu Yidu Paradise Walk  `pl_cd_yidu_paradise_walk_cd`
@@ -1159,6 +1199,16 @@
 - 来源：https://swt.sc.gov.cn/sccom/tzgg/2022/9/23/e5fd9c9526a44c969ac7fb104ecd4520/files/%E5%9B%9B%E5%B7%9D%E7%9C%81%E4%B9%A1%E6%9D%91%E5%90%8D%E8%8F%9C%E5%8F%8A%E4%BD%93%E9%AA%8C%E5%BA%97%E5%90%8D%E5%8D%95.pdf
 - [ ] accept　[ ] reject　[ ] edit：
 
+### 成都三和老爷车博物馆 · Sanhe Classic Car Museum  `pl_cd_sanhe_laoyeche`
+- attraction/museum · backup · 分数 20 · 高新区
+- 高德：未查询
+- 简介：用老汽车比较不同年代的车身设计 / Compare cars across decades at the Sanhe Classic Car Museum.
+- 开放时间：09:00–17:00，16:00停售。周一闭馆，节假日除外。
+- 来源：https://wwj.sc.gov.cn/scwwj/zcwjgk/2020/3/11/7f900c3044994f5186d48f4e2675ed66.shtml
+- 示意图：有（AI 生成，须标「示意图」；预览见 --preview-dir 生成的页面）
+- 提醒：ticket.booking: Codex could not confirm it from an official page; check by hand
+- [ ] accept　[ ] reject　[ ] edit：
+
 ### 诗婢家（宽窄巷子） · Shibijia, Kuanzhai Alley  `pl_cd_shibijia_kuanzhai_shop`
 - shopping/time_honored_brand · backup · 分数 18 · 青羊区
 - 高德：未查询
@@ -1205,6 +1255,7 @@
 - 简介：在白鹿小镇沿街看山谷里的不同建筑 / Explore the architecture of Bailu's valley settlement.
 - 开放时间：—
 - 来源：https://wlt.sc.gov.cn/scwlt/c100297/introduce.shtml
+- 提醒：hours_zh: Codex could not confirm it from an official page; check by hand；ticket.price_cny: Codex could not confirm it from an official page; check by hand；ticket.booking: Codex could not confirm it from an official page; check by hand；official_url: Codex could not confirm it from an official page; check by hand
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 宝光桂湖文化旅游区 · Baoguang Temple and Gui Lake Scenic Area  `pl_cd_baoguang_guihu`
@@ -1213,6 +1264,7 @@
 - 简介：把新都的宝光寺与桂湖园景搭配 / Pair Baoguang Temple with the gardens of Gui Lake.
 - 开放时间：—
 - 来源：https://wlt.sc.gov.cn/scwlt/c100297/introduce.shtml
+- 提醒：hours_zh: Codex could not confirm it from an official page; check by hand；ticket.price_cny: Codex could not confirm it from an official page; check by hand；ticket.booking: Codex could not confirm it from an official page; check by hand；official_url: Codex could not confirm it from an official page; check by hand
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 川西竹海 · Western Sichuan Bamboo Sea  `pl_cd_chuanxi_zhuhai`
@@ -1221,6 +1273,7 @@
 - 简介：在川西竹海沿竹林步道看峡谷 / Walk bamboo-lined routes above a gorge at Western Sichuan Bamboo Sea.
 - 开放时间：—
 - 来源：https://wlt.sc.gov.cn/scwlt/c100297/introduce.shtml
+- 提醒：hours_zh: Codex could not confirm it from an official page; check by hand；ticket.price_cny: Codex could not confirm it from an official page; check by hand；ticket.booking: Codex could not confirm it from an official page; check by hand；official_url: Codex could not confirm it from an official page; check by hand
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 国际非物质文化遗产博览园 · International Intangible Cultural Heritage Expo Park  `pl_cd_feiyi_bolanyuan`
@@ -1229,14 +1282,7 @@
 - 简介：在非遗博览园挑一项传统工艺了解 / Choose a traditional craft at Chengdu's intangible heritage park.
 - 开放时间：—
 - 来源：https://wlt.sc.gov.cn/scwlt/c100297/introduce.shtml
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 成都三和老爷车博物馆 · Sanhe Classic Car Museum  `pl_cd_sanhe_laoyeche`
-- attraction/museum · backup · 分数 12 · 高新区
-- 高德：未查询
-- 简介：用老汽车比较不同年代的车身设计 / Compare cars across decades at the Sanhe Classic Car Museum.
-- 开放时间：—
-- 来源：https://wwj.sc.gov.cn/scwwj/zcwjgk/2020/3/11/7f900c3044994f5186d48f4e2675ed66.shtml
+- 提醒：hours_zh: Codex could not confirm it from an official page; check by hand；ticket.price_cny: Codex could not confirm it from an official page; check by hand；ticket.booking: Codex could not confirm it from an official page; check by hand；official_url: Codex could not confirm it from an official page; check by hand
 - [ ] accept　[ ] reject　[ ] edit：
 
 ## 第 7 批
@@ -1247,6 +1293,7 @@
 - 简介：沿铁像寺水街看桥和临水公共空间 / Walk by bridges and waterside spaces on Tiexiang Temple Water Street.
 - 开放时间：—
 - 来源：https://wlt.sc.gov.cn/scwlt/c100297/introduce.shtml
+- 提醒：hours_zh: Codex could not confirm it from an official page; check by hand；ticket.price_cny: Codex could not confirm it from an official page; check by hand；ticket.booking: Codex could not confirm it from an official page; check by hand；official_url: Codex could not confirm it from an official page; check by hand
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 罨画池 · Yanhua Pond  `pl_cd_yanhuachi`
@@ -1255,6 +1302,7 @@
 - 简介：在罨画池找曲折园路与临水廊亭 / Circle the water and pavilions at Yanhua Pond.
 - 开放时间：—
 - 来源：https://wlt.sc.gov.cn/scwlt/c100297/introduce.shtml
+- 提醒：hours_zh: Codex could not confirm it from an official page; check by hand；ticket.price_cny: Codex could not confirm it from an official page; check by hand；ticket.booking: Codex could not confirm it from an official page; check by hand；official_url: Codex could not confirm it from an official page; check by hand
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 成都伊利乳业园旅游景区 · Chengdu Yili Dairy Visitor Site  `pl_cd_yili_ruyeyuan`
@@ -1263,6 +1311,7 @@
 - 简介：从乳制品工业展区看生产环节 / Explore how dairy products are made at the Yili visitor site.
 - 开放时间：—
 - 来源：https://wlt.sc.gov.cn/scwlt/c100297/introduce.shtml
+- 提醒：hours_zh: Codex could not confirm it from an official page; check by hand；ticket.price_cny: Codex could not confirm it from an official page; check by hand；ticket.booking: Codex could not confirm it from an official page; check by hand；official_url: Codex could not confirm it from an official page; check by hand
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 彭州丹景山 · Danjing Mountain  `pl_cd_danjingshan`
@@ -1271,4 +1320,5 @@
 - 简介：沿丹景山山路看岩壁与林间花木 / Walk through woodland and hillside gardens at Danjing Mountain.
 - 开放时间：—
 - 来源：https://wlt.sc.gov.cn/scwlt/c100297/introduce.shtml
+- 提醒：hours_zh: Codex could not confirm it from an official page; check by hand；ticket.price_cny: Codex could not confirm it from an official page; check by hand；ticket.booking: Codex could not confirm it from an official page; check by hand；official_url: Codex could not confirm it from an official page; check by hand
 - [ ] accept　[ ] reject　[ ] edit：

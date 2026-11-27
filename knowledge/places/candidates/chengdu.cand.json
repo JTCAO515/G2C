@@ -1,7 +1,7 @@
 {
   "version": "g2c-places-candidates.1",
   "city": "chengdu",
-  "generated_on": "2026-11-27",
+  "generated_on": "2026-11-28",
   "candidates": [
     {
       "id": "pl_cd_ahem_chunxi",
@@ -79,8 +79,12 @@
         "tier": "main",
         "name_zh": "安仁古镇景区",
         "name_en": "Anren Ancient Town Scenic Area",
-        "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_zh": [
+          "安仁古镇"
+        ],
+        "aliases_en": [
+          "Anren Ancient Town"
+        ],
         "address_zh": "成都市大邑县安仁镇金桂街15号",
         "address_en": null,
         "district_zh": "大邑县",
@@ -134,7 +138,21 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "安仁古镇",
+          "lang": "zh",
+          "url": "https://www.china-anren.com/show-26-465-1.html",
+          "kind": "manual"
+        },
+        {
+          "alias": "Anren Ancient Town",
+          "lang": "en",
+          "url": "https://lyfw.mct.gov.cn/site/special/province?pkey=sichuan",
+          "kind": "manual"
+        }
+      ]
     },
     {
       "id": "pl_cd_anrenfupeng",
@@ -178,6 +196,7 @@
         "intro_long_en": "Plan a separate overnight stop in Anren. The operator lists the town's bus station and has an indoor pool for time between outings.",
         "star": null,
         "price_band": "<500",
+        "hotel_class": "midscale",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -207,9 +226,7 @@
         },
         "external_used": false
       },
-      "flags": [
-        "pl_cd_anrenfupeng: unknown field 'hotel_class' is dropped on import"
-      ]
+      "flags": []
     },
     {
       "id": "pl_cd_bailu_yinyue",
@@ -276,7 +293,12 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "hours_zh: Codex could not confirm it from an official page; check by hand",
+        "ticket.price_cny: Codex could not confirm it from an official page; check by hand",
+        "ticket.booking: Codex could not confirm it from an official page; check by hand",
+        "official_url: Codex could not confirm it from an official page; check by hand"
+      ]
     },
     {
       "id": "pl_cd_baoguang_guihu",
@@ -289,7 +311,9 @@
         "tier": "backup",
         "name_zh": "宝光桂湖文化旅游区",
         "name_en": "Baoguang Temple and Gui Lake Scenic Area",
-        "aliases_zh": [],
+        "aliases_zh": [
+          "成都市宝光桂湖文化旅游区"
+        ],
         "aliases_en": [],
         "address_zh": "成都市新都区桂湖街道",
         "address_en": null,
@@ -343,7 +367,20 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "hours_zh: Codex could not confirm it from an official page; check by hand",
+        "ticket.price_cny: Codex could not confirm it from an official page; check by hand",
+        "ticket.booking: Codex could not confirm it from an official page; check by hand",
+        "official_url: Codex could not confirm it from an official page; check by hand"
+      ],
+      "alias_evidence": [
+        {
+          "alias": "成都市宝光桂湖文化旅游区",
+          "lang": "zh",
+          "url": "https://wlt.sc.gov.cn/scwlt/c100297/introduce.shtml",
+          "kind": "discovery"
+        }
+      ]
     },
     {
       "id": "pl_cd_bishenghanbao_gaoxin",
@@ -620,7 +657,8 @@
         "name_zh": "成都博物馆",
         "name_en": "Chengdu Museum",
         "aliases_zh": [
-          "成博"
+          "成博",
+          "成都市博物馆"
         ],
         "aliases_en": [],
         "address_zh": "成都市青羊区小河街1号",
@@ -678,7 +716,21 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "成博",
+          "lang": "zh",
+          "url": "https://www.cdmuseum.com/zhinan/",
+          "kind": "legacy"
+        },
+        {
+          "alias": "成都市博物馆",
+          "lang": "zh",
+          "url": "https://wwj.sc.gov.cn/scwwj/zcwjgk/2020/3/11/7f900c3044994f5186d48f4e2675ed66.shtml",
+          "kind": "discovery"
+        }
+      ]
     },
     {
       "id": "pl_cd_chengdu_huanlegu",
@@ -691,8 +743,13 @@
         "tier": "main",
         "name_zh": "成都欢乐谷",
         "name_en": "Chengdu Happy Valley",
-        "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_zh": [
+          "成都歡樂谷"
+        ],
+        "aliases_en": [
+          "Happy Valley Chengdu",
+          "Happy Valley, Chengdu"
+        ],
         "address_zh": "成都市金牛区西华大道16号",
         "address_en": null,
         "district_zh": "金牛区",
@@ -703,16 +760,18 @@
           "english_service": null,
           "evidence": []
         },
-        "official_url": null,
+        "official_url": "https://cd.happyvalley.cn/",
         "sources": [
-          "https://wlt.sc.gov.cn/scwlt/c100297/introduce.shtml"
+          "https://wlt.sc.gov.cn/scwlt/c100297/introduce.shtml",
+          "https://cd.happyvalley.cn/operation.aspx?t=26",
+          "https://cd.happyvalley.cn/index.aspx"
         ],
-        "checked_on": "2026-11-18",
+        "checked_on": "2026-11-27",
         "confidence": "low",
         "notes": "官方目录沿用既有候选记录的核对日，晋级前应重读。",
         "subcategory": "experience",
-        "hours_zh": null,
-        "hours_source": null,
+        "hours_zh": "2026年11月16日–12月23日10:00–18:00，游乐设施和后续日期看官网当日公告。",
+        "hours_source": "https://cd.happyvalley.cn/operation.aspx?t=26",
         "ticket": {
           "booking": null,
           "passport_required": null,
@@ -735,17 +794,40 @@
         "alternatives": []
       },
       "score": {
-        "total": 12,
+        "total": 20,
         "parts": {
           "foreigner": 0,
           "confidence": 4,
-          "sources": 5,
-          "complete": 3,
+          "sources": 10,
+          "complete": 6,
           "amap": 0
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "ticket.price_cny: Codex could not confirm it from an official page; check by hand",
+        "ticket.booking: Codex could not confirm it from an official page; check by hand"
+      ],
+      "alias_evidence": [
+        {
+          "alias": "Happy Valley Chengdu",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q3127198",
+          "kind": "label"
+        },
+        {
+          "alias": "Happy Valley, Chengdu",
+          "lang": "en",
+          "url": "https://en.wikipedia.org/wiki/Happy_Valley%2C_Chengdu?redirect=no",
+          "kind": "redirect"
+        },
+        {
+          "alias": "成都歡樂谷",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q3127198",
+          "kind": "published_traditional"
+        }
+      ]
     },
     {
       "id": "pl_cd_chengdu_ziran",
@@ -758,8 +840,15 @@
         "tier": "main",
         "name_zh": "成都自然博物馆",
         "name_en": "Chengdu Natural History Museum",
-        "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_zh": [
+          "成都理工大学博物馆"
+        ],
+        "aliases_en": [
+          "The Museum of Chengdu University of Technology",
+          "Museum of Chengdu University of Technology",
+          "Chengdu Museum of Natural History",
+          "Chengdu University of Technology Museum"
+        ],
         "address_zh": null,
         "address_en": null,
         "district_zh": "成华区",
@@ -812,7 +901,39 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "成都理工大学博物馆",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q136766716",
+          "kind": "wikidata"
+        },
+        {
+          "alias": "The Museum of Chengdu University of Technology",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q136766716",
+          "kind": "wikidata"
+        },
+        {
+          "alias": "Museum of Chengdu University of Technology",
+          "lang": "en",
+          "url": "https://en.wikipedia.org/wiki/Museum_of_Chengdu_University_of_Technology?redirect=no",
+          "kind": "redirect"
+        },
+        {
+          "alias": "Chengdu Museum of Natural History",
+          "lang": "en",
+          "url": "https://en.wikipedia.org/wiki/Chengdu_Museum_of_Natural_History?redirect=no",
+          "kind": "redirect"
+        },
+        {
+          "alias": "Chengdu University of Technology Museum",
+          "lang": "en",
+          "url": "https://en.wikipedia.org/wiki/Chengdu_University_of_Technology_Museum?redirect=no",
+          "kind": "redirect"
+        }
+      ]
     },
     {
       "id": "pl_cd_chengdudong",
@@ -1153,7 +1274,9 @@
         "tier": "main",
         "name_zh": "成都川菜博物馆",
         "name_en": "Sichuan Cuisine Museum",
-        "aliases_zh": [],
+        "aliases_zh": [
+          "成都市川菜博物馆"
+        ],
         "aliases_en": [],
         "address_zh": "成都市郫都区古城镇荣华北巷8号",
         "address_en": null,
@@ -1165,16 +1288,17 @@
           "english_service": null,
           "evidence": []
         },
-        "official_url": null,
+        "official_url": "https://www.cmuseum.com/",
         "sources": [
-          "https://wlt.sc.gov.cn/scwlt/c100297/introduce.shtml"
+          "https://wlt.sc.gov.cn/scwlt/c100297/introduce.shtml",
+          "https://www.cmuseum.com/contact.html"
         ],
-        "checked_on": "2026-11-18",
+        "checked_on": "2026-11-27",
         "confidence": "low",
         "notes": "官方目录沿用既有候选记录的核对日，晋级前应重读。",
         "subcategory": "experience",
-        "hours_zh": null,
-        "hours_source": null,
+        "hours_zh": "09:00–18:00。",
+        "hours_source": "https://www.cmuseum.com/contact.html",
         "ticket": {
           "booking": null,
           "passport_required": null,
@@ -1197,17 +1321,28 @@
         "alternatives": []
       },
       "score": {
-        "total": 12,
+        "total": 20,
         "parts": {
           "foreigner": 0,
           "confidence": 4,
-          "sources": 5,
-          "complete": 3,
+          "sources": 10,
+          "complete": 6,
           "amap": 0
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "ticket.price_cny: Codex could not confirm it from an official page; check by hand",
+        "ticket.booking: Codex could not confirm it from an official page; check by hand"
+      ],
+      "alias_evidence": [
+        {
+          "alias": "成都市川菜博物馆",
+          "lang": "zh",
+          "url": "https://wlt.sc.gov.cn/scwlt/c100297/introduce.shtml",
+          "kind": "discovery"
+        }
+      ]
     },
     {
       "id": "pl_cd_chuanxi_zhuhai",
@@ -1220,7 +1355,9 @@
         "tier": "backup",
         "name_zh": "川西竹海",
         "name_en": "Western Sichuan Bamboo Sea",
-        "aliases_zh": [],
+        "aliases_zh": [
+          "川西竹海景区"
+        ],
         "aliases_en": [],
         "address_zh": "四川省成都市邛崃市平乐镇茶马大道中段",
         "address_en": null,
@@ -1274,7 +1411,20 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "hours_zh: Codex could not confirm it from an official page; check by hand",
+        "ticket.price_cny: Codex could not confirm it from an official page; check by hand",
+        "ticket.booking: Codex could not confirm it from an official page; check by hand",
+        "official_url: Codex could not confirm it from an official page; check by hand"
+      ],
+      "alias_evidence": [
+        {
+          "alias": "川西竹海景区",
+          "lang": "zh",
+          "url": "https://wlt.sc.gov.cn/scwlt/c100297/introduce.shtml",
+          "kind": "discovery"
+        }
+      ]
     },
     {
       "id": "pl_cd_chunxilu",
@@ -1287,8 +1437,13 @@
         "tier": "main",
         "name_zh": "春熙路",
         "name_en": "Chunxi Road",
-        "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_zh": [
+          "春熙路 (成都)"
+        ],
+        "aliases_en": [
+          "Chunxi Lu",
+          "Chunxilu"
+        ],
         "address_zh": null,
         "address_en": null,
         "district_zh": "锦江区",
@@ -1341,7 +1496,27 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "春熙路 (成都)",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q5116461",
+          "kind": "wikidata"
+        },
+        {
+          "alias": "Chunxi Lu",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q5116461",
+          "kind": "wikidata"
+        },
+        {
+          "alias": "Chunxilu",
+          "lang": "en",
+          "url": "https://en.wikipedia.org/wiki/Chunxilu?redirect=no",
+          "kind": "redirect"
+        }
+      ]
     },
     {
       "id": "pl_cd_chunxilufupeng",
@@ -1385,6 +1560,7 @@
         "intro_long_en": "Pick this hotel if you want a base in Jinjiang with subway options on lines 2 and 3. The property's gym stays open around the clock.",
         "star": null,
         "price_band": "500-1000",
+        "hotel_class": "midscale",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -1414,9 +1590,7 @@
         },
         "external_used": false
       },
-      "flags": [
-        "pl_cd_chunxilufupeng: unknown field 'hotel_class' is dropped on import"
-      ]
+      "flags": []
     },
     {
       "id": "pl_cd_ctu",
@@ -1629,7 +1803,11 @@
         "tier": "main",
         "name_zh": "大慈寺",
         "name_en": "Daci Temple",
-        "aliases_zh": [],
+        "aliases_zh": [
+          "大慈寺 (成都)",
+          "大圣慈寺",
+          "太子寺"
+        ],
         "aliases_en": [],
         "address_zh": null,
         "address_en": null,
@@ -1683,7 +1861,27 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "大慈寺 (成都)",
+          "lang": "zh",
+          "url": "https://zh.wikipedia.org/wiki/%E5%A4%A7%E6%85%88%E5%AF%BA_(%E6%88%90%E9%83%BD)",
+          "kind": "wikipedia"
+        },
+        {
+          "alias": "大圣慈寺",
+          "lang": "zh",
+          "url": "https://zh.wikipedia.org/wiki/%E5%A4%A7%E5%9C%A3%E6%85%88%E5%AF%BA?redirect=no",
+          "kind": "redirect"
+        },
+        {
+          "alias": "太子寺",
+          "lang": "zh",
+          "url": "https://zh.wikipedia.org/wiki/%E5%A4%AA%E5%AD%90%E5%AF%BA?redirect=no",
+          "kind": "redirect"
+        }
+      ]
     },
     {
       "id": "pl_cd_daijiangcaotang_cd",
@@ -1886,7 +2084,12 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "hours_zh: Codex could not confirm it from an official page; check by hand",
+        "ticket.price_cny: Codex could not confirm it from an official page; check by hand",
+        "ticket.booking: Codex could not confirm it from an official page; check by hand",
+        "official_url: Codex could not confirm it from an official page; check by hand"
+      ]
     },
     {
       "id": "pl_cd_daxiongmao_jidi",
@@ -1901,9 +2104,17 @@
         "name_en": "Chengdu Research Base of Giant Panda Breeding",
         "aliases_zh": [
           "成都熊猫基地",
-          "熊猫基地"
+          "熊猫基地",
+          "成都大熊猫繁殖基地",
+          "成都大熊貓繁育研究基地"
         ],
-        "aliases_en": [],
+        "aliases_en": [
+          "Chengdu Panda Base",
+          "Chengdu Giant Panda Breeding Research Base",
+          "Chengdu Panda Research Base",
+          "Chengdu Giant Panda Base",
+          "Chengdu Giant Panda Breeding and Research Base"
+        ],
         "address_zh": "成都市成华区熊猫大道1375号",
         "address_en": null,
         "district_zh": "成华区",
@@ -1958,7 +2169,63 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "成都熊猫基地",
+          "lang": "zh",
+          "url": "https://www.panda.org.cn/cn/service/ticket/",
+          "kind": "legacy"
+        },
+        {
+          "alias": "熊猫基地",
+          "lang": "zh",
+          "url": "https://www.panda.org.cn/cn/service/ticket/",
+          "kind": "legacy"
+        },
+        {
+          "alias": "Chengdu Panda Base",
+          "lang": "en",
+          "url": "https://chinarulebook.com/sights/chengdu/panda-base/",
+          "kind": "manual"
+        },
+        {
+          "alias": "成都大熊猫繁殖基地",
+          "lang": "zh",
+          "url": "https://zh.wikipedia.org/wiki/%E6%88%90%E9%83%BD%E5%A4%A7%E7%86%8A%E7%8C%AB%E7%B9%81%E6%AE%96%E5%9F%BA%E5%9C%B0?redirect=no",
+          "kind": "redirect"
+        },
+        {
+          "alias": "Chengdu Giant Panda Breeding Research Base",
+          "lang": "en",
+          "url": "https://en.wikipedia.org/wiki/Chengdu_Giant_Panda_Breeding_Research_Base?redirect=no",
+          "kind": "redirect"
+        },
+        {
+          "alias": "Chengdu Panda Research Base",
+          "lang": "en",
+          "url": "https://en.wikipedia.org/wiki/Chengdu_Panda_Research_Base?redirect=no",
+          "kind": "redirect"
+        },
+        {
+          "alias": "Chengdu Giant Panda Base",
+          "lang": "en",
+          "url": "https://en.wikipedia.org/wiki/Chengdu_Giant_Panda_Base?redirect=no",
+          "kind": "redirect"
+        },
+        {
+          "alias": "Chengdu Giant Panda Breeding and Research Base",
+          "lang": "en",
+          "url": "https://en.wikipedia.org/wiki/Chengdu_Giant_Panda_Breeding_and_Research_Base?redirect=no",
+          "kind": "redirect"
+        },
+        {
+          "alias": "成都大熊貓繁育研究基地",
+          "lang": "zh",
+          "url": "https://zh.wikipedia.org/wiki/%E6%88%90%E9%83%BD%E5%A4%A7%E7%86%8A%E8%B2%93%E7%B9%81%E8%82%B2%E7%A0%94%E7%A9%B6%E5%9F%BA%E5%9C%B0?redirect=no",
+          "kind": "published_traditional"
+        }
+      ]
     },
     {
       "id": "pl_cd_dior_cafe_taiguli",
@@ -2036,8 +2303,12 @@
         "tier": "main",
         "name_zh": "东郊记忆",
         "name_en": "Eastern Suburb Memory",
-        "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_zh": [
+          "东郊记忆·成都国际时尚产业园"
+        ],
+        "aliases_en": [
+          "Dongjiao Memory"
+        ],
         "address_zh": "成都市成华区建设南支路4号",
         "address_en": null,
         "district_zh": "成华区",
@@ -2090,7 +2361,26 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "hours_zh: Codex could not confirm it from an official page; check by hand",
+        "ticket.price_cny: Codex could not confirm it from an official page; check by hand",
+        "ticket.booking: Codex could not confirm it from an official page; check by hand",
+        "official_url: Codex could not confirm it from an official page; check by hand"
+      ],
+      "alias_evidence": [
+        {
+          "alias": "东郊记忆·成都国际时尚产业园",
+          "lang": "zh",
+          "url": "https://fgw.pds.gov.cn/contents/22243/755582.html",
+          "kind": "manual"
+        },
+        {
+          "alias": "Dongjiao Memory",
+          "lang": "en",
+          "url": "https://en.wikipedia.org/wiki/Dongjiao_Memory",
+          "kind": "manual"
+        }
+      ]
     },
     {
       "id": "pl_cd_dongzhanfupeng",
@@ -2134,6 +2424,7 @@
         "intro_long_en": "This Four Points is on Bairihong West Road. The arrival page lists Chengdu East Railway Station for intercity trains and Haitong Street for the metro.",
         "star": null,
         "price_band": "<500",
+        "hotel_class": "midscale",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -2163,9 +2454,7 @@
         },
         "external_used": false
       },
-      "flags": [
-        "pl_cd_dongzhanfupeng: unknown field 'hotel_class' is dropped on import"
-      ]
+      "flags": []
     },
     {
       "id": "pl_cd_dufu_caotang",
@@ -2178,8 +2467,15 @@
         "tier": "main",
         "name_zh": "成都杜甫草堂博物馆",
         "name_en": "Du Fu Thatched Cottage",
-        "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_zh": [
+          "杜甫草堂",
+          "杜甫草堂博物馆",
+          "成都杜甫草堂"
+        ],
+        "aliases_en": [
+          "Du Fu Thatched Cottage in Chengdu",
+          "Thatched Cottage of Du Fu"
+        ],
         "address_zh": "成都市青华路37号",
         "address_en": null,
         "district_zh": "青羊区",
@@ -2234,7 +2530,39 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "杜甫草堂",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q4390891",
+          "kind": "label"
+        },
+        {
+          "alias": "杜甫草堂博物馆",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q4390891",
+          "kind": "wikidata"
+        },
+        {
+          "alias": "Du Fu Thatched Cottage in Chengdu",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q4390891",
+          "kind": "wikidata"
+        },
+        {
+          "alias": "Thatched Cottage of Du Fu",
+          "lang": "en",
+          "url": "https://en.wikipedia.org/wiki/Thatched_Cottage_of_Du_Fu?redirect=no",
+          "kind": "redirect"
+        },
+        {
+          "alias": "成都杜甫草堂",
+          "lang": "zh",
+          "url": "https://www.cddfct.cn/",
+          "kind": "discovery"
+        }
+      ]
     },
     {
       "id": "pl_cd_dujiangyan",
@@ -2247,8 +2575,13 @@
         "tier": "main",
         "name_zh": "都江堰景区",
         "name_en": "Dujiangyan Irrigation System",
-        "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_zh": [
+          "都江堰"
+        ],
+        "aliases_en": [
+          "Dujiangyan",
+          "Dujiang Weir"
+        ],
         "address_zh": null,
         "address_en": null,
         "district_zh": "都江堰市",
@@ -2301,7 +2634,27 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "都江堰",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q824157",
+          "kind": "label"
+        },
+        {
+          "alias": "Dujiangyan",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q824157",
+          "kind": "label"
+        },
+        {
+          "alias": "Dujiang Weir",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q824157",
+          "kind": "wikidata"
+        }
+      ]
     },
     {
       "id": "pl_cd_east_memory_north_lane",
@@ -2493,7 +2846,12 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "hours_zh: Codex could not confirm it from an official page; check by hand",
+        "ticket.price_cny: Codex could not confirm it from an official page; check by hand",
+        "ticket.booking: Codex could not confirm it from an official page; check by hand",
+        "official_url: Codex could not confirm it from an official page; check by hand"
+      ]
     },
     {
       "id": "pl_cd_feiyibolanyuantiwoli",
@@ -2536,6 +2894,7 @@
         "intro_long_en": "Give western Chengdu a separate stop on your itinerary. The hotel's English site describes the adjacent heritage park and its location along the Chengdu Ecological Greenway.",
         "star": null,
         "price_band": null,
+        "hotel_class": "luxury",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -2566,7 +2925,7 @@
         "external_used": false
       },
       "flags": [
-        "pl_cd_feiyibolanyuantiwoli: unknown field 'hotel_class' is dropped on import"
+        "no price band: it cannot enter the library until the operator's own page gives a rate"
       ]
     },
     {
@@ -2822,6 +3181,7 @@
         "intro_long_en": "Use Luxiao station when planning subway trips from the Hi-Tech Zone. Marriott lists English among the languages spoken at this property.",
         "star": null,
         "price_band": "<500",
+        "hotel_class": "midscale",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -2851,9 +3211,7 @@
         },
         "external_used": false
       },
-      "flags": [
-        "pl_cd_gaoxinwanfeng: unknown field 'hotel_class' is dropped on import"
-      ]
+      "flags": []
     },
     {
       "id": "pl_cd_gaoxinwanhao",
@@ -2871,7 +3229,12 @@
         "address_zh": "成都市高新区天府大道北段999号",
         "address_en": "999 Tianfu Avenue North, High-Tech Zone, Chengdu, China 610041",
         "district_zh": "高新区",
-        "nearest_metro": null,
+        "nearest_metro": {
+          "station_zh": "金融城",
+          "station_en": "Financial City",
+          "line": "1号线",
+          "exit": null
+        },
         "foreigner_signals": {
           "english_signage": null,
           "foreign_cards": null,
@@ -2885,9 +3248,10 @@
           "https://www.marriott.com/en-us/hotels/ctumc-chengdu-marriott-hotel-financial-centre/overview/",
           "https://www.marriott.com/en-us/destinations/china/chengdu.mi",
           "https://help.marriott.com/s/article/Article-24483",
-          "https://www.marriott.com.cn/hotels/ctumc-chengdu-marriott-hotel-financial-centre/overview/"
+          "https://www.marriott.com.cn/hotels/ctumc-chengdu-marriott-hotel-financial-centre/overview/",
+          "https://www.csrc.gov.cn/sichuan/c104894/c7619301/content.shtml"
         ],
-        "checked_on": "2026-11-27",
+        "checked_on": "2026-11-28",
         "confidence": "medium",
         "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sun, Dec 27 - Mon, Dec 28。 官网样本为每房每晚人民币 ¥529。当前价以所选日期及房型的报价为准。 分档依据：万豪集团将此品牌列为 Premium。",
         "subcategory": "hotel",
@@ -2897,6 +3261,7 @@
         "intro_long_en": "Choose among the Financial City, Hi-Tech Zone and Financial City North metro stops listed by Marriott. Chengdu South is one of its rail arrival references.",
         "star": null,
         "price_band": "500-1000",
+        "hotel_class": "upscale",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -2916,19 +3281,17 @@
         "alternatives": []
       },
       "score": {
-        "total": 29,
+        "total": 31,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 7,
+          "complete": 9,
           "amap": 0
         },
         "external_used": false
       },
-      "flags": [
-        "pl_cd_gaoxinwanhao: unknown field 'hotel_class' is dropped on import"
-      ]
+      "flags": []
     },
     {
       "id": "pl_cd_guanxian",
@@ -2941,8 +3304,12 @@
         "tier": "main",
         "name_zh": "灌县古城",
         "name_en": "Guanxian Ancient City",
-        "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_zh": [
+          "都江堰灌县古城"
+        ],
+        "aliases_en": [
+          "Ancient Town of Guan County"
+        ],
         "address_zh": "成都都江堰市灌口街道",
         "address_en": null,
         "district_zh": "都江堰市",
@@ -2995,7 +3362,26 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "hours_zh: Codex could not confirm it from an official page; check by hand",
+        "ticket.price_cny: Codex could not confirm it from an official page; check by hand",
+        "ticket.booking: Codex could not confirm it from an official page; check by hand",
+        "official_url: Codex could not confirm it from an official page; check by hand"
+      ],
+      "alias_evidence": [
+        {
+          "alias": "Ancient Town of Guan County",
+          "lang": "en",
+          "url": "https://www.trip.com/travel-guide/attraction/dujiangyan/ancient-town-of-guan-county-20906582",
+          "kind": "manual"
+        },
+        {
+          "alias": "都江堰灌县古城",
+          "lang": "zh",
+          "url": "https://you.ctrip.com/sight/dujiangyan911/1700523.html",
+          "kind": "manual"
+        }
+      ]
     },
     {
       "id": "pl_cd_guichu_shuichang",
@@ -3075,7 +3461,9 @@
         "tier": "main",
         "name_zh": "成都海昌极地海洋世界",
         "name_en": "Chengdu Haichang Polar Ocean Park",
-        "aliases_zh": [],
+        "aliases_zh": [
+          "成都市海昌极地海洋世界景区"
+        ],
         "aliases_en": [],
         "address_zh": "成都市天府新区华阳海洋路68号",
         "address_en": null,
@@ -3087,16 +3475,17 @@
           "english_service": null,
           "evidence": []
         },
-        "official_url": null,
+        "official_url": "https://www.haichangoceanpark.com/chengdu/",
         "sources": [
-          "https://wlt.sc.gov.cn/scwlt/c100297/introduce.shtml"
+          "https://wlt.sc.gov.cn/scwlt/c100297/introduce.shtml",
+          "https://www.haichangoceanpark.com/chengdu/faq"
         ],
-        "checked_on": "2026-11-18",
+        "checked_on": "2026-11-27",
         "confidence": "low",
         "notes": "官方目录沿用既有候选记录的核对日，晋级前应重读。",
         "subcategory": "experience",
-        "hours_zh": null,
-        "hours_source": null,
+        "hours_zh": "常规日场：1、2、11、12月09:30–17:00；3–6月及9、10月09:30–17:30；7、8月09:00–18:45。闭园前一小时停止售检票；节假日、夜场和临时调整见当日公告。",
+        "hours_source": "https://www.haichangoceanpark.com/chengdu/faq",
         "ticket": {
           "booking": null,
           "passport_required": null,
@@ -3119,17 +3508,28 @@
         "alternatives": []
       },
       "score": {
-        "total": 12,
+        "total": 20,
         "parts": {
           "foreigner": 0,
           "confidence": 4,
-          "sources": 5,
-          "complete": 3,
+          "sources": 10,
+          "complete": 6,
           "amap": 0
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "ticket.price_cny: Codex could not confirm it from an official page; check by hand",
+        "ticket.booking: Codex could not confirm it from an official page; check by hand"
+      ],
+      "alias_evidence": [
+        {
+          "alias": "成都市海昌极地海洋世界景区",
+          "lang": "zh",
+          "url": "https://wlt.sc.gov.cn/scwlt/c100297/introduce.shtml",
+          "kind": "discovery"
+        }
+      ]
     },
     {
       "id": "pl_cd_haidilao_yinshi",
@@ -3279,9 +3679,14 @@
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": "少城路12号人民公园内",
-        "address_en": null,
+        "address_en": "People’s Park, Qingyang District, Chengdu",
         "district_zh": "青羊区",
-        "nearest_metro": null,
+        "nearest_metro": {
+          "station_zh": "人民公园",
+          "station_en": "People’s Park",
+          "line": "2、17号线",
+          "exit": null
+        },
         "foreigner_signals": {
           "english_signage": null,
           "foreign_cards": null,
@@ -3294,14 +3699,17 @@
         "official_url": "https://news.chengdu.cn/2026/0703/6a4701022e768511f6ad74a8.shtml",
         "sources": [
           "https://news.chengdu.cn/2026/0703/6a4701022e768511f6ad74a8.shtml",
-          "https://www.sc.gov.cn/10462/c108551/2021/12/24/8eceb42022834db6a494ed30f439a4a2/files/%E5%B8%82%E5%9F%9F%E5%8E%86%E5%8F%B2%E5%BB%BA%E7%AD%91%E5%90%8D%E5%BD%95.pdf"
+          "https://www.sc.gov.cn/10462/c108551/2021/12/24/8eceb42022834db6a494ed30f439a4a2/files/%E5%B8%82%E5%9F%9F%E5%8E%86%E5%8F%B2%E5%BB%BA%E7%AD%91%E5%90%8D%E5%BD%95.pdf",
+          "https://www.gochengdu.cn/en/article/happy_life_in_chengdu/4866",
+          "https://news.chengdu.cn/2025/0917/68ca1a700c3a9c5be1c4ca42.shtml?phone=yes",
+          "https://news.chengdu.cn/2025/1024/68fabf8f580a8a6634f9ce1a.shtml"
         ],
-        "checked_on": "2026-11-27",
+        "checked_on": "2026-11-28",
         "confidence": "medium",
         "notes": "营业依据为当前经营方点位或近期主管部门的具名记录。",
         "subcategory": "local_cuisine",
-        "hours_zh": null,
-        "hours_source": null,
+        "hours_zh": "09:30–21:30",
+        "hours_source": "https://www.gochengdu.cn/en/article/happy_life_in_chengdu/4866",
         "intro_short_zh": "在人民公园坐下来喝盖碗茶，感受成都茶馆日常。",
         "intro_short_en": "Take a seat for covered-bowl tea in People's Park.",
         "intro_long_zh": "在人民公园坐下来喝盖碗茶，感受成都茶馆日常。按中文店名在少城路12号人民公园内定位。",
@@ -3320,12 +3728,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 26,
+        "total": 31,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 4,
+          "complete": 9,
           "amap": 0
         },
         "external_used": false
@@ -3374,6 +3782,7 @@
         "intro_long_en": "Use the hotel as a base for south Chengdu. Hilton's English page names the Twin Towers nearby and provides details on the property for planning arrival.",
         "star": null,
         "price_band": "1000-2000",
+        "hotel_class": "luxury",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -3403,9 +3812,7 @@
         },
         "external_used": false
       },
-      "flags": [
-        "pl_cd_huaerdaofu: unknown field 'hotel_class' is dropped on import"
-      ]
+      "flags": []
     },
     {
       "id": "pl_cd_huangchengba_lingdi",
@@ -3485,7 +3892,9 @@
         "tier": "main",
         "name_zh": "成都市双流区黄龙溪旅游区",
         "name_en": "Huanglongxi Tourist Area",
-        "aliases_zh": [],
+        "aliases_zh": [
+          "黄龙溪古镇"
+        ],
         "aliases_en": [],
         "address_zh": "成都市双流区黄龙溪镇",
         "address_en": null,
@@ -3539,7 +3948,20 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "hours_zh: Codex could not confirm it from an official page; check by hand",
+        "ticket.price_cny: Codex could not confirm it from an official page; check by hand",
+        "ticket.booking: Codex could not confirm it from an official page; check by hand",
+        "official_url: Codex could not confirm it from an official page; check by hand"
+      ],
+      "alias_evidence": [
+        {
+          "alias": "黄龙溪古镇",
+          "lang": "zh",
+          "url": "https://topvote.chengdu.cn/acts/2022_hxdnscd_zjhd/detail.php?tid=35464894",
+          "kind": "manual"
+        }
+      ]
     },
     {
       "id": "pl_cd_huangsan_shuangliu",
@@ -3749,7 +4171,10 @@
         "tier": "main",
         "name_zh": "建川博物馆聚落",
         "name_en": "Jianchuan Museum Cluster",
-        "aliases_zh": [],
+        "aliases_zh": [
+          "四川省建川博物馆",
+          "建川博物馆"
+        ],
         "aliases_en": [],
         "address_zh": "四川省成都市大邑县安仁镇迎宾路二段550号",
         "address_en": null,
@@ -3761,20 +4186,22 @@
           "english_service": null,
           "evidence": []
         },
-        "official_url": null,
+        "official_url": "https://www.jc-museum.cn/",
         "sources": [
-          "https://wwj.sc.gov.cn/scwwj/zcwjgk/2020/3/11/7f900c3044994f5186d48f4e2675ed66.shtml"
+          "https://wwj.sc.gov.cn/scwwj/zcwjgk/2020/3/11/7f900c3044994f5186d48f4e2675ed66.shtml",
+          "https://www.jc-museum.cn/ticket",
+          "https://www.jc-museum.cn/"
         ],
-        "checked_on": "2026-11-18",
+        "checked_on": "2026-11-27",
         "confidence": "low",
         "notes": "官方目录沿用既有候选记录的核对日，晋级前应重读。",
         "subcategory": "museum",
-        "hours_zh": null,
-        "hours_source": null,
+        "hours_zh": "09:00–17:30，16:30停售，17:00停止入馆。",
+        "hours_source": "https://www.jc-museum.cn/ticket",
         "ticket": {
           "booking": null,
           "passport_required": null,
-          "price_cny": null,
+          "price_cny": 60,
           "closed_weekdays": null,
           "booking_channel_zh": null,
           "booking_url": null
@@ -3793,17 +4220,33 @@
         "alternatives": []
       },
       "score": {
-        "total": 12,
+        "total": 20,
         "parts": {
           "foreigner": 0,
           "confidence": 4,
-          "sources": 5,
-          "complete": 3,
+          "sources": 10,
+          "complete": 6,
           "amap": 0
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "ticket.booking: Codex could not confirm it from an official page; check by hand"
+      ],
+      "alias_evidence": [
+        {
+          "alias": "四川省建川博物馆",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q15894094",
+          "kind": "wikidata"
+        },
+        {
+          "alias": "建川博物馆",
+          "lang": "zh",
+          "url": "https://zh.wikipedia.org/wiki/%E5%BB%BA%E5%B7%9D%E5%8D%9A%E7%89%A9%E9%A6%86",
+          "kind": "wikipedia"
+        }
+      ]
     },
     {
       "id": "pl_cd_jiaozi_shuangta",
@@ -3816,8 +4259,12 @@
         "tier": "main",
         "name_zh": "成都金融城双子塔",
         "name_en": "Chengdu Financial City Twin Towers",
-        "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_zh": [
+          "交子双塔"
+        ],
+        "aliases_en": [
+          "Tianfu Twin Towers of Chengdu Financial City"
+        ],
         "address_zh": null,
         "address_en": null,
         "district_zh": null,
@@ -3870,7 +4317,21 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "Tianfu Twin Towers of Chengdu Financial City",
+          "lang": "en",
+          "url": "https://www.trip.com/travel-guide/attraction/chengdu/tianfu-twin-towers-of-chengdu-financial-city-149994616",
+          "kind": "manual"
+        },
+        {
+          "alias": "交子双塔",
+          "lang": "zh",
+          "url": "https://www.cdjrc.com/news/722.html",
+          "kind": "manual"
+        }
+      ]
     },
     {
       "id": "pl_cd_jiezi",
@@ -3884,7 +4345,9 @@
         "name_zh": "街子古镇",
         "name_en": "Jiezi Ancient Town",
         "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_en": [
+          "Jiezi old town (Chongzhou)"
+        ],
         "address_zh": "成都市崇州街子镇",
         "address_en": null,
         "district_zh": "崇州市",
@@ -3937,7 +4400,20 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "hours_zh: Codex could not confirm it from an official page; check by hand",
+        "ticket.price_cny: Codex could not confirm it from an official page; check by hand",
+        "ticket.booking: Codex could not confirm it from an official page; check by hand",
+        "official_url: Codex could not confirm it from an official page; check by hand"
+      ],
+      "alias_evidence": [
+        {
+          "alias": "Jiezi old town (Chongzhou)",
+          "lang": "en",
+          "url": "https://www.haoliday.com/en/explore/chengdu/p/jiezi-ancient-town",
+          "kind": "manual"
+        }
+      ]
     },
     {
       "id": "pl_cd_jinhehua_fashion_cd",
@@ -4009,8 +4485,14 @@
         "tier": "main",
         "name_zh": "锦里",
         "name_en": "Jinli Ancient Street",
-        "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_zh": [
+          "锦里古街",
+          "锦里一条街",
+          "錦里"
+        ],
+        "aliases_en": [
+          "Jinli"
+        ],
         "address_zh": null,
         "address_en": null,
         "district_zh": "武侯区",
@@ -4063,7 +4545,33 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "锦里古街",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q6202606",
+          "kind": "label"
+        },
+        {
+          "alias": "锦里一条街",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q6202606",
+          "kind": "wikidata"
+        },
+        {
+          "alias": "Jinli",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q6202606",
+          "kind": "label"
+        },
+        {
+          "alias": "錦里",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q6202606",
+          "kind": "published_traditional"
+        }
+      ]
     },
     {
       "id": "pl_cd_jinsha_yizhi",
@@ -4076,8 +4584,15 @@
         "tier": "backup",
         "name_zh": "成都金沙遗址博物馆",
         "name_en": "Jinsha Ruins Museum",
-        "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_zh": [
+          "金沙遗址博物馆",
+          "金沙遗址公园",
+          "金沙遺址博物館"
+        ],
+        "aliases_en": [
+          "Jinsha Site Museum",
+          "Jinsha Museum"
+        ],
         "address_zh": null,
         "address_en": null,
         "district_zh": "青羊区",
@@ -4135,7 +4650,39 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "Jinsha Site Museum",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q10564008",
+          "kind": "label"
+        },
+        {
+          "alias": "Jinsha Museum",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q10564008",
+          "kind": "wikidata"
+        },
+        {
+          "alias": "金沙遗址博物馆",
+          "lang": "zh",
+          "url": "https://zh.wikipedia.org/wiki/%E9%87%91%E6%B2%99%E9%81%97%E5%9D%80%E5%8D%9A%E7%89%A9%E9%A6%86",
+          "kind": "wikipedia"
+        },
+        {
+          "alias": "金沙遗址公园",
+          "lang": "zh",
+          "url": "https://zh.wikipedia.org/wiki/%E9%87%91%E6%B2%99%E9%81%97%E5%9D%80%E5%85%AC%E5%9B%AD?redirect=no",
+          "kind": "redirect"
+        },
+        {
+          "alias": "金沙遺址博物館",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q10564008",
+          "kind": "published_traditional"
+        }
+      ]
     },
     {
       "id": "pl_cd_jushe",
@@ -4177,6 +4724,7 @@
         "intro_long_en": "Spend time in the lanes around Daci Temple without crossing town. The hotel incorporates a preserved courtyard and publishes English directions for arriving at its Bitieshi Street address.",
         "star": null,
         "price_band": null,
+        "hotel_class": "luxury",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -4207,7 +4755,7 @@
         "external_used": false
       },
       "flags": [
-        "pl_cd_jushe: unknown field 'hotel_class' is dropped on import"
+        "no price band: it cannot enter the library until the operator's own page gives a rate"
       ]
     },
     {
@@ -4347,7 +4895,10 @@
         "name_zh": "宽窄巷子",
         "name_en": "Kuanzhai Alley",
         "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_en": [
+          "Kuanzhai Xiangzi",
+          "Wide and Narrow Alleys"
+        ],
         "address_zh": null,
         "address_en": null,
         "district_zh": "青羊区",
@@ -4400,7 +4951,21 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "Kuanzhai Xiangzi",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q10951691",
+          "kind": "label"
+        },
+        {
+          "alias": "Wide and Narrow Alleys",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q10951691",
+          "kind": "wikidata"
+        }
+      ]
     },
     {
       "id": "pl_cd_kuanzhaifupeng",
@@ -4450,6 +5015,7 @@
         "intro_long_en": "Use the property's directions from Kuanzhai Alleys station. Marriott also lists English for travelers who plan to communicate with the hotel directly.",
         "star": null,
         "price_band": "<500",
+        "hotel_class": "midscale",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -4479,9 +5045,7 @@
         },
         "external_used": false
       },
-      "flags": [
-        "pl_cd_kuanzhaifupeng: unknown field 'hotel_class' is dropped on import"
-      ]
+      "flags": []
     },
     {
       "id": "pl_cd_kuanzhaixiangzixierdun",
@@ -4525,6 +5089,7 @@
         "intro_long_en": "Make time for one outing around Kuanzhai Alley and another around Zaozi Lane's food stops. The hotel's English page also lists an on-site gym.",
         "star": null,
         "price_band": "<500",
+        "hotel_class": "midscale",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -4554,9 +5119,7 @@
         },
         "external_used": false
       },
-      "flags": [
-        "pl_cd_kuanzhaixiangzixierdun: unknown field 'hotel_class' is dropped on import"
-      ]
+      "flags": []
     },
     {
       "id": "pl_cd_laitangyuan_zongfu",
@@ -4804,6 +5367,7 @@
         "intro_long_en": "Use this central address for a slower stay with a break at People's Park. The hotel has an English page with arrival directions and suggestions for the old city.",
         "star": null,
         "price_band": "500-1000",
+        "hotel_class": "upscale",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -4833,9 +5397,7 @@
         },
         "external_used": false
       },
-      "flags": [
-        "pl_cd_lingdijiayueli: unknown field 'hotel_class' is dropped on import"
-      ]
+      "flags": []
     },
     {
       "id": "pl_cd_lisi",
@@ -4880,6 +5442,7 @@
         "intro_long_en": "If you want an English-listed property in central Chengdu, check the hotel's arrival information and its indoor pool before picking a room.",
         "star": null,
         "price_band": "500-1000",
+        "hotel_class": "luxury",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -4909,9 +5472,7 @@
         },
         "external_used": false
       },
-      "flags": [
-        "pl_cd_lisi: unknown field 'hotel_class' is dropped on import"
-      ]
+      "flags": []
     },
     {
       "id": "pl_cd_lokal_taiguli",
@@ -5154,6 +5715,7 @@
         "intro_long_en": "Consider a separate night on the eastern side of Chengdu. The location guide gives the Longquanyi address, and the property offers an indoor pool.",
         "star": null,
         "price_band": "500-1000",
+        "hotel_class": "upscale",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -5183,9 +5745,7 @@
         },
         "external_used": false
       },
-      "flags": [
-        "pl_cd_longquanyixierdun: unknown field 'hotel_class' is dropped on import"
-      ]
+      "flags": []
     },
     {
       "id": "pl_cd_luhu",
@@ -5198,8 +5758,13 @@
         "tier": "main",
         "name_zh": "麓湖水城",
         "name_en": "Luxelakes",
-        "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_zh": [
+          "成都麓湖水城",
+          "成都麓湖水城景区"
+        ],
+        "aliases_en": [
+          "Luxelakes Water City"
+        ],
         "address_zh": "天府大道南沿线麓湖生态城艺展中心",
         "address_en": null,
         "district_zh": "双流区",
@@ -5252,7 +5817,32 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "hours_zh: Codex could not confirm it from an official page; check by hand",
+        "ticket.price_cny: Codex could not confirm it from an official page; check by hand",
+        "ticket.booking: Codex could not confirm it from an official page; check by hand",
+        "official_url: Codex could not confirm it from an official page; check by hand"
+      ],
+      "alias_evidence": [
+        {
+          "alias": "成都麓湖水城",
+          "lang": "zh",
+          "url": "https://you.ctrip.com/sight/chengdu104/2040868.html",
+          "kind": "manual"
+        },
+        {
+          "alias": "Luxelakes Water City",
+          "lang": "en",
+          "url": "https://www.trip.com/travel-guide/attraction/chengdu/luxelakes-water-city-31673060",
+          "kind": "manual"
+        },
+        {
+          "alias": "成都麓湖水城景区",
+          "lang": "zh",
+          "url": "https://wlt.sc.gov.cn/scwlt/c100297/introduce.shtml",
+          "kind": "discovery"
+        }
+      ]
     },
     {
       "id": "pl_cd_luji_yulinxi",
@@ -5384,7 +5974,12 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "hours_zh: Codex could not confirm it from an official page; check by hand",
+        "ticket.price_cny: Codex could not confirm it from an official page; check by hand",
+        "ticket.booking: Codex could not confirm it from an official page; check by hand",
+        "official_url: Codex could not confirm it from an official page; check by hand"
+      ]
     },
     {
       "id": "pl_cd_mawangzi_jinjiang",
@@ -5795,7 +6390,10 @@
         "tier": "main",
         "name_zh": "邛崃市平乐古镇",
         "name_en": "Pingle Ancient Town",
-        "aliases_zh": [],
+        "aliases_zh": [
+          "平乐古镇",
+          "平樂古鎮"
+        ],
         "aliases_en": [],
         "address_zh": "成都市邛崃市平乐镇",
         "address_en": null,
@@ -5849,7 +6447,26 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "hours_zh: Codex could not confirm it from an official page; check by hand",
+        "ticket.price_cny: Codex could not confirm it from an official page; check by hand",
+        "ticket.booking: Codex could not confirm it from an official page; check by hand",
+        "official_url: Codex could not confirm it from an official page; check by hand"
+      ],
+      "alias_evidence": [
+        {
+          "alias": "平乐古镇",
+          "lang": "zh",
+          "url": "https://realchengdu.com/zh/attractions/pingle-old-town",
+          "kind": "manual"
+        },
+        {
+          "alias": "平樂古鎮",
+          "lang": "zh",
+          "url": "https://realchengdu.com/zh-Hant/attractions/pingle-old-town",
+          "kind": "manual"
+        }
+      ]
     },
     {
       "id": "pl_cd_qingchengshan",
@@ -5862,7 +6479,9 @@
         "tier": "main",
         "name_zh": "青城山前山",
         "name_en": "Mount Qingcheng (Front Mountain)",
-        "aliases_zh": [],
+        "aliases_zh": [
+          "青城前山"
+        ],
         "aliases_en": [],
         "address_zh": null,
         "address_en": null,
@@ -5916,7 +6535,15 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "青城前山",
+          "lang": "zh",
+          "url": "https://you.ctrip.com/sight/dujiangyan911/145236465.html",
+          "kind": "manual"
+        }
+      ]
     },
     {
       "id": "pl_cd_qingchengshanliushan",
@@ -5960,6 +6587,7 @@
         "intro_long_en": "Make Qingcheng Mountain its own stop outside central Chengdu. The resort describes an outing to Dujiangyan Panda Valley and shares more local ideas in English.",
         "star": null,
         "price_band": ">2000",
+        "hotel_class": "luxury",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -5989,9 +6617,7 @@
         },
         "external_used": false
       },
-      "flags": [
-        "pl_cd_qingchengshanliushan: unknown field 'hotel_class' is dropped on import"
-      ]
+      "flags": []
     },
     {
       "id": "pl_cd_qingshiqiao_seafood",
@@ -6065,8 +6691,14 @@
         "tier": "main",
         "name_zh": "青羊宫",
         "name_en": "Qingyang Palace",
-        "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_zh": [
+          "青羊肆",
+          "青羊宮"
+        ],
+        "aliases_en": [
+          "Azure Ram Temple",
+          "Qingyang Gong"
+        ],
         "address_zh": null,
         "address_en": null,
         "district_zh": "青羊区",
@@ -6119,7 +6751,33 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "Azure Ram Temple",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q2121639",
+          "kind": "label"
+        },
+        {
+          "alias": "Qingyang Gong",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q2121639",
+          "kind": "wikidata"
+        },
+        {
+          "alias": "青羊肆",
+          "lang": "zh",
+          "url": "https://zh.wikipedia.org/wiki/%E9%9D%92%E7%BE%8A%E8%82%86?redirect=no",
+          "kind": "redirect"
+        },
+        {
+          "alias": "青羊宮",
+          "lang": "zh",
+          "url": "https://zh.wikipedia.org/wiki/%E9%9D%92%E7%BE%8A%E5%AE%AE?redirect=no",
+          "kind": "published_traditional"
+        }
+      ]
     },
     {
       "id": "pl_cd_raffles_chengdu_retail",
@@ -6135,7 +6793,7 @@
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": "人民南路四段3号",
-        "address_en": null,
+        "address_en": "3 South Renmin Road Fourth Section, Wuhou District, Chengdu, Sichuan, China",
         "district_zh": "武侯区",
         "nearest_metro": {
           "station_zh": "省体育馆",
@@ -6158,7 +6816,7 @@
           "https://www.csrc.gov.cn/sichuan/c104894/c7463304/content.shtml",
           "https://www.gochengdu.cn/en/article/city_services_/824"
         ],
-        "checked_on": "2026-11-27",
+        "checked_on": "2026-11-28",
         "confidence": "medium",
         "notes": "营业依据为当前经营方点位或近期主管部门的具名记录。",
         "subcategory": "mall",
@@ -6176,12 +6834,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 28,
+        "total": 30,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 6,
+          "complete": 8,
           "amap": 0
         },
         "external_used": false
@@ -6273,8 +6931,16 @@
         "tier": "main",
         "name_zh": "成都市人民公园",
         "name_en": "Chengdu People's Park",
-        "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_zh": [
+          "人民公园（成都）",
+          "少城公园",
+          "人民公园 (成都)",
+          "成都人民公园"
+        ],
+        "aliases_en": [
+          "Shaocheng Park",
+          "People's Park (Chengdu)"
+        ],
         "address_zh": null,
         "address_en": null,
         "district_zh": "青羊区",
@@ -6327,7 +6993,45 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "人民公园（成都）",
+          "lang": "zh",
+          "url": "https://zh.wikipedia.org/wiki/人民公园_(成都)",
+          "kind": "manual"
+        },
+        {
+          "alias": "少城公园",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q16927648",
+          "kind": "wikidata"
+        },
+        {
+          "alias": "Shaocheng Park",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q16927648",
+          "kind": "wikidata"
+        },
+        {
+          "alias": "人民公园 (成都)",
+          "lang": "zh",
+          "url": "https://zh.wikipedia.org/wiki/%E4%BA%BA%E6%B0%91%E5%85%AC%E5%9B%AD_(%E6%88%90%E9%83%BD)",
+          "kind": "wikipedia"
+        },
+        {
+          "alias": "成都人民公园",
+          "lang": "zh",
+          "url": "https://zh.wikipedia.org/wiki/%E6%88%90%E9%83%BD%E4%BA%BA%E6%B0%91%E5%85%AC%E5%9B%AD?redirect=no",
+          "kind": "redirect"
+        },
+        {
+          "alias": "People's Park (Chengdu)",
+          "lang": "en",
+          "url": "https://en.wikipedia.org/wiki/People%27s_Park_(Chengdu)",
+          "kind": "wikipedia"
+        }
+      ]
     },
     {
       "id": "pl_cd_rongleyuan_wenshu",
@@ -6421,20 +7125,21 @@
           "english_service": null,
           "evidence": []
         },
-        "official_url": null,
+        "official_url": "https://www.shlycmuseum.com/",
         "sources": [
-          "https://wwj.sc.gov.cn/scwwj/zcwjgk/2020/3/11/7f900c3044994f5186d48f4e2675ed66.shtml"
+          "https://wwj.sc.gov.cn/scwwj/zcwjgk/2020/3/11/7f900c3044994f5186d48f4e2675ed66.shtml",
+          "https://www.shlycmuseum.com/visit/"
         ],
-        "checked_on": "2026-11-18",
+        "checked_on": "2026-11-27",
         "confidence": "low",
         "notes": "官方目录沿用既有候选记录的核对日，晋级前应重读。 区属按官方功能区口径记录。",
         "subcategory": "museum",
-        "hours_zh": null,
-        "hours_source": null,
+        "hours_zh": "09:00–17:00，16:00停售。周一闭馆，节假日除外。",
+        "hours_source": "https://www.shlycmuseum.com/visit/",
         "ticket": {
           "booking": null,
           "passport_required": null,
-          "price_cny": null,
+          "price_cny": 100,
           "closed_weekdays": null,
           "booking_channel_zh": null,
           "booking_url": null
@@ -6453,17 +7158,19 @@
         "alternatives": []
       },
       "score": {
-        "total": 12,
+        "total": 20,
         "parts": {
           "foreigner": 0,
           "confidence": 4,
-          "sources": 5,
-          "complete": 3,
+          "sources": 10,
+          "complete": 6,
           "amap": 0
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "ticket.booking: Codex could not confirm it from an official page; check by hand"
+      ]
     },
     {
       "id": "pl_cd_sanzhier_yulinnan",
@@ -6736,8 +7443,12 @@
         "tier": "main",
         "name_zh": "蜀风雅韵",
         "name_en": "Shufeng Yayun Sichuan Opera",
-        "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_zh": [
+          "成都蜀风雅韵"
+        ],
+        "aliases_en": [
+          "Shu Feng Ya Yun Teahouse"
+        ],
         "address_zh": null,
         "address_en": null,
         "district_zh": "青羊区",
@@ -6790,7 +7501,21 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "Shu Feng Ya Yun Teahouse",
+          "lang": "en",
+          "url": "https://www.synotrip.com/china/amy-chengdu/shu-feng-ya-yun-teahouse",
+          "kind": "manual"
+        },
+        {
+          "alias": "成都蜀风雅韵",
+          "lang": "zh",
+          "url": "https://cdsfyy.com/",
+          "kind": "discovery"
+        }
+      ]
     },
     {
       "id": "pl_cd_shuijingfang",
@@ -6803,7 +7528,9 @@
         "tier": "main",
         "name_zh": "成都水井坊博物馆",
         "name_en": "Shuijingfang Museum",
-        "aliases_zh": [],
+        "aliases_zh": [
+          "水井坊博物馆"
+        ],
         "aliases_en": [],
         "address_zh": "四川省成都市锦江区水井街19号",
         "address_en": null,
@@ -6858,7 +7585,15 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "水井坊博物馆",
+          "lang": "zh",
+          "url": "https://www.sjfmuseum.com/",
+          "kind": "discovery"
+        }
+      ]
     },
     {
       "id": "pl_cd_shujin",
@@ -6871,8 +7606,13 @@
         "tier": "main",
         "name_zh": "成都蜀锦织绣博物馆",
         "name_en": "Shu Brocade and Embroidery Museum",
-        "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_zh": [
+          "蜀江锦院",
+          "蜀锦织绣博物馆"
+        ],
+        "aliases_en": [
+          "Chengdu Shu Brocade and Embroidery Museum"
+        ],
         "address_zh": "四川省成都市草堂东路2号",
         "address_en": null,
         "district_zh": "青羊区",
@@ -6925,7 +7665,32 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "hours_zh: Codex could not confirm it from an official page; check by hand",
+        "ticket.price_cny: Codex could not confirm it from an official page; check by hand",
+        "ticket.booking: Codex could not confirm it from an official page; check by hand",
+        "official_url: Codex could not confirm it from an official page; check by hand"
+      ],
+      "alias_evidence": [
+        {
+          "alias": "Chengdu Shu Brocade and Embroidery Museum",
+          "lang": "en",
+          "url": "https://www.trip.com/travel-guide/attraction/chengdu/chengdu-shu-brocade-and-embroidery-museum-24649061",
+          "kind": "manual"
+        },
+        {
+          "alias": "蜀江锦院",
+          "lang": "zh",
+          "url": "https://www.cdich.cn/index.php/cms/zixundongtai/721.html",
+          "kind": "manual"
+        },
+        {
+          "alias": "蜀锦织绣博物馆",
+          "lang": "zh",
+          "url": "https://cn.tripadvisor.com/Attraction_Review-g297463-d5400466-Reviews-Chengdu_shu_brocade_and_embroidery_museum-Chengdu_Sichuan.html",
+          "kind": "manual"
+        }
+      ]
     },
     {
       "id": "pl_cd_sichuan_bowuyuan",
@@ -6938,7 +7703,10 @@
         "tier": "main",
         "name_zh": "四川博物院",
         "name_en": "Sichuan Museum",
-        "aliases_zh": [],
+        "aliases_zh": [
+          "四川省博物馆",
+          "四川省博物院"
+        ],
         "aliases_en": [],
         "address_zh": "四川省成都市浣花南路251号",
         "address_en": null,
@@ -6950,11 +7718,12 @@
           "english_service": null,
           "evidence": []
         },
-        "official_url": null,
+        "official_url": "https://www.scmuseum.cn/",
         "sources": [
-          "https://wwj.sc.gov.cn/scwwj/zcwjgk/2020/3/11/7f900c3044994f5186d48f4e2675ed66.shtml"
+          "https://wwj.sc.gov.cn/scwwj/zcwjgk/2020/3/11/7f900c3044994f5186d48f4e2675ed66.shtml",
+          "https://www.scmuseum.cn/"
         ],
-        "checked_on": "2026-11-18",
+        "checked_on": "2026-11-27",
         "confidence": "low",
         "notes": "官方目录沿用既有候选记录的核对日，晋级前应重读。",
         "subcategory": "museum",
@@ -6982,17 +7751,35 @@
         "alternatives": []
       },
       "score": {
-        "total": 12,
+        "total": 18,
         "parts": {
           "foreigner": 0,
           "confidence": 4,
-          "sources": 5,
-          "complete": 3,
+          "sources": 10,
+          "complete": 4,
           "amap": 0
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "hours_zh: Codex could not confirm it from an official page; check by hand",
+        "ticket.price_cny: Codex could not confirm it from an official page; check by hand",
+        "ticket.booking: Codex could not confirm it from an official page; check by hand"
+      ],
+      "alias_evidence": [
+        {
+          "alias": "四川省博物馆",
+          "lang": "zh",
+          "url": "https://zh.wikipedia.org/wiki/%E5%9B%9B%E5%B7%9D%E7%9C%81%E5%8D%9A%E7%89%A9%E9%A6%86?redirect=no",
+          "kind": "redirect"
+        },
+        {
+          "alias": "四川省博物院",
+          "lang": "zh",
+          "url": "https://zh.wikipedia.org/wiki/%E5%9B%9B%E5%B7%9D%E7%9C%81%E5%8D%9A%E7%89%A9%E9%99%A2?redirect=no",
+          "kind": "redirect"
+        }
+      ]
     },
     {
       "id": "pl_cd_sichuan_kejiguan",
@@ -7005,7 +7792,9 @@
         "tier": "main",
         "name_zh": "四川科技馆",
         "name_en": "Sichuan Science and Technology Museum",
-        "aliases_zh": [],
+        "aliases_zh": [
+          "四川省科技馆"
+        ],
         "aliases_en": [],
         "address_zh": null,
         "address_en": null,
@@ -7059,7 +7848,15 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "四川省科技馆",
+          "lang": "zh",
+          "url": "https://zh.wikipedia.org/wiki/%E5%9B%9B%E5%B7%9D%E7%9C%81%E7%A7%91%E6%8A%80%E9%A6%86?redirect=no",
+          "kind": "redirect"
+        }
+      ]
     },
     {
       "id": "pl_cd_sisyphe_waterworks_1946",
@@ -7136,7 +7933,7 @@
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": "天府大道北段",
-        "address_en": null,
+        "address_en": "North Section of Tianfu Avenue, Chengdu, China",
         "district_zh": "高新区",
         "nearest_metro": null,
         "foreigner_signals": {
@@ -7151,7 +7948,7 @@
         "sources": [
           "https://skp-beijing.com/shop?c=chengdu"
         ],
-        "checked_on": "2026-11-27",
+        "checked_on": "2026-11-28",
         "confidence": "medium",
         "notes": "营业依据为当前经营方点位或近期主管部门的具名记录。",
         "subcategory": "mall",
@@ -7169,12 +7966,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 21,
+        "total": 23,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 5,
-          "complete": 4,
+          "complete": 6,
           "amap": 0
         },
         "external_used": false
@@ -7223,6 +8020,7 @@
         "intro_long_en": "The address is in Chenghua, near the Tianfu Panda Tower. Consider it for eastern Chengdu plans, including the shopping around 339 or an outing to Eastern Suburb Memory.",
         "star": null,
         "price_band": "<500",
+        "hotel_class": "midscale",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -7252,9 +8050,7 @@
         },
         "external_used": false
       },
-      "flags": [
-        "pl_cd_taigulixierdun: unknown field 'hotel_class' is dropped on import"
-      ]
+      "flags": []
     },
     {
       "id": "pl_cd_taolin_shuichang",
@@ -7478,7 +8274,9 @@
         "name_zh": "天府广场",
         "name_en": "Tianfu Square",
         "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_en": [
+          "Tianfu Square, Chengdu"
+        ],
         "address_zh": null,
         "address_en": null,
         "district_zh": "青羊区",
@@ -7531,7 +8329,15 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "Tianfu Square, Chengdu",
+          "lang": "en",
+          "url": "https://www.travelchinaguide.com/attraction/sichuan/chengdu/tianfu-square.htm",
+          "kind": "manual"
+        }
+      ]
     },
     {
       "id": "pl_cd_tianfu_meishuguan",
@@ -7545,7 +8351,9 @@
         "name_zh": "成都市天府美术馆",
         "name_en": "Chengdu Tianfu Art Museum",
         "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_en": [
+          "Tianfu Art Museum"
+        ],
         "address_zh": null,
         "address_en": null,
         "district_zh": "金牛区",
@@ -7598,7 +8406,15 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "Tianfu Art Museum",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q109655117",
+          "kind": "wikidata"
+        }
+      ]
     },
     {
       "id": "pl_cd_tianfuershiyi_shuangliu",
@@ -7708,6 +8524,7 @@
         "intro_long_en": "Check whether Huaxiba or Xinnanmen works better for your arrival. The hotel also lists both Chengdu East and South railway stations and includes English among its spoken languages.",
         "star": null,
         "price_band": "<500",
+        "hotel_class": "midscale",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -7737,9 +8554,7 @@
         },
         "external_used": false
       },
-      "flags": [
-        "pl_cd_tianfuguangchangwanfeng: unknown field 'hotel_class' is dropped on import"
-      ]
+      "flags": []
     },
     {
       "id": "pl_cd_tianfujichangzhan",
@@ -7819,7 +8634,9 @@
         "tier": "backup",
         "name_zh": "铁像寺水街",
         "name_en": "Tiexiang Temple Water Street",
-        "aliases_zh": [],
+        "aliases_zh": [
+          "铁像寺水街景区"
+        ],
         "aliases_en": [],
         "address_zh": "高新区石羊街道铁像寺路88号",
         "address_en": null,
@@ -7873,7 +8690,20 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "hours_zh: Codex could not confirm it from an official page; check by hand",
+        "ticket.price_cny: Codex could not confirm it from an official page; check by hand",
+        "ticket.booking: Codex could not confirm it from an official page; check by hand",
+        "official_url: Codex could not confirm it from an official page; check by hand"
+      ],
+      "alias_evidence": [
+        {
+          "alias": "铁像寺水街景区",
+          "lang": "zh",
+          "url": "https://wlt.sc.gov.cn/scwlt/c100297/introduce.shtml",
+          "kind": "discovery"
+        }
+      ]
     },
     {
       "id": "pl_cd_tivano_taiguli",
@@ -8083,7 +8913,10 @@
         "name_zh": "文殊院",
         "name_en": "Wenshu Monastery",
         "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_en": [
+          "Xinxiang Monastery",
+          "Wenshu Temple (Chengdu)"
+        ],
         "address_zh": null,
         "address_en": null,
         "district_zh": "青羊区",
@@ -8136,7 +8969,21 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "Xinxiang Monastery",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q11080015",
+          "kind": "wikidata"
+        },
+        {
+          "alias": "Wenshu Temple (Chengdu)",
+          "lang": "en",
+          "url": "https://en.wikipedia.org/wiki/Wenshu_Temple_(Chengdu)",
+          "kind": "wikipedia"
+        }
+      ]
     },
     {
       "id": "pl_cd_wjiudian",
@@ -8180,6 +9027,7 @@
         "intro_long_en": "Plan a separate afternoon in the Financial City area. The hotel lists English and gives directions involving both Financial City and Jiaozi Avenue stations.",
         "star": null,
         "price_band": "500-1000",
+        "hotel_class": "luxury",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -8209,9 +9057,7 @@
         },
         "external_used": false
       },
-      "flags": [
-        "pl_cd_wjiudian: unknown field 'hotel_class' is dropped on import"
-      ]
+      "flags": []
     },
     {
       "id": "pl_cd_wuhou_yujiang_huangguan",
@@ -8254,6 +9100,7 @@
         "intro_long_en": "Start with IHG's local guide for routes from Chaoyin Road. It lists both Metro Lines 9 and 17, useful when planning trips in western Chengdu.",
         "star": null,
         "price_band": null,
+        "hotel_class": "upscale",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -8284,7 +9131,7 @@
         "external_used": false
       },
       "flags": [
-        "pl_cd_wuhou_yujiang_huangguan: unknown field 'hotel_class' is dropped on import"
+        "no price band: it cannot enter the library until the operator's own page gives a rate"
       ]
     },
     {
@@ -8298,8 +9145,17 @@
         "tier": "main",
         "name_zh": "成都武侯祠博物馆",
         "name_en": "Wuhou Shrine Museum",
-        "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_zh": [
+          "武侯祠",
+          "成都武侯祠",
+          "武侯祠博物馆"
+        ],
+        "aliases_en": [
+          "Chengdu Wuhou Shrine Museum",
+          "Wuhou Shrine",
+          "Wuhou Temple",
+          "Wuhouci"
+        ],
         "address_zh": "成都市武侯祠大街231号",
         "address_en": null,
         "district_zh": "武侯区",
@@ -8356,7 +9212,51 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "武侯祠",
+          "lang": "zh",
+          "url": "https://www.wuhouci.net.cn/",
+          "kind": "manual"
+        },
+        {
+          "alias": "成都武侯祠",
+          "lang": "zh",
+          "url": "https://www.wuhouci.net.cn/",
+          "kind": "manual"
+        },
+        {
+          "alias": "Chengdu Wuhou Shrine Museum",
+          "lang": "en",
+          "url": "https://en.wuhouci.net.cn/map",
+          "kind": "manual"
+        },
+        {
+          "alias": "Wuhou Shrine",
+          "lang": "en",
+          "url": "https://en.wuhouci.net.cn/map",
+          "kind": "manual"
+        },
+        {
+          "alias": "Wuhou Temple",
+          "lang": "en",
+          "url": "https://en.wikipedia.org/wiki/Wuhou_Shrine,_Chengdu",
+          "kind": "manual"
+        },
+        {
+          "alias": "Wuhouci",
+          "lang": "en",
+          "url": "https://en.wikipedia.org/wiki/Wuhou_Shrine,_Chengdu",
+          "kind": "manual"
+        },
+        {
+          "alias": "武侯祠博物馆",
+          "lang": "zh",
+          "url": "https://zh.wikipedia.org/wiki/%E6%AD%A6%E4%BE%AF%E7%A5%A0%E5%8D%9A%E7%89%A9%E9%A6%86?redirect=no",
+          "kind": "redirect"
+        }
+      ]
     },
     {
       "id": "pl_cd_xianggelila",
@@ -8400,6 +9300,7 @@
         "intro_long_en": "Set aside an evening for the riverfront. The hotel's English guide points to Anshun Bridge and Hejiang Pavilion and has separate directions from Shuangliu Airport.",
         "star": null,
         "price_band": "500-1000",
+        "hotel_class": "luxury",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -8429,9 +9330,7 @@
         },
         "external_used": false
       },
-      "flags": [
-        "pl_cd_xianggelila: unknown field 'hotel_class' is dropped on import"
-      ]
+      "flags": []
     },
     {
       "id": "pl_cd_xiaonantang_jiaozi",
@@ -8574,7 +9473,9 @@
         "tier": "main",
         "name_zh": "西岭雪山",
         "name_en": "Xiling Snow Mountain",
-        "aliases_zh": [],
+        "aliases_zh": [
+          "成都市西岭雪山景区"
+        ],
         "aliases_en": [],
         "address_zh": "成都市大邑县西岭镇西岭雪山滑雪场",
         "address_en": null,
@@ -8586,18 +9487,19 @@
           "english_service": null,
           "evidence": []
         },
-        "official_url": null,
+        "official_url": "https://www.xiling.cn/",
         "sources": [
-          "https://wlt.sc.gov.cn/scwlt/c100297/introduce.shtml"
+          "https://wlt.sc.gov.cn/scwlt/c100297/introduce.shtml",
+          "https://www.xiling.cn/website/survey/dynamic/detail?id=1888"
         ],
-        "checked_on": "2026-11-18",
+        "checked_on": "2026-11-27",
         "confidence": "low",
         "notes": "官方目录沿用既有候选记录的核对日，晋级前应重读。",
         "subcategory": "park",
         "hours_zh": null,
         "hours_source": null,
         "ticket": {
-          "booking": null,
+          "booking": "required",
           "passport_required": null,
           "price_cny": null,
           "closed_weekdays": null,
@@ -8618,17 +9520,28 @@
         "alternatives": []
       },
       "score": {
-        "total": 12,
+        "total": 18,
         "parts": {
           "foreigner": 0,
           "confidence": 4,
-          "sources": 5,
-          "complete": 3,
+          "sources": 10,
+          "complete": 4,
           "amap": 0
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "hours_zh: Codex could not confirm it from an official page; check by hand",
+        "ticket.price_cny: Codex could not confirm it from an official page; check by hand"
+      ],
+      "alias_evidence": [
+        {
+          "alias": "成都市西岭雪山景区",
+          "lang": "zh",
+          "url": "https://wlt.sc.gov.cn/scwlt/c100297/introduce.shtml",
+          "kind": "discovery"
+        }
+      ]
     },
     {
       "id": "pl_cd_xinglonghu",
@@ -8695,7 +9608,12 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "hours_zh: Codex could not confirm it from an official page; check by hand",
+        "ticket.price_cny: Codex could not confirm it from an official page; check by hand",
+        "ticket.booking: Codex could not confirm it from an official page; check by hand",
+        "official_url: Codex could not confirm it from an official page; check by hand"
+      ]
     },
     {
       "id": "pl_cd_xiongmaogu",
@@ -8709,7 +9627,9 @@
         "name_zh": "熊猫谷",
         "name_en": "Panda Valley",
         "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_en": [
+          "Chengdu Field Research Center for Giant Pandas"
+        ],
         "address_zh": null,
         "address_en": null,
         "district_zh": "都江堰市",
@@ -8762,7 +9682,15 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "Chengdu Field Research Center for Giant Pandas",
+          "lang": "en",
+          "url": "https://m.panda.org.cn/en/pandavalley/tour/",
+          "kind": "manual"
+        }
+      ]
     },
     {
       "id": "pl_cd_xueronghua_dongdajie",
@@ -8909,7 +9837,11 @@
         "name_zh": "罨画池",
         "name_en": "Yanhua Pond",
         "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_en": [
+          "Yanhuachi",
+          "Yanhuachi Garden",
+          "Yanhua Pool"
+        ],
         "address_zh": "成都市崇州市大东街",
         "address_en": null,
         "district_zh": "崇州市",
@@ -8962,7 +9894,32 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "hours_zh: Codex could not confirm it from an official page; check by hand",
+        "ticket.price_cny: Codex could not confirm it from an official page; check by hand",
+        "ticket.booking: Codex could not confirm it from an official page; check by hand",
+        "official_url: Codex could not confirm it from an official page; check by hand"
+      ],
+      "alias_evidence": [
+        {
+          "alias": "Yanhuachi",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q15897511",
+          "kind": "label"
+        },
+        {
+          "alias": "Yanhuachi Garden",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q15897511",
+          "kind": "wikidata"
+        },
+        {
+          "alias": "Yanhua Pool",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q15897511",
+          "kind": "wikidata"
+        }
+      ]
     },
     {
       "id": "pl_cd_yaohua_kuanzhai_shop",
@@ -9065,6 +10022,7 @@
         "intro_long_en": "Use Chenghua as a base before or after an east-station rail trip. Accor gives the Jiancai Road address for planning that last leg from the station.",
         "star": null,
         "price_band": null,
+        "hotel_class": "economy",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -9095,7 +10053,7 @@
         "external_used": false
       },
       "flags": [
-        "pl_cd_yibisi_dongzhan: unknown field 'hotel_class' is dropped on import"
+        "no price band: it cannot enter the library until the operator's own page gives a rate"
       ]
     },
     {
@@ -9138,6 +10096,7 @@
         "intro_long_en": "Look for the hotel on the eighth floor of Guoxin Square. Accor lists Luomashi on Metro Lines 1 and 4 for trips from the neighborhood.",
         "star": null,
         "price_band": null,
+        "hotel_class": "economy",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -9168,7 +10127,7 @@
         "external_used": false
       },
       "flags": [
-        "pl_cd_yibisi_kuanzhai_central: unknown field 'hotel_class' is dropped on import"
+        "no price band: it cannot enter the library until the operator's own page gives a rate"
       ]
     },
     {
@@ -9211,6 +10170,7 @@
         "intro_long_en": "Pack a little lighter for a multi-day trip. The property lists self-service laundry, and the English listing identifies Building 68 in Meizhou Garden.",
         "star": null,
         "price_band": null,
+        "hotel_class": "economy",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -9241,7 +10201,7 @@
         "external_used": false
       },
       "flags": [
-        "pl_cd_yibisi_meiguoling: unknown field 'hotel_class' is dropped on import"
+        "no price band: it cannot enter the library until the operator's own page gives a rate"
       ]
     },
     {
@@ -9285,6 +10245,7 @@
         "intro_long_en": "Stay in Jinjiang when your plans revolve around the pedestrian shopping streets. Accor lists Daci Temple among the nearby stops, as well as room options in English.",
         "star": null,
         "price_band": null,
+        "hotel_class": "economy",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -9315,7 +10276,7 @@
         "external_used": false
       },
       "flags": [
-        "pl_cd_yibisi_shududasha: unknown field 'hotel_class' is dropped on import"
+        "no price band: it cannot enter the library until the operator's own page gives a rate"
       ]
     },
     {
@@ -9358,6 +10319,7 @@
         "intro_long_en": "If you plan to spend a day in Wuhou, use the hotel's English listing to plan around Jinli and Shaoling Road. The property also serves breakfast.",
         "star": null,
         "price_band": null,
+        "hotel_class": "economy",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -9388,7 +10350,7 @@
         "external_used": false
       },
       "flags": [
-        "pl_cd_yibisi_wuhouci: unknown field 'hotel_class' is dropped on import"
+        "no price band: it cannot enter the library until the operator's own page gives a rate"
       ]
     },
     {
@@ -9588,7 +10550,12 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "hours_zh: Codex could not confirm it from an official page; check by hand",
+        "ticket.price_cny: Codex could not confirm it from an official page; check by hand",
+        "ticket.booking: Codex could not confirm it from an official page; check by hand",
+        "official_url: Codex could not confirm it from an official page; check by hand"
+      ]
     },
     {
       "id": "pl_cd_yinguo_chengdu",
@@ -9798,8 +10765,16 @@
         "tier": "main",
         "name_zh": "成都永陵博物馆",
         "name_en": "Yongling Museum",
-        "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_zh": [
+          "王建墓",
+          "前蜀永陵",
+          "永陵博物馆"
+        ],
+        "aliases_en": [
+          "tomb of Wang Jian",
+          "Yongling Mausoleum",
+          "Mausoleum of Wang Jian"
+        ],
         "address_zh": "四川省成都市金牛区永陵路10号",
         "address_en": null,
         "district_zh": "金牛区",
@@ -9852,7 +10827,50 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "hours_zh: Codex could not confirm it from an official page; check by hand",
+        "ticket.price_cny: Codex could not confirm it from an official page; check by hand",
+        "ticket.booking: Codex could not confirm it from an official page; check by hand",
+        "official_url: Codex could not confirm it from an official page; check by hand"
+      ],
+      "alias_evidence": [
+        {
+          "alias": "王建墓",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q1540709",
+          "kind": "label"
+        },
+        {
+          "alias": "前蜀永陵",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q1540709",
+          "kind": "wikidata"
+        },
+        {
+          "alias": "tomb of Wang Jian",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q1540709",
+          "kind": "wikidata"
+        },
+        {
+          "alias": "Yongling Mausoleum",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q1540709",
+          "kind": "wikidata"
+        },
+        {
+          "alias": "Mausoleum of Wang Jian",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q1540709",
+          "kind": "wikidata"
+        },
+        {
+          "alias": "永陵博物馆",
+          "lang": "zh",
+          "url": "https://zh.wikipedia.org/wiki/%E6%B0%B8%E9%99%B5%E5%8D%9A%E7%89%A9%E9%A6%86?redirect=no",
+          "kind": "redirect"
+        }
+      ]
     },
     {
       "id": "pl_cd_yulin_erxiang_market",
@@ -10384,7 +11402,7 @@
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": "总府街31号",
-        "address_en": null,
+        "address_en": "31 Zongfu Street, Chengdu, Sichuan 610016, China",
         "district_zh": "锦江区",
         "nearest_metro": null,
         "foreigner_signals": {
@@ -10398,9 +11416,10 @@
         "official_url": "https://www.ihg.com/crowneplaza/hotels/us/en/chengdu/ctuch/hoteldetail",
         "sources": [
           "https://www.ihg.com/crowneplaza/hotels/us/en/chengdu/ctuch/hoteldetail",
-          "https://www.ihgplc.com/en/news-and-media/news-releases/2025/ihg-hotels-and-resorts-conversion-friendly-brands-fuel-growth-opportunities-for-owners"
+          "https://www.ihgplc.com/en/news-and-media/news-releases/2025/ihg-hotels-and-resorts-conversion-friendly-brands-fuel-growth-opportunities-for-owners",
+          "https://www.ihg.com/crowneplaza/hotels/gb/en/chengdu/ctuch/hoteldetail?fromRedirect=true&qSHBrC=CP&qSlH=ctuch"
         ],
-        "checked_on": "2026-11-27",
+        "checked_on": "2026-11-28",
         "confidence": "medium",
         "notes": "分档依据：洲际酒店集团将该品牌列为 Premium。",
         "subcategory": "hotel",
@@ -10410,6 +11429,7 @@
         "intro_long_en": "Give central Chengdu an unhurried day from this Crowne Plaza. Its English hotel page identifies the shopping streets and gives the street address for arrival.",
         "star": null,
         "price_band": null,
+        "hotel_class": "upscale",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -10429,18 +11449,18 @@
         "alternatives": []
       },
       "score": {
-        "total": 26,
+        "total": 28,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 4,
+          "complete": 6,
           "amap": 0
         },
         "external_used": false
       },
       "flags": [
-        "pl_cd_zongfu_huangguan: unknown field 'hotel_class' is dropped on import"
+        "no price band: it cannot enter the library until the operator's own page gives a rate"
       ]
     }
   ]

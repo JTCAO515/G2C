@@ -1,7 +1,7 @@
 {
   "version": "g2c-places-candidates.1",
   "city": "beijing",
-  "generated_on": "2026-11-27",
+  "generated_on": "2026-11-28",
   "candidates": [
     {
       "id": "pl_bj_aolinpike",
@@ -14,8 +14,14 @@
         "tier": "main",
         "name_zh": "北京奥林匹克公园",
         "name_en": "Beijing Olympic Park",
-        "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_zh": [
+          "奥林匹克公园 (北京)",
+          "北京奥林匹克公园景区",
+          "北京奧林匹克公園"
+        ],
+        "aliases_en": [
+          "Olympic Green"
+        ],
         "address_zh": null,
         "address_en": null,
         "district_zh": "朝阳区",
@@ -69,7 +75,33 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "Olympic Green",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q912817",
+          "kind": "label"
+        },
+        {
+          "alias": "奥林匹克公园 (北京)",
+          "lang": "zh",
+          "url": "https://zh.wikipedia.org/wiki/%E5%A5%A5%E6%9E%97%E5%8C%B9%E5%85%8B%E5%85%AC%E5%9B%AD_(%E5%8C%97%E4%BA%AC)",
+          "kind": "wikipedia"
+        },
+        {
+          "alias": "北京奥林匹克公园景区",
+          "lang": "zh",
+          "url": "https://whlyj.beijing.gov.cn/ggfw/ly/202511/t20251119_4287815.html",
+          "kind": "discovery"
+        },
+        {
+          "alias": "北京奧林匹克公園",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q912817",
+          "kind": "published_traditional"
+        }
+      ]
     },
     {
       "id": "pl_bj_aotiwanfeng",
@@ -113,6 +145,7 @@
         "intro_long_en": "Choose this Fairfield for plans around the Olympic Sports Center. The hotel lists the nearby subway stop and has a fitness room with treadmills.",
         "star": null,
         "price_band": "<500",
+        "hotel_class": "midscale",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -142,9 +175,7 @@
         },
         "external_used": false
       },
-      "flags": [
-        "pl_bj_aotiwanfeng: unknown field 'hotel_class' is dropped on import"
-      ]
+      "flags": []
     },
     {
       "id": "pl_bj_badaling",
@@ -157,8 +188,16 @@
         "tier": "main",
         "name_zh": "八达岭长城",
         "name_en": "Badaling Great Wall",
-        "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_zh": [
+          "八达岭",
+          "八达岭国家级风景名胜区",
+          "八达岭长城景区",
+          "八達嶺"
+        ],
+        "aliases_en": [
+          "Badaling",
+          "Great Wall at Badaling"
+        ],
         "address_zh": null,
         "address_en": null,
         "district_zh": "延庆区",
@@ -214,7 +253,45 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "八达岭",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q798826",
+          "kind": "label"
+        },
+        {
+          "alias": "Badaling",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q798826",
+          "kind": "label"
+        },
+        {
+          "alias": "Great Wall at Badaling",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q798826",
+          "kind": "wikidata"
+        },
+        {
+          "alias": "八达岭国家级风景名胜区",
+          "lang": "zh",
+          "url": "https://zh.wikipedia.org/wiki/%E5%85%AB%E8%BE%BE%E5%B2%AD%E5%9B%BD%E5%AE%B6%E7%BA%A7%E9%A3%8E%E6%99%AF%E5%90%8D%E8%83%9C%E5%8C%BA?redirect=no",
+          "kind": "redirect"
+        },
+        {
+          "alias": "八达岭长城景区",
+          "lang": "zh",
+          "url": "https://whlyj.beijing.gov.cn/ggfw/ly/202511/t20251119_4287815.html",
+          "kind": "discovery"
+        },
+        {
+          "alias": "八達嶺",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q798826",
+          "kind": "published_traditional"
+        }
+      ]
     },
     {
       "id": "pl_bj_badalingyilin",
@@ -257,6 +334,7 @@
         "intro_long_en": "Stay in Yanqing to give the Badaling Great Wall and Yeyahu wetlands separate outings. The location guide also names Yanqing railway station for arrival planning.",
         "star": null,
         "price_band": "<500",
+        "hotel_class": "upscale",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -286,9 +364,7 @@
         },
         "external_used": false
       },
-      "flags": [
-        "pl_bj_badalingyilin: unknown field 'hotel_class' is dropped on import"
-      ]
+      "flags": []
     },
     {
       "id": "pl_bj_baikuilaohao_jiaodaokou",
@@ -369,7 +445,11 @@
         "name_zh": "妙应寺白塔",
         "name_en": "White Stupa at Miaoying Temple",
         "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_en": [
+          "Miaoying Temple white stüpa",
+          "White Pagoda of Miaoying Temple",
+          "White Pagoda of the Miaoying Temple"
+        ],
         "address_zh": null,
         "address_en": null,
         "district_zh": "西城区",
@@ -422,7 +502,27 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "Miaoying Temple white stüpa",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q22070243",
+          "kind": "wikidata"
+        },
+        {
+          "alias": "White Pagoda of Miaoying Temple",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q22070243",
+          "kind": "wikidata"
+        },
+        {
+          "alias": "White Pagoda of the Miaoying Temple",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q22070243",
+          "kind": "wikidata"
+        }
+      ]
     },
     {
       "id": "pl_bj_baogeli",
@@ -467,6 +567,7 @@
         "intro_long_en": "Pick this riverside address if you plan to spend time along the Liangma River. The hotel sits beside the Genesis Art Gallery and has a 25-meter pool.",
         "star": null,
         "price_band": ">2000",
+        "hotel_class": "luxury",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -496,9 +597,7 @@
         },
         "external_used": false
       },
-      "flags": [
-        "pl_bj_baogeli: unknown field 'hotel_class' is dropped on import"
-      ]
+      "flags": []
     },
     {
       "id": "pl_bj_baqikaorou_shichahai",
@@ -576,8 +675,15 @@
         "tier": "main",
         "name_zh": "北海公园",
         "name_en": "Beihai Park",
-        "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_zh": [
+          "北海公园 (北京)",
+          "北京市北海公园旅游区",
+          "北海公園"
+        ],
+        "aliases_en": [
+          "Beihai gongyuan",
+          "Běihǎi Gōngyuán"
+        ],
         "address_zh": null,
         "address_en": null,
         "district_zh": "西城区",
@@ -631,7 +737,39 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "Beihai gongyuan",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q133650",
+          "kind": "wikidata"
+        },
+        {
+          "alias": "北海公园 (北京)",
+          "lang": "zh",
+          "url": "https://zh.wikipedia.org/wiki/%E5%8C%97%E6%B5%B7%E5%85%AC%E5%9B%AD_(%E5%8C%97%E4%BA%AC)?redirect=no",
+          "kind": "redirect"
+        },
+        {
+          "alias": "Běihǎi Gōngyuán",
+          "lang": "en",
+          "url": "https://en.wikipedia.org/wiki/B%C4%9Bih%C7%8Ei_G%C5%8Dngyu%C3%A1n?redirect=no",
+          "kind": "redirect"
+        },
+        {
+          "alias": "北京市北海公园旅游区",
+          "lang": "zh",
+          "url": "https://whlyj.beijing.gov.cn/ggfw/ly/202511/t20251119_4287815.html",
+          "kind": "discovery"
+        },
+        {
+          "alias": "北海公園",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q133650",
+          "kind": "published_traditional"
+        }
+      ]
     },
     {
       "id": "pl_bj_beijing_flower_trade",
@@ -1426,77 +1564,6 @@
       "flags": []
     },
     {
-      "id": "pl_bj_changpingwanhao",
-      "source_file": "C8/beijing-hotel.json",
-      "status": "pending",
-      "draft": {
-        "id": "pl_bj_changpingwanhao",
-        "city": "beijing",
-        "category": "hotel",
-        "tier": "backup",
-        "name_zh": "北京乐多港万豪酒店",
-        "name_en": "Beijing Marriott Hotel Changping",
-        "aliases_zh": [],
-        "aliases_en": [],
-        "address_zh": null,
-        "address_en": null,
-        "district_zh": null,
-        "nearest_metro": null,
-        "foreigner_signals": {
-          "english_signage": null,
-          "foreign_cards": null,
-          "english_service": null,
-          "evidence": [
-            "https://www.marriott.com/en-us/hotels/bjscp-beijing-marriott-hotel-changping/overview/"
-          ]
-        },
-        "official_url": "https://www.marriott.com/en-us/hotels/bjscp-beijing-marriott-hotel-changping/overview/",
-        "sources": [
-          "https://www.marriott.com/en-us/hotels/bjscp-beijing-marriott-hotel-changping/overview/",
-          "https://www.marriott.com/en-us/destinations/china/beijing.mi?pg=3"
-        ],
-        "checked_on": "2026-11-27",
-        "confidence": "medium",
-        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sat, Dec 26 - Sun, Dec 27。 官网样本为每房每晚人民币 ¥857。当前价以所选日期及房型的报价为准。",
-        "subcategory": "hotel",
-        "intro_short_zh": "昌平一带的万豪酒店。",
-        "intro_short_en": "A Marriott hotel in the Changping area.",
-        "intro_long_zh": "昌平一带的万豪酒店。可在品牌官网查看房型和入住安排。",
-        "intro_long_en": "A Marriott hotel in the Changping area. See the hotel's own website for room types and check-in details.",
-        "star": null,
-        "price_band": "500-1000",
-        "accepts_foreigners": true,
-        "foreign_service": {
-          "english_front_desk": null,
-          "foreign_guest_share": null,
-          "foreign_guest_experience": null,
-          "international_brand": "Marriott Bonvoy",
-          "evidence_zh": "北京乐多港万豪酒店由国际酒店品牌或集团 Marriott Bonvoy 的官网正式列出并提供预订入口。",
-          "evidence": [
-            "https://www.marriott.com/en-us/hotels/bjscp-beijing-marriott-hotel-changping/overview/"
-          ]
-        }
-      },
-      "external_signals": [],
-      "location": null,
-      "amap": {
-        "status": "not-run",
-        "alternatives": []
-      },
-      "score": {
-        "total": 26,
-        "parts": {
-          "foreigner": 0,
-          "confidence": 12,
-          "sources": 10,
-          "complete": 4,
-          "amap": 0
-        },
-        "external_used": false
-      },
-      "flags": []
-    },
-    {
       "id": "pl_bj_changpingwanyi",
       "source_file": "C8/beijing-hotel.json",
       "status": "pending",
@@ -1539,6 +1606,7 @@
         "intro_long_en": "If you want to set aside a day outside central Beijing, the hotel's experience page describes the Juyongguan and Huanghuacheng sections of the Great Wall.",
         "star": null,
         "price_band": "<500",
+        "hotel_class": "midscale",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -1568,9 +1636,7 @@
         },
         "external_used": false
       },
-      "flags": [
-        "pl_bj_changpingwanyi: unknown field 'hotel_class' is dropped on import"
-      ]
+      "flags": []
     },
     {
       "id": "pl_bj_chaoshangchao_xicheng",
@@ -1716,7 +1782,7 @@
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": "建国门外大街1号",
-        "address_en": null,
+        "address_en": "1 Jianguomen Outer Street, Chaoyang District, Beijing",
         "district_zh": "朝阳区",
         "nearest_metro": {
           "station_zh": "国贸",
@@ -1738,7 +1804,8 @@
           "https://www.beijing.gov.cn/fuwu/bmfw/sy/jrts/202605/t20260515_4651758.html",
           "https://r.visitbeijing.com.cn/leisures?area=7&page=2&theme=3",
           "https://www.visitbeijing.com.cn/article/47Qm8xLHd90",
-          "https://english.beijing.gov.cn/livinginbeijing/transportation/beijingsubway/"
+          "https://english.beijing.gov.cn/livinginbeijing/transportation/beijingsubway/",
+          "https://english.beijing.gov.cn/travellinginbeijing/shopping/dutyfreestores/202007/t20200703_1938118.html"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
@@ -1758,12 +1825,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 58,
+        "total": 60,
         "parts": {
           "foreigner": 30,
           "confidence": 12,
           "sources": 10,
-          "complete": 6,
+          "complete": 8,
           "amap": 0
         },
         "external_used": false
@@ -1842,7 +1909,9 @@
         "tier": "main",
         "name_zh": "大栅栏",
         "name_en": "Dashilan",
-        "aliases_zh": [],
+        "aliases_zh": [
+          "大栅栏街"
+        ],
         "aliases_en": [],
         "address_zh": null,
         "address_en": null,
@@ -1896,78 +1965,15 @@
         },
         "external_used": false
       },
-      "flags": []
-    },
-    {
-      "id": "pl_bj_daxingxierdun",
-      "source_file": "C8/beijing-hotel.json",
-      "status": "pending",
-      "draft": {
-        "id": "pl_bj_daxingxierdun",
-        "city": "beijing",
-        "category": "hotel",
-        "tier": "backup",
-        "name_zh": "北京大兴希尔顿酒店",
-        "name_en": "Hilton Beijing Daxing",
-        "aliases_zh": [],
-        "aliases_en": [],
-        "address_zh": null,
-        "address_en": null,
-        "district_zh": "大兴区",
-        "nearest_metro": null,
-        "foreigner_signals": {
-          "english_signage": null,
-          "foreign_cards": null,
-          "english_service": null,
-          "evidence": [
-            "https://www.hilton.com.cn/zh-cn/hotels/bjsbchi-hilton-beijing-daxing"
-          ]
-        },
-        "official_url": "https://www.hilton.com.cn/zh-cn/hotels/bjsbchi-hilton-beijing-daxing",
-        "sources": [
-          "https://www.hilton.com.cn/zh-cn/hotels/bjsbchi-hilton-beijing-daxing",
-          "https://www.hilton.com.cn/zh-cn/locations/china/beijing-beijing"
-        ],
-        "checked_on": "2026-11-27",
-        "confidence": "medium",
-        "notes": "希尔顿城市页显示 2026-11-27 入住、11-28 退房的起价。 官网样本为每房每晚人民币 ¥674。当前价以所选日期及房型的报价为准。",
-        "subcategory": "hotel",
-        "intro_short_zh": "住在大兴区的希尔顿酒店。",
-        "intro_short_en": "A Hilton hotel in Daxing District.",
-        "intro_long_zh": "住在大兴区的希尔顿酒店。可在品牌官网查看房型和入住安排。",
-        "intro_long_en": "A Hilton hotel in Daxing District. See the hotel's own website for room types and check-in details.",
-        "star": null,
-        "price_band": "500-1000",
-        "accepts_foreigners": true,
-        "foreign_service": {
-          "english_front_desk": null,
-          "foreign_guest_share": null,
-          "foreign_guest_experience": null,
-          "international_brand": "Hilton",
-          "evidence_zh": "北京大兴希尔顿酒店由国际酒店品牌或集团 Hilton 的官网正式列出并提供预订入口。",
-          "evidence": [
-            "https://www.hilton.com.cn/zh-cn/hotels/bjsbchi-hilton-beijing-daxing"
-          ]
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "大栅栏街",
+          "lang": "zh",
+          "url": "https://zh.wikipedia.org/wiki/%E5%A4%A7%E6%A0%85%E6%A0%8F%E8%A1%97?redirect=no",
+          "kind": "redirect"
         }
-      },
-      "external_signals": [],
-      "location": null,
-      "amap": {
-        "status": "not-run",
-        "alternatives": []
-      },
-      "score": {
-        "total": 26,
-        "parts": {
-          "foreigner": 0,
-          "confidence": 12,
-          "sources": 10,
-          "complete": 4,
-          "amap": 0
-        },
-        "external_used": false
-      },
-      "flags": []
+      ]
     },
     {
       "id": "pl_bj_ditan",
@@ -1980,8 +1986,15 @@
         "tier": "main",
         "name_zh": "地坛公园",
         "name_en": "Ditan Park",
-        "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_zh": [
+          "地坛",
+          "地壇"
+        ],
+        "aliases_en": [
+          "Temple of Earth",
+          "Dìtán Gōngyuán",
+          "Temple of the Earth"
+        ],
         "address_zh": "北京市东城区安定门外大街200号",
         "address_en": null,
         "district_zh": "东城区",
@@ -2035,7 +2048,39 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "地坛",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q615178",
+          "kind": "label"
+        },
+        {
+          "alias": "Temple of Earth",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q615178",
+          "kind": "label"
+        },
+        {
+          "alias": "Dìtán Gōngyuán",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q615178",
+          "kind": "wikidata"
+        },
+        {
+          "alias": "Temple of the Earth",
+          "lang": "en",
+          "url": "https://en.wikipedia.org/wiki/Temple_of_the_Earth?redirect=no",
+          "kind": "redirect"
+        },
+        {
+          "alias": "地壇",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q615178",
+          "kind": "published_traditional"
+        }
+      ]
     },
     {
       "id": "pl_bj_donglaishun_apm",
@@ -2117,8 +2162,14 @@
         "tier": "main",
         "name_zh": "北京动物园景区",
         "name_en": "Beijing Zoo",
-        "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_zh": [
+          "北京动物园",
+          "北京動物園"
+        ],
+        "aliases_en": [
+          "Peking Zoological Garden",
+          "Dongwuyuan"
+        ],
         "address_zh": "北京市西城区西直门外大街137号",
         "address_en": null,
         "district_zh": "西城区",
@@ -2172,78 +2223,33 @@
         },
         "external_used": false
       },
-      "flags": []
-    },
-    {
-      "id": "pl_bj_dongzhimenwanhao",
-      "source_file": "C8/beijing-hotel.json",
-      "status": "pending",
-      "draft": {
-        "id": "pl_bj_dongzhimenwanhao",
-        "city": "beijing",
-        "category": "hotel",
-        "tier": "main",
-        "name_zh": "北京东直门JW万豪酒店",
-        "name_en": "JW Marriott Hotel Beijing Dongzhimen",
-        "aliases_zh": [],
-        "aliases_en": [],
-        "address_zh": null,
-        "address_en": null,
-        "district_zh": null,
-        "nearest_metro": null,
-        "foreigner_signals": {
-          "english_signage": null,
-          "foreign_cards": null,
-          "english_service": null,
-          "evidence": [
-            "https://www.marriott.com/en-us/hotels/bjsjd-jw-marriott-hotel-beijing-dongzhimen/overview/"
-          ]
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "北京动物园",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q220083",
+          "kind": "label"
         },
-        "official_url": "https://www.marriott.com/en-us/hotels/bjsjd-jw-marriott-hotel-beijing-dongzhimen/overview/",
-        "sources": [
-          "https://www.marriott.com/en-us/hotels/bjsjd-jw-marriott-hotel-beijing-dongzhimen/overview/",
-          "https://www.marriott.com/en-us/destinations/china/beijing.mi"
-        ],
-        "checked_on": "2026-11-27",
-        "confidence": "medium",
-        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sat, Dec 26 - Sun, Dec 27。 官网样本为每房每晚人民币 ¥1,701。当前价以所选日期及房型的报价为准。",
-        "subcategory": "hotel",
-        "intro_short_zh": "在东直门一带安排住宿的一家万豪酒店。",
-        "intro_short_en": "A Marriott option in the Dongzhimen area.",
-        "intro_long_zh": "在东直门一带安排住宿的一家万豪酒店。可在品牌官网查看房型和入住安排。",
-        "intro_long_en": "A Marriott option in the Dongzhimen area. See the hotel's own website for room types and check-in details.",
-        "star": null,
-        "price_band": "1000-2000",
-        "accepts_foreigners": true,
-        "foreign_service": {
-          "english_front_desk": null,
-          "foreign_guest_share": null,
-          "foreign_guest_experience": null,
-          "international_brand": "Marriott Bonvoy",
-          "evidence_zh": "北京东直门JW万豪酒店由国际酒店品牌或集团 Marriott Bonvoy 的官网正式列出并提供预订入口。",
-          "evidence": [
-            "https://www.marriott.com/en-us/hotels/bjsjd-jw-marriott-hotel-beijing-dongzhimen/overview/"
-          ]
+        {
+          "alias": "Peking Zoological Garden",
+          "lang": "en",
+          "url": "https://en.wikipedia.org/wiki/Peking_Zoological_Garden?redirect=no",
+          "kind": "redirect"
+        },
+        {
+          "alias": "Dongwuyuan",
+          "lang": "en",
+          "url": "https://en.wikipedia.org/wiki/Dongwuyuan?redirect=no",
+          "kind": "redirect"
+        },
+        {
+          "alias": "北京動物園",
+          "lang": "zh",
+          "url": "https://zh.wikipedia.org/wiki/%E5%8C%97%E4%BA%AC%E5%8B%95%E7%89%A9%E5%9C%92?redirect=no",
+          "kind": "published_traditional"
         }
-      },
-      "external_signals": [],
-      "location": null,
-      "amap": {
-        "status": "not-run",
-        "alternatives": []
-      },
-      "score": {
-        "total": 26,
-        "parts": {
-          "foreigner": 0,
-          "confidence": 12,
-          "sources": 10,
-          "complete": 4,
-          "amap": 0
-        },
-        "external_used": false
-      },
-      "flags": []
+      ]
     },
     {
       "id": "pl_bj_duyichu_qianmen",
@@ -2419,6 +2425,7 @@
         "intro_long_en": "Stay in Changyang if the southwest side of Beijing is the focus of your trip. The hotel's directions list Changyang Metro Station and English among the property languages.",
         "star": null,
         "price_band": "<500",
+        "hotel_class": "midscale",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -2448,9 +2455,7 @@
         },
         "external_used": false
       },
-      "flags": [
-        "pl_bj_fangshanfupeng: unknown field 'hotel_class' is dropped on import"
-      ]
+      "flags": []
     },
     {
       "id": "pl_bj_fangzhuanchang_beixinqiao",
@@ -2598,7 +2603,12 @@
         "address_zh": "北京市朝阳区东三环中路61号",
         "address_en": "61 Dongsanhuan Middle Road, Chaoyang District, Beijing, China 100022",
         "district_zh": "朝阳区",
-        "nearest_metro": null,
+        "nearest_metro": {
+          "station_zh": "双井",
+          "station_en": "Shuangjing",
+          "line": "7、10号线",
+          "exit": null
+        },
         "foreigner_signals": {
           "english_signage": null,
           "foreign_cards": null,
@@ -2612,7 +2622,8 @@
           "https://www.marriott.com/en-us/hotels/bjsbc-renaissance-beijing-capital-hotel/overview/",
           "https://www.marriott.com/en-us/destinations/china/beijing.mi",
           "https://help.marriott.com/s/article/Article-24483",
-          "https://www.marriott.com.cn/hotels/bjsbc-renaissance-beijing-capital-hotel/overview/"
+          "https://www.marriott.com.cn/hotels/bjsbc-renaissance-beijing-capital-hotel/overview/",
+          "https://english.beijing.gov.cn/specials/beijinglifeonthesubway/publicservices/202206/t20220623_2749515.html"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
@@ -2624,6 +2635,7 @@
         "intro_long_en": "Plan independent subway outings from the Shuangjing area. The hotel lists both lines and identifies English as one of the languages spoken on the property.",
         "star": null,
         "price_band": "500-1000",
+        "hotel_class": "upscale",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -2643,19 +2655,17 @@
         "alternatives": []
       },
       "score": {
-        "total": 29,
+        "total": 31,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 7,
+          "complete": 9,
           "amap": 0
         },
         "external_used": false
       },
-      "flags": [
-        "pl_bj_fuliwanli: unknown field 'hotel_class' is dropped on import"
-      ]
+      "flags": []
     },
     {
       "id": "pl_bj_furong_xicheng",
@@ -2733,7 +2743,9 @@
         "tier": "main",
         "name_zh": "恭王府博物馆",
         "name_en": "Prince Kung's Palace Museum",
-        "aliases_zh": [],
+        "aliases_zh": [
+          "恭王府"
+        ],
         "aliases_en": [],
         "address_zh": "北京市西城区柳荫街甲14号",
         "address_en": null,
@@ -2788,7 +2800,15 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "恭王府",
+          "lang": "zh",
+          "url": "https://zh.wikipedia.org/wiki/%E6%81%AD%E7%8E%8B%E5%BA%9C",
+          "kind": "wikipedia"
+        }
+      ]
     },
     {
       "id": "pl_bj_gudai_jianzhu",
@@ -2801,7 +2821,9 @@
         "tier": "main",
         "name_zh": "北京古代建筑博物馆",
         "name_en": "Beijing Ancient Architecture Museum",
-        "aliases_zh": [],
+        "aliases_zh": [
+          "先农坛北京古代建筑博物馆"
+        ],
         "aliases_en": [],
         "address_zh": null,
         "address_en": null,
@@ -2855,7 +2877,15 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "先农坛北京古代建筑博物馆",
+          "lang": "zh",
+          "url": "https://www.bjxntgjg.cn/",
+          "kind": "manual"
+        }
+      ]
     },
     {
       "id": "pl_bj_gugong",
@@ -2870,10 +2900,26 @@
         "name_en": "The Palace Museum",
         "aliases_zh": [
           "故宫",
-          "紫禁城"
+          "紫禁城",
+          "北京故宫博物院",
+          "故宫博物馆",
+          "北京紫禁城",
+          "北京故宫",
+          "明清故宫",
+          "故宮博物院",
+          "故宮",
+          "北京故宮",
+          "明清故宮"
         ],
         "aliases_en": [
-          "Forbidden City"
+          "Forbidden City",
+          "Gugong",
+          "Palace Museum",
+          "Gu gong bo wu yuan",
+          "Zijin Cheng",
+          "Beijing's Imperial Palace",
+          "Imperial Palace of the Forbidden City",
+          "Forbidden City, China"
         ],
         "address_zh": "北京市东城区景山前街4号",
         "address_en": null,
@@ -2935,7 +2981,123 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "故宫",
+          "lang": "zh",
+          "url": "https://www.dpm.org.cn/Visit.html",
+          "kind": "legacy"
+        },
+        {
+          "alias": "紫禁城",
+          "lang": "zh",
+          "url": "https://www.dpm.org.cn/Visit.html",
+          "kind": "legacy"
+        },
+        {
+          "alias": "Forbidden City",
+          "lang": "en",
+          "url": "https://english.beijing.gov.cn/specials/centralaxis/landmarksalongthecentralaxis/index.html",
+          "kind": "legacy"
+        },
+        {
+          "alias": "Gugong",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q80290",
+          "kind": "manual"
+        },
+        {
+          "alias": "北京故宫博物院",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q2047427",
+          "kind": "wikidata"
+        },
+        {
+          "alias": "故宫博物馆",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q2047427",
+          "kind": "wikidata"
+        },
+        {
+          "alias": "Palace Museum",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q2047427",
+          "kind": "wikidata"
+        },
+        {
+          "alias": "Gu gong bo wu yuan",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q2047427",
+          "kind": "wikidata"
+        },
+        {
+          "alias": "北京紫禁城",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q80290",
+          "kind": "wikidata"
+        },
+        {
+          "alias": "北京故宫",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q80290",
+          "kind": "wikidata"
+        },
+        {
+          "alias": "明清故宫",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q80290",
+          "kind": "wikidata"
+        },
+        {
+          "alias": "Zijin Cheng",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q80290",
+          "kind": "wikidata"
+        },
+        {
+          "alias": "Beijing's Imperial Palace",
+          "lang": "en",
+          "url": "https://en.wikipedia.org/wiki/Beijing%27s_Imperial_Palace?redirect=no",
+          "kind": "redirect"
+        },
+        {
+          "alias": "Imperial Palace of the Forbidden City",
+          "lang": "en",
+          "url": "https://en.wikipedia.org/wiki/Imperial_Palace_of_the_Forbidden_City?redirect=no",
+          "kind": "redirect"
+        },
+        {
+          "alias": "Forbidden City, China",
+          "lang": "en",
+          "url": "https://en.wikipedia.org/wiki/Forbidden_City%2C_China?redirect=no",
+          "kind": "redirect"
+        },
+        {
+          "alias": "故宮博物院",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q2047427",
+          "kind": "published_traditional"
+        },
+        {
+          "alias": "故宮",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q80290",
+          "kind": "published_traditional"
+        },
+        {
+          "alias": "北京故宮",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q80290",
+          "kind": "published_traditional"
+        },
+        {
+          "alias": "明清故宮",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q80290",
+          "kind": "published_traditional"
+        }
+      ]
     },
     {
       "id": "pl_bj_guojia_bowuguan",
@@ -2950,7 +3112,8 @@
         "name_en": "National Museum of China",
         "aliases_zh": [
           "国博",
-          "国家博物馆"
+          "国家博物馆",
+          "中國國家博物館"
         ],
         "aliases_en": [],
         "address_zh": null,
@@ -3008,7 +3171,27 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "国博",
+          "lang": "zh",
+          "url": "https://www.chnmuseum.cn/",
+          "kind": "legacy"
+        },
+        {
+          "alias": "国家博物馆",
+          "lang": "zh",
+          "url": "https://www.chnmuseum.cn/",
+          "kind": "legacy"
+        },
+        {
+          "alias": "中國國家博物館",
+          "lang": "zh",
+          "url": "https://zh.wikipedia.org/wiki/%E4%B8%AD%E5%9C%8B%E5%9C%8B%E5%AE%B6%E5%8D%9A%E7%89%A9%E9%A4%A8?redirect=no",
+          "kind": "published_traditional"
+        }
+      ]
     },
     {
       "id": "pl_bj_guojia_zhiwuyuan",
@@ -3021,7 +3204,10 @@
         "tier": "main",
         "name_zh": "国家植物园",
         "name_en": "China National Botanical Garden",
-        "aliases_zh": [],
+        "aliases_zh": [
+          "国家植物园 (北京)",
+          "国家植物园景区"
+        ],
         "aliases_en": [],
         "address_zh": "北京市海淀区植物园(卧佛寺)",
         "address_en": null,
@@ -3076,7 +3262,21 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "国家植物园 (北京)",
+          "lang": "zh",
+          "url": "https://zh.wikipedia.org/wiki/%E5%9B%BD%E5%AE%B6%E6%A4%8D%E7%89%A9%E5%9B%AD_(%E5%8C%97%E4%BA%AC)",
+          "kind": "wikipedia"
+        },
+        {
+          "alias": "国家植物园景区",
+          "lang": "zh",
+          "url": "https://whlyj.beijing.gov.cn/ggfw/ly/202511/t20251119_4287815.html",
+          "kind": "discovery"
+        }
+      ]
     },
     {
       "id": "pl_bj_haidianyalexuan",
@@ -3125,6 +3325,7 @@
         "intro_long_en": "The hotel's language list includes English, and its transport page points to Landianchang on Line 12. Pick it for a stay focused on western Beijing.",
         "star": null,
         "price_band": "<500",
+        "hotel_class": "midscale",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -3154,9 +3355,7 @@
         },
         "external_used": false
       },
-      "flags": [
-        "pl_bj_haidianyalexuan: unknown field 'hotel_class' is dropped on import"
-      ]
+      "flags": []
     },
     {
       "id": "pl_bj_haiyangguan",
@@ -3380,9 +3579,14 @@
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": "天坛东路46号",
-        "address_en": null,
+        "address_en": "46 Tiantan East Road, Dongcheng District, Beijing",
         "district_zh": "东城区",
-        "nearest_metro": null,
+        "nearest_metro": {
+          "station_zh": "天坛东门",
+          "station_en": "Tiantan Dongmen",
+          "line": "5号线",
+          "exit": null
+        },
         "foreigner_signals": {
           "english_signage": null,
           "foreign_cards": null,
@@ -3395,7 +3599,10 @@
         "official_url": "https://www.bjdch.gov.cn/ztzl/wzdcdn/202609/t20260907_4853548.html",
         "sources": [
           "https://www.bjdch.gov.cn/ztzl/wzdcdn/202609/t20260907_4853548.html",
-          "https://whlyj.beijing.gov.cn/zwgk/xwzx/gzdt/202608/t20260806_4812003.html"
+          "https://whlyj.beijing.gov.cn/zwgk/xwzx/gzdt/202608/t20260806_4812003.html",
+          "https://english.beijing.gov.cn/specials/2021beijingdesignweek/publicactivities/designhop/throughoutbeijing/202109/t20210924_2501253.html",
+          "https://focacsummit.mfa.gov.cn/hyfw/201807/t20180712_5860770.htm",
+          "https://www.bjsubway.com/station/fwss/line5/2013-08-21/52.html"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
@@ -3415,12 +3622,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 26,
+        "total": 30,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 4,
+          "complete": 8,
           "amap": 0
         },
         "external_used": false
@@ -3529,6 +3736,7 @@
         "intro_long_en": "Plan a day around the Forbidden City and the Wangfujing shops, then come back for a swim. The hotel's concierge can help suggest how to spend time in the area.",
         "star": null,
         "price_band": ">2000",
+        "hotel_class": "luxury",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -3558,9 +3766,7 @@
         },
         "external_used": false
       },
-      "flags": [
-        "pl_bj_huaerdaofu: unknown field 'hotel_class' is dropped on import"
-      ]
+      "flags": []
     },
     {
       "id": "pl_bj_huajiayiyuan_siheyuan",
@@ -3640,8 +3846,13 @@
         "tier": "main",
         "name_zh": "北京市欢乐谷景区",
         "name_en": "Beijing Happy Valley",
-        "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_zh": [
+          "北京欢乐谷",
+          "北京歡樂谷"
+        ],
+        "aliases_en": [
+          "Happy Valley Beijing"
+        ],
         "address_zh": "北京市朝阳区东四环小武基北路",
         "address_en": null,
         "district_zh": "朝阳区",
@@ -3695,7 +3906,27 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "北京欢乐谷",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q3127206",
+          "kind": "label"
+        },
+        {
+          "alias": "Happy Valley Beijing",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q3127206",
+          "kind": "label"
+        },
+        {
+          "alias": "北京歡樂谷",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q3127206",
+          "kind": "published_traditional"
+        }
+      ]
     },
     {
       "id": "pl_bj_huda_guijie",
@@ -3972,8 +4203,14 @@
         "tier": "main",
         "name_zh": "景山公园",
         "name_en": "Jingshan Park",
-        "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_zh": [
+          "北京市景山公园景区",
+          "景山",
+          "景山公園"
+        ],
+        "aliases_en": [
+          "Coal Hill"
+        ],
         "address_zh": "北京市西城区景山西街44号",
         "address_en": null,
         "district_zh": "西城区",
@@ -4028,7 +4265,33 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "Coal Hill",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q734499",
+          "kind": "wikidata"
+        },
+        {
+          "alias": "北京市景山公园景区",
+          "lang": "zh",
+          "url": "https://whlyj.beijing.gov.cn/ggfw/ly/202511/t20251119_4287815.html",
+          "kind": "discovery"
+        },
+        {
+          "alias": "景山",
+          "lang": "zh",
+          "url": "https://en.wikipedia.org/wiki/Jingshan_Park",
+          "kind": "discovery"
+        },
+        {
+          "alias": "景山公園",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q734499",
+          "kind": "published_traditional"
+        }
+      ]
     },
     {
       "id": "pl_bj_jingwei_shiguang_53",
@@ -4175,7 +4438,7 @@
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": "五道营胡同2号",
-        "address_en": null,
+        "address_en": "2 Wudaoying Hutong, Dongcheng District, Beijing",
         "district_zh": "东城区",
         "nearest_metro": null,
         "foreigner_signals": {
@@ -4190,7 +4453,8 @@
         "official_url": "https://www.beijing.gov.cn/ywdt/gqrd/202611/t20261102_4928933.html",
         "sources": [
           "https://www.beijing.gov.cn/ywdt/gqrd/202611/t20261102_4928933.html",
-          "https://www.kingsjoy.com/contact-ch"
+          "https://www.kingsjoy.com/contact-ch",
+          "https://english.visitbeijing.com.cn/article/4JR22fw8Nyo"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
@@ -4216,12 +4480,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 26,
+        "total": 28,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 4,
+          "complete": 6,
           "amap": 0
         },
         "external_used": false
@@ -4270,6 +4534,7 @@
         "intro_long_en": "For a stay north of the old city, start with Marriott's directions for metro lines 5, 10 and 12. There is also a pool for time back at the hotel.",
         "star": null,
         "price_band": "500-1000",
+        "hotel_class": "upscale",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -4299,9 +4564,7 @@
         },
         "external_used": false
       },
-      "flags": [
-        "pl_bj_jinxiyixilaideng: unknown field 'hotel_class' is dropped on import"
-      ]
+      "flags": []
     },
     {
       "id": "pl_bj_jmcafe_chaonei",
@@ -4502,77 +4765,6 @@
       "flags": []
     },
     {
-      "id": "pl_bj_kanglaide",
-      "source_file": "C8/beijing-hotel.json",
-      "status": "pending",
-      "draft": {
-        "id": "pl_bj_kanglaide",
-        "city": "beijing",
-        "category": "hotel",
-        "tier": "main",
-        "name_zh": "北京康莱德酒店",
-        "name_en": "Conrad Beijing",
-        "aliases_zh": [],
-        "aliases_en": [],
-        "address_zh": null,
-        "address_en": null,
-        "district_zh": "朝阳区",
-        "nearest_metro": null,
-        "foreigner_signals": {
-          "english_signage": null,
-          "foreign_cards": null,
-          "english_service": null,
-          "evidence": [
-            "https://www.hilton.com.cn/zh-cn/hotels/bjscici-conrad-beijing"
-          ]
-        },
-        "official_url": "https://www.hilton.com.cn/zh-cn/hotels/bjscici-conrad-beijing",
-        "sources": [
-          "https://www.hilton.com.cn/zh-cn/hotels/bjscici-conrad-beijing",
-          "https://www.hilton.com.cn/zh-cn/locations/china/beijing-beijing"
-        ],
-        "checked_on": "2026-11-27",
-        "confidence": "medium",
-        "notes": "希尔顿城市页显示 2026-11-27 入住、11-28 退房的起价。 官网样本为每房每晚人民币 ¥1,439。当前价以所选日期及房型的报价为准。",
-        "subcategory": "hotel",
-        "intro_short_zh": "在北京东部游览时可考虑这里。",
-        "intro_short_en": "A base for exploring eastern Beijing.",
-        "intro_long_zh": "在北京东部游览时可考虑这里。可在品牌官网查看房型和入住安排。",
-        "intro_long_en": "A base for exploring eastern Beijing. See the hotel's own website for room types and check-in details.",
-        "star": null,
-        "price_band": "1000-2000",
-        "accepts_foreigners": true,
-        "foreign_service": {
-          "english_front_desk": null,
-          "foreign_guest_share": null,
-          "foreign_guest_experience": null,
-          "international_brand": "Hilton",
-          "evidence_zh": "北京康莱德酒店由国际酒店品牌或集团 Hilton 的官网正式列出并提供预订入口。",
-          "evidence": [
-            "https://www.hilton.com.cn/zh-cn/hotels/bjscici-conrad-beijing"
-          ]
-        }
-      },
-      "external_signals": [],
-      "location": null,
-      "amap": {
-        "status": "not-run",
-        "alternatives": []
-      },
-      "score": {
-        "total": 26,
-        "parts": {
-          "foreigner": 0,
-          "confidence": 12,
-          "sources": 10,
-          "complete": 4,
-          "amap": 0
-        },
-        "external_used": false
-      },
-      "flags": []
-    },
-    {
       "id": "pl_bj_kongmiao_guozijian",
       "source_file": "C1/beijing.json",
       "status": "pending",
@@ -4583,7 +4775,9 @@
         "tier": "main",
         "name_zh": "孔庙和国子监博物馆",
         "name_en": "Confucius Temple and Guozijian Museum",
-        "aliases_zh": [],
+        "aliases_zh": [
+          "孔庙和国子监博物馆景区"
+        ],
         "aliases_en": [],
         "address_zh": "北京市东城区国子监街13号-15号",
         "address_en": null,
@@ -4638,7 +4832,15 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "孔庙和国子监博物馆景区",
+          "lang": "zh",
+          "url": "https://whlyj.beijing.gov.cn/ggfw/ly/202511/t20251119_4287815.html",
+          "kind": "discovery"
+        }
+      ]
     },
     {
       "id": "pl_bj_kuqiao_citywalk",
@@ -4728,7 +4930,7 @@
         "name_en": "Lamdre",
         "aliases_zh": [],
         "aliases_en": [],
-        "address_zh": null,
+        "address_zh": "北京市朝阳区工体北路4号院14幢1-04（机电院内）",
         "address_en": null,
         "district_zh": "朝阳区",
         "nearest_metro": null,
@@ -4744,7 +4946,8 @@
         "official_url": "https://english.beijing.gov.cn/consuminginbeijing/onedayinbeijing/abiteofbeijing/updatesofabiteofbeijing/202610/t20261029_4923216.html",
         "sources": [
           "https://english.beijing.gov.cn/consuminginbeijing/onedayinbeijing/abiteofbeijing/updatesofabiteofbeijing/202610/t20261029_4923216.html",
-          "https://english.beijing.gov.cn/consuminginbeijing/onedayinbeijing/abiteofbeijing/updatesofabiteofbeijing/202310/t20231017_3280271.html"
+          "https://english.beijing.gov.cn/consuminginbeijing/onedayinbeijing/abiteofbeijing/updatesofabiteofbeijing/202310/t20231017_3280271.html",
+          "https://www.visitbeijing.com.cn/article/4Tts7qQFi7G"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
@@ -4770,12 +4973,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 25,
+        "total": 26,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 3,
+          "complete": 4,
           "amap": 0
         },
         "external_used": false
@@ -4793,8 +4996,13 @@
         "tier": "main",
         "name_zh": "老舍茶馆",
         "name_en": "Lao She Teahouse",
-        "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_zh": [
+          "北京老舍茶馆景区",
+          "老舍茶館"
+        ],
+        "aliases_en": [
+          "Laoshe Teahouse"
+        ],
         "address_zh": "北京市西城区前门西大街正阳市场3号楼",
         "address_en": null,
         "district_zh": "西城区",
@@ -4848,7 +5056,27 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "Laoshe Teahouse",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q10483705",
+          "kind": "label"
+        },
+        {
+          "alias": "北京老舍茶馆景区",
+          "lang": "zh",
+          "url": "https://whlyj.beijing.gov.cn/ggfw/ly/202511/t20251119_4287815.html",
+          "kind": "discovery"
+        },
+        {
+          "alias": "老舍茶館",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q10483705",
+          "kind": "published_traditional"
+        }
+      ]
     },
     {
       "id": "pl_bj_leons_dongsishiyitiao",
@@ -5062,7 +5290,9 @@
         "tier": "backup",
         "name_zh": "北京鲁迅博物馆",
         "name_en": "Beijing Lu Xun Museum",
-        "aliases_zh": [],
+        "aliases_zh": [
+          "鲁迅博物馆"
+        ],
         "aliases_en": [],
         "address_zh": null,
         "address_en": null,
@@ -5116,7 +5346,15 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "鲁迅博物馆",
+          "lang": "zh",
+          "url": "https://zh.wikipedia.org/wiki/%E9%B2%81%E8%BF%85%E5%8D%9A%E7%89%A9%E9%A6%86?redirect=no",
+          "kind": "redirect"
+        }
+      ]
     },
     {
       "id": "pl_bj_manhengji_pinganli",
@@ -5340,7 +5578,9 @@
         "name_zh": "明城墙遗址公园",
         "name_en": "Ming City Wall Ruins Park",
         "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_en": [
+          "Beijing Ming City Wall Ruins Park"
+        ],
         "address_zh": "北京市东城区崇文门东大街9号",
         "address_en": null,
         "district_zh": "东城区",
@@ -5394,7 +5634,15 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "Beijing Ming City Wall Ruins Park",
+          "lang": "en",
+          "url": "https://en.wikipedia.org/wiki/Beijing_Ming_City_Wall_Ruins_Park",
+          "kind": "manual"
+        }
+      ]
     },
     {
       "id": "pl_bj_mingshisanling",
@@ -5407,8 +5655,17 @@
         "tier": "main",
         "name_zh": "明十三陵",
         "name_en": "Ming Tombs",
-        "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_zh": [
+          "十三陵",
+          "十三陵国家级风景名胜区",
+          "明十三陵景区"
+        ],
+        "aliases_en": [
+          "Shisanling",
+          "Shisan Ling",
+          "Thirteen Ming Tombs",
+          "Thirteen Tombs of the Ming Dynasty"
+        ],
         "address_zh": null,
         "address_en": null,
         "district_zh": "昌平区",
@@ -5462,7 +5719,51 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "十三陵",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q41135",
+          "kind": "wikidata"
+        },
+        {
+          "alias": "十三陵国家级风景名胜区",
+          "lang": "zh",
+          "url": "https://zh.wikipedia.org/wiki/%E5%8D%81%E4%B8%89%E9%99%B5%E5%9B%BD%E5%AE%B6%E7%BA%A7%E9%A3%8E%E6%99%AF%E5%90%8D%E8%83%9C%E5%8C%BA?redirect=no",
+          "kind": "redirect"
+        },
+        {
+          "alias": "Shisanling",
+          "lang": "en",
+          "url": "https://en.wikipedia.org/wiki/Shisanling?redirect=no",
+          "kind": "redirect"
+        },
+        {
+          "alias": "Shisan Ling",
+          "lang": "en",
+          "url": "https://en.wikipedia.org/wiki/Shisan_Ling?redirect=no",
+          "kind": "redirect"
+        },
+        {
+          "alias": "Thirteen Ming Tombs",
+          "lang": "en",
+          "url": "https://en.wikipedia.org/wiki/Thirteen_Ming_Tombs?redirect=no",
+          "kind": "redirect"
+        },
+        {
+          "alias": "Thirteen Tombs of the Ming Dynasty",
+          "lang": "en",
+          "url": "https://en.wikipedia.org/wiki/Thirteen_Tombs_of_the_Ming_Dynasty?redirect=no",
+          "kind": "redirect"
+        },
+        {
+          "alias": "明十三陵景区",
+          "lang": "zh",
+          "url": "https://whlyj.beijing.gov.cn/ggfw/ly/202511/t20251119_4287815.html",
+          "kind": "discovery"
+        }
+      ]
     },
     {
       "id": "pl_bj_moi_canting",
@@ -5557,11 +5858,12 @@
         },
         "official_url": "https://english.beijing.gov.cn/latest/news/202610/t20261008_4892631.html",
         "sources": [
-          "https://english.beijing.gov.cn/latest/news/202610/t20261008_4892631.html"
+          "https://english.beijing.gov.cn/latest/news/202610/t20261008_4892631.html",
+          "https://www.visitbeijing.com.cn/article/4N2PvMxkhev"
         ],
         "checked_on": "2026-11-27",
         "confidence": "low",
-        "notes": "当年官方英文发布可确认品牌营业，具体街址或分店资料待补。 近期官方资料确认身份，具体到店位置待复核。 待人工处理。市政府推介了澳式餐厅，仍缺经营方门店定位、营业时间及预约规则，暂留候补。",
+        "notes": "当年官方英文发布可确认品牌营业，具体街址或分店资料待补。 近期官方资料确认身份，具体到店位置待复核。 待人工处理。市政府推介了澳式餐厅，仍缺经营方门店定位、营业时间及预约规则，暂留候补。 北京文旅网另有具名的中关村店，但2026市政府餐饮推介未指定同一家分店。当前条目仍待核定分店归属。",
         "subcategory": "western",
         "hours_zh": null,
         "hours_source": null,
@@ -5583,11 +5885,11 @@
         "alternatives": []
       },
       "score": {
-        "total": 12,
+        "total": 17,
         "parts": {
           "foreigner": 0,
           "confidence": 4,
-          "sources": 5,
+          "sources": 10,
           "complete": 3,
           "amap": 0
         },
@@ -5606,8 +5908,12 @@
         "tier": "main",
         "name_zh": "慕田峪长城",
         "name_en": "Mutianyu Great Wall",
-        "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_zh": [
+          "慕田峪长城景区"
+        ],
+        "aliases_en": [
+          "Mutianyu"
+        ],
         "address_zh": "北京市怀柔区渤海镇慕田峪村",
         "address_en": null,
         "district_zh": "怀柔区",
@@ -5663,7 +5969,21 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "Mutianyu",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q212610",
+          "kind": "label"
+        },
+        {
+          "alias": "慕田峪长城景区",
+          "lang": "zh",
+          "url": "https://whlyj.beijing.gov.cn/ggfw/ly/202511/t20251119_4287815.html",
+          "kind": "discovery"
+        }
+      ]
     },
     {
       "id": "pl_bj_nanluoguxiang",
@@ -5676,8 +5996,12 @@
         "tier": "main",
         "name_zh": "南锣鼓巷",
         "name_en": "Nanluoguxiang",
-        "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_zh": [
+          "南鑼鼓巷"
+        ],
+        "aliases_en": [
+          "Nanluogu Xiang"
+        ],
         "address_zh": null,
         "address_en": null,
         "district_zh": "东城区",
@@ -5730,7 +6054,21 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "Nanluogu Xiang",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q9529545",
+          "kind": "wikidata"
+        },
+        {
+          "alias": "南鑼鼓巷",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q9529545",
+          "kind": "published_traditional"
+        }
+      ]
     },
     {
       "id": "pl_bj_nanmen_tiantan",
@@ -5874,7 +6212,12 @@
         "address_zh": "华威北里43号",
         "address_en": null,
         "district_zh": "朝阳区",
-        "nearest_metro": null,
+        "nearest_metro": {
+          "station_zh": "潘家园",
+          "station_en": "Panjia Yuan",
+          "line": "10号线",
+          "exit": null
+        },
         "foreigner_signals": {
           "english_signage": null,
           "foreign_cards": null,
@@ -5888,11 +6231,13 @@
         "sources": [
           "https://video.bjchy.gov.cn/vodfiles/992/2015/09/23/cyb/html/2026-09/30/nw.D110000cyb_20260930_10-02.htm?div=-1",
           "https://japanese.beijing.gov.cn/latest/news/202506/t20250613_4113173.html",
-          "https://r.visitbeijing.com.cn/leisure/383"
+          "https://r.visitbeijing.com.cn/leisure/383",
+          "https://english.beijing.gov.cn/specials/beijinglifeonthesubway/landmarksalongthesubwaylines/line10/202206/t20220624_2750413.html",
+          "https://wwj.beijing.gov.cn/bjww/362749/362751/cs88/543401912/index.html"
         ],
         "checked_on": "2026-11-27",
         "confidence": "low",
-        "notes": "营业依据为当前经营方点位或近期主管部门的具名记录。 待人工处理。市文旅目录的英文地址为华威里18号，现有中文登记为华威北里43号。可能是不同入口，现行导航门牌待市场运营方核定。",
+        "notes": "营业依据为当前经营方点位或近期主管部门的具名记录。 待人工处理。市文旅目录的英文地址为华威里18号，现有中文登记为华威北里43号。可能是不同入口，现行导航门牌待市场运营方核定。 市文旅英文交通页以10号线潘家园站指引游客。文物局文件将华威里18号用于东区展棚，早期资料另列华威北里43号，英文导航门牌仍待核。",
         "subcategory": "market",
         "hours_zh": null,
         "hours_source": null,
@@ -5908,12 +6253,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 18,
+        "total": 20,
         "parts": {
           "foreigner": 0,
           "confidence": 4,
           "sources": 10,
-          "complete": 4,
+          "complete": 6,
           "amap": 0
         },
         "external_used": false
@@ -6214,11 +6559,12 @@
         },
         "official_url": "https://english.beijing.gov.cn/latest/news/202610/t20261008_4892631.html",
         "sources": [
-          "https://english.beijing.gov.cn/latest/news/202610/t20261008_4892631.html"
+          "https://english.beijing.gov.cn/latest/news/202610/t20261008_4892631.html",
+          "https://mzv.gov.cz/beijing/zh/culture_and_sport/x2018_12_10.mobi"
         ],
         "checked_on": "2026-11-27",
         "confidence": "low",
-        "notes": "当年官方英文发布可确认品牌营业，具体街址或分店资料待补。 近期官方资料确认身份，具体到店位置待复核。 待人工处理。市政府 2026 年 10 月推介具名。仍缺可确认同一家北京门店的现行街址、营业时间和散客预约规则，暂留候补。",
+        "notes": "当年官方英文发布可确认品牌营业，具体街址或分店资料待补。 近期官方资料确认身份，具体到店位置待复核。 待人工处理。市政府 2026 年 10 月推介具名。仍缺可确认同一家北京门店的现行街址、营业时间和散客预约规则，暂留候补。 捷克使馆可确认2018年三里屯同名门店，2026市级推介未指定店址。现行门牌、营业时间和预约未证实。",
         "subcategory": "western",
         "hours_zh": null,
         "hours_source": null,
@@ -6240,11 +6586,11 @@
         "alternatives": []
       },
       "score": {
-        "total": 12,
+        "total": 17,
         "parts": {
           "foreigner": 0,
           "confidence": 4,
-          "sources": 5,
+          "sources": 10,
           "complete": 3,
           "amap": 0
         },
@@ -6263,7 +6609,10 @@
         "tier": "main",
         "name_zh": "前门大街",
         "name_en": "Qianmen Street",
-        "aliases_zh": [],
+        "aliases_zh": [
+          "前门大街景区",
+          "前門大街"
+        ],
         "aliases_en": [],
         "address_zh": "北京市东城区珠市口东大街与珠市口西大街交叉口北50 米",
         "address_en": null,
@@ -6318,7 +6667,21 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "前门大街景区",
+          "lang": "zh",
+          "url": "https://whlyj.beijing.gov.cn/ggfw/ly/202511/t20251119_4287815.html",
+          "kind": "discovery"
+        },
+        {
+          "alias": "前門大街",
+          "lang": "zh",
+          "url": "https://zh.wikipedia.org/wiki/%E5%89%8D%E9%96%80%E5%A4%A7%E8%A1%97",
+          "kind": "published_traditional"
+        }
+      ]
     },
     {
       "id": "pl_bj_qianmenwenhuadongfang",
@@ -6362,6 +6725,7 @@
         "intro_long_en": "Choose this property for its courtyard layout in the Qianmen lanes. Ask the hotel before traveling if you want a private transfer from either of Beijing's airports.",
         "star": null,
         "price_band": ">2000",
+        "hotel_class": "luxury",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -6391,9 +6755,7 @@
         },
         "external_used": false
       },
-      "flags": [
-        "pl_bj_qianmenwenhuadongfang: unknown field 'hotel_class' is dropped on import"
-      ]
+      "flags": []
     },
     {
       "id": "pl_bj_qijiuba",
@@ -6406,8 +6768,20 @@
         "tier": "main",
         "name_zh": "798艺术区",
         "name_en": "798 Art District",
-        "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_zh": [
+          "北京798艺术区",
+          "798艺术园区",
+          "七九八艺术区",
+          "北京798",
+          "大山子艺术区",
+          "798藝術區"
+        ],
+        "aliases_en": [
+          "798 Art Zone",
+          "Dashanzi Art District",
+          "Beijing 798",
+          "Beijing 798 Art Zone"
+        ],
         "address_zh": null,
         "address_en": null,
         "district_zh": "朝阳区",
@@ -6460,7 +6834,69 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "北京798艺术区",
+          "lang": "zh",
+          "url": "https://zh.wikipedia.org/wiki/%E5%8C%97%E4%BA%AC798%E8%89%BA%E6%9C%AF%E5%8C%BA?redirect=no",
+          "kind": "redirect"
+        },
+        {
+          "alias": "798艺术园区",
+          "lang": "zh",
+          "url": "https://zh.wikipedia.org/wiki/798%E8%89%BA%E6%9C%AF%E5%9B%AD%E5%8C%BA?redirect=no",
+          "kind": "redirect"
+        },
+        {
+          "alias": "七九八艺术区",
+          "lang": "zh",
+          "url": "https://zh.wikipedia.org/wiki/%E4%B8%83%E4%B9%9D%E5%85%AB%E8%89%BA%E6%9C%AF%E5%8C%BA?redirect=no",
+          "kind": "redirect"
+        },
+        {
+          "alias": "北京798",
+          "lang": "zh",
+          "url": "https://zh.wikipedia.org/wiki/%E5%8C%97%E4%BA%AC798?redirect=no",
+          "kind": "redirect"
+        },
+        {
+          "alias": "大山子艺术区",
+          "lang": "zh",
+          "url": "https://zh.wikipedia.org/wiki/%E5%A4%A7%E5%B1%B1%E5%AD%90%E8%89%BA%E6%9C%AF%E5%8C%BA?redirect=no",
+          "kind": "redirect"
+        },
+        {
+          "alias": "798 Art Zone",
+          "lang": "en",
+          "url": "https://en.wikipedia.org/wiki/798_Art_Zone",
+          "kind": "wikipedia"
+        },
+        {
+          "alias": "Dashanzi Art District",
+          "lang": "en",
+          "url": "https://en.wikipedia.org/wiki/Dashanzi_Art_District?redirect=no",
+          "kind": "redirect"
+        },
+        {
+          "alias": "Beijing 798",
+          "lang": "en",
+          "url": "https://en.wikipedia.org/wiki/Beijing_798?redirect=no",
+          "kind": "redirect"
+        },
+        {
+          "alias": "Beijing 798 Art Zone",
+          "lang": "en",
+          "url": "https://en.wikipedia.org/wiki/Beijing_798_Art_Zone?redirect=no",
+          "kind": "redirect"
+        },
+        {
+          "alias": "798藝術區",
+          "lang": "zh",
+          "url": "https://zh.wikipedia.org/wiki/798%E8%97%9D%E8%A1%93%E5%8D%80?redirect=no",
+          "kind": "published_traditional"
+        }
+      ]
     },
     {
       "id": "pl_bj_qinghe",
@@ -6767,6 +7203,7 @@
         "intro_long_en": "Start with the hotel's own transport page if you want to arrange a private pickup for either Beijing airport. Marriott also lists English among the hotel's languages.",
         "star": null,
         "price_band": "1000-2000",
+        "hotel_class": "luxury",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -6796,9 +7233,7 @@
         },
         "external_used": false
       },
-      "flags": [
-        "pl_bj_ruiji: unknown field 'hotel_class' is dropped on import"
-      ]
+      "flags": []
     },
     {
       "id": "pl_bj_sanlitunfupeng",
@@ -6842,6 +7277,7 @@
         "intro_long_en": "This Four Points is on the Gongti side of Sanlitun. Marriott lists English among the hotel's languages and names Dongsishitiao as a subway option.",
         "star": null,
         "price_band": "500-1000",
+        "hotel_class": "midscale",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -6871,9 +7307,7 @@
         },
         "external_used": false
       },
-      "flags": [
-        "pl_bj_sanlitunfupeng: unknown field 'hotel_class' is dropped on import"
-      ]
+      "flags": []
     },
     {
       "id": "pl_bj_sanlitunzhouji",
@@ -6917,6 +7351,7 @@
         "intro_long_en": "Make Sanlitun the focus of an afternoon and evening. The hotel's English page gives the exact arrival address and lists an indoor pool and several places to eat.",
         "star": null,
         "price_band": ">2000",
+        "hotel_class": "luxury",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -6946,9 +7381,7 @@
         },
         "external_used": false
       },
-      "flags": [
-        "pl_bj_sanlitunzhouji: unknown field 'hotel_class' is dropped on import"
-      ]
+      "flags": []
     },
     {
       "id": "pl_bj_sanyuanli_market_bj",
@@ -7023,7 +7456,9 @@
         "name_zh": "什刹海",
         "name_en": "Shichahai",
         "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_en": [
+          "Shichahai Lakes"
+        ],
         "address_zh": null,
         "address_en": null,
         "district_zh": "西城区",
@@ -7076,7 +7511,15 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "Shichahai Lakes",
+          "lang": "en",
+          "url": "https://chinatripprimer.com/beijing/attractions/shichahai",
+          "kind": "manual"
+        }
+      ]
     },
     {
       "id": "pl_bj_shoudu_bowuguan",
@@ -7090,7 +7533,9 @@
         "name_zh": "首都博物馆",
         "name_en": "Capital Museum",
         "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_en": [
+          "Beijing Capital Museum"
+        ],
         "address_zh": "北京市西城区复兴门外大街16号",
         "address_en": null,
         "district_zh": "西城区",
@@ -7144,7 +7589,15 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "Beijing Capital Museum",
+          "lang": "en",
+          "url": "https://en.wikipedia.org/wiki/Beijing_Capital_Museum?redirect=no",
+          "kind": "redirect"
+        }
+      ]
     },
     {
       "id": "pl_bj_shoudujichangwanfeng",
@@ -7194,6 +7647,7 @@
         "intro_long_en": "The property's shuttle serves terminals 2 and 3 around the clock. Check the hotel page for pickup points and how to arrange a ride before you land.",
         "star": null,
         "price_band": "<500",
+        "hotel_class": "midscale",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -7223,9 +7677,7 @@
         },
         "external_used": false
       },
-      "flags": [
-        "pl_bj_shoudujichangwanfeng: unknown field 'hotel_class' is dropped on import"
-      ]
+      "flags": []
     },
     {
       "id": "pl_bj_shoudujichangxierdun",
@@ -7270,6 +7722,7 @@
         "intro_long_en": "Book around your PEK flight schedule. The hotel offers a 24-hour shuttle serving terminals 2 and 3 and the Airport Express rail connection.",
         "star": null,
         "price_band": "500-1000",
+        "hotel_class": "upscale",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -7299,9 +7752,7 @@
         },
         "external_used": false
       },
-      "flags": [
-        "pl_bj_shoudujichangxierdun: unknown field 'hotel_class' is dropped on import"
-      ]
+      "flags": []
     },
     {
       "id": "pl_bj_shougang",
@@ -7314,8 +7765,12 @@
         "tier": "main",
         "name_zh": "首钢工业文化旅游区",
         "name_en": "Shougang Industrial Cultural Tourism Area",
-        "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_zh": [
+          "首钢园"
+        ],
+        "aliases_en": [
+          "Shougang Park"
+        ],
         "address_zh": "北京市石景山区石景山路68号",
         "address_en": null,
         "district_zh": "石景山区",
@@ -7369,7 +7824,21 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "Shougang Park",
+          "lang": "en",
+          "url": "https://english.beijing.gov.cn/travellinginbeijing/citytours/202308/t20230830_3237577.html",
+          "kind": "manual"
+        },
+        {
+          "alias": "首钢园",
+          "lang": "zh",
+          "url": "https://www.beijing.gov.cn/fuwu/bmfw/sy/jrts/202609/t20260923_4877444.html",
+          "kind": "manual"
+        }
+      ]
     },
     {
       "id": "pl_bj_sijiminfu_gugong",
@@ -7385,7 +7854,7 @@
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": "南池子大街11号",
-        "address_en": null,
+        "address_en": "11 Nanchizi Street, Dongcheng District, Beijing",
         "district_zh": "东城区",
         "nearest_metro": null,
         "foreigner_signals": {
@@ -7400,7 +7869,8 @@
         "official_url": "https://english.beijing.gov.cn/latest/news/202602/t20260219_4526516.html",
         "sources": [
           "https://english.beijing.gov.cn/latest/news/202602/t20260219_4526516.html",
-          "https://english.beijing.gov.cn/specials/centralaxis/sightseeingalongthecentralaxis/202206/t20220602_2728696.html"
+          "https://english.beijing.gov.cn/specials/centralaxis/sightseeingalongthecentralaxis/202206/t20220602_2728696.html",
+          "https://english.beijing.gov.cn/consuminginbeijing/onedayinbeijing/abiteofbeijing/updatesofabiteofbeijing/202511/t20251103_4251266.html"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
@@ -7426,12 +7896,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 26,
+        "total": 28,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 4,
+          "complete": 6,
           "amap": 0
         },
         "external_used": false
@@ -7517,8 +7987,13 @@
         "tier": "backup",
         "name_zh": "司马台长城",
         "name_en": "Simatai Great Wall",
-        "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_zh": [
+          "司马台",
+          "司馬台長城"
+        ],
+        "aliases_en": [
+          "Simatai"
+        ],
         "address_zh": "北京市密云区古北口镇司马台村",
         "address_en": null,
         "district_zh": "密云区",
@@ -7572,7 +8047,27 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "Simatai",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q2287033",
+          "kind": "label"
+        },
+        {
+          "alias": "司马台",
+          "lang": "zh",
+          "url": "https://zh.wikipedia.org/wiki/%E5%8F%B8%E9%A9%AC%E5%8F%B0?redirect=no",
+          "kind": "redirect"
+        },
+        {
+          "alias": "司馬台長城",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q2287033",
+          "kind": "published_traditional"
+        }
+      ]
     },
     {
       "id": "pl_bj_singaporecheung",
@@ -7783,8 +8278,14 @@
         "tier": "backup",
         "name_zh": "宋庆龄故居",
         "name_en": "Former Residence of Soong Ching Ling",
-        "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_zh": [
+          "北京宋庆龄故居",
+          "宋庆龄故居景区"
+        ],
+        "aliases_en": [
+          "Former Residence of Soong Ching-ling, Beijing",
+          "Former Residence of Soong Ching-ling (Beijing)"
+        ],
         "address_zh": "北京市西城区后海北沿46号",
         "address_en": null,
         "district_zh": "西城区",
@@ -7838,7 +8339,33 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "北京宋庆龄故居",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q4165410",
+          "kind": "label"
+        },
+        {
+          "alias": "Former Residence of Soong Ching-ling, Beijing",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q4165410",
+          "kind": "wikidata"
+        },
+        {
+          "alias": "Former Residence of Soong Ching-ling (Beijing)",
+          "lang": "en",
+          "url": "https://en.wikipedia.org/wiki/Former_Residence_of_Soong_Ching-ling_(Beijing)?redirect=no",
+          "kind": "redirect"
+        },
+        {
+          "alias": "宋庆龄故居景区",
+          "lang": "zh",
+          "url": "https://whlyj.beijing.gov.cn/ggfw/ly/202511/t20251119_4287815.html",
+          "kind": "discovery"
+        }
+      ]
     },
     {
       "id": "pl_bj_taikoo_li_sanlitun_shops",
@@ -7916,8 +8443,14 @@
         "tier": "backup",
         "name_zh": "潭柘寺",
         "name_en": "Tanzhe Temple",
-        "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_zh": [
+          "潭柘寺景区"
+        ],
+        "aliases_en": [
+          "Tán Zhè Sì",
+          "Tan Zhe Si",
+          "Tanzhe Si"
+        ],
         "address_zh": null,
         "address_en": null,
         "district_zh": "门头沟区",
@@ -7971,7 +8504,33 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "Tán Zhè Sì",
+          "lang": "en",
+          "url": "https://en.wikipedia.org/wiki/T%C3%A1n_Zh%C3%A8_S%C3%AC?redirect=no",
+          "kind": "redirect"
+        },
+        {
+          "alias": "Tan Zhe Si",
+          "lang": "en",
+          "url": "https://en.wikipedia.org/wiki/Tan_Zhe_Si?redirect=no",
+          "kind": "redirect"
+        },
+        {
+          "alias": "Tanzhe Si",
+          "lang": "en",
+          "url": "https://en.wikipedia.org/wiki/Tanzhe_Si?redirect=no",
+          "kind": "redirect"
+        },
+        {
+          "alias": "潭柘寺景区",
+          "lang": "zh",
+          "url": "https://whlyj.beijing.gov.cn/ggfw/ly/202511/t20251119_4287815.html",
+          "kind": "discovery"
+        }
+      ]
     },
     {
       "id": "pl_bj_tiananmen_guangchang",
@@ -7984,8 +8543,13 @@
         "tier": "main",
         "name_zh": "天安门广场",
         "name_en": "Tian'anmen Square",
-        "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_zh": [
+          "天安門廣場"
+        ],
+        "aliases_en": [
+          "Tiananmen Square",
+          "Tiān’ānmén Guǎngchǎng"
+        ],
         "address_zh": null,
         "address_en": null,
         "district_zh": "东城区",
@@ -8038,7 +8602,27 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "Tiananmen Square",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q164055",
+          "kind": "label"
+        },
+        {
+          "alias": "Tiān’ānmén Guǎngchǎng",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q164055",
+          "kind": "wikidata"
+        },
+        {
+          "alias": "天安門廣場",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q164055",
+          "kind": "published_traditional"
+        }
+      ]
     },
     {
       "id": "pl_bj_tiantan",
@@ -8051,8 +8635,16 @@
         "tier": "main",
         "name_zh": "天坛公园",
         "name_en": "Temple of Heaven",
-        "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_zh": [
+          "天坛",
+          "北京天坛",
+          "天坛公园景区",
+          "天壇公園",
+          "天壇"
+        ],
+        "aliases_en": [
+          "Imperial temple of heaven"
+        ],
         "address_zh": null,
         "address_en": null,
         "district_zh": "东城区",
@@ -8108,7 +8700,45 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "天坛",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q125445",
+          "kind": "label"
+        },
+        {
+          "alias": "北京天坛",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q125445",
+          "kind": "wikidata"
+        },
+        {
+          "alias": "Imperial temple of heaven",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q125445",
+          "kind": "wikidata"
+        },
+        {
+          "alias": "天坛公园景区",
+          "lang": "zh",
+          "url": "https://whlyj.beijing.gov.cn/ggfw/ly/202511/t20251119_4287815.html",
+          "kind": "discovery"
+        },
+        {
+          "alias": "天壇公園",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q125445",
+          "kind": "published_traditional"
+        },
+        {
+          "alias": "天壇",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q125445",
+          "kind": "published_traditional"
+        }
+      ]
     },
     {
       "id": "pl_bj_tiantandongmenxierdun",
@@ -8152,6 +8782,7 @@
         "intro_long_en": "Stay on the south side of Dongcheng if you plan to spend time around the Temple of Heaven. Longtan Lake is another nearby stop on the hotel's location guide.",
         "star": null,
         "price_band": "<500",
+        "hotel_class": "midscale",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -8181,9 +8812,7 @@
         },
         "external_used": false
       },
-      "flags": [
-        "pl_bj_tiantandongmenxierdun: unknown field 'hotel_class' is dropped on import"
-      ]
+      "flags": []
     },
     {
       "id": "pl_bj_tianwenguan",
@@ -8196,7 +8825,10 @@
         "tier": "main",
         "name_zh": "北京天文馆",
         "name_en": "Beijing Planetarium",
-        "aliases_zh": [],
+        "aliases_zh": [
+          "北京天文馆景区",
+          "北京天文館"
+        ],
         "aliases_en": [],
         "address_zh": "北京市西城区西直门外大街138号",
         "address_en": null,
@@ -8251,7 +8883,21 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "北京天文馆景区",
+          "lang": "zh",
+          "url": "https://whlyj.beijing.gov.cn/ggfw/ly/202511/t20251119_4287815.html",
+          "kind": "discovery"
+        },
+        {
+          "alias": "北京天文館",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q4348118",
+          "kind": "published_traditional"
+        }
+      ]
     },
     {
       "id": "pl_bj_tianxingju_xianyukou",
@@ -8463,7 +9109,9 @@
         "tier": "main",
         "name_zh": "北京（通州）大运河文化旅游景区",
         "name_en": "Beijing (Tongzhou) Grand Canal Cultural Tourism Scenic Area",
-        "aliases_zh": [],
+        "aliases_zh": [
+          "大运河文化旅游景区"
+        ],
         "aliases_en": [],
         "address_zh": null,
         "address_en": null,
@@ -8518,7 +9166,15 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "大运河文化旅游景区",
+          "lang": "zh",
+          "url": "https://www.beijing.gov.cn/renwen/sy/whkb/202204/t20220430_2698964.html",
+          "kind": "manual"
+        }
+      ]
     },
     {
       "id": "pl_bj_tongzhoubeitouxierdun",
@@ -8563,6 +9219,7 @@
         "intro_long_en": "Build a Universal day around the hotel's daily round-trip shuttle. Leave time for a different pace nearby at Xihaizi Park in Tongzhou.",
         "star": null,
         "price_band": "500-1000",
+        "hotel_class": "upscale",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -8592,9 +9249,7 @@
         },
         "external_used": false
       },
-      "flags": [
-        "pl_bj_tongzhoubeitouxierdun: unknown field 'hotel_class' is dropped on import"
-      ]
+      "flags": []
     },
     {
       "id": "pl_bj_wangfujingwanli",
@@ -8638,6 +9293,7 @@
         "intro_long_en": "Use this hotel for a trip split between the old city and Wangfujing. Marriott lists both nearby stations and includes English among the hotel's languages.",
         "star": null,
         "price_band": "1000-2000",
+        "hotel_class": "upscale",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -8667,9 +9323,7 @@
         },
         "external_used": false
       },
-      "flags": [
-        "pl_bj_wangfujingwanli: unknown field 'hotel_class' is dropped on import"
-      ]
+      "flags": []
     },
     {
       "id": "pl_bj_wangfujingwenhuadongfang",
@@ -8714,6 +9368,7 @@
         "intro_long_en": "Use the Wangfujing address for a trip centered on the imperial city. The hotel can help arrange airport transport in advance, and MO Bar opens onto a terrace facing the palace skyline.",
         "star": null,
         "price_band": ">2000",
+        "hotel_class": "luxury",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -8739,79 +9394,6 @@
           "confidence": 12,
           "sources": 10,
           "complete": 7,
-          "amap": 0
-        },
-        "external_used": false
-      },
-      "flags": [
-        "pl_bj_wangfujingwenhuadongfang: unknown field 'hotel_class' is dropped on import"
-      ]
-    },
-    {
-      "id": "pl_bj_wangfujingxierdun",
-      "source_file": "C8/beijing-hotel.json",
-      "status": "pending",
-      "draft": {
-        "id": "pl_bj_wangfujingxierdun",
-        "city": "beijing",
-        "category": "hotel",
-        "tier": "backup",
-        "name_zh": "北京王府井希尔顿酒店",
-        "name_en": "Hilton Beijing Wangfujing",
-        "aliases_zh": [],
-        "aliases_en": [],
-        "address_zh": null,
-        "address_en": null,
-        "district_zh": "东城区",
-        "nearest_metro": null,
-        "foreigner_signals": {
-          "english_signage": null,
-          "foreign_cards": null,
-          "english_service": null,
-          "evidence": [
-            "https://www.hilton.com.cn/zh-cn/hotels/bjswfhi-hilton-beijing-wangfujing"
-          ]
-        },
-        "official_url": "https://www.hilton.com.cn/zh-cn/hotels/bjswfhi-hilton-beijing-wangfujing",
-        "sources": [
-          "https://www.hilton.com.cn/zh-cn/hotels/bjswfhi-hilton-beijing-wangfujing",
-          "https://www.hilton.com.cn/zh-cn/locations/china/beijing-beijing"
-        ],
-        "checked_on": "2026-11-27",
-        "confidence": "medium",
-        "notes": "希尔顿城市页显示 2026-11-27 入住、11-28 退房的起价。 官网样本为每房每晚人民币 ¥1,098。当前价以所选日期及房型的报价为准。",
-        "subcategory": "hotel",
-        "intro_short_zh": "在王府井街区游览的一处住宿选择。",
-        "intro_short_en": "A hotel option for time in the Wangfujing neighborhood.",
-        "intro_long_zh": "在王府井街区游览的一处住宿选择。可在品牌官网查看房型和入住安排。",
-        "intro_long_en": "A hotel option for time in the Wangfujing neighborhood. See the hotel's own website for room types and check-in details.",
-        "star": null,
-        "price_band": "1000-2000",
-        "accepts_foreigners": true,
-        "foreign_service": {
-          "english_front_desk": null,
-          "foreign_guest_share": null,
-          "foreign_guest_experience": null,
-          "international_brand": "Hilton",
-          "evidence_zh": "北京王府井希尔顿酒店由国际酒店品牌或集团 Hilton 的官网正式列出并提供预订入口。",
-          "evidence": [
-            "https://www.hilton.com.cn/zh-cn/hotels/bjswfhi-hilton-beijing-wangfujing"
-          ]
-        }
-      },
-      "external_signals": [],
-      "location": null,
-      "amap": {
-        "status": "not-run",
-        "alternatives": []
-      },
-      "score": {
-        "total": 26,
-        "parts": {
-          "foreigner": 0,
-          "confidence": 12,
-          "sources": 10,
-          "complete": 4,
           "amap": 0
         },
         "external_used": false
@@ -8966,8 +9548,18 @@
         "tier": "main",
         "name_zh": "香山公园",
         "name_en": "Fragrant Hills Park",
-        "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_zh": [
+          "静宜园",
+          "北京市香山公园景区",
+          "香山公園",
+          "靜宜園"
+        ],
+        "aliases_en": [
+          "Fragrant Hills",
+          "Fragrant Hill Park",
+          "Xiangshan park",
+          "Xiangshan Gongyuan"
+        ],
         "address_zh": "北京市海淀区香山公园买卖街40号",
         "address_en": null,
         "district_zh": "海淀区",
@@ -9021,7 +9613,57 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "Fragrant Hills",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q943688",
+          "kind": "label"
+        },
+        {
+          "alias": "静宜园",
+          "lang": "zh",
+          "url": "https://zh.wikipedia.org/wiki/%E9%9D%99%E5%AE%9C%E5%9B%AD?redirect=no",
+          "kind": "redirect"
+        },
+        {
+          "alias": "Fragrant Hill Park",
+          "lang": "en",
+          "url": "https://en.wikipedia.org/wiki/Fragrant_Hill_Park?redirect=no",
+          "kind": "redirect"
+        },
+        {
+          "alias": "Xiangshan park",
+          "lang": "en",
+          "url": "https://en.wikipedia.org/wiki/Xiangshan_park?redirect=no",
+          "kind": "redirect"
+        },
+        {
+          "alias": "Xiangshan Gongyuan",
+          "lang": "en",
+          "url": "https://en.wikipedia.org/wiki/Xiangshan_Gongyuan?redirect=no",
+          "kind": "redirect"
+        },
+        {
+          "alias": "北京市香山公园景区",
+          "lang": "zh",
+          "url": "https://whlyj.beijing.gov.cn/ggfw/ly/202511/t20251119_4287815.html",
+          "kind": "discovery"
+        },
+        {
+          "alias": "香山公園",
+          "lang": "zh",
+          "url": "https://zh.wikipedia.org/wiki/%E9%A6%99%E5%B1%B1%E5%85%AC%E5%9C%92?redirect=no",
+          "kind": "published_traditional"
+        },
+        {
+          "alias": "靜宜園",
+          "lang": "zh",
+          "url": "https://zh.wikipedia.org/wiki/%E9%9D%9C%E5%AE%9C%E5%9C%92?redirect=no",
+          "kind": "published_traditional"
+        }
+      ]
     },
     {
       "id": "pl_bj_xiaodiaolitang_hepingli",
@@ -9102,7 +9744,7 @@
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": "西单北大街131号",
-        "address_en": null,
+        "address_en": "131 Xidan North Street, Xicheng District, Beijing",
         "district_zh": "西城区",
         "nearest_metro": {
           "station_zh": "西单",
@@ -9124,7 +9766,8 @@
           "https://static.cninfo.com.cn/finalpage/2026-08-29/1225525177.PDF",
           "https://www.lululemon.cn/exshop.html",
           "https://english.beijing.gov.cn/consuminginbeijing/wheretobuy/commercialareas/updatesofcommercialareas/202104/t20210408_2349023.html",
-          "https://bjsubway.com/station/xltcx/"
+          "https://bjsubway.com/station/xltcx/",
+          "https://r.visitbeijing.com.cn/leisure/331"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
@@ -9144,12 +9787,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 28,
+        "total": 30,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 6,
+          "complete": 8,
           "amap": 0
         },
         "external_used": false
@@ -9232,8 +9875,13 @@
         "tier": "backup",
         "name_zh": "野鸭湖",
         "name_en": "Wild Duck Lake",
-        "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_zh": [
+          "野鸭湖省级自然保护区",
+          "野鸭湖景区"
+        ],
+        "aliases_en": [
+          "Yeyahu Provincial Natural Reserve"
+        ],
         "address_zh": "北京市延庆区康庄镇刘浩营村西",
         "address_en": null,
         "district_zh": "延庆区",
@@ -9287,7 +9935,27 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "野鸭湖省级自然保护区",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q16936641",
+          "kind": "wikidata"
+        },
+        {
+          "alias": "Yeyahu Provincial Natural Reserve",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q16936641",
+          "kind": "label"
+        },
+        {
+          "alias": "野鸭湖景区",
+          "lang": "zh",
+          "url": "https://whlyj.beijing.gov.cn/ggfw/ly/202511/t20251119_4287815.html",
+          "kind": "discovery"
+        }
+      ]
     },
     {
       "id": "pl_bj_yeyepudi_qianmen",
@@ -9460,6 +10128,7 @@
         "intro_long_en": "A practical option when your plans take you east of central Beijing. Accor's English page describes the room configurations, including a twin option.",
         "star": null,
         "price_band": null,
+        "hotel_class": "economy",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -9490,7 +10159,7 @@
         "external_used": false
       },
       "flags": [
-        "pl_bj_yibisi_chaoyangdayuecheng: unknown field 'hotel_class' is dropped on import"
+        "no price band: it cannot enter the library until the operator's own page gives a rate"
       ]
     },
     {
@@ -9533,6 +10202,7 @@
         "intro_long_en": "Start around Qianmen and Dashilan, with Tiananmen Square on the same outing. Accor has an English property page and lists Mandarin as the language spoken at the hotel.",
         "star": null,
         "price_band": null,
+        "hotel_class": "economy",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -9563,7 +10233,7 @@
         "external_used": false
       },
       "flags": [
-        "pl_bj_yibisi_dazhalan: unknown field 'hotel_class' is dropped on import"
+        "no price band: it cannot enter the library until the operator's own page gives a rate"
       ]
     },
     {
@@ -9607,6 +10277,7 @@
         "intro_long_en": "Consider this eastern Beijing base if your itinerary leans toward Chaoyang's shops and restaurants. The property page lists breakfast and a reception desk open around the clock.",
         "star": null,
         "price_band": null,
+        "hotel_class": "economy",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -9637,7 +10308,7 @@
         "external_used": false
       },
       "flags": [
-        "pl_bj_yibisi_dongdaqiao: unknown field 'hotel_class' is dropped on import"
+        "no price band: it cannot enter the library until the operator's own page gives a rate"
       ]
     },
     {
@@ -9686,6 +10357,7 @@
         "intro_long_en": "Use Guloudajie for subway trips and save a separate outing for Houhai and the lanes around the Bell and Drum Towers. Find arrival details on Accor's English listing.",
         "star": null,
         "price_band": null,
+        "hotel_class": "economy",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -9716,7 +10388,7 @@
         "external_used": false
       },
       "flags": [
-        "pl_bj_yibisi_guloudajie: unknown field 'hotel_class' is dropped on import"
+        "no price band: it cannot enter the library until the operator's own page gives a rate"
       ]
     },
     {
@@ -9759,6 +10431,7 @@
         "intro_long_en": "If you're spending much of the trip in eastern Beijing, check the property's double and twin room listings on Accor before choosing a room.",
         "star": null,
         "price_band": null,
+        "hotel_class": "economy",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -9789,7 +10462,7 @@
         "external_used": false
       },
       "flags": [
-        "pl_bj_yibisi_tuanjiehu: unknown field 'hotel_class' is dropped on import"
+        "no price band: it cannot enter the library until the operator's own page gives a rate"
       ]
     },
     {
@@ -9803,8 +10476,17 @@
         "tier": "main",
         "name_zh": "颐和园",
         "name_en": "Summer Palace",
-        "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_zh": [
+          "清漪园",
+          "颐和园景区",
+          "頤和園",
+          "清漪園"
+        ],
+        "aliases_en": [
+          "Yiheyuan",
+          "Yi He Yuan",
+          "New Summer Palace"
+        ],
         "address_zh": "北京市海淀区宫门前街甲23号",
         "address_en": null,
         "district_zh": "海淀区",
@@ -9859,7 +10541,51 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "清漪园",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q4132",
+          "kind": "wikidata"
+        },
+        {
+          "alias": "Yiheyuan",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q4132",
+          "kind": "wikidata"
+        },
+        {
+          "alias": "Yi He Yuan",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q4132",
+          "kind": "wikidata"
+        },
+        {
+          "alias": "New Summer Palace",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q4132",
+          "kind": "wikidata"
+        },
+        {
+          "alias": "颐和园景区",
+          "lang": "zh",
+          "url": "https://whlyj.beijing.gov.cn/ggfw/ly/202511/t20251119_4287815.html",
+          "kind": "discovery"
+        },
+        {
+          "alias": "頤和園",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q4132",
+          "kind": "published_traditional"
+        },
+        {
+          "alias": "清漪園",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q4132",
+          "kind": "published_traditional"
+        }
+      ]
     },
     {
       "id": "pl_bj_yonghegong",
@@ -9872,8 +10598,19 @@
         "tier": "main",
         "name_zh": "雍和宫",
         "name_en": "Lama Temple",
-        "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_zh": [
+          "雍和宮"
+        ],
+        "aliases_en": [
+          "Yonghe Temple",
+          "Yonghe Gong",
+          "Yonghegong",
+          "Yōnghé gōng",
+          "YongHe Lama Temple",
+          "Yonghegong Lama Temple",
+          "Yonghe Lamasery",
+          "Yonghe Palace"
+        ],
         "address_zh": null,
         "address_en": null,
         "district_zh": "东城区",
@@ -9927,7 +10664,63 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "Yonghe Temple",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q692723",
+          "kind": "label"
+        },
+        {
+          "alias": "Yonghe Gong",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q692723",
+          "kind": "wikidata"
+        },
+        {
+          "alias": "Yonghegong",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q692723",
+          "kind": "wikidata"
+        },
+        {
+          "alias": "Yōnghé gōng",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q692723",
+          "kind": "wikidata"
+        },
+        {
+          "alias": "YongHe Lama Temple",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q692723",
+          "kind": "wikidata"
+        },
+        {
+          "alias": "Yonghegong Lama Temple",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q692723",
+          "kind": "wikidata"
+        },
+        {
+          "alias": "Yonghe Lamasery",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q692723",
+          "kind": "wikidata"
+        },
+        {
+          "alias": "Yonghe Palace",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q692723",
+          "kind": "wikidata"
+        },
+        {
+          "alias": "雍和宮",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q692723",
+          "kind": "published_traditional"
+        }
+      ]
     },
     {
       "id": "pl_bj_yuanboyuan",
@@ -9940,8 +10733,13 @@
         "tier": "backup",
         "name_zh": "北京园博园",
         "name_en": "Beijing Garden Expo Park",
-        "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_zh": [
+          "北京园博园景区"
+        ],
+        "aliases_en": [
+          "Beijing Garden Expo",
+          "Beijing Expo Park"
+        ],
         "address_zh": "北京市丰台区射击场路15号",
         "address_en": null,
         "district_zh": "丰台区",
@@ -9995,7 +10793,27 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "Beijing Garden Expo",
+          "lang": "en",
+          "url": "https://en.wikipedia.org/wiki/Beijing_Garden_Expo?redirect=no",
+          "kind": "redirect"
+        },
+        {
+          "alias": "Beijing Expo Park",
+          "lang": "en",
+          "url": "https://en.wikipedia.org/wiki/Beijing_Expo_Park?redirect=no",
+          "kind": "redirect"
+        },
+        {
+          "alias": "北京园博园景区",
+          "lang": "zh",
+          "url": "https://whlyj.beijing.gov.cn/ggfw/ly/202511/t20251119_4287815.html",
+          "kind": "discovery"
+        }
+      ]
     },
     {
       "id": "pl_bj_yuanmingyuan",
@@ -10008,8 +10826,24 @@
         "tier": "main",
         "name_zh": "圆明园遗址公园",
         "name_en": "Old Summer Palace (Yuanmingyuan)",
-        "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_zh": [
+          "圆明园",
+          "圆明园遗址",
+          "圆明园遗址公园景区",
+          "圓明園遺址公園",
+          "圓明園"
+        ],
+        "aliases_en": [
+          "Old Summer Palace",
+          "Yuanmingyuan",
+          "Yuan Ming Yuan",
+          "Yuanmingyuan Palace",
+          "Site of the Old Summer Palace",
+          "Yuanming Yuan",
+          "Gardens of Perfect Brightness",
+          "Yuan Ming Yuan Park",
+          "Yuanmingyuan Park"
+        ],
         "address_zh": "北京市海淀区清华西路28号",
         "address_en": null,
         "district_zh": "海淀区",
@@ -10063,7 +10897,93 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "圆明园",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q907894",
+          "kind": "label"
+        },
+        {
+          "alias": "圆明园遗址",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q907894",
+          "kind": "wikidata"
+        },
+        {
+          "alias": "Old Summer Palace",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q907894",
+          "kind": "label"
+        },
+        {
+          "alias": "Yuanmingyuan",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q907894",
+          "kind": "wikidata"
+        },
+        {
+          "alias": "Yuan Ming Yuan",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q907894",
+          "kind": "wikidata"
+        },
+        {
+          "alias": "Yuanmingyuan Palace",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q907894",
+          "kind": "wikidata"
+        },
+        {
+          "alias": "Site of the Old Summer Palace",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q907894",
+          "kind": "wikidata"
+        },
+        {
+          "alias": "Yuanming Yuan",
+          "lang": "en",
+          "url": "https://en.wikipedia.org/wiki/Yuanming_Yuan?redirect=no",
+          "kind": "redirect"
+        },
+        {
+          "alias": "Gardens of Perfect Brightness",
+          "lang": "en",
+          "url": "https://en.wikipedia.org/wiki/Gardens_of_Perfect_Brightness?redirect=no",
+          "kind": "redirect"
+        },
+        {
+          "alias": "Yuan Ming Yuan Park",
+          "lang": "en",
+          "url": "https://en.wikipedia.org/wiki/Yuan_Ming_Yuan_Park?redirect=no",
+          "kind": "redirect"
+        },
+        {
+          "alias": "Yuanmingyuan Park",
+          "lang": "en",
+          "url": "https://en.wikipedia.org/wiki/Yuanmingyuan_Park?redirect=no",
+          "kind": "redirect"
+        },
+        {
+          "alias": "圆明园遗址公园景区",
+          "lang": "zh",
+          "url": "https://whlyj.beijing.gov.cn/ggfw/ly/202511/t20251119_4287815.html",
+          "kind": "discovery"
+        },
+        {
+          "alias": "圓明園遺址公園",
+          "lang": "zh",
+          "url": "https://zh.wikipedia.org/wiki/%E5%9C%93%E6%98%8E%E5%9C%92%E9%81%BA%E5%9D%80%E5%85%AC%E5%9C%92?redirect=no",
+          "kind": "published_traditional"
+        },
+        {
+          "alias": "圓明園",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q907894",
+          "kind": "published_traditional"
+        }
+      ]
     },
     {
       "id": "pl_bj_yuecaiwanhao",
@@ -10107,6 +11027,7 @@
         "intro_long_en": "Plan your arrival around Xuanwumen or Caishikou depending on your line. Marriott lists English at the property and gives Beijing South as one of the rail stations serving the area.",
         "star": null,
         "price_band": "1000-2000",
+        "hotel_class": "luxury",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -10136,9 +11057,7 @@
         },
         "external_used": false
       },
-      "flags": [
-        "pl_bj_yuecaiwanhao: unknown field 'hotel_class' is dropped on import"
-      ]
+      "flags": []
     },
     {
       "id": "pl_bj_yuhuatai_xicheng",
@@ -10216,8 +11135,14 @@
         "tier": "main",
         "name_zh": "北京市玉渊潭公园景区",
         "name_en": "Yuyuantan Park",
-        "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_zh": [
+          "玉渊潭公园",
+          "北京玉渊潭公园",
+          "玉淵潭公園"
+        ],
+        "aliases_en": [
+          "Yuyuantan"
+        ],
         "address_zh": "北京市海淀区西三环中路10号",
         "address_en": null,
         "district_zh": "海淀区",
@@ -10271,7 +11196,33 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "玉渊潭公园",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q12011122",
+          "kind": "label"
+        },
+        {
+          "alias": "Yuyuantan",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q12011122",
+          "kind": "wikidata"
+        },
+        {
+          "alias": "北京玉渊潭公园",
+          "lang": "zh",
+          "url": "https://zh.wikipedia.org/wiki/%E5%8C%97%E4%BA%AC%E7%8E%89%E6%B8%8A%E6%BD%AD%E5%85%AC%E5%9B%AD?redirect=no",
+          "kind": "redirect"
+        },
+        {
+          "alias": "玉淵潭公園",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q12011122",
+          "kind": "published_traditional"
+        }
+      ]
     },
     {
       "id": "pl_bj_zhangyiyuan_dashilan_shop",
@@ -10417,7 +11368,9 @@
         "tier": "main",
         "name_zh": "北京钟鼓楼",
         "name_en": "Beijing Bell and Drum Towers",
-        "aliases_zh": [],
+        "aliases_zh": [
+          "北京鼓楼和钟楼"
+        ],
         "aliases_en": [],
         "address_zh": null,
         "address_en": null,
@@ -10472,7 +11425,15 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "北京鼓楼和钟楼",
+          "lang": "zh",
+          "url": "https://zh.wikipedia.org/wiki/%E5%8C%97%E4%BA%AC%E9%BC%93%E6%A5%BC%E5%92%8C%E9%92%9F%E6%A5%BC",
+          "kind": "wikipedia"
+        }
+      ]
     },
     {
       "id": "pl_bj_zhongguo_meishuguan",
@@ -10485,8 +11446,12 @@
         "tier": "main",
         "name_zh": "中国美术馆",
         "name_en": "National Art Museum of China",
-        "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_zh": [
+          "中國美術館"
+        ],
+        "aliases_en": [
+          "NAMOC"
+        ],
         "address_zh": null,
         "address_en": null,
         "district_zh": "东城区",
@@ -10539,7 +11504,21 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "NAMOC",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q233705",
+          "kind": "wikidata"
+        },
+        {
+          "alias": "中國美術館",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q233705",
+          "kind": "published_traditional"
+        }
+      ]
     },
     {
       "id": "pl_bj_zhongshan_gongyuan",
@@ -10552,8 +11531,12 @@
         "tier": "main",
         "name_zh": "北京市中山公园景区",
         "name_en": "Zhongshan Park",
-        "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_zh": [
+          "中山公园（北京）"
+        ],
+        "aliases_en": [
+          "Zhongshan Park (Beijing)"
+        ],
         "address_zh": "北京市东城区中华路4号",
         "address_en": null,
         "district_zh": "东城区",
@@ -10607,7 +11590,21 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "中山公园（北京）",
+          "lang": "zh",
+          "url": "https://english.beijing.gov.cn/specials/parktours/guidevisitors/zhongshanpark/",
+          "kind": "manual"
+        },
+        {
+          "alias": "Zhongshan Park (Beijing)",
+          "lang": "en",
+          "url": "https://en.wikipedia.org/wiki/Zhongshan_Park_(Beijing)",
+          "kind": "manual"
+        }
+      ]
     },
     {
       "id": "pl_bj_zhongyang_dianshita",
@@ -10620,8 +11617,15 @@
         "tier": "main",
         "name_zh": "中央广播电视塔",
         "name_en": "Central Radio and TV Tower",
-        "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_zh": [
+          "中央电视塔",
+          "中央廣播電視塔"
+        ],
+        "aliases_en": [
+          "Central Radio & TV Tower",
+          "China Central Television Tower",
+          "Central tv tower"
+        ],
         "address_zh": "北京市海淀区西三环中路11号",
         "address_en": null,
         "district_zh": "海淀区",
@@ -10675,7 +11679,39 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "中央电视塔",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q190377",
+          "kind": "wikidata"
+        },
+        {
+          "alias": "Central Radio & TV Tower",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q190377",
+          "kind": "label"
+        },
+        {
+          "alias": "China Central Television Tower",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q190377",
+          "kind": "wikidata"
+        },
+        {
+          "alias": "Central tv tower",
+          "lang": "en",
+          "url": "https://en.wikipedia.org/wiki/Central_tv_tower?redirect=no",
+          "kind": "redirect"
+        },
+        {
+          "alias": "中央廣播電視塔",
+          "lang": "zh",
+          "url": "https://zh.wikipedia.org/wiki/%E4%B8%AD%E5%A4%AE%E5%BB%A3%E6%92%AD%E9%9B%BB%E8%A6%96%E5%A1%94?redirect=no",
+          "kind": "published_traditional"
+        }
+      ]
     },
     {
       "id": "pl_bj_zhoukoudian",
@@ -10688,8 +11724,15 @@
         "tier": "backup",
         "name_zh": "北京市房山区周口店遗址景区",
         "name_en": "Zhoukoudian Peking Man Site",
-        "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_zh": [
+          "周口店北京人遗址",
+          "周口店遗址",
+          "周口店古人类遗址",
+          "周口店北京人遺址"
+        ],
+        "aliases_en": [
+          "Zhoukoudian Site"
+        ],
         "address_zh": "北京市房山区周口店大街1号",
         "address_en": null,
         "district_zh": "房山区",
@@ -10743,7 +11786,39 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "周口店北京人遗址",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q499552",
+          "kind": "wikidata"
+        },
+        {
+          "alias": "周口店遗址",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q499552",
+          "kind": "label"
+        },
+        {
+          "alias": "Zhoukoudian Site",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q499552",
+          "kind": "wikidata"
+        },
+        {
+          "alias": "周口店古人类遗址",
+          "lang": "zh",
+          "url": "https://zh.wikipedia.org/wiki/%E5%91%A8%E5%8F%A3%E5%BA%97%E5%8F%A4%E4%BA%BA%E7%B1%BB%E9%81%97%E5%9D%80?redirect=no",
+          "kind": "redirect"
+        },
+        {
+          "alias": "周口店北京人遺址",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q499552",
+          "kind": "published_traditional"
+        }
+      ]
     },
     {
       "id": "pl_bj_ziran_bowuguan",
@@ -10756,8 +11831,16 @@
         "tier": "main",
         "name_zh": "国家自然博物馆",
         "name_en": "National Natural History Museum of China",
-        "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_zh": [
+          "北京自然博物馆",
+          "國家自然博物館"
+        ],
+        "aliases_en": [
+          "Beijing Museum of Natural History",
+          "Central Museum of Natural History",
+          "National Central Museum of Natural History",
+          "NNHM"
+        ],
         "address_zh": null,
         "address_en": null,
         "district_zh": "东城区",
@@ -10810,7 +11893,45 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "北京自然博物馆",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q846583",
+          "kind": "wikidata"
+        },
+        {
+          "alias": "Beijing Museum of Natural History",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q846583",
+          "kind": "wikidata"
+        },
+        {
+          "alias": "Central Museum of Natural History",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q846583",
+          "kind": "wikidata"
+        },
+        {
+          "alias": "National Central Museum of Natural History",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q846583",
+          "kind": "wikidata"
+        },
+        {
+          "alias": "NNHM",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q846583",
+          "kind": "wikidata"
+        },
+        {
+          "alias": "國家自然博物館",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q846583",
+          "kind": "published_traditional"
+        }
+      ]
     },
     {
       "id": "pl_bj_zizhuyuan",
@@ -10823,8 +11944,14 @@
         "tier": "backup",
         "name_zh": "紫竹院公园景区",
         "name_en": "Purple Bamboo Park",
-        "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_zh": [
+          "紫竹院公园",
+          "紫竹院"
+        ],
+        "aliases_en": [
+          "Zizhuyuan Park",
+          "Zizhuyuan"
+        ],
         "address_zh": "北京市海淀区中关村南大街35号",
         "address_en": null,
         "district_zh": "海淀区",
@@ -10878,7 +12005,33 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "紫竹院公园",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q7261399",
+          "kind": "label"
+        },
+        {
+          "alias": "紫竹院",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q7261399",
+          "kind": "wikidata"
+        },
+        {
+          "alias": "Zizhuyuan Park",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q7261399",
+          "kind": "wikidata"
+        },
+        {
+          "alias": "Zizhuyuan",
+          "lang": "en",
+          "url": "https://en.wikipedia.org/wiki/Zizhuyuan?redirect=no",
+          "kind": "redirect"
+        }
+      ]
     },
     {
       "id": "pl_bj_zspace_xiezuo",
