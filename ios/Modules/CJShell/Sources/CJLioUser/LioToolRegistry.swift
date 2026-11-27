@@ -118,6 +118,8 @@ struct LioToolEntry: Sendable {
     var arguments: [String] = ProcessInfo.processInfo.arguments
     #if os(iOS)
     var enabled = true
+    /// #1747: false when the traveller turned AI processing off; tools that send content to the model show that instead.
+    var aiProcessingAllowed = true
     var sessionIsCurrent: @MainActor () -> Bool = { true }
     var translationHistory: LioTranslationHistory?
     var translationRelay: LioRelayTranslationClient?
@@ -194,10 +196,14 @@ enum LioToolRegistry {
         LioToolEntry(.translation, symbol: "character.bubble",
                      name: ("Translation", "翻译"), summary: ("Type, speak or snap a photo", "打字、说话或拍照翻译")) { context, _ in
             #if os(iOS)
-            LioTextTranslationView(language: context.language, history: context.translationHistory,
-                                   enabled: context.enabled, isCurrent: {
-                UIApplication.shared.applicationState != .background && context.sessionIsCurrent()
-            }, relay: context.translationRelay)
+            if context.aiProcessingAllowed {
+                LioTextTranslationView(language: context.language, history: context.translationHistory,
+                                       enabled: context.enabled, isCurrent: {
+                    UIApplication.shared.applicationState != .background && context.sessionIsCurrent()
+                }, relay: context.translationRelay)
+            } else {
+                LioAIOffNotice(language: context.language)
+            }
             #endif
         },
         LioToolEntry(.taxi, symbol: "car.fill",
@@ -311,7 +317,9 @@ enum LioToolRegistry {
                      name: ("Menu Helper", "点餐"), summary: ("Snap a menu, order in Chinese", "拍菜单，用中文点菜"),
                      gate: .availability { $0.menuOrder }, placement: .routeOnly) { context, _ in
             #if os(iOS)
-            if let menuService = context.menuService {
+            if !context.aiProcessingAllowed {
+                LioAIOffNotice(language: context.language)
+            } else if let menuService = context.menuService {
                 // Server memory is not read by Tools; the show-card allergies saved on this device are ticked (#1739).
                 LioMenuOrderView(language: context.language, service: menuService, memoryNotes: nil,
                                  needs: context.travelProfile().profile.menuNeeds)
