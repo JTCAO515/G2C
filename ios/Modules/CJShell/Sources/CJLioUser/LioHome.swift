@@ -590,7 +590,8 @@ public struct LioHome<MenuContent: View>: View {
             LioTripHomeTab(language: language, store: tripHomeStore, plans: savedPlans.plans,
                            plansUnreadable: savedPlans.unreadable, savedPlans: savedPlans,
                            messageDirectory: messageDirectory, isCurrent: toolsSessionIsCurrent,
-                           showAllTrips: { showsAllTrips = true }, openChat: { tab = .chat })
+                           showAllTrips: { showsAllTrips = true }, openChat: { tab = .chat },
+                           askLio: { sentence in askFromTrips(sentence) })
                 .id(tripHomeStore?.id)
         } else {
             LioTripsView(itineraries: conversation.itineraries, language: language, library: tripLibrary,
@@ -603,6 +604,13 @@ public struct LioHome<MenuContent: View>: View {
                          backToTripHome: LioTripHomeFeature.enabledInBuild ? { showsAllTrips = false; tripPath = [] } : nil,
                          listRevision: tripListRevision) { tab = .chat }
         }
+    }
+
+    /// A 「去办」 chip (#1979): the chat opens and the sentence is sent as a question; if the chat will not take it, the
+    /// sentence waits in the message box.
+    private func askFromTrips(_ sentence: String) {
+        tab = .chat
+        if case .draft(let text) = LioTodoChipAsk.run(sentence, currentDraft: draft, send: { sendQuestion($0) }) { setDraft(text) }
     }
 
     private func planActions(_ plan: LioPlanSummary) -> LioItineraryTimelineView.Actions {
@@ -1783,6 +1791,7 @@ private struct LioTripHomeTab: View {
     let isCurrent: @MainActor () -> Bool
     let showAllTrips: () -> Void
     let openChat: () -> Void
+    var askLio: ((String) -> Void)?
     @State private var loaded: Loaded?
     @Environment(\.lioReminderScope) private var reminderScope
 
@@ -1796,7 +1805,8 @@ private struct LioTripHomeTab: View {
         Group {
             if let loaded {
                 LioTripHome(language: language, store: store, plans: plans, plansUnreadable: plansUnreadable,
-                            savedPlans: savedPlans, tools: loaded.tools, showAllTrips: showAllTrips, openChat: openChat, model: loaded.model)
+                            savedPlans: savedPlans, tools: loaded.tools, showAllTrips: showAllTrips, openChat: openChat, model: loaded.model,
+                            askLio: askLio)
             } else {
                 LioTheme.paper.ignoresSafeArea()
             }
