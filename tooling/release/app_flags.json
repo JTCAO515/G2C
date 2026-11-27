@@ -90,6 +90,10 @@
       "plist": "G2CTripBusinessEnabled"
     },
     {
+      "setting": "G2C_CONSENT_ENABLED",
+      "plist": "G2CConsentEnabled"
+    },
+    {
       "setting": "G2C_CHAT_TRIP_PLACES_ENABLED",
       "plist": "G2CChatTripPlacesEnabled"
     },

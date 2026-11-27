@@ -37,8 +37,12 @@ extension EnvironmentValues {
 }
 
 struct LioNearbyView: View {
+    /// Which kinds of places the page offers (#1980). `.all` is the page as it was, with the switch between them.
+    enum Group { case all, leisure, essentials }
+
     let language: LioLanguage
     let service: LioNearbyService
+    private let group: Group
     @Environment(\.lioTaxiEntry) private var taxiEntry
     @State private var here: LioTaxiPlace?
     @State private var address: String?
@@ -46,6 +50,13 @@ struct LioNearbyView: View {
     /// Essentials are searched one kind at a time (luggage storage only on its own).
     @State private var essential: LioNearbyPlace.Category?
     private let essentialsEnabled = LioNearbyPlace.essentialsEnabled
+
+    init(language: LioLanguage, service: LioNearbyService, group: Group = .all) {
+        self.language = language
+        self.service = service
+        self.group = group
+        _essential = State(initialValue: group == .essentials ? .atm : nil)
+    }
     @State private var radius = 1000
     @State private var nearest = false
     @State private var places: [LioNearbyPOI] = []
@@ -71,7 +82,8 @@ struct LioNearbyView: View {
         .background(LioTheme.paper)
         .foregroundStyle(LioTheme.ink)
         .tint(LioTheme.vermilion)
-        .navigationTitle(language.text("Nearby", "附近"))
+        .navigationTitle(group == .essentials ? language.text("Nearby Essentials", "附近便利")
+                         : language.text("Nearby", "附近"))
         .navigationBarTitleDisplayMode(.inline)
         .task { await locate() }
         .task(id: query) { await search() }
@@ -101,7 +113,7 @@ struct LioNearbyView: View {
 
     private var filters: some View {
         VStack(alignment: .leading, spacing: 8) {
-            if essentialsEnabled {
+            if essentialsEnabled && group == .all {
                 Picker(language.text("Kind of places", "地点类型"), selection: Binding(
                     get: { essential != nil },
                     set: { essentials in essential = essentials ? (essential ?? .atm) : nil })) {

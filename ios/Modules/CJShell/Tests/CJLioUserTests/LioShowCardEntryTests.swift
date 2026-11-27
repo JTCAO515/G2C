@@ -11,10 +11,12 @@ struct LioShowCardEntryTests {
                                               transport: true)).contains(.returnHotel))
     }
 
-    @Test func comesFirstWhenEnabled() {
+    @Test func isRouteOnlyWhenEnabled() {
+        // #1980: Back to Hotel moved to the trip day page; the route still opens it, the Tools tab has no card.
         var availability = LioToolCatalog.Availability()
         availability.returnHotel = true
-        #expect(LioToolCatalog.visible(availability) == [.returnHotel, .localSupport, .metro, .payment, .translation, .showCards])
+        #expect(LioToolCatalog.visible(availability).contains(.returnHotel))
+        #expect(!LioToolCatalog.cards(availability).contains(.returnHotel))
     }
 
     @Test func cardCopy() {

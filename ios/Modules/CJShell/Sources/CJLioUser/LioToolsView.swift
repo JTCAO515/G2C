@@ -19,6 +19,7 @@ struct LioToolsView: View {
     @Environment(\.lioRoadbookDirectory) private var roadbookDirectory
     @Environment(\.lioSavedPlans) private var savedPlans
     @Environment(\.lioMenuService) private var menuService
+    @Environment(\.lioConsent) private var consent
     @Environment(\.lioToolServices) private var services
     @Environment(LioRouter.self) private var router: LioRouter?
     /// Pages open when no router is present (previews).
@@ -38,12 +39,23 @@ struct LioToolsView: View {
         context.roadbookDirectory = roadbookDirectory
         context.savedPlans = savedPlans
         context.menuService = menuService
+        context.aiProcessingAllowed = consent.allowsAIProcessing
         return context
     }
 
     private var path: Binding<[LioRoute]> {
         guard let router else { return $localPath }
         return Binding(get: { router.toolsPath }, set: { router.toolsPath = $0 })
+    }
+
+    /// The nine cards (#1980). Debug acceptance runs that open a tool the cards no longer show (Local Support,
+    /// Payment Guide) pass `--lio-tools-all-cards` to list every available tool.
+    private func shownCards(_ availability: LioToolCatalog.Availability, visible: [LioTool],
+                            context: LioToolContext) -> [LioTool] {
+        #if DEBUG
+        if context.arguments.contains("--lio-tools-all-cards") { return visible }
+        #endif
+        return LioToolCatalog.cards(availability)
     }
 
     private var columnCount: Int { typeSize.isAccessibilitySize ? 1 : 2 }
@@ -55,7 +67,10 @@ struct LioToolsView: View {
 
     var body: some View {
         let context = context
-        let visible = LioToolCatalog.visible(context.availability())
+        let availability = context.availability()
+        // Cards are the nine tools of #1980; a route also opens a tool that has no card of its own.
+        let visible = LioToolCatalog.visible(availability)
+        let cards = shownCards(availability, visible: visible, context: context)
         NavigationStack(path: path) {
             ScrollView {
                 VStack(alignment: .leading, spacing: LioTheme.Spacing.md) {
@@ -68,7 +83,7 @@ struct LioToolsView: View {
                     // and the Dynamic Type audit then reported their text as not scaling. Cards in a row share its
                     // height.
                     Grid(horizontalSpacing: LioTheme.Spacing.sm, verticalSpacing: LioTheme.Spacing.sm) {
-                        ForEach(rows(visible), id: \.self) { row in
+                        ForEach(rows(cards), id: \.self) { row in
                             GridRow(alignment: .top) {
                                 ForEach(row, id: \.self) { tool in card(tool) }
                                 if row.count < columnCount {
