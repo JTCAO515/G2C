@@ -87,21 +87,38 @@ struct LioTripProfile: Codable, Equatable, Sendable {
     /// Leisure or business (#1765), chosen in the trip settings while `G2CTripBusinessEnabled` is on. Nil, as in every
     /// file written before it existed, is a leisure trip.
     var purpose: LioTripPurpose?
+    /// The flight or train number the traveller gave in the "arrival" step (#1979), upper case; nil when not given.
+    var arrivalNumber: String?
+    /// The hotel level the traveller gave in the "stay" step (#1979): 3, 4 or 5 stars; nil for any.
+    var stayStars: Int?
     let startedAt: Date
 
+    static let maximumArrivalNumberLength = 12
+    static let starLevels = 3...5
+
+    /// Letters and digits only, so a pasted sentence or markup never becomes a "number".
+    static func cleanArrivalNumber(_ text: String?) -> String? {
+        guard let text else { return nil }
+        let kept = text.uppercased().filter { $0.isASCII && ($0.isLetter || $0.isNumber) }.prefix(maximumArrivalNumberLength)
+        return kept.isEmpty ? nil : String(kept)
+    }
+
     init(arrival: LioTripDay?, stayDays: Int?, cityID: String?, planID: String? = nil,
-         onwardToThirdCountry: Bool? = nil, purpose: LioTripPurpose? = nil, startedAt: Date) {
+         onwardToThirdCountry: Bool? = nil, purpose: LioTripPurpose? = nil,
+         arrivalNumber: String? = nil, stayStars: Int? = nil, startedAt: Date) {
         self.arrival = arrival
         self.stayDays = stayDays.map { min(max($0, 1), Self.maximumStayDays) }
         self.cityID = cityID.flatMap { $0.isEmpty || $0.utf8.count > 64 ? nil : $0 }
         self.planID = planID.flatMap { $0.isEmpty || $0.utf8.count > 256 ? nil : $0 }
         self.onwardToThirdCountry = onwardToThirdCountry
         self.purpose = purpose
+        self.arrivalNumber = Self.cleanArrivalNumber(arrivalNumber)
+        self.stayStars = stayStars.flatMap { Self.starLevels.contains($0) ? $0 : nil }
         self.startedAt = startedAt
     }
 
     private enum CodingKeys: String, CodingKey {
-        case arrival, stayDays, cityID, planID, onwardToThirdCountry, purpose, startedAt
+        case arrival, stayDays, cityID, planID, onwardToThirdCountry, purpose, arrivalNumber, stayStars, startedAt
     }
 
     /// The file is read back through the same limits as a new profile.
@@ -115,6 +132,9 @@ struct LioTripProfile: Codable, Equatable, Sendable {
                   // A purpose this version does not know (written by a newer app) reads as leisure, not as a damaged trip.
                   purpose: (try? container.decodeIfPresent(String.self, forKey: .purpose)).flatMap { $0 }
                       .flatMap(LioTripPurpose.init(rawValue:)),
+                  // Files written before these two fields existed read as "not given".
+                  arrivalNumber: (try? container.decodeIfPresent(String.self, forKey: .arrivalNumber)).flatMap { $0 },
+                  stayStars: (try? container.decodeIfPresent(Int.self, forKey: .stayStars)).flatMap { $0 },
                   startedAt: try container.decode(Date.self, forKey: .startedAt))
     }
 
@@ -291,6 +311,14 @@ final class LioTripHomeModel {
 
     func update(_ change: (inout LioTripProfile) -> Void) {
         guard var profile = cached.profile else { return }
+        change(&profile)
+        write(.init(profile: profile, ticks: cached.ticks, endedPlanIDs: cached.endedPlanIDs))
+    }
+
+    /// Changes the trip's profile, making one first when there is none (#1979: the answers are asked one step at a
+    /// time, so the first answer starts the trip). Ticks made before are kept.
+    func updateOrStart(at date: Date = .now, _ change: (inout LioTripProfile) -> Void) {
+        var profile = cached.profile ?? LioTripProfile(arrival: nil, stayDays: nil, cityID: nil, startedAt: date)
         change(&profile)
         write(.init(profile: profile, ticks: cached.ticks, endedPlanIDs: cached.endedPlanIDs))
     }

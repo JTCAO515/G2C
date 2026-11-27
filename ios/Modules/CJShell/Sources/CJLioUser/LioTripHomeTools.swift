@@ -88,7 +88,7 @@ struct LioTripTaskPage: View {
 
     var body: some View {
         switch task.kind {
-        case .entry, .arrivalCard:
+        case .entry:
             if let arrival = tools.arrival { arrival.entryPage(profile) }
         case .payment:
             LioPaymentGuideView(language: language)
@@ -107,8 +107,9 @@ struct LioTripTaskPage: View {
             if let arrival = tools.arrival { arrival.checklistPage(profile) }
         case .checkIn:
             LioShowCardsView(language: language, hotel: tools.savedHotel(), detailsStore: tools.detailsStore)
-        case .business:
-            // Business items open the organizer's page or a tool through the router, never a page here.
+        case .business, .arrival, .local:
+            // Business items and the "local" step open a tool through the router, and the "arrival" step opens a
+            // question sheet (#1979); none has a page here.
             EmptyView()
         }
     }
