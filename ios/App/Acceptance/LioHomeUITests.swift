@@ -80,6 +80,8 @@ import CryptoKit
             XCTAssertEqual(top.value as? String, "10")
             XCTAssertEqual(bottom.value as? String, "64.00")
             XCTAssertEqual(app.staticTexts["lio.currency.unitRate"].label, "1 USD ≈ 6.400 CNY")
+        }
+    }
 
     /// #2006: "Essentials" is now "Convenience" and gains community services (searched on their own, by name).
     func testNearbyConvenienceOffersCommunityServices() throws {
