@@ -24,6 +24,7 @@
 <key>G2CAttractionBookingEnabled</key><string>$(G2C_ATTRACTION_BOOKING_ENABLED)</string>
 <key>G2CShowCardEnabled</key><string>$(G2C_SHOW_CARD_ENABLED)</string>
 <key>G2CMenuOrderEnabled</key><string>$(G2C_MENU_ORDER_ENABLED)</string>
+<key>G2CPlaceToolsEnabled</key><string>$(G2C_PLACE_TOOLS_ENABLED)</string>
 <key>G2CTripHomeEnabled</key><string>$(G2C_TRIP_HOME_ENABLED)</string>
 <key>G2CLocationConsentEnabled</key><string>$(G2C_LOCATION_CONSENT_ENABLED)</string>
 <key>G2CAIDisclosureEnabled</key><string>$(G2C_AI_DISCLOSURE_ENABLED)</string>
@@ -34,6 +35,7 @@
 <key>G2CConsentEnabled</key><string>$(G2C_CONSENT_ENABLED)</string>
 <key>G2CChatTripPlacesEnabled</key><string>$(G2C_CHAT_TRIP_PLACES_ENABLED)</string>
 <key>G2CTripCanvasEnabled</key><string>$(G2C_TRIP_CANVAS_ENABLED)</string>
+<key>G2CAnswerRichEnabled</key><string>$(G2C_ANSWER_RICH_ENABLED)</string>
 <key>LSApplicationQueriesSchemes</key><array><string>OneTravel</string></array>
 <key>ITSAppUsesNonExemptEncryption</key><false/>
 <key>UISupportedInterfaceOrientations</key><array>

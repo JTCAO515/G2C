@@ -3,10 +3,15 @@ import Foundation
 import SwiftUI
 
 enum LioReplyMarkdown {
-    static func render(_ source: String) -> AttributedString? {
+    /// `places` (LIO-answer-rich.1, #1991) are words of `source` the server named as places: each becomes a link that
+    /// only this call can make (a fresh nonce in its scheme; see `LioPlaceLinkMarker`). Every other `g2c-place` link,
+    /// such as one the model wrote, is removed with the other links that are not plain https.
+    static func render(_ source: String, places: [LioPlaceSpan] = []) -> AttributedString? {
         guard LioPublicDisplay.permitsText(source) else { return nil }
+        let marker = places.isEmpty ? nil : LioPlaceLinkMarker()
+        let marked = marker?.mark(source, spans: places)
         let options = AttributedString.MarkdownParsingOptions(interpretedSyntax: .full)
-        guard let parsed = try? AttributedString(markdown: source, options: options) else { return nil }
+        guard let parsed = try? AttributedString(markdown: marked?.text ?? source, options: options) else { return nil }
         let sectionHeadings = headingParagraphs(in: parsed)
 
         // SwiftUI Text handles inline attributes. Add the spacing, markers and
@@ -56,6 +61,8 @@ enum LioReplyMarkdown {
             }
             answer += text
         }
+        // The links of the places the server named are made last, on the parsed text: the only `g2c-place` links.
+        if let marker, let marked { answer = marker.link(answer, words: marked.words) }
         guard LioPublicDisplay.permitsText(String(answer.characters)) else { return nil }
         return answer
     }
