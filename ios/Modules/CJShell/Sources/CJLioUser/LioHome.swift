@@ -501,6 +501,9 @@ public struct LioHome<MenuContent: View>: View {
         if LioTripHomePreview.requested {
             // #1647 screenshots only (Debug launch argument; always false in Release): the trip home with sample data.
             LioTripHomePreview.home(language: language) { tab = .chat }
+        } else if LioTripMapPreview.requested {
+            // #1996 screenshots only (Debug launch argument; always false in Release): the trip map on sample data.
+            LioTripMapPreview.page(language: language)
         } else if LioItineraryTimelineView.previewRequested {
             // #1453 proposal screenshots only (Debug launch argument).
             NavigationStack {
