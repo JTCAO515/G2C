@@ -28,6 +28,8 @@ _PLACE_ID = re.compile(r'pl_[a-z]{2}_[a-z0-9]+(?:_[a-z0-9]+)*')
 _MARKDOWN = set('*_`[]()<>#|\\~!')
 # A Chinese match followed by one of these is a different place (王府井站 is a station).
 ZH_STOP_SUFFIXES = ('号线', '机场', '大道', '胡同', '路', '街', '站', '区', '市', '县', '镇', '村', '口')
+# A gate or exit word before 站 also makes a station of the match (天坛东门站 is a station, not the park).
+ZH_STATION_AFTER = re.compile(r'[东南西北]{1,2}门站|[东南西北]?[出入]口站')
 EN_STOP_SUFFIXES = (' station', ' road', ' street', ' avenue', ' line', ' district', ' airport')
 # The bounded runs keep a line of many unclosed `[` linear (each one scans at most 300 / 500 characters, not to the line end).
 _SKIP = re.compile(r'```.*?```|`[^`\n]*`|\[[^\]\n]{0,300}\]\([^)\n]{0,500}\)|https?://\S+', re.S)
@@ -110,6 +112,8 @@ def span_ok(answer, start, end):
                 or 0xE0100 <= code <= 0xE01EF or 0x1F3FB <= code <= 0x1F3FF or code == 0x20E3 or 0xE0020 <= code <= 0xE007F):
             return False
     if any(answer.startswith(suffix, end) for suffix in ZH_STOP_SUFFIXES if _HAS_HAN.search(piece[-1:])):
+        return False
+    if _HAS_HAN.search(piece[-1:]) and ZH_STATION_AFTER.match(answer, end):
         return False
     if any(_fold(answer[end:end + len(suffix)]) == suffix for suffix in EN_STOP_SUFFIXES):
         return False
