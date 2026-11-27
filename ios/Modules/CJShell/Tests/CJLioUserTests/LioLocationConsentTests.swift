@@ -153,6 +153,26 @@ struct LioLocationConsentTests {
         #expect(!LioLocationConsent(store: store(root, session), isCurrent: { true }).allowed)
     }
 
+    /// The app going to the background builds a new session for the same account without rebuilding the home screen:
+    /// the choice must follow the screen's latest check, or it would read as "not allowed" until a restart.
+    @Test func aChoiceFollowsTheHomeScreensLatestSessionAfterTheAppComesBack() throws {
+        let root = try temporaryRoot()
+        defer { try? FileManager.default.removeItem(at: root) }
+        let first = Session(), later = Session()
+        let consent = LioLocationConsent(store: store(root, first), isCurrent: { first.current })
+        #expect(consent.allow())
+        first.current = false // backgrounded: the first session ends
+        #expect(!consent.allowed, "an ended session allows nothing")
+        consent.rebind(isCurrent: { later.current }) // the home screen's next render
+        #expect(consent.allowed, "same account, new session: the choice is back")
+        // A change is recorded through the new session too.
+        consent.withdraw()
+        #expect(!consent.allowed)
+        #expect(consent.allow())
+        #expect(consent.allowed)
+        #expect(LioLocationConsent(store: store(root, later), isCurrent: { later.current }).allowed, "kept on disk")
+    }
+
     @Test func theStoreRefusesAnAccountThatIsNoLongerCurrent() throws {
         let root = try temporaryRoot()
         defer { try? FileManager.default.removeItem(at: root) }

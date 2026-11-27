@@ -1,0 +1,98 @@
+{
+  "synthetic": true,
+  "valid_request": [
+    {
+      "version": "LIO-memory-consent.1",
+      "state": "granted",
+      "consent_text_version": "consent-2026-11",
+      "request_id": "c-7f3a"
+    },
+    {
+      "version": "LIO-memory-consent.1",
+      "state": "withdrawn",
+      "consent_text_version": "consent-2026-11",
+      "request_id": "c-7f3b"
+    }
+  ],
+  "invalid_request": [
+    {
+      "version": "LIO-memory-consent.1",
+      "state": "granted"
+    },
+    {
+      "version": "LIO-memory-consent.2",
+      "state": "granted",
+      "consent_text_version": "v",
+      "request_id": "r"
+    },
+    {
+      "version": "LIO-memory-consent.1",
+      "state": "maybe",
+      "consent_text_version": "v",
+      "request_id": "r"
+    },
+    {
+      "version": "LIO-memory-consent.1",
+      "state": "granted",
+      "consent_text_version": "a b",
+      "request_id": "r"
+    },
+    {
+      "version": "LIO-memory-consent.1",
+      "state": "granted",
+      "consent_text_version": "v",
+      "request_id": ""
+    },
+    {
+      "version": "LIO-memory-consent.1",
+      "state": "granted",
+      "consent_text_version": "v",
+      "request_id": "r",
+      "extra": 1
+    }
+  ],
+  "valid_response": [
+    {
+      "version": "LIO-memory-consent.1",
+      "state": "granted",
+      "recorded": true,
+      "consent_text_version": "consent-2026-11",
+      "changed_at": "2026-11-27T01:02:03.456+00:00"
+    },
+    {
+      "version": "LIO-memory-consent.1",
+      "state": "withdrawn",
+      "recorded": true,
+      "consent_text_version": "consent-2026-11",
+      "changed_at": "2026-11-27T02:00:00.000+00:00"
+    },
+    {
+      "version": "LIO-memory-consent.1",
+      "state": "withdrawn",
+      "recorded": false,
+      "consent_text_version": null,
+      "changed_at": null
+    }
+  ],
+  "invalid_response": [
+    {
+      "version": "LIO-memory-consent.1",
+      "state": "granted",
+      "recorded": false,
+      "consent_text_version": null,
+      "changed_at": null
+    },
+    {
+      "version": "LIO-memory-consent.1",
+      "state": "withdrawn",
+      "recorded": true,
+      "consent_text_version": null,
+      "changed_at": null
+    },
+    {
+      "version": "LIO-memory-consent.1",
+      "state": "withdrawn",
+      "recorded": false
+    }
+  ]
+}

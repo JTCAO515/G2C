@@ -1,0 +1,54 @@
+# 自有收录库（places）
+
+行程与收录库线维护（#1985 F-3）。收景点、餐饮、购物、酒店、交通枢纽，只收适合外国游客的地点。**数据由 AI 起草，必须校验后再导入，人审之后才进库。** 流程照 `knowledge/attractions`：JSON 唯一数据源 → validate → generate → 服务端副本和 App 副本 → CI 逐字节比对。
+
+## 文件
+
+| 路径 | 作用 |
+|---|---|
+| `<城市>.v1.json` | **唯一数据源**。城市取 `beijing shanghai guangzhou shenzhen chengdu chongqing`。只放人审通过的条目 |
+| `placelib.py` | 字段规则（草稿和库两种形态） |
+| `validate.py` | 校验全部城市文件，并比对副本；`--write` 规范化源文件并重写副本 |
+| `generate.py` | 生成服务端副本和 App 精简版；`validate.py` 调用，也可单独运行 |
+| `import/`、`score.py`、`candidates/`、`review/` | 导入、打分、审核表（#1986） |
+| `images/` | 图片清单（#1987） |
+
+生成物（不要手改）：
+- 服务端副本 `backend/fact/cj_fact/places_<城市>.v1.json`，与源文件**逐字节一致**，读取入口 `cj_fact.places`（`load_city`、`by_id`、`by_category`、`match_name`）。
+- App 精简版 `ios/Modules/CJShell/Sources/CJLioUser/Resources/LioPlaces.v1.json`：只有 id、城市、类别、`kind`、等级、排名、中英名、别名、GCJ-02 坐标、amap_id、一句话简介、缩略图文件名。App 在问服务端之前就能显示的就这些。
+- CI：`backend/tests/test_places_pipeline.py` 与 `backend/fact/tests/test_places_copy.py`。数据改了却没重新生成，`python` job 失败。App 副本也在 Python job 里比对（只改 `knowledge/` 的 PR 不跑 Swift job）。
+- 一个城市文件被删除时，它的副本也算过期，`--write` 会一并删掉。
+
+## 与 Codex 草稿的关系
+
+Codex 产出放在 `codex-inbox/C1`（景点）、`C7`（枢纽）、`C8`（餐饮、购物、酒店），字段名和类型就是 `coord/codex/` 里的格式，**库的字段是它的超集**，不需要转换：
+
+| 草稿 | 库 |
+|---|---|
+| `external_signals`（评分、排名） | **不进库**。留在候选文件里，仅内部用于决定收不收、排第几 |
+| 不带坐标（有坐标即判错） | 加 `location`：`gcj02.lat/lng`、`amap_id`、`amap_name`、`method`、`geocoded_on` |
+| — | 加 `rank`（同城同类别内排名，不重复，可为 null）和 `review`（`status`、`reviewer`、`reviewed_on`、`note`） |
+| 缺的字段可省略 | 库里每个字段都在，没把握就是 `null`；需要非空的见下 |
+
+草稿检查（`placelib.check_draft`）：必须有 id、city、category、中英文名、sources、checked_on、confidence；多出的字段只警告并丢弃；有错的条目不导入，进拒绝清单。
+
+## 库里的规则（validate 强制）
+
+- **id** `pl_<缩写>_<短名>`，缩写 bj sh gz sz cd cq 必须和城市一致，小写加下划线，全库唯一。
+- **来源**：`sources`、`hours_source`、`official_url`、`ticket.booking_url` 必须是 https 网页；点评、攻略、聚合站（Tripadvisor、携程、马蜂窝、大众点评、小红书、百科、订房站等）一律拒绝，列表在 `placelib.THIRD_PARTY_HOSTS`。是不是官方，仍由审核人判断。每条至少 1 个来源，写 `checked_on`。
+- **坐标**：GCJ-02，最多 6 位小数，必须落在该城的范围框里（防止高德匹配到外地同名地点）；`(0,0)` 过不了。`method` 为 `amap-*` 时必须有 `amap_id`；`manual` 可以没有。
+- **文字**：单行、无首尾空格。字数限制：`intro_short_zh` ≤ 40、`intro_short_en` ≤ 90、`intro_long_zh` ≤ 200、`intro_long_en` ≤ 450。简介必须是我们自己写的，不复制原文。
+- **名称唯一**：同一城市里，中英文名和别名不能重复（实体链接靠它匹配，歧义宁可不收）。
+- **`ticket.closed_weekdays`**：ISO 星期，1 = 周一，7 = 周日；`null` 表示来源没写，`[]` 表示没有固定闭馆日。
+- **预约规则只认 `knowledge/attractions/booking-rules.v1.json`**：同一景点（名称或别名精确匹配）在这里写的预约要求或闭馆日和那张表矛盾，validate 报错，先解决矛盾再入库。`ticket` 只用于地点页展示。
+- **景点 `subcategory`**：`history museum park street landmark experience`；餐饮、购物、酒店的 `subcategory` 是小写短词（如 `international_brand`），由收录时统一。
+- **酒店**：必须 `accepts_foreigners: true` 并附 `foreigner_signals.evidence`（不收民宿、短租）；`price_band` 取 `<500 500-1000 1000-2000 >2000`。
+- **枢纽**：`hub_type` 为 `airport` 或 `rail`，必须有 `code`；没有简介字段。
+- **库里只放 `review.status` 为 `approved` 或 `retired` 的条目**；候选和被拒绝的留在 `candidates/`。`places` 按 id 排序，源文件必须是 `validate.py --write` 写出的规范格式（稳定 diff，副本才能逐字节一致）。
+- 校验不读系统时钟；到期提醒由 `scripts/fact_expiry.py` 负责（后续接入）。
+
+## 改库
+
+1. 条目经审核表确认（#1986 的 `import/` 生成审核表，人审之后才合入）。
+2. 在仓库根目录运行 `python3 -B knowledge/places/validate.py --write`：校验、规范化、重写副本。
+3. 把源文件和全部副本一起提交。改到 App 副本的 PR 受 `coord/main-freeze.md` 的 `ios/**` 约束。
