@@ -683,6 +683,11 @@ def create_local_app(*, conninfo_path, auth_dir, confirmation_signer=None, histo
         if lio_dialogue_subjects:
             lio_boundary, lio_checker = dialogue_binding(lio_dialogue_subjects)
             memory_cards = lio_memory_factory(lio_boundary) if lio_memory_factory is not None else None
+            if memory_cards is not None:
+                # #1970: the account's memory consent record, read only while CJ_LIO_MEMORY_CONSENT_REQUIRED is on.
+                from .lio_memory_consent import ConsentStore
+                consent_store = ConsentStore(database)
+                memory_cards.consent = consent_store
             calendar_boundary, calendar_checker = (dialogue_binding(lio_calendar_subjects)
                 if lio_calendar_subjects else (None,None))
             register_lio_dialogue_routes(app, lio_boundary, database.run_repository,
@@ -705,8 +710,10 @@ def create_local_app(*, conninfo_path, auth_dir, confirmation_signer=None, histo
                     register_lio_rich_undo_routes(app,LioTripBoundary(database,exploration_checker,confirmation_signer,
                         calendar=True,rich_undo_sources=lio_rich_undo_sources))
             if memory_cards is not None:
+                from .lio_memory_consent import register_lio_memory_consent_routes
                 from .lio_memory_routes import register_lio_memory_routes
                 register_lio_memory_routes(app, memory_cards)
+                register_lio_memory_consent_routes(app, lio_boundary, consent_store)
             if confirmation_signer is not None:
                 from .lio_trip_routes import LioTripBoundary, register_lio_trip_routes
                 register_lio_trip_routes(app, LioTripBoundary(database, lio_checker, confirmation_signer))

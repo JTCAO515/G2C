@@ -94,8 +94,8 @@ enum LioLocationConsentFailure: Error, Equatable {
 /// so turning it off, signing out or switching accounts drops a result that comes back late.
 @MainActor @Observable
 final class LioLocationConsent {
-    @ObservationIgnored private let store: LioLocationConsentStore?
-    @ObservationIgnored private let isCurrent: @MainActor () -> Bool
+    @ObservationIgnored private var store: LioLocationConsentStore?
+    @ObservationIgnored private var isCurrent: @MainActor () -> Bool
     private var allowedAt: Date?
     /// Bumped by every change, so a read can tell that the choice changed while it waited.
     private(set) var revision = 0
@@ -105,6 +105,15 @@ final class LioLocationConsent {
         self.store = store
         self.isCurrent = isCurrent
         allowedAt = (try? store?.load()) ?? nil
+    }
+
+    /// Points the choice at the session the home screen has now. Coming back from the background builds a new session
+    /// for the same account without rebuilding the home screen, so the check given at creation would stay false for
+    /// good and the choice would read as "not allowed" until the app was restarted. Called with every render of the home
+    /// screen; changes nothing the screen observes.
+    func rebind(isCurrent newCheck: @escaping @MainActor () -> Bool) {
+        isCurrent = newCheck
+        if let directory = store?.directory { store = LioLocationConsentStore(directory: directory, isCurrent: newCheck) }
     }
 
     var allowed: Bool { allowedAt != nil && isCurrent() }
