@@ -71,6 +71,8 @@ class NeedsActions:
             'ON (r.scope,r.trip_id)=(c.scope,c.trip_id) WHERE c.scope=%s AND c.needs_scope=%s AND c.needs_id=%s',
             (repository.scope,source['needs_scope'],source['needs_id']))
         current=cur.fetchone()
+        from .autosave import withdrawn
+        if current is not None and withdrawn(repository,cur,current[0]):current=None  # read as no current Trip
         actual=None if current is None else (current[0],current[1],bytes(current[2]))
         if actual!=expected:raise Conflict('adopted current Trip changed; retain original proposal')
         return ('TRIP-source-input.1' if context is None else 'TRIP-source-input.2'),expected
