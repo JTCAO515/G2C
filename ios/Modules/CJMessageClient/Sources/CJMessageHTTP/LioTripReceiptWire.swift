@@ -1,3 +1,4 @@
+import CryptoKit
 import Foundation
 
 /// `rich.trip_receipt` of LIO-answer-rich.1 (#1984, T-1 #1994): what the automatic save of this answer did, as the App reads it.
@@ -35,8 +36,32 @@ extension LioTimelineWire {
             public var removed: Int { days.reduce(0) { $0 + $1.removed } }
         }
 
-        /// Whether the traveller can still undo this save, as the server computed it at this read. The undo target
-        /// is not kept: nothing in this build sends an undo yet.
+        /// The snapshot the undo is checked against (`UndoTarget` of `LIO-trip-history.4` for `restore`, the four fields of
+        /// version 1 for `withdraw_created`). A snapshot, not an authorisation: the server rechecks all of it. Only the ids,
+        /// versions and hashes the receipt carried; no place name or user text.
+        public struct UndoTarget: Sendable, Equatable {
+            /// What is restored: the version right before the committed one.
+            public struct Restore: Sendable, Equatable {
+                public let version: Int
+                public let hash: String
+                public let contentVersion: String
+                public init(version: Int, hash: String, contentVersion: String) {
+                    self.version = version; self.hash = hash; self.contentVersion = contentVersion
+                }
+            }
+            public let tripID: String
+            public let expectedVersion: Int
+            public let originalHash: String
+            public let contentVersion: String
+            /// Nil for `withdraw_created`: there is nothing before version 1 to restore.
+            public let restore: Restore?
+            public init(tripID: String, expectedVersion: Int, originalHash: String, contentVersion: String, restore: Restore? = nil) {
+                self.tripID = tripID; self.expectedVersion = expectedVersion; self.originalHash = originalHash
+                self.contentVersion = contentVersion; self.restore = restore
+            }
+        }
+
+        /// Whether the traveller can still undo this save, as the server computed it at this read.
         public struct Undo: Sendable, Equatable {
             public enum State: Sendable, Equatable { case available, expired, superseded, undone, unavailable }
             /// `restore` appends the version before; `withdrawCreated` marks the trip this save created as withdrawn.
@@ -48,8 +73,10 @@ extension LioTimelineWire {
             public let actionID: String?
             /// UTC with milliseconds; in every state but `unavailable`.
             public let until: String?
-            public init(state: State, kind: Kind? = nil, actionID: String? = nil, until: String? = nil) {
-                self.state = state; self.kind = kind; self.actionID = actionID; self.until = until
+            /// Only in `available`.
+            public let target: UndoTarget?
+            public init(state: State, kind: Kind? = nil, actionID: String? = nil, until: String? = nil, target: UndoTarget? = nil) {
+                self.state = state; self.kind = kind; self.actionID = actionID; self.until = until; self.target = target
             }
         }
 
@@ -122,7 +149,7 @@ extension LioTimelineWire {
         case "saved":
             guard case .value(let tripID) = wire.tripID, validReceiptID(tripID),
                   case .value(let version) = wire.committedVersion, (1...Int.max - 1).contains(version),
-                  case .value(let undoWire) = wire.undo, let undo = validReceiptUndo(undoWire, version: version) else { return nil }
+                  case .value(let undoWire) = wire.undo, let undo = validReceiptUndo(undoWire, version: version, saveActionID: actionID) else { return nil }
             // Only ever `true`: `false`, a string or a number is a broken receipt, not "not first".
             let first: Bool
             switch wire.firstAutosave {
@@ -145,7 +172,7 @@ extension LioTimelineWire {
         }
     }
 
-    private static func validReceiptUndo(_ wire: TripReceiptWire.UndoWire, version: Int) -> TripReceipt.Undo? {
+    private static func validReceiptUndo(_ wire: TripReceiptWire.UndoWire, version: Int, saveActionID: String) -> TripReceipt.Undo? {
         let state: TripReceipt.Undo.State
         switch wire.state {
         case "available": state = .available
@@ -171,8 +198,47 @@ extension LioTimelineWire {
         }
         // A save that created the trip (version 1) has nothing before it to restore, and only it can be withdrawn.
         guard kind == .withdrawCreated ? version == 1 : version >= 2,
-              case .value(let actionID) = wire.actionID, validUndoActionID(actionID) else { return nil }
-        return TripReceipt.Undo(state: .available, kind: kind, actionID: actionID, until: until)
+              case .value(let actionID) = wire.actionID, validUndoActionID(actionID),
+              // The server derives it from the save's id, so two devices tapping undo send the same one.
+              actionID == undoActionID(forSave: saveActionID),
+              case .value(let targetWire) = wire.target,
+              let target = validUndoTarget(targetWire, kind: kind, version: version) else { return nil }
+        return TripReceipt.Undo(state: .available, kind: kind, actionID: actionID, until: until, target: target)
+    }
+
+    /// `"undo-" + first 40 hex of sha256(the save's action_id)` (LIO-answer-rich.1).
+    static func undoActionID(forSave id: String) -> String {
+        let hex = SHA256.hash(data: Data(id.utf8)).map { String(format: "%02x", $0) }.joined()
+        return "undo-" + String(hex.prefix(40))
+    }
+
+    private static let contentVersions: Set<String> = ["structured.1", "structured.2", "structured.3", "structured.4"]
+
+    /// `^[0-9a-f]{64}$`
+    static func validReceiptHash(_ value: String) -> Bool {
+        let bytes = Array(value.utf8)
+        return bytes.count == 64 && bytes.allSatisfy { (48...57).contains($0) || (97...102).contains($0) }
+    }
+
+    /// `restore`: exactly the seven fields of `UndoTarget` with `expected_version` the committed version and
+    /// `restore_version` the one before it. `withdraw_created`: exactly the four fields of version 1. Anything else
+    /// (a missing, extra or mistyped field) drops the receipt.
+    private static func validUndoTarget(_ wire: TripReceiptWire.TargetWire, kind: TripReceipt.Undo.Kind, version: Int) -> TripReceipt.UndoTarget? {
+        let current: Set<String> = ["trip_id", "expected_version", "original_hash", "content_version"]
+        let previous: Set<String> = ["restore_version", "restore_hash", "restore_content_version"]
+        guard wire.keys == (kind == .restore ? current.union(previous) : current),
+              case .value(let tripID) = wire.tripID, validReceiptID(tripID),
+              case .value(let expected) = wire.expectedVersion, expected == version,
+              case .value(let hash) = wire.originalHash, validReceiptHash(hash),
+              case .value(let content) = wire.contentVersion, contentVersions.contains(content) else { return nil }
+        guard kind == .restore else {
+            return TripReceipt.UndoTarget(tripID: tripID, expectedVersion: expected, originalHash: hash, contentVersion: content)
+        }
+        guard case .value(let restoreVersion) = wire.restoreVersion, restoreVersion == version - 1, restoreVersion >= 1,
+              case .value(let restoreHash) = wire.restoreHash, validReceiptHash(restoreHash),
+              case .value(let restoreContent) = wire.restoreContentVersion, contentVersions.contains(restoreContent) else { return nil }
+        return TripReceipt.UndoTarget(tripID: tripID, expectedVersion: expected, originalHash: hash, contentVersion: content,
+                                      restore: .init(version: restoreVersion, hash: restoreHash, contentVersion: restoreContent))
     }
 
     private static func validReceiptSummary(_ wire: TripReceiptWire.SummaryWire) -> TripReceipt.Summary? {
@@ -260,13 +326,49 @@ struct TripReceiptWire: Decodable, Sendable {
         let kind: LioWireField<String>
         let actionID: LioWireField<String>
         let until: LioWireField<String>
-        enum CodingKeys: String, CodingKey { case state, kind, actionID = "action_id", until }
+        let target: LioWireField<TargetWire>
+        enum CodingKeys: String, CodingKey { case state, kind, actionID = "action_id", until, target }
         init(from decoder: Decoder) throws {
             let c = try decoder.container(keyedBy: CodingKeys.self)
             state = try c.decode(String.self, forKey: .state)
             kind = LioWireField(c, .kind)
             actionID = LioWireField(c, .actionID)
             until = LioWireField(c, .until)
+            target = LioWireField(c, .target)
+        }
+    }
+
+    /// The undo target as sent. The key set is kept, because a target with a missing or extra field is not the contract's.
+    struct TargetWire: Decodable, Sendable {
+        let keys: Set<String>
+        let tripID: LioWireField<String>
+        let expectedVersion: LioWireField<Int>
+        let originalHash: LioWireField<String>
+        let contentVersion: LioWireField<String>
+        let restoreVersion: LioWireField<Int>
+        let restoreHash: LioWireField<String>
+        let restoreContentVersion: LioWireField<String>
+        enum CodingKeys: String, CodingKey {
+            case tripID = "trip_id", expectedVersion = "expected_version", originalHash = "original_hash"
+            case contentVersion = "content_version", restoreVersion = "restore_version", restoreHash = "restore_hash"
+            case restoreContentVersion = "restore_content_version"
+        }
+        private struct AnyKey: CodingKey {
+            let stringValue: String
+            var intValue: Int? { nil }
+            init?(stringValue: String) { self.stringValue = stringValue }
+            init?(intValue: Int) { nil }
+        }
+        init(from decoder: Decoder) throws {
+            keys = Set(try decoder.container(keyedBy: AnyKey.self).allKeys.map(\.stringValue))
+            let c = try decoder.container(keyedBy: CodingKeys.self)
+            tripID = LioWireField(c, .tripID)
+            expectedVersion = LioWireField(c, .expectedVersion)
+            originalHash = LioWireField(c, .originalHash)
+            contentVersion = LioWireField(c, .contentVersion)
+            restoreVersion = LioWireField(c, .restoreVersion)
+            restoreHash = LioWireField(c, .restoreHash)
+            restoreContentVersion = LioWireField(c, .restoreContentVersion)
         }
     }
 

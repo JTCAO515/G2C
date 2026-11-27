@@ -126,8 +126,9 @@ final class LioAutosaveNotice {
 }
 
 /// The wording. The one-time sentence is the coordinator's (issue #1994, ADR-0012) and is not in G4's `ui-copy.json` yet:
-/// it and its button are placeholders until G4 adds keys. The headline lines are `ui-copy.json`
-/// (`trip.canvas.toast.*`, `common.save_unknown.message`); the counts line and the reasons are placeholders in the same voice.
+/// it and its button are placeholders until G4 adds keys. The headline lines and the undo's words are `ui-copy.json`
+/// (`trip.canvas.toast.*`, `common.retry.button`, `common.save_unknown.message`); the counts line, the reasons, "Withdrawn"
+/// and the time left are placeholders in the same voice.
 enum LioAutosaveCopy {
     static func notice(_ l: LioLanguage) -> String {
         l.text("Trips from your chats are saved to your trip automatically; you can undo or change them any time.",
@@ -153,11 +154,12 @@ enum LioAutosaveCopy {
     }
 
     /// The lines under the headline: what changed (counts only, from the server's summary) and what became of the undo,
-    /// or why nothing was saved.
-    static func details(_ receipt: LioTimelineWire.TripReceipt, _ l: LioLanguage) -> [String] {
+    /// or why nothing was saved. `phase` is what this device knows of an undo it started; the server's own reading of the
+    /// receipt wins whenever it says anything but `available`.
+    static func details(_ receipt: LioTimelineWire.TripReceipt, _ l: LioLanguage, phase: LioAutosaveUndo.Phase? = nil) -> [String] {
         switch receipt.status {
         case .saved:
-            [receipt.summary.flatMap { counts($0, l) }, receipt.undo.flatMap { undoNote($0.state, l) }].compactMap { $0 }
+            [receipt.summary.flatMap { counts($0, l) }, undoNote(receipt, phase: phase, l)].compactMap { $0 }
         case .notSaved:
             switch receipt.reason {
             case .conflict: [l.text("Your trip had just changed.", "行程刚有新改动。")]
@@ -169,13 +171,45 @@ enum LioAutosaveCopy {
         }
     }
 
-    static func undoNote(_ state: LioTimelineWire.TripReceipt.Undo.State, _ l: LioLanguage) -> String? {
-        switch state {
-        case .expired: l.text("It’s too late to undo this change.", "这次改动已超过撤销时间。")
-        case .superseded: l.text("The trip has changed since then, so this can’t be undone.", "行程有新改动，无法撤销这次。")
-        case .undone: l.text("Undone", "已撤销")
-        case .available, .unavailable: nil
+    static func undoNote(_ receipt: LioTimelineWire.TripReceipt, phase: LioAutosaveUndo.Phase?, _ l: LioLanguage) -> String? {
+        guard let undo = receipt.undo else { return nil }
+        switch undo.state {
+        case .expired: return expired(l)
+        case .superseded: return superseded(l)
+        case .undone: return undone(receipt, l)
+        case .unavailable: return nil
+        case .available:
+            switch phase {
+            case nil: return nil
+            case .undoing: return l.text("Undoing…", "正在撤销…")
+            case .confirming: return l.text("Checking whether this was undone…", "正在确认是否已撤销…")
+            case .undone: return undone(receipt, l)
+            case .superseded: return superseded(l)
+            case .expired: return expired(l)
+            case .failed: return l.text("Couldn’t undo this change.", "这次没能撤销。")
+            }
         }
+    }
+
+    static func expired(_ l: LioLanguage) -> String { l.text("It’s too late to undo this change.", "这次改动已超过撤销时间。") }
+    static func superseded(_ l: LioLanguage) -> String {
+        l.text("The trip has changed since then, so this can’t be undone.", "行程有新改动，无法撤销这次。")
+    }
+
+    /// A save that created the trip is undone by marking the trip withdrawn, not by restoring a version (ADR-0012,
+    /// revision 1). "Withdrawn" is a placeholder: `ui-copy.json` has no key for it yet (it has "Undone").
+    static func undone(_ receipt: LioTimelineWire.TripReceipt, _ l: LioLanguage) -> String {
+        receipt.committedVersion == 1 ? l.text("Withdrawn", "已撤回") : l.text("Undone", "已撤销")
+    }
+
+    static func undoButton(_ l: LioLanguage) -> String { l.text("Undo", "撤销") }
+    static func retryButton(_ l: LioLanguage) -> String { l.text("Try again", "重试") }
+
+    /// Placeholder (no key in `ui-copy.json`): how long the Undo button stays, to the hour.
+    static func timeLeft(until: Date, now: Date, _ l: LioLanguage) -> String {
+        let hours = Int((until.timeIntervalSince(now) / 3600).rounded(.up))
+        if hours <= 1 { return l.text("Undo for less than an hour more", "还可撤销不到 1 小时") }
+        return l.text("Undo for \(hours) more hours", "还可撤销约 \(hours) 小时")
     }
 
     static func counts(_ summary: LioTimelineWire.TripReceipt.Summary, _ l: LioLanguage) -> String? {
@@ -198,41 +232,81 @@ struct LioTripReceiptBlock: View {
     let language: LioLanguage
     let showsNotice: Bool
     let gotIt: () -> Void
+    /// The undo (`G2CAutosaveUndoEnabled`): nil keeps the line exactly as it was, without a button.
+    var undo: LioAutosaveUndo?
+    var startUndo: ((LioTimelineWire.TripReceipt) -> Void)?
 
     var body: some View {
         VStack(alignment: .leading, spacing: LioTheme.Spacing.xs) {
-            LioTripReceiptLine(receipt: receipt, language: language)
+            LioTripReceiptLine(receipt: receipt, language: language, undo: undo, startUndo: startUndo)
             if showsNotice { LioAutosaveNoticeCard(language: language, gotIt: gotIt) }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 
-/// "Added to your trip", with the counts or the state of the undo under it. There is no Undo button in this build: the
-/// undo route the receipt points to is not sent from here yet.
+/// "Added to your trip", with the counts and the state of the undo under it. The Undo button shows only while the server
+/// says the undo is `available` and its time is not over; a tap sends it once, and the line then follows the undo: being
+/// undone, undone, or no longer possible, with "Try again" when nothing was written.
 struct LioTripReceiptLine: View {
     let receipt: LioTimelineWire.TripReceipt
     let language: LioLanguage
+    var undo: LioAutosaveUndo?
+    var startUndo: ((LioTimelineWire.TripReceipt) -> Void)?
 
     var body: some View {
-        HStack(alignment: .firstTextBaseline, spacing: LioTheme.Spacing.xxs) {
-            Image(systemName: receipt.status == .saved ? "checkmark.circle" : "exclamationmark.circle")
-                .font(.footnote)
-                .foregroundStyle(receipt.status == .saved ? LioTheme.gold : LioTheme.inkSecondary)
-                .accessibilityHidden(true)
-            VStack(alignment: .leading, spacing: 2) {
-                Text(LioAutosaveCopy.headline(receipt, language))
-                    .font(.footnote.weight(.semibold))
-                    .foregroundStyle(LioTheme.ink)
-                ForEach(LioAutosaveCopy.details(receipt, language), id: \.self) { line in
-                    Text(line).font(.footnote).foregroundStyle(LioTheme.inkSecondary)
+        if undo != nil {
+            // The button goes away when its time is over, without waiting for the next read.
+            TimelineView(.periodic(from: .now, by: 30)) { context in content(at: context.date) }
+        } else {
+            content(at: .now)
+        }
+    }
+
+    private func content(at date: Date) -> some View {
+        let phase = undo?.phase(of: receipt)
+        return VStack(alignment: .leading, spacing: 0) {
+            // The words are one element for VoiceOver; the button below is its own, so it can still be activated.
+            HStack(alignment: .firstTextBaseline, spacing: LioTheme.Spacing.xxs) {
+                Image(systemName: receipt.status == .saved ? "checkmark.circle" : "exclamationmark.circle")
+                    .font(.footnote)
+                    .foregroundStyle(receipt.status == .saved ? LioTheme.gold : LioTheme.inkSecondary)
+                    .accessibilityHidden(true)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(LioAutosaveCopy.headline(receipt, language))
+                        .font(.footnote.weight(.semibold))
+                        .foregroundStyle(LioTheme.ink)
+                    ForEach(LioAutosaveCopy.details(receipt, language, phase: phase), id: \.self) { line in
+                        Text(line).font(.footnote).foregroundStyle(LioTheme.inkSecondary)
+                    }
                 }
+                .fixedSize(horizontal: false, vertical: true)
             }
-            .fixedSize(horizontal: false, vertical: true)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .accessibilityElement(children: .combine)
+            .accessibilityIdentifier("lio.autosave.line")
+            if let undo, let startUndo, undo.offers(receipt, at: date) {
+                undoButton(phase: phase, now: date, start: { startUndo(receipt) })
+            }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .accessibilityElement(children: .combine)
-        .accessibilityIdentifier("lio.autosave.line")
+    }
+
+    private func undoButton(phase: LioAutosaveUndo.Phase?, now: Date, start: @escaping () -> Void) -> some View {
+        HStack(spacing: LioTheme.Spacing.xs) {
+            Button(action: start) {
+                Text(phase == .failed ? LioAutosaveCopy.retryButton(language) : LioAutosaveCopy.undoButton(language))
+                    .font(.footnote.weight(.semibold)).foregroundStyle(LioTheme.vermilion)
+                    .frame(minWidth: 44, minHeight: 44, alignment: .leading)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityIdentifier("lio.autosave.undo")
+            if let deadline = LioAutosaveUndo.deadline(of: receipt) {
+                Text(LioAutosaveCopy.timeLeft(until: deadline, now: now, language))
+                    .font(.caption).foregroundStyle(LioTheme.inkSecondary)
+            }
+        }
     }
 }
 
