@@ -99,6 +99,12 @@ class LioMemoryExtraction:
         from .lio_memory_consent import ConsentStore, consent_required
         return not consent_required() or ConsentStore(self.database).granted(scope)
 
+    def consent_prompt(self, binding, question):
+        """The marker effect for a first-time consent prompt (#1999), or None; see `lio_memory_prompt`."""
+        from .lio_memory_consent import ConsentStore
+        from .lio_memory_prompt import effect
+        return effect(question, ConsentStore(self.database), binding.scope)
+
     def extract(self, worker, binding):
         # #1970: no consent record, or a withdrawal, means nothing is prepared, no model is called and
         # no suggestion is written. Off (the default) this reads nothing.
