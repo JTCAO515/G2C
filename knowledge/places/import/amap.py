@@ -34,7 +34,9 @@ class AmapError(RuntimeError):
 
 def scrub(text, key):
     """Never let the key reach a log, an exception or a file."""
-    return text.replace(key, '***') if key else text
+    if not key:
+        return text
+    return text.replace(key, '***').replace(quote(key, safe=''), '***')
 
 
 def make_fetch(key, timeout=10, pause=0.25, cache_dir=None):
@@ -63,7 +65,7 @@ def make_fetch(key, timeout=10, pause=0.25, cache_dir=None):
                 time.sleep(1.5 * (attempt + 1))
                 continue
             break
-        if cached:
+        if cached and doc.get('status') == '1':  # a refusal (rate limit, bad key, quota) must not be remembered
             cached.parent.mkdir(parents=True, exist_ok=True)
             cached.write_text(json.dumps(doc, ensure_ascii=False), encoding='utf-8')
         return doc

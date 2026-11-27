@@ -146,7 +146,7 @@ def load_existing(out_dir):
 
 def _cell(value):
     text = '' if value is None else str(value)
-    return "'" + text if text[:1] in ('=', '+', '-', '@') else text  # no spreadsheet formulas from drafts
+    return "'" + text if text[:1] in ('=', '+', '-', '@', '\t', '\r') else text  # no spreadsheet formulas from drafts
 
 
 def review_rows(candidates, batch_size):
@@ -174,13 +174,25 @@ CSV_LABELS = ('批次', 'id', '类别', '细类', '档', '分', '中文名', 'En
               '纬度', '经度', '简介', 'Intro', '开放时间', '来源', '提醒')
 
 
-def render_csv(rows):
-    """Columns for the reviewer to fill in: decision (accept / reject / edit), rank (optional), note."""
+def read_filled(path):
+    """{id: (decision, rank, note)} the reviewer already typed into an existing table (empty cells ignored)."""
+    path = Path(path)
+    if not path.is_file():
+        return {}
+    with open(path, encoding='utf-8-sig', newline='') as handle:
+        return {row['id']: (row.get('decision') or '', row.get('rank') or '', row.get('note') or '')
+                for row in csv.DictReader(handle) if row.get('id') and any((row.get('decision'), row.get('rank'), row.get('note')))}
+
+
+def render_csv(rows, filled=None):
+    """Columns for the reviewer to fill in: decision (accept / reject / edit), rank (optional), note.
+    Answers already typed into the previous table are carried over by id, never wiped by a re-import."""
+    filled = filled or {}
     buffer = io.StringIO()
     writer = csv.writer(buffer, lineterminator='\n')
     writer.writerow([*CSV_LABELS, 'decision', 'rank', 'note'])
     for row in rows:
-        writer.writerow([*(_cell(row[key]) for key in CSV_HEAD), '', '', ''])
+        writer.writerow([*(_cell(row[key]) for key in CSV_HEAD), *filled.get(row['id'], ('', '', ''))])
     return buffer.getvalue()
 
 
@@ -220,7 +232,8 @@ def write_outputs(by_city, rejected, notes, today, out_dir, review_dir, batch_si
         path = out_dir / f'{city}.cand.json'
         path.write_text(dumps({'version': VERSION, 'city': city, 'generated_on': today, 'candidates': items}), encoding='utf-8')
         rows = review_rows(items, batch_size)
-        (review_dir / f'{city}.review.csv').write_text(render_csv(rows), encoding='utf-8-sig')
+        table = review_dir / f'{city}.review.csv'
+        table.write_text(render_csv(rows, read_filled(table)), encoding='utf-8-sig')
         (review_dir / f'{city}.review.md').write_text(render_md(city, rows, today), encoding='utf-8')
         written.append((city, len(items), len(rows)))
     if rejected or notes:
