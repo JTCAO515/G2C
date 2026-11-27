@@ -280,11 +280,22 @@ class WishItems(unittest.TestCase):
                 # red-line review round: real bookings and clocks the shared marker words miss
                 wish('故宫', '第一天故宫和景山已经订好票'), wish('故宫', '故宫门票订好了'), wish('故宫', '已经买好票'), wish('故宫', '已经订了故宫的票'),
                 wish('Palace Museum', 'I booked the Palace Museum'), wish('Palace Museum', 'tickets booked'), wish('Palace Museum', 'Day 1: Palace Museum 9am'),
+                # #2124: arranged by others, tours, guides, spelled-out clocks, noon
+                wish('故宫', '第一天故宫，家人已经说好了'), wish('故宫', '第一天去故宫，跟团'), wish('Palace Museum', 'Day 1 Palace Museum with my tour group'),
+                wish('故宫', '第一天故宫（团队行程）'), wish('故宫', '导游带我们去故宫'), wish('故宫', '已经约好导游'), wish('故宫', '已经安排好了故宫'),
+                wish('Palace Museum', 'already arranged: Palace Museum'), wish('故宫', '参加公司团建，第一天故宫'), wish('故宫', '第一天下午两点故宫'),
+                wish('故宫', '早上八点半故宫'), wish('Palace Museum', 'Palace Museum at noon'), wish('Palace Museum', "Palace Museum at 9 o'clock"),
+                wish('故宫', '第一天包车去故宫'), wish('Palace Museum', 'Day 1 guided tour of the Palace Museum'), wish('故宫', '第一天中午故宫'),
                 wish('故宫', '第一天9:30故宫'), wish('故宫', '第一天上午9点故宫'), wish('故宫', '12月1日故宫'), wish('故宫', '2026-12-01 故宫'), wish('故宫', '第一天故宫', detail_refs=[dict(source_index=0, quote='x')]),
                 wish('故宫', '第一天故宫', kind='appointment'), wish('酒店', '第一天酒店', kind='hotel'), wish('机票', '第一天航班', kind='transport')]
         items = [dict(item) for item in keep]
         self.assertEqual(_drop_wish_items(items), 0)
         self.assertEqual(items, keep)
+        for plain in ('第一天故宫和景山', '第二天颐和园', '第一天去故宫，一定要去', '想去故宫转转', 'I want to see the Palace Museum on day 1',
+                      '第一天上午故宫', '下午逛景山'):
+            with self.subTest(plain=plain):
+                only = [wish('故宫', plain)]
+                self.assertEqual(_drop_wish_items(only), 1, plain)
         mixed = [wish('故宫', '第一天故宫'), wish('酒店集合', '第一天9点酒店集合', kind='hotel', locked=True)]
         self.assertEqual(_drop_wish_items(mixed), 1)
         self.assertEqual([item['kind'] for item in mixed], ['hotel'])

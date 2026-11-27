@@ -289,8 +289,13 @@ def _normalize_city_phrase(city,turns):
 _WHEN_WHERE=('start_date','start_time','start_timezone','start_place','end_date','end_time','end_timezone','end_place')
 # Anything that says an item is fixed, booked or timed keeps it out of the wish rule (red-line review of #2123: the shared FIXED words are
 # narrow, so 「已经订好票」「booked」 and a clock or date in the quote are added here; a larger set only drops fewer items).
-_FIXED_HINT=re.compile(r'订好|订了|买好|买了|订票|订位|订房|预订|预约|预定|已定|定好|锁定|固定|确定|票|门票|reserv|booked|booking|ticket|confirmed|fixed|locked|'
-                       r'[0-9]{1,2}\s*[:：点时]|[0-9]{1,2}\s*(?:am|pm)\b|[0-9]{4}[-/.][0-9]{1,2}[-/.][0-9]{1,2}|[0-9]{1,2}\s*月\s*[0-9]{1,2}\s*[日号]',re.I)
+_FIXED_HINT=re.compile(r'订好|订了|买好|买了|订票|订位|订房|预订|预约|预定|已定|定好|锁定|固定|确定|票|门票|'
+                       # #2124: arranged by someone else, a tour, a guide, a chartered car, a team event
+                       r'约好|说好|安排好|已安排|已经安排|跟团|参团|团队|团建|团体|导游|领队|包车|接送|'
+                       r'reserv|booked|booking|ticket|confirmed|fixed|locked|arranged|tour group|group tour|guided|guide|charter|'
+                       r'[0-9]{1,2}\s*[:：点时]|[0-9]{1,2}\s*(?:am|pm)\b|[0-9]{4}[-/.][0-9]{1,2}[-/.][0-9]{1,2}|[0-9]{1,2}\s*月\s*[0-9]{1,2}\s*[日号]|'
+                       # clocks spelled out: 「下午两点」「早上八点半」「十点」, noon, o'clock
+                       r'[一二三四五六七八九十两]{1,3}\s*[点时]|\bnoon\b|midnight|o.?clock|中午|正午|午夜',re.I)
 
 
 def _drop_wish_items(items):
