@@ -56,6 +56,23 @@ def test_undo_restores_previous_origins_but_never_turns_user_back_to_lio():
     assert item_origins(UNDO, undone, undone_origins, restored, {}) == dict(a=USER, b=USER, old=USER)
 
 
+def test_an_undo_that_kept_fixed_points_is_still_an_undo_not_a_person_write():
+    # #2041 P2: protect_fixed keeps a fixed point of the undone version, so the bytes differ from version-1.
+    undone = [item('a', 'Lio moved'), item('f', 'fixed by Lio'), item('n')]
+    undone_origins = {'a': LIO, 'f': LIO, 'n': LIO}
+    restored_version = [item('a'), item('f', 'before')]
+    restored_origins = {'a': LIO, 'f': LIO}
+    appended = [item('a'), item('f', 'fixed by Lio')]          # f kept from the undone version
+    assert item_origins(UNDO, undone, undone_origins, appended, restored_origins,
+                        restored_version) == dict(a=LIO, f=LIO)
+    # The point the undo dropped (n) is Lio's: no tombstone, so a later autosave may add it again.
+    assert tombstones(UNDO, undone, appended) == []
+    check_lio_write(appended, dict(a=LIO, f=LIO), [], appended + [item('n')])
+    # A user point stays user; a point matching neither version is user.
+    assert item_origins(UNDO, undone, dict(undone_origins, f=USER), appended + [item('x')], restored_origins,
+                        restored_version) == dict(a=LIO, f=USER, x=USER)
+
+
 def test_only_a_user_write_leaves_tombstones_with_the_gaode_id_when_known():
     previous = [item('a', amap='poi-a'), item('b'), item('c')]
     new = [item('c')]
@@ -97,6 +114,11 @@ def test_lio_cannot_add_back_a_point_the_person_removed():
     # A Lio point that already sat at that place before the removal keeps it.
     kept = [item('a', amap='poi-9')]
     check_lio_write(kept, origins, marks, [item('a', amap='poi-9'), item('new')])
+    # #2041 P3: a new point that only reuses the item id of a removed *matched* point (model ids such as
+    # item-3) is not that place; its place decides.
+    check_lio_write(previous, origins, marks, [item('a'), item('gone-place', amap='poi-1')])
+    check_lio_write(previous, origins, marks, [item('a'), item('gone-place')])
+    refused('tombstone_readded', previous, origins, marks, [item('a'), item('gone-place', amap='poi-9')])
 
 
 def test_one_lio_write_is_bounded_in_new_points_and_new_days():
