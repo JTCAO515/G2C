@@ -104,8 +104,10 @@ def exercise(auth, conninfo):
                     value=flow(followup,city=city_name,intent='plan',questions=(),index=index)
                     value['city'].update(source_index=0,quote=first,normalized_name='成都')
                     value['unknown_fields']=['start_date','party_size']
-                    value['field_sources']=[dict(field='start_date',source_index=0,quote=''),
-                                            dict(field='party_size',source_index=0,quote=''),
+                    # Locators that are not in the traveler's message are still refused (empty ones are dropped since the
+                    # 2026-11-28 P0): this keeps the rejected-intake read-only outline path under test.
+                    value['field_sources']=[dict(field='start_date',source_index=0,quote='not said'),
+                                            dict(field='party_size',source_index=0,quote='not said either'),
                                             dict(field='duration_days',source_index=1,quote=followup)]
             value.update(version='LIO-planning-intake.8',needs_tools=False)
         else:

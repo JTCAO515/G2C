@@ -359,8 +359,32 @@ def _drop_unsourced_hotel_endpoint_aliases(data,turns):
             data['extra_unknown_fields'].remove(key)
 
 
+def _drop_empty_field_sources(value):
+    """A source reference whose quote is empty is no evidence at all (the hong kong run of 2026-11-28 lost a whole plan to
+    one of them: `field_sources:string_too_short`). Drop such references before the schema sees them; a date or party size
+    left with no evidence is then unknown (optional by design), never kept without a source. The count of dropped
+    references is returned. A field that is required for planning (city, duration) keeps its normal checks."""
+    refs=value.get('field_sources')if type(value)is dict else None
+    if type(refs)is not list:return 0
+    kept=[ref for ref in refs if not(type(ref)is dict and type(ref.get('quote'))is str and not ref['quote'].strip())]
+    dropped=len(refs)-len(kept)
+    if not dropped:return 0
+    value['field_sources']=kept
+    sourced={ref.get('field')for ref in kept if type(ref)is dict}
+    unknown=value.get('unknown_fields')
+    for field in('start_date','party_size'):
+        if value.get(field)is not None and field not in sourced:
+            value[field]=None
+            if type(unknown)is list and field not in unknown:unknown.append(field)
+    return dropped
+
+
 def parse_flow(raw,turns,refs,message_id,previous,*,schema=FlowIntake,memory_offset=0,read_only=None):
     value=decode(raw.encode() if type(raw)is str else raw)
+    emptied=_drop_empty_field_sources(value)
+    if emptied:
+        import logging
+        logging.getLogger('cj_usage.audit').info('LIO_INTAKE_EMPTY_SOURCE_DROPPED message_id=%s count=%s',message_id,emptied)
     rebound=rebind_sources(value,turns,memory_offset=memory_offset)
     if rebound:
         import logging
