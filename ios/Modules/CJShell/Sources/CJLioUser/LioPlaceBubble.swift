@@ -135,7 +135,7 @@ struct LioPlaceBubbleCard: View {
             VStack(spacing: LioTheme.Spacing.xs) {
                 if canAdd { addButton }
                 if !actions.actions.isEmpty {
-                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 136), spacing: LioTheme.Spacing.xs)],
+                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 128), spacing: LioTheme.Spacing.xs)],
                               spacing: LioTheme.Spacing.xs) {
                         if let route = actions.taxi {
                             Button { open(route) } label: {
@@ -162,7 +162,7 @@ struct LioPlaceBubbleCard: View {
                             .accessibilityIdentifier("lio.place.bubble.book")
                         }
                     }
-                    .buttonStyle(LioSecondaryButtonStyle())
+                    .buttonStyle(LioPlaceBubbleButtonStyle())
                 }
             }
         }
@@ -188,6 +188,31 @@ struct LioPlaceBubbleCard: View {
         case .alreadyThere: LioPlaceBubbleCopy.alreadyAdded.text(language)
         case .failed, nil: LioPlaceCopy.addToTrip.text(language)
         }
+    }
+}
+
+/// The card's small buttons: the secondary look with less padding and a smaller type, so a label such as "Get directions"
+/// wraps between words (never inside one) in the card's width, and at least 44 pt high.
+struct LioPlaceBubbleButtonStyle: ButtonStyle {
+    @Environment(\.isEnabled) private var isEnabled
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(.subheadline.weight(.semibold))
+            .multilineTextAlignment(.center)
+            .foregroundStyle(isEnabled ? LioTheme.ink : LioTheme.inkSecondary)
+            .fixedSize(horizontal: false, vertical: true)
+            .padding(.horizontal, LioTheme.Spacing.xs)
+            .padding(.vertical, LioTheme.Spacing.xs)
+            .frame(maxWidth: .infinity, minHeight: 44)
+            .background(configuration.isPressed ? LioTheme.surfaceSunken : LioTheme.surface,
+                        in: RoundedRectangle(cornerRadius: LioTheme.Radius.small))
+            .overlay {
+                RoundedRectangle(cornerRadius: LioTheme.Radius.small)
+                    .stroke(LioTheme.hairline, lineWidth: LioTheme.outlineWidth)
+                    .allowsHitTesting(false)
+            }
+            .contentShape(RoundedRectangle(cornerRadius: LioTheme.Radius.small))
     }
 }
 
