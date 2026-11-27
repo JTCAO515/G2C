@@ -1,0 +1,115 @@
+{
+  "$defs": {
+    "request": {
+      "additionalProperties": false,
+      "properties": {
+        "consent_text_version": {
+          "$ref": "#/$defs/textVersion"
+        },
+        "request_id": {
+          "pattern": "^[A-Za-z0-9._:-]{1,128}$",
+          "type": "string"
+        },
+        "state": {
+          "enum": [
+            "granted",
+            "withdrawn"
+          ]
+        },
+        "version": {
+          "const": "LIO-memory-consent.1"
+        }
+      },
+      "required": [
+        "version",
+        "state",
+        "consent_text_version",
+        "request_id"
+      ],
+      "type": "object"
+    },
+    "response": {
+      "additionalProperties": false,
+      "else": {
+        "properties": {
+          "changed_at": {
+            "type": "string"
+          },
+          "consent_text_version": {
+            "type": "string"
+          }
+        }
+      },
+      "if": {
+        "properties": {
+          "recorded": {
+            "const": false
+          }
+        }
+      },
+      "properties": {
+        "changed_at": {
+          "oneOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "consent_text_version": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/textVersion"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "recorded": {
+          "type": "boolean"
+        },
+        "state": {
+          "enum": [
+            "granted",
+            "withdrawn"
+          ]
+        },
+        "version": {
+          "const": "LIO-memory-consent.1"
+        }
+      },
+      "required": [
+        "version",
+        "state",
+        "recorded",
+        "consent_text_version",
+        "changed_at"
+      ],
+      "then": {
+        "properties": {
+          "changed_at": {
+            "type": "null"
+          },
+          "consent_text_version": {
+            "type": "null"
+          },
+          "state": {
+            "const": "withdrawn"
+          }
+        }
+      },
+      "type": "object"
+    },
+    "textVersion": {
+      "pattern": "^[A-Za-z0-9._:-]{1,64}$",
+      "type": "string"
+    }
+  },
+  "$id": "LIO-memory-consent.1",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "LIO-memory-consent.1 request and response"
+}

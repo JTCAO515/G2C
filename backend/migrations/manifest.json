@@ -474,6 +474,14 @@
       "sha256": "2b5173107c2a6e127d555749b98b2d1703f698f9955980e99f71c2c52920638b",
       "down": "backend/migrations/down/0059_lio_chip_ticket.down.sql",
       "down_sha256": "30e3f65e3395e3a85ecb7f87565df2694bfa5dd83f933bb6e91e84f7b05065d9"
+    },
+    {
+      "version": 60,
+      "name": "lio_memory_consent",
+      "file": "backend/migrations/0060_lio_memory_consent.sql",
+      "sha256": "d5324f41843585c96f59c31afa151bee60d4cc14d1b55f4a0aa9a80a5a75d89c",
+      "down": "backend/migrations/down/0060_lio_memory_consent.down.sql",
+      "down_sha256": "f543a8c935d2189fe28096bf5f9b64045e9346469a0425199033740fb1dac74e"
     }
   ]
 }
