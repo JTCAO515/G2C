@@ -481,6 +481,14 @@ struct LioAnswerRichTests {
         #expect(LioPlacePresentation(bare, language: .chinese).bubbleHint == nil, "no hint when the library has none")
     }
 
+    @Test func aPlaceFromTheDevelopmentPackIsMarkedOnTheCard() throws {
+        let place = try #require(Self.library.place(id: "pl_bj_gugong"))
+        #expect(LioPlacePresentation(place, language: .chinese).developmentLabel == nil)
+        let marked = LioPlacePresentation(place, language: .chinese, developmentData: true)
+        #expect(marked.developmentLabel == "开发数据" && marked.developmentNote?.isEmpty == false)
+        #expect(Self.library.isDevelopmentData(place) == false, "the test library is not the pack")
+    }
+
     @Test func aPlaceWithAnAddressAndAPointOffersAllButtonsThatCanWork() throws {
         let place = try #require(Self.library.place(id: "pl_bj_gugong"))
         let all = LioPlacePresentation(place, language: .chinese).actions { _ in true }

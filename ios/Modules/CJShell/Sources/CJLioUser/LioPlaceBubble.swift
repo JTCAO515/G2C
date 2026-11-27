@@ -62,6 +62,8 @@ struct LioPlaceBubbleCard: View {
     let place: LioPlace
     let language: LioLanguage
     let actions: LioPlaceActions
+    /// The place comes from the unreviewed development pack (Debug builds only): the card says so, as the place page does.
+    var developmentData = false
     /// Whether "Add to trip" can work here; `addResult` is what the last tap did.
     let canAdd: Bool
     let addResult: LioPlaceTripAdd?
@@ -73,7 +75,7 @@ struct LioPlaceBubbleCard: View {
     @ScaledMetric(relativeTo: .body) private var pictureSize = 56.0
 
     var body: some View {
-        let page = LioPlacePresentation(place, language: language)
+        let page = LioPlacePresentation(place, language: language, developmentData: developmentData)
         VStack(alignment: .leading, spacing: LioTheme.Spacing.sm) {
             HStack(alignment: .top, spacing: LioTheme.Spacing.sm) {
                 picture(page)
@@ -89,6 +91,11 @@ struct LioPlaceBubbleCard: View {
                 }
                 .fixedSize(horizontal: false, vertical: true)
                 Spacer(minLength: 0)
+            }
+            if let label = page.developmentLabel, let note = page.developmentNote {
+                Label(label, systemImage: "hammer.fill").font(.caption.weight(.semibold)).foregroundStyle(LioTheme.vermilion)
+                    .accessibilityLabel(note)
+                    .accessibilityIdentifier("lio.place.bubble.dev")
             }
             if let line = page.oneLiner {
                 Text(line).font(.subheadline).fixedSize(horizontal: false, vertical: true)
@@ -311,7 +318,8 @@ struct LioPlaceMentionHost<Content: View>: View {
     private func bubble(_ place: LioPlace) -> some View {
         let actions = placeActions(place)
         let card = LioPlaceBubbleCard(
-            place: place, language: language, actions: actions, canAdd: addToTrip != nil, addResult: addResult,
+            place: place, language: language, actions: actions, developmentData: repository.isDevelopmentData(place),
+            canAdd: addToTrip != nil, addResult: addResult,
             add: { addResult = addToTrip?(place) ?? .failed },
             open: { route in if router?.open(route) == true { selection = nil } },
             showDriver: {
@@ -334,7 +342,8 @@ struct LioPlaceMentionHost<Content: View>: View {
         context.taxiEntry = taxiEntry
         let visible = Set(LioToolCatalog.visible(context.availability()))
         let routable = router?.toolsShown == true
-        return LioPlacePresentation(place, language: language).actions { routable && visible.contains($0) }
+        return LioPlacePresentation(place, language: language, developmentData: repository.isDevelopmentData(place))
+            .actions { routable && visible.contains($0) }
     }
 
     /// Closes the card, then does `work` once it is gone (a cover or sheet cannot open while the popover is closing).
