@@ -7,6 +7,7 @@ from unittest import mock
 
 from cj_api.lio_dialogue_routes import RICH_VERSION, _message, _used_titles
 from cj_api.lio_memory_routes import LioMemoryCards
+from cj_api.local_lio_memory import lio_candidates
 from cj_message.lio_context import LioLayout
 
 SPLIT = LioLayout('split').effect()
@@ -112,6 +113,26 @@ class Consent(unittest.TestCase):
 
     def test_no_reader_mounted_is_no_titles(self):
         self.assertEqual(LioMemoryCards(SimpleNamespace(), None, None).used_titles('s', ['a']), {})
+
+
+class Reader(unittest.TestCase):
+    """The titles reader `lio_candidates` mounts is bound to the one scope the roster admitted (#2077)."""
+
+    def build(self, scope):
+        database = SimpleNamespace(connect=lambda read_scope: SimpleNamespace(read_scope=read_scope))
+        return lio_candidates(database, SimpleNamespace(), frozenset({'subject-a'}), SimpleNamespace(), scope=scope).collection.titles
+
+    def test_it_reads_only_the_scope_it_was_built_for(self):
+        reads = []
+        with mock.patch('cj_memory.titles.memory_titles', lambda repository, ids: reads.append(ids) or {'a': '节奏慢'}):
+            titles = self.build('scope-a')
+            self.assertEqual(titles('scope-a', ['a']), {'a': '节奏慢'})
+            self.assertEqual(titles('scope-b', ['a']), {})                    # another account: refused, nothing read
+            self.assertEqual(reads, [['a']])
+
+    def test_a_reader_built_without_a_scope_reads_nothing(self):
+        with mock.patch('cj_memory.titles.memory_titles', side_effect=AssertionError('read')):
+            self.assertEqual(self.build(None)('scope-a', ['a']), {})
 
 
 if __name__ == '__main__':
