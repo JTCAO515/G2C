@@ -37,8 +37,16 @@ Origin rules (:func:`item_origins`): an item that was ``user`` in the previous v
 still present stays ``user``. Lio write: new items and previous ``lio`` items are ``lio``. User
 write: a new item or one whose bytes changed (``packed(item)``) is ``user``, an unchanged one keeps
 its origin. Undo: each item keeps the origin of the restored version, except that an item that was
-``user`` in the undone version stays ``user``. An item without a record (any version committed
-before 0061) counts as ``user``.
+``user`` in the undone version stays ``user``. An undo that kept fixed points (``protect_fixed``) is
+still an undo, not a person's write (ADR-0012 decision 5): points equal to the restored version take
+its origin, points the undo kept unchanged from the undone version keep theirs, anything else is
+``user``, and no tombstone is written. An item without a record (any version committed before 0061)
+counts as ``user``.
+
+Tombstones block a removed point from coming back: a removed point with a Gaode id blocks that
+place on every point, whatever its item id; a removed point without one blocks its item id only.
+A model-chosen id such as ``item-3`` that happens to equal a removed matched point's id is a new
+point, not that place, so it is not refused (#2041 P3).
 """
 from dataclasses import dataclass
 from datetime import datetime, timedelta
@@ -98,9 +106,14 @@ def _origin(origins, item_id):
     return origins.get(item_id, USER)
 
 
-def item_origins(kind, previous_items, previous_origins, new_items, restored_origins=None):
-    """Origin of every item of the new version, in its order. ``*_origins`` map item_id -> origin."""
+def item_origins(kind, previous_items, previous_origins, new_items, restored_origins=None, restored_items=None):
+    """Origin of every item of the new version, in its order. ``*_origins`` map item_id -> origin.
+
+    For an undo, ``restored_items`` are the items of the restored version (default: the new items,
+    i.e. an exact restore).
+    """
     before = {item['id']: item for item in previous_items}
+    restored_by_id = {item['id']: item for item in (new_items if restored_items is None else restored_items)}
     result = {}
     for item in new_items:
         item_id = item['id']
@@ -110,7 +123,13 @@ def item_origins(kind, previous_items, previous_origins, new_items, restored_ori
         elif kind == LIO:
             result[item_id] = LIO
         elif kind == UNDO:
-            result[item_id] = _origin(restored_origins or {}, item_id)
+            match = restored_by_id.get(item_id)
+            if match is not None and packed(match) == packed(item):
+                result[item_id] = _origin(restored_origins or {}, item_id)
+            elif old is not None and packed(old) == packed(item):
+                result[item_id] = _origin(previous_origins, item_id)   # kept by protect_fixed
+            else:
+                result[item_id] = USER
         elif old is None or packed(old) != packed(item):
             result[item_id] = USER
         else:
@@ -140,7 +159,8 @@ def check_lio_write(previous_items, previous_origins, tombstones, new_items, *, 
         raise AutosaveConflict('user_order_changed')
     before = {item['id'] for item in previous_items}
     added = [item for item in new_items if item['id'] not in before]
-    removed_ids = {item_id for item_id, _ in tombstones}
+    # Only a removed point without a Gaode id is identified by its item id; a matched one by its place below.
+    removed_ids = {item_id for item_id, place in tombstones if place is None}
     removed_places = {place for _, place in tombstones if place is not None}
     if any(item['id'] in removed_ids for item in added):
         raise AutosaveConflict('tombstone_readded')
@@ -224,11 +244,15 @@ def record_commit(repository, cur, proposal, previous_content):
     after = json.loads(proposal.content)
     previous_items, new_items = items(before), items(after)
     previous_origins = _origins_at(repository, cur, proposal.trip_id, proposal.expected_version)
-    restored = None
+    restored = restored_items = None
     if kind == UNDO:
-        # Undo appends the exact bytes of version-1. Anything else is treated as a person's write.
-        if _accepted_content(repository, cur, proposal.trip_id, proposal.expected_version - 1) == proposal.content:
+        # Undo appends version-1, possibly keeping fixed points of the undone version (protect_fixed).
+        # The basis is server-signed by the undo paths only. Without the restored revision it cannot
+        # be told apart, so it is treated as a person's write (conservative).
+        restored_content = _accepted_content(repository, cur, proposal.trip_id, proposal.expected_version - 1)
+        if restored_content is not None:
             restored = _origins_at(repository, cur, proposal.trip_id, proposal.expected_version - 1)
+            restored_items = items(json.loads(restored_content))
         else:
             kind = USER
     autosave = kind == LIO and enabled(repository)
@@ -238,7 +262,7 @@ def record_commit(repository, cur, proposal, previous_content):
         check_lio_write(previous_items, previous_origins, cur.fetchall(), new_items,
                         previous_days=days(before), new_days=days(after))
     return Commit(proposal.trip_id, version,
-                  item_origins(kind, previous_items, previous_origins, new_items, restored),
+                  item_origins(kind, previous_items, previous_origins, new_items, restored, restored_items),
                   tombstones(kind, previous_items, new_items), autosave)
 
 
