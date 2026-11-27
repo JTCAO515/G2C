@@ -116,6 +116,10 @@
     {
       "setting": "G2C_AUTOSAVE_NOTICE_ENABLED",
       "plist": "G2CAutosaveNoticeEnabled"
+    },
+    {
+      "setting": "G2C_AUTOSAVE_UNDO_ENABLED",
+      "plist": "G2CAutosaveUndoEnabled"
     }
   ],
   "release": {

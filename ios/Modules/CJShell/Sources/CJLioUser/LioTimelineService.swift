@@ -22,7 +22,7 @@ struct LioTimelineTurn: Sendable {
     let cards: [LioTimelineWire.Card]
     /// #2001: which remembered preferences the answer was based on (nil unless rich and the note are both on).
     let memoryNote: LioMemoryUsedNote?
-    /// #1994: what the automatic save of this answer did (nil unless rich and the autosave switch are both on).
+    /// #1994: what the automatic save of this answer did (nil unless rich and the notice or undo switch are on).
     let tripReceipt: LioTimelineWire.TripReceipt?
 
     var isActive: Bool {
@@ -35,6 +35,7 @@ struct LioTimelineTurn: Sendable {
     init(_ message: LioTimelineWire.Message, richEnabled: Bool = LioAnswerRichFeature.enabledInBuild,
          memoryNoteEnabled: Bool = LioMemoryNoteFeature.enabledInBuild,
          autosaveNoticeEnabled: Bool = LioAutosaveNoticeFeature.enabledInBuild,
+         autosaveUndoEnabled: Bool = LioAutosaveUndoFeature.enabledInBuild,
          places repository: LioPlaceRepository = .bundled) {
         messageID = message.id
         text = message.question
@@ -49,7 +50,8 @@ struct LioTimelineTurn: Sendable {
         memoryPrompt = richEnabled && message.rich?.memoryPrompt == true
         cards = richEnabled ? message.rich?.cards ?? [] : []
         memoryNote = richEnabled && memoryNoteEnabled ? LioMemoryUsedNote(message.rich?.memoryUsed) : nil
-        tripReceipt = LioAutosaveNoticeFeature.active(notice: autosaveNoticeEnabled, rich: richEnabled) ? message.rich?.tripReceipt : nil
+        tripReceipt = LioAutosaveReceiptFeature.reads(notice: autosaveNoticeEnabled, undo: autosaveUndoEnabled, rich: richEnabled)
+            ? message.rich?.tripReceipt : nil
         memoryTags = message.memoryTags.filter { LioPublicDisplay.permitsText($0.text) }
         sources = Self.projectSources(message.sources.map { ($0.title, $0.link) }, messageID: message.id)
         status = Self.status(message.state, activity: message.activity, answer: message.answer)
