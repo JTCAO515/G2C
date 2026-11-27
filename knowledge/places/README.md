@@ -86,3 +86,13 @@ python3 -B knowledge/places/images/check_images.py check --files ../codex-inbox/
 - `license` 只能是 `ai-generated`，`label_zh` 必须是「示意图」、`label_en` 是 Illustration，尺寸必须精确，缩略图不能是同一个文件；不合规的条目被**拒绝而不是修**，退回 Codex 重做。
 - 图里不许有文字、Logo、水印、能认出脸的人物，这一点脚本看不出来，由审核表上的人工抽查负责。
 - 清单是 `validate.py` 的一部分，CI 每次校验；App 精简版的 `thumb` 字段取自清单。App 副本一旦生成，`Package.swift` 要声明 `Resources/LioPlaces.v1.json`（有测试守着）。
+
+## 开发用数据包（未经人审，只给开发用）
+
+JT 审核要一天一批，库会空一阵，而实体链接（对话线 D-1）、地点页（App 线 D-4）、行程画布都要拿数据开发。所以由 `candidates/` 里所有待审候选生成一份**开发用数据包** `dev/places-dev-pack.v1.json`：库的字段形态，但每条 `review.status` 都是 `unreviewed`，`rank` 为空，坐标等高德跑完才有（之前为 null）。**它不是库，也不是事实**。
+
+- 生成与校验：`validate.py --write` 重新生成，`validate.py` 检查与候选一致；被 accept 的条目离开开发包（进了正式库），被 reject 的不在里面。校验拒绝任何看起来已审核的条目。
+- **生产不读**：不在 `backend/fact/cj_fact/` 里（不进服务端镜像），不是 App 的打包资源，也不在任何部署文件里；`test_places_devpack.py` 逐项守着。
+- 服务端：`cj_fact.places_dev`，**两个环境变量都设了才放行**：`CJ_PLACES_DEV_ENABLED=1` 和 `CJ_PLACES_DEV_PACK=<包的路径>`；否则一律 `FactFailure('places_dev_disabled')`。香港环境永远不设这两个变量（测试扫 deploy、.github、tooling 里的文件）。
+- App：`LioDevPlacesPack`（`#if DEBUG`，Release 和 Beta 编译里整个文件都没有），从启动参数 `--places-dev-pack <路径>` 或环境变量 `G2C_PLACES_DEV_PACK` 读；读不到、版本不对、有任何已审核条目就当没有。用到开发数据的界面必须标明这是开发数据。
+- JT 审核完、数据进了正式库，开发包自动缩小直至没有（没有待审候选时 `validate.py --write` 删除它）。

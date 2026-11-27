@@ -26,6 +26,9 @@ struct LioTripHome: View {
     @State private var previewNationality = ""
     /// Set by Debug previews only.
     private let keepsSettingsInMemory: Bool
+    /// #1995: `G2CTripCanvasEnabled`. Off, nothing on this page changes.
+    private let canvasEnabled: Bool
+    private let canvasStore: LioTripCanvasStore?
     private var nationality: Binding<String> { keepsSettingsInMemory ? $previewNationality : $sharedNationality }
     @Environment(\.lioTaxiEntry) private var taxiEntry
     @Environment(\.lioMedicalCard) private var medicalCard
@@ -47,7 +50,7 @@ struct LioTripHome: View {
     /// What to do once the sheet that asked a question has closed (#1979).
     @State private var after: After?
 
-    enum Page: Hashable { case task(String), schedule, arrival, hotel, roadbook }
+    enum Page: Hashable { case task(String), schedule, arrival, hotel, roadbook, canvas }
     private enum Sheet: String, Identifiable {
         case edit, taxi, driver, passport, arrival, stay
         var id: Self { self }
@@ -58,9 +61,11 @@ struct LioTripHome: View {
          savedPlans: LioSavedPlansModel? = nil, tools: LioTripHomeTools,
          showAllTrips: @escaping () -> Void, openChat: @escaping () -> Void,
          fixedNow: Date? = nil, timeZone: TimeZone = .current, model: LioTripHomeModel? = nil,
-         keepsSettingsInMemory: Bool = false) {
+         keepsSettingsInMemory: Bool = false, canvasEnabled: Bool = LioTripCanvasFeature.enabledInBuild) {
         self.language = language
         self.keepsSettingsInMemory = keepsSettingsInMemory
+        self.canvasEnabled = canvasEnabled
+        canvasStore = canvasEnabled ? LioTripCanvasStore(tripHome: store) : nil
         self.plans = plans
         self.plansUnreadable = plansUnreadable
         self.savedPlans = savedPlans
@@ -662,6 +667,9 @@ struct LioTripHome: View {
 
     private var shortcutItems: [Shortcut] {
         var items: [Shortcut] = []
+        if canvasEnabled {
+            items.append(.init(id: "canvas", symbol: "calendar", title: language.text("Trip canvas", "行程画布"), page: .canvas))
+        }
         if tools.arrival != nil {
             items.append(.init(id: "arrival", symbol: "airplane.arrival", title: language.text("Arrival Mode", "落地模式"), page: .arrival))
         }
@@ -723,6 +731,10 @@ struct LioTripHome: View {
                 ContentUnavailableView(language.text("This is no longer on your list", "这件事已经不在清单上了"),
                                        systemImage: "checklist")
             }
+        case .schedule where canvasEnabled:
+            canvasScreen(checklist(at: now).plan)
+        case .canvas:
+            canvasScreen(checklist(at: now).plan)
         case .schedule:
             if let plan = checklist(at: now).plan {
                 LioItineraryTimelineView(itinerary: plan.itinerary, language: language, startDate: plan.startDate)
@@ -736,6 +748,12 @@ struct LioTripHome: View {
                                    candidates: plans.map { LioRoadbook(savedPlan: $0) },
                                    savedPlans: savedPlans)
         }
+    }
+
+    /// #1995: the trip canvas of this trip's plan (or its own, with no plan), from the timeline's own entries. The map's
+    /// place is left empty here; the map view (#1996) is wired in when it lands.
+    private func canvasScreen(_ plan: LioPlanSummary?) -> some View {
+        LioTripCanvasScreen(language: language, plan: plan, store: canvasStore, openChat: openChat)
     }
 
     @ViewBuilder private func sheetContent(_ sheet: Sheet) -> some View {
