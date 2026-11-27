@@ -377,11 +377,19 @@ def main(config, conninfo):
     sys.path.insert(0, str(ROOT / 'contracts/message'))
     import check_lio_answer_rich as rich_check
 
+    from cj_message.lio_rich_receipt import wire as rich_wire
+    examples = {e['name']: e['rich']['trip_receipt'] for e in json.loads(
+        (ROOT / 'contracts/message/lio-answer-rich-examples.1.json').read_bytes())['valid'] if 'trip_receipt' in e['rich']}
+
+    def shape(value):
+        return {k: shape(v) if type(v) is dict else type(v).__name__ for k, v in value.items() if k != 'summary'}
+
     def receipt_of(run, *effects, undo_route=True):
         with repo.transaction() as cur:
             result = project(repo, cur, run, list(effects), undo_route=undo_route)
         if result is not None:
             rich_check.check({'version': 'LIO-answer-rich.1', 'trip_receipt': result.wire})
+            assert rich_wire(result) == result.wire, (rich_wire(result), result.wire)   # the timeline's last look
         return result
 
     def saved(run, kind=plan_action_id):
@@ -389,8 +397,15 @@ def main(config, conninfo):
 
     repo.autosave = True
     created = act(*publish(LIO_PLAN, document(), trip='trip-rcpt'), plan_action_id('r1'))
-    assert created.committed_version == 1 and receipt_of('r1', *saved('r1')) is None   # nothing to undo: no receipt
     v1 = repo.detail('trip-rcpt')
+    fresh = receipt_of('r1', *saved('r1'))
+    assert created.committed_version == 1 and fresh.first is False and 'first_autosave' not in fresh.wire
+    assert fresh.wire['undo'] == dict(state='available', kind='withdraw_created', action_id=undo_action_id(plan_action_id('r1')),
+        until=fresh.wire['undo']['until'], target=dict(trip_id='trip-rcpt', expected_version=1,
+        original_hash=sha256(v1.content).hexdigest(), content_version='structured.4')), fresh.wire
+    contract_first = dict(examples['first save of a new trip: undo withdraws it, first automatic save'])
+    assert shape(dict(fresh.wire, first_autosave=True)) == shape(contract_first), (shape(fresh.wire), shape(contract_first))
+    assert receipt_of('r1', *saved('r1'), undo_route=False).wire['undo'] == {'state': 'unavailable'}   # no .5 route here
     second = act(*publish(LIO_PLAN, document(add('item-r2')), trip='trip-rcpt'), plan_action_id('r2'))
     v2 = repo.detail('trip-rcpt')
     got = receipt_of('r2', *saved('r2'))
@@ -412,6 +427,7 @@ def main(config, conninfo):
     late = receipt_of('r2', *saved('r2')).wire['undo']
     assert late == {'state': 'expired', 'until': late['until']} and late['until'] < undo['until']
     backdate(plan_action_id('r2'), 1)
+    assert receipt_of('r1', *saved('r1')).wire['undo'] == {'state': 'superseded', 'until': fresh.wire['undo']['until']}
     act(*publish(USER_EDIT, document(chain(add('item-r2'), retext('item-1', 'mine'))), trip='trip-rcpt'), 'user-r')
     assert receipt_of('r2', *saved('r2')).wire['undo']['state'] == 'superseded'
     act(*publish(LIO_PLAN, document(chain(add('item-r2'), retext('item-1', 'mine'), add('item-r5'))),
@@ -429,8 +445,22 @@ def main(config, conninfo):
         conn.execute("SET session_replication_role=replica")   # test-only: the Trip is gone
         conn.execute('DELETE FROM cj_trip_record WHERE scope=%s AND trip_id=%s', (scope, 'trip-rcpt'))
     assert receipt_of('r5', *saved('r5')).wire['undo'] == {'state': 'unavailable'}
+    # the account's first automatic save carries first_autosave on the wire (a fresh account)
+    fresh_owner = scope_for(ISSUER, 'm4-synthetic-demo-cccccccccccc')
+    database.provision(fresh_owner)
+    other = Repository(lambda: database.connect(fresh_owner), trip_scope_for(fresh_owner), confirm=local_confirmation,
+                       structured=True, calendar=True, rich=True)
+    other.autosave = True
+    proposal = Proposal('first-p', 'trip-first', 0, LIO_PLAN, int(time.time()) + 3600, packed(document()))
+    other.act(Action(plan_action_id('f1'), 'accept', 'first-p', other.publish(proposal), 'ref'))
+    with other.transaction() as cur:
+        first_one = project(other, cur, 'f1', list(saved('f1')), undo_route=True)
+    rich_check.check({'version': 'LIO-answer-rich.1', 'trip_receipt': first_one.wire})
+    assert first_one.first is True and first_one.wire['first_autosave'] is True and rich_wire(first_one) == first_one.wire
+    assert shape(first_one.wire) == shape(contract_first)
     print('PASS trip_receipt: saved only from the receipt table, undo available/expired/superseded/undone/unavailable '
-          'at read with the v4 route target; first save of a new Trip sends none; contract checker passes')
+          'at read with the v4 route target; first save of a new Trip reads withdraw_created (available, superseded, '
+          'unavailable without the route); first_autosave on the wire; contract checker, read-side wire and example shapes agree')
 
     # --- down refused while rows exist ---------------------------------------------------------------
     with owner_db() as conn:

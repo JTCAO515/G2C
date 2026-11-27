@@ -380,8 +380,15 @@ def exercise(root,conninfo):
                     assert [e for e in effects if e.startswith(RECEIPT_EFFECT)]==[
                         receipt_effect(action,'unknown'),receipt_effect(action,outcome)],effects
                     observed=read_receipt(database,scope,run_id,effects,undo_route=True)
-                    # A first save that created the Trip has nothing to undo; a refused edit reads not_saved.
-                    assert (observed is None)if outcome=='saved'else observed.wire==dict(status='not_saved',action_id=action)
+                    if outcome=='saved':
+                        # The save that created the Trip is undone by withdrawing it (LIO-trip-undo.5); it is also
+                        # this account's first automatic save.
+                        rich_check.check(dict(version='LIO-answer-rich.1',trip_receipt=observed.wire))
+                        assert (observed.wire['committed_version'],observed.wire['undo']['state'],observed.wire['undo']['kind'],
+                                observed.wire.get('first_autosave'))==(1,'available','withdraw_created',True),observed.wire
+                    else:
+                        # A refused edit reads not_saved.
+                        assert observed.wire==dict(status='not_saved',action_id=action)
             response=api.get('/v2/lio/timeline',params={'conversation_id':legacy_cid},headers=headers)
             assert response.status_code==200,response.status_code
             rejected=response.json()['messages'][-1]
