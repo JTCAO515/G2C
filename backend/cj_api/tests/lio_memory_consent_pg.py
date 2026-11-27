@@ -136,7 +136,11 @@ def main(config, conninfo):
     import dev_auth
     from cj_api.local_worker_context import checker_for
     from cj_message.auth_boundary import Boundary
-    auth = Path(tempfile.mkdtemp(prefix='cj2080-')) / 'auth'
+    import atexit
+    import shutil
+    scratch = tempfile.mkdtemp(prefix='cj2080-')
+    atexit.register(shutil.rmtree, scratch, True)                  # holds a development key; gone when the script ends
+    auth = Path(scratch) / 'auth'
     dev_auth.init(auth, ['m4-synthetic-demo-aaaaaaaaaaaa'])
     alice_token = dev_auth.token(auth, 'm4-synthetic-demo-aaaaaaaaaaaa', 30)
     database = LocalDatabase(conninfo)
