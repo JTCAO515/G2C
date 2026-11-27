@@ -1,0 +1,309 @@
+{
+ "version": "g2c-places-samples.1",
+ "warning": "开发样例，不是收录库。只在 Debug 构建中使用，Release 构建不用。",
+ "places": [
+  {
+   "id": "pl_bj_gugong",
+   "city": "beijing",
+   "category": "attraction",
+   "subcategory": "museum",
+   "name_zh": "故宫博物院",
+   "name_en": "The Palace Museum",
+   "aliases_zh": [
+    "故宫",
+    "紫禁城"
+   ],
+   "aliases_en": [
+    "Forbidden City"
+   ],
+   "address_zh": "北京市东城区景山前街4号",
+   "address_en": null,
+   "district_zh": "东城区",
+   "nearest_metro": null,
+   "hours_zh": "4月1日–10月31日 08:30–17:00，16:00停止入馆。11月1日–次年3月31日 08:30–16:30，15:30停止入馆。通常周一闭馆，法定节假日除外。",
+   "hours_source": "https://intl.dpm.org.cn/visit",
+   "ticket": {
+    "booking": "required",
+    "passport_required": true,
+    "price_cny": null,
+    "closed_weekdays": [
+     1
+    ],
+    "booking_channel_zh": "故宫博物院官方票务渠道",
+    "booking_url": "https://bookingticket.dpm.org.cn/"
+   },
+   "intro_short_zh": "沿紫禁城中轴看宫殿与红墙",
+   "intro_short_en": "Walk the Forbidden City's axis past red walls and palace halls.",
+   "intro_long_zh": "沿紫禁城中轴看宫殿与红墙。从太和殿一带走向内廷，可对照礼仪空间与生活院落。",
+   "intro_long_en": "Walk the Forbidden City's axis past red walls and palace halls. Compare the ceremonial courts around the Hall of Supreme Harmony with the more intimate courtyards of the inner palace.",
+   "visit_minutes": 120,
+   "best_time_zh": null,
+   "official_url": "https://intl.dpm.org.cn/visit",
+   "checked_on": "2026-11-27",
+   "location": {
+    "gcj02": {
+     "lat": 39.9165,
+     "lng": 116.3971
+    },
+    "amap_id": null,
+    "method": "manual"
+   },
+   "review": {
+    "status": "sample",
+    "note": "开发样例：数据未经审核，坐标为近似值，只在 Debug 构建中使用，不进正式库。"
+   }
+  },
+  {
+   "id": "pl_bj_jingshan",
+   "city": "beijing",
+   "category": "attraction",
+   "subcategory": "park",
+   "name_zh": "景山公园",
+   "name_en": "Jingshan Park",
+   "aliases_zh": [],
+   "aliases_en": [],
+   "address_zh": "北京市西城区景山西街44号",
+   "address_en": null,
+   "district_zh": "西城区",
+   "nearest_metro": null,
+   "hours_zh": null,
+   "hours_source": null,
+   "ticket": {
+    "booking": null,
+    "passport_required": null,
+    "price_cny": null,
+    "closed_weekdays": null,
+    "booking_channel_zh": null,
+    "booking_url": null
+   },
+   "intro_short_zh": "登景山俯瞰紫禁城的屋顶中轴",
+   "intro_short_en": "Look down the Forbidden City's roofline from Jingshan.",
+   "intro_long_zh": "登景山俯瞰紫禁城的屋顶中轴。从山顶往南看，宫城金瓦沿一条直线展开，适合与故宫安排在一起。",
+   "intro_long_en": "Look down the Forbidden City's roofline from Jingshan. From the hilltop, the roofs reveal the alignment of the palace courts. This makes a good companion stop to the Palace Museum.",
+   "visit_minutes": null,
+   "best_time_zh": null,
+   "official_url": null,
+   "checked_on": "2026-11-27",
+   "location": {
+    "gcj02": {
+     "lat": 39.9254,
+     "lng": 116.3965
+    },
+    "amap_id": null,
+    "method": "manual"
+   },
+   "review": {
+    "status": "sample",
+    "note": "开发样例：数据未经审核，坐标为近似值，只在 Debug 构建中使用，不进正式库。"
+   }
+  },
+  {
+   "id": "pl_bj_tiantan",
+   "city": "beijing",
+   "category": "attraction",
+   "subcategory": "history",
+   "name_zh": "天坛公园",
+   "name_en": "Temple of Heaven",
+   "aliases_zh": [],
+   "aliases_en": [],
+   "address_zh": null,
+   "address_en": null,
+   "district_zh": "东城区",
+   "nearest_metro": null,
+   "hours_zh": null,
+   "hours_source": null,
+   "ticket": {
+    "booking": "none",
+    "passport_required": null,
+    "price_cny": null,
+    "closed_weekdays": null,
+    "booking_channel_zh": "公园现场或北京市公园官方票务渠道",
+    "booking_url": null
+   },
+   "intro_short_zh": "在祈年殿看层层蓝瓦圆顶",
+   "intro_short_en": "See the Temple of Heaven's tiers of blue roof tiles.",
+   "intro_long_zh": "在祈年殿看层层蓝瓦圆顶。把祈年殿与圜丘放在同一条路线，留意两处台基和空间尺度的差异。",
+   "intro_long_en": "See the Temple of Heaven's tiers of blue roof tiles. Pair the Hall of Prayer for Good Harvests with the Circular Mound to see how differently the two ritual spaces are laid out.",
+   "visit_minutes": null,
+   "best_time_zh": null,
+   "official_url": null,
+   "checked_on": "2026-11-27",
+   "location": {
+    "gcj02": {
+     "lat": 39.8822,
+     "lng": 116.4066
+    },
+    "amap_id": null,
+    "method": "manual"
+   },
+   "review": {
+    "status": "sample",
+    "note": "开发样例：数据未经审核，坐标为近似值，只在 Debug 构建中使用，不进正式库。"
+   }
+  },
+  {
+   "id": "pl_bj_sijiminfu_gugong",
+   "city": "beijing",
+   "category": "food",
+   "subcategory": "local_cuisine",
+   "name_zh": "四季民福烤鸭店（故宫店）",
+   "name_en": "Siji Minfu (Forbidden City Branch)",
+   "aliases_zh": [],
+   "aliases_en": [],
+   "address_zh": "南池子大街11号",
+   "address_en": null,
+   "district_zh": "东城区",
+   "nearest_metro": null,
+   "hours_zh": null,
+   "hours_source": null,
+   "ticket": null,
+   "intro_short_zh": "从故宫东门一带出来，可安排一顿挂炉烤鸭。",
+   "intro_short_en": "Stop for roast duck near the Forbidden City's east gate.",
+   "intro_long_zh": "从故宫东门一带出来，可安排一顿挂炉烤鸭。按中文店名在南池子大街11号定位。",
+   "intro_long_en": "Stop for roast duck near the Forbidden City's east gate. Use the full Chinese name when looking up this location.",
+   "visit_minutes": null,
+   "best_time_zh": null,
+   "official_url": "https://english.beijing.gov.cn/latest/news/202602/t20260219_4526516.html",
+   "checked_on": "2026-11-27",
+   "cuisine_zh": "北京烤鸭",
+   "price_per_person_cny": null,
+   "english_menu": null,
+   "halal": null,
+   "vegetarian_friendly": null,
+   "reservation_needed": null,
+   "location": {
+    "gcj02": {
+     "lat": 39.9143,
+     "lng": 116.4012
+    },
+    "amap_id": null,
+    "method": "manual"
+   },
+   "review": {
+    "status": "sample",
+    "note": "开发样例：数据未经审核，坐标为近似值，只在 Debug 构建中使用，不进正式库。"
+   }
+  },
+  {
+   "id": "pl_bj_pek",
+   "city": "beijing",
+   "category": "hub",
+   "hub_type": "airport",
+   "name_zh": "北京首都国际机场",
+   "name_en": "Beijing Capital International Airport",
+   "code": "PEK",
+   "terminals": [
+    {
+     "name": "T2",
+     "note_zh": "部分国内和国际航班在此办理，以航司通知为准。"
+    },
+    {
+     "name": "T3",
+     "note_zh": "设有 T3C、T3D、T3E，国际候机区包括 T3E。"
+    }
+   ],
+   "to_city_zh": [
+    "首都机场线连接 T2、T3 与三元桥、东直门及北新桥。"
+   ],
+   "to_city_en": [
+    "The Capital Airport Express links T2 and T3 with Sanyuanqiao, Dongzhimen and Beixinqiao."
+   ],
+   "foreigner_tips_zh": [
+    "把 PEK 和航站楼号一起给司机看。不同航班可能在 T2 或 T3，出发前查航司确认。"
+   ],
+   "official_url": "https://www.bcia.com.cn/wljc.html",
+   "checked_on": "2026-11-27",
+   "location": {
+    "gcj02": {
+     "lat": 40.0799,
+     "lng": 116.6031
+    },
+    "amap_id": null,
+    "method": "manual"
+   },
+   "review": {
+    "status": "sample",
+    "note": "开发样例：数据未经审核，坐标为近似值，只在 Debug 构建中使用，不进正式库。"
+   }
+  },
+  {
+   "id": "pl_bj_qijiuba",
+   "city": "beijing",
+   "category": "attraction",
+   "subcategory": "street",
+   "name_zh": "798艺术区",
+   "name_en": "798 Art District",
+   "aliases_zh": [],
+   "aliases_en": [],
+   "address_zh": null,
+   "address_en": null,
+   "district_zh": "朝阳区",
+   "nearest_metro": null,
+   "hours_zh": null,
+   "hours_source": null,
+   "ticket": {
+    "booking": null,
+    "passport_required": null,
+    "price_cny": null,
+    "closed_weekdays": null,
+    "booking_channel_zh": null,
+    "booking_url": null
+   },
+   "intro_short_zh": "在旧厂房之间逛当代艺术",
+   "intro_short_en": "Find contemporary art in former factory buildings at 798.",
+   "intro_long_zh": "在旧厂房之间逛当代艺术。厂区的高窗、烟囱和车间与画廊并置，走街巷本身也是看点。",
+   "intro_long_en": "Find contemporary art in former factory buildings at 798. Look for industrial chimneys and tall workshop windows between gallery stops. The factory layout gives the district much of its character.",
+   "visit_minutes": null,
+   "best_time_zh": null,
+   "official_url": null,
+   "checked_on": "2026-11-27",
+   "review": {
+    "status": "sample",
+    "note": "开发样例：数据未经审核，坐标为近似值，只在 Debug 构建中使用，不进正式库。"
+   }
+  },
+  {
+   "id": "pl_cq_changjiang_suodao",
+   "city": "chongqing",
+   "category": "attraction",
+   "name_zh": "长江索道",
+   "name_en": "Yangtze River Cableway",
+   "aliases_zh": [],
+   "aliases_en": [],
+   "address_zh": "重庆市渝中区新华路151号",
+   "address_en": null,
+   "district_zh": "渝中区",
+   "nearest_metro": {
+    "station_zh": "小什字",
+    "station_en": "Xiaoshizi",
+    "line": "1号线、6号线",
+    "exit": "5B"
+   },
+   "official_url": "https://www.cqsuodao.com/zhangjiangsuodao.html",
+   "checked_on": "2026-11-27",
+   "subcategory": "experience",
+   "hours_zh": "3–11月08:00–22:00，法定节假日07:30–23:00。12月–次年2月08:00–21:00，法定节假日07:30–22:30。临时调整见运营公告。",
+   "hours_source": "https://www.cqsuodao.com/zhangjiangsuodao.html",
+   "ticket": {
+    "booking": null,
+    "passport_required": null,
+    "price_cny": null,
+    "closed_weekdays": null,
+    "booking_channel_zh": null,
+    "booking_url": null
+   },
+   "intro_short_zh": "坐长江索道从空中看重庆两岸",
+   "intro_short_en": "Cross the Yangtze above the water on Chongqing's cableway.",
+   "intro_long_zh": "坐长江索道从空中看重庆两岸。上车前可先看两端的位置，过江时留意山坡、江面和建筑的高差。",
+   "intro_long_en": "Cross the Yangtze above the water on Chongqing's cableway. Check where the two terminals are and look for the change in elevation between the river and buildings as you cross.",
+   "visit_minutes": null,
+   "best_time_zh": null,
+   "location": null,
+   "rank": null,
+   "review": {
+    "status": "sample",
+    "note": "开发样例：数据未经审核，坐标为近似值，只在 Debug 构建中使用，不进正式库。"
+   }
+  }
+ ]
+}

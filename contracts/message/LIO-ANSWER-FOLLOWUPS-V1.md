@@ -40,7 +40,7 @@ JSON shape: `lio-followups-schema.1.json`. Synthetic examples: `lio-followups-ex
 
 ## Tap-to-ask chips
 
-A chip is a short question the traveler can send with one tap. The server picks it from a reviewed table by the topic of the traveler's question (payment, taxi); the model does not write it. Labels are at most 12 characters (Chinese) or 24 (English), single line, no control or format characters.
+A chip is a short question the traveler can send with one tap. The server picks it from a reviewed table by the topic of the traveler's question; the model does not write it. (Since #1976/#1978 the table covers eight travel topics and the answers to the one fact an answer still asks for, and offers "Save to my trips" after a plan; the wire shape below is unchanged. `LIO-ANSWER-RICH-V1.md` builds on this version.) Labels are at most 12 characters (Chinese) or 24 (English), single line, no control or format characters.
 
 - **Row**: `chips: [{"label": "付不了怎么办", "ticket": "<43 characters, [A-Za-z0-9_-]>"}]`, at most three. A chip keeps its `ticket` for 24 hours after the answer; later rows show the chip without `ticket`, and the App shows it but does not offer a tap.
 - **Sending it**: the App sends the chip like any typed question, `POST /v2/lio/messages` (`LIO-message.2`) with `text` equal to the chip `label` and one more optional field, `chip_ticket` with the chip's ticket. No other version accepts the field. A `chip_ticket` that is not a string is a 400; a string that is not shaped like a ticket is ignored.

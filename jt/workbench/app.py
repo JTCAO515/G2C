@@ -30,9 +30,11 @@ from .store import AuditAction, AuditEvent, AuditResult, CaseAuditDetail, Operat
 SESSION_COOKIE = "__Host-jt-session"
 PRE_LOGIN_COOKIE = "__Host-jt-login"
 FORM_LIMIT = 8192
-LOGIN_FORM = ("username", "password", "code", "csrf")
-SETUP_FORM = ("username", "setup_code", "password", "seed", "code", "csrf")
+LOGIN_FORM = ("username", "password", "csrf")
 ACCOUNT_FORM = ("username", "role", "action", "csrf")
+ACCOUNT_CREATE_FORM = ("username", "role", "password", "confirm", "csrf")
+ACCOUNT_PASSWORD_FORM = ("username", "password", "confirm", "csrf")
+PASSWORD_FIELDS = ("password", "confirm")
 REVIEW_FORM = ("signal", "actual_severity", "false_positive", "missed", "note", "csrf")
 SEVERITIES = ("P0", "P1", "P2", "P3", "P4")
 CASE_REVISION = re.compile(r"0|[1-9][0-9]{0,18}")
@@ -67,10 +69,9 @@ async def read_form(request: Request, origin: str, names: tuple[str, ...]) -> di
         raise HTTPException(400, "表单有误。") from None
     fields = dict(pairs)
     if (len(pairs) != len(names) or set(fields) != set(names)
-            or any("\0" in value for name, value in fields.items() if name != "password")):
+            or any("\0" in value for name, value in fields.items() if name not in PASSWORD_FIELDS)):
         raise HTTPException(400, "表单有误。")
-    if (len(fields.get("username", "")) > 32 or len(fields.get("password", "")) > 128
-            or len(fields.get("code", "")) > 6 or len(fields.get("seed", "")) > 40):
+    if len(fields.get("username", "")) > 32 or any(len(fields.get(name, "")) > 128 for name in PASSWORD_FIELDS):
         raise HTTPException(400, "表单有误。")
     return fields
 
@@ -79,10 +80,9 @@ def session_token(request: Request) -> str:
     return request.cookies.get(SESSION_COOKIE, "")
 
 
-def pre_login_response(*, setup: bool = False, failed: bool = False) -> Response:
+def pre_login_response(*, failed: bool = False) -> Response:
     csrf = new_token()
-    render = pages.setup_page if setup else pages.login_page
-    result = render(csrf, failed=failed)
+    result = pages.login_page(csrf, failed=failed)
     result.set_cookie(PRE_LOGIN_COOKIE, csrf, max_age=600, **COOKIE_POLICY)
     return result
 
@@ -200,29 +200,13 @@ def create_app(
     async def enter(request: Request) -> Response:
         fields = await read_form(request, origin, LOGIN_FORM)
         require_pre_login_csrf(request, fields["csrf"])
-        token = await to_thread(auth.login, fields["username"], fields["password"], fields["code"],
+        token = await to_thread(auth.login, fields["username"], fields["password"],
                                 previous_token=session_token(request))
         if token is None:
             return pre_login_response(failed=True)
         response = RedirectResponse("/", status_code=303)
         response.delete_cookie(PRE_LOGIN_COOKIE, **COOKIE_POLICY)
         response.set_cookie(SESSION_COOKIE, token, max_age=SESSION_LIFETIME, **COOKIE_POLICY)
-        return response
-
-    @app.get("/setup")
-    def setup() -> Response:
-        return pre_login_response(setup=True)
-
-    @app.post("/setup")
-    async def bind(request: Request) -> Response:
-        fields = await read_form(request, origin, SETUP_FORM)
-        require_pre_login_csrf(request, fields["csrf"])
-        bound = await to_thread(auth.bind_account, fields["username"], fields["setup_code"],
-                                fields["password"], fields["seed"], fields["code"])
-        if not bound:
-            return pre_login_response(setup=True, failed=True)
-        response = pages.setup_done_page()
-        response.delete_cookie(PRE_LOGIN_COOKIE, **COOKIE_POLICY)
         return response
 
     @app.get("/")
@@ -241,20 +225,47 @@ def create_app(
     def accounts(request: Request) -> Response:
         return pages.accounts_page(*auth.inspect_accounts(session_token(request)))
 
-    @app.post("/admin/accounts")
-    async def manage_account(request: Request) -> Response:
-        fields = await read_form(request, origin, ACCOUNT_FORM)
-        try:
-            action = AccountAction(fields["action"])
-        except ValueError:
-            raise HTTPException(400, "操作有误。") from None
+    async def change_account(
+        request: Request, names: tuple[str, ...], action: Callable[[dict[str, str]], AccountAction],
+    ) -> Response:
+        fields = await read_form(request, origin, names)
         token = session_token(request)
         try:
-            setup_code = await to_thread(auth.manage_account, token, fields["csrf"], action,
-                                         fields["username"], fields["role"])
+            chosen = action(fields)
+            # A mistyped confirmation is a rejected request, audited like any other refusal.
+            password = fields.get("password", "") if fields.get("password") == fields.get("confirm", "") else ""
+            await to_thread(auth.manage_account, token, fields["csrf"], chosen, fields["username"],
+                            fields.get("role", ""), password)
         except InvalidAccount:
             return pages.accounts_page(*await to_thread(auth.inspect_accounts, token), rejected=True)
-        return pages.accounts_page(*await to_thread(auth.inspect_accounts, token), setup_code=setup_code, saved=True)
+        try:
+            return pages.accounts_page(*await to_thread(auth.inspect_accounts, token), saved=True)
+        except AuthenticationRequired:
+            # The administrator reset the own password: every session of the account just ended.
+            response = RedirectResponse("/login", status_code=303)
+            response.delete_cookie(SESSION_COOKIE, **COOKIE_POLICY)
+            return response
+
+    def listed_action(fields: dict[str, str]) -> AccountAction:
+        try:
+            chosen = AccountAction(fields["action"])
+        except ValueError:
+            raise HTTPException(400, "操作有误。") from None
+        if chosen in (AccountAction.CREATE, AccountAction.RESET_PASSWORD):
+            raise HTTPException(400, "操作有误。")
+        return chosen
+
+    @app.post("/admin/accounts")
+    async def manage_account(request: Request) -> Response:
+        return await change_account(request, ACCOUNT_FORM, listed_action)
+
+    @app.post("/admin/accounts/create")
+    async def create_account(request: Request) -> Response:
+        return await change_account(request, ACCOUNT_CREATE_FORM, lambda _fields: AccountAction.CREATE)
+
+    @app.post("/admin/accounts/password")
+    async def reset_password(request: Request) -> Response:
+        return await change_account(request, ACCOUNT_PASSWORD_FORM, lambda _fields: AccountAction.RESET_PASSWORD)
 
     @app.get("/admin/audit")
     def audit(request: Request) -> Response:

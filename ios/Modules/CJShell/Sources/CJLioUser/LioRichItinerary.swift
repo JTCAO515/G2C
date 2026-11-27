@@ -114,3 +114,12 @@ struct LioRichItinerary: Equatable, Sendable {
     let lodgingArea: String
     let hotels: [Hotel]
 }
+
+extension LioRichItinerary.Stop {
+    /// #1976: a place the server's read did not match is shown as not confirmed instead of looking like a checked
+    /// address. Only when this build reads the places (`G2CChatTripPlacesEnabled`): with it off every chat place is a
+    /// name without a check, which is how that build always saves, so none is marked. Nil for a checked place.
+    func unconfirmedNote(_ language: LioLanguage, placesRead: Bool) -> String? {
+        placesRead && !place.matched ? language.text("Place not confirmed", "地点未确认") : nil
+    }
+}

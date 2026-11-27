@@ -8,7 +8,8 @@ struct LioCurrencyView: View {
     @Environment(\.locale) private var locale
     @Environment(\.colorScheme) private var colorScheme
     @State private var snapshot: LioCurrencyRates?
-    @State private var amount = "100"
+    @State private var entry = LioCurrencyEntry()
+    @FocusState private var focus: LioCurrencyField?
     @State private var origin: LioCurrencyRates.Currency = .cny
     @State private var destination: LioCurrencyRates.Currency = .usd
     @State private var refresh = 0
@@ -22,10 +23,12 @@ struct LioCurrencyView: View {
                     converter(snapshot)
                     Text(language.text("Rate source", "汇率来源") + " · " + snapshot.source + " · " + snapshot.date)
                         .font(.footnote)
+                        .foregroundStyle(LioTheme.inkSecondary)
                         .accessibilityIdentifier("lio.currency.source")
                     Text(language.text("For reference. Your bank or payment provider sets the actual rate.",
                                        "仅供参考，以银行或支付机构的实际汇率为准。"))
                         .font(.footnote)
+                        .foregroundStyle(LioTheme.inkSecondary)
                         .accessibilityIdentifier("lio.currency.disclaimer")
                 }
 
@@ -42,9 +45,8 @@ struct LioCurrencyView: View {
                 if !isLoading {
                     Button { refresh += 1 } label: {
                         Label(language.text("Refresh rates", "更新汇率"), systemImage: "arrow.clockwise")
-                            .frame(minHeight: 44)
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(LioSecondaryButtonStyle())
                     .accessibilityIdentifier("lio.currency.refresh")
                 }
             }
@@ -64,6 +66,11 @@ struct LioCurrencyView: View {
                 RunReadableText(text: language.text("Currency Converter", "汇率换算"), style: .headline, color: LioTheme.ink)
                     .fixedSize()
                     .accessibilityAddTraits(.isHeader)
+            }
+            ToolbarItemGroup(placement: .keyboard) {
+                Spacer()
+                Button(language.text("Done", "完成")) { focus = nil }
+                    .accessibilityIdentifier("lio.currency.keyboardDone")
             }
         }
         .task(id: refresh) {
@@ -101,53 +108,154 @@ struct LioCurrencyView: View {
     }
 
     private func converter(_ rates: LioCurrencyRates) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text(language.text("Amount", "金额"))
-                .font(.headline)
-            TextField(language.text("Amount", "金额"), text: $amount)
-                .keyboardType(.decimalPad)
-                .accessibilityIdentifier("lio.currency.amount")
-            HStack {
-                currencyMenu(language.text("From", "从"), selection: $origin, options: rates.currencies)
-                Button {
-                    let previous = origin
-                    origin = destination
-                    destination = previous
-                } label: {
-                    Image(systemName: "arrow.left.arrow.right")
-                        .frame(width: 50, height: 50)
-                        .contentShape(Rectangle())
-                        .background(LioTheme.surfaceSunken, in: Circle())
+        VStack(alignment: .leading, spacing: 14) {
+            ZStack {
+                VStack(spacing: 0) {
+                    amountRow(.origin, rates: rates)
+                    Divider().overlay(LioTheme.hairline)
+                    amountRow(.destination, rates: rates)
                 }
-                .buttonStyle(.plain)
-                .accessibilityLabel(language.text("Swap currencies", "互换货币"))
-                .accessibilityIdentifier("lio.currency.swap")
-                currencyMenu(language.text("To", "到"), selection: $destination, options: rates.currencies)
+                .lioCard(RoundedRectangle(cornerRadius: LioTheme.Radius.card))
+                swapButton
             }
-            if let number = try? Decimal(amount, format: .number.locale(locale)),
-               let converted = rates.convert(number, from: origin, to: destination) {
-                Text(converted.formatted(.number.precision(.fractionLength(destination.fractionDigits))) + " " + destination.rawValue)
-                    .font(.title2.bold())
-                    .accessibilityIdentifier("lio.currency.result")
-            } else {
+            quickAmountRow
+            if let line = rateLine(rates) {
+                Text(line)
+                    .font(.subheadline)
+                    .foregroundStyle(LioTheme.inkSecondary)
+                    .accessibilityIdentifier("lio.currency.unitRate")
+            }
+            if invalidEntry(rates) {
                 Text(language.text("Enter a valid amount.", "请输入有效金额。"))
+                    .font(.subheadline)
+                    .foregroundStyle(LioTheme.vermilion)
+                    .accessibilityIdentifier("lio.currency.invalid")
             }
         }
-        .padding(16)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(LioTheme.surface, in: RoundedRectangle(cornerRadius: LioTheme.Radius.card))
+    }
+
+    private var swapButton: some View {
+        Button {
+            // Exchange the rows: each amount stays with its currency.
+            let previous = origin
+            origin = destination
+            destination = previous
+            entry.active = entry.active == .origin ? .destination : .origin
+        } label: {
+            Image(systemName: "arrow.up.arrow.down")
+                .font(.body.weight(.bold))
+                .foregroundStyle(LioTheme.onVermilion)
+                .frame(width: 44, height: 44)
+                .background(LioTheme.vermilion, in: Circle())
+                .overlay(Circle().stroke(LioTheme.paper, lineWidth: 4))
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(language.text("Swap currencies", "互换货币"))
+        .accessibilityIdentifier("lio.currency.swap")
+    }
+
+    private func amountRow(_ field: LioCurrencyField, rates: LioCurrencyRates) -> some View {
+        let currency = field == .origin ? origin : destination
+        return HStack(alignment: .center, spacing: 12) {
+            VStack(alignment: .leading, spacing: 4) {
+                currencyMenu(field == .origin ? language.text("From", "从") : language.text("To", "到"),
+                             selection: field == .origin ? $origin : $destination,
+                             options: rates.currencies)
+                Text(currency.name(language))
+                    .font(.caption)
+                    .foregroundStyle(LioTheme.inkSecondary)
+                    .lineLimit(1)
+            }
+            TextField("0", text: binding(for: field, rates: rates))
+                .keyboardType(.decimalPad)
+                .focused($focus, equals: field)
+                .multilineTextAlignment(.trailing)
+                .font(.system(.largeTitle, design: .rounded).weight(.semibold))
+                .monospacedDigit()
+                .minimumScaleFactor(0.5)
+                .foregroundStyle(entry.active == field ? LioTheme.ink : LioTheme.ink.opacity(0.85))
+                .frame(maxWidth: .infinity, alignment: .trailing)
+                .accessibilityLabel(language.text("Amount in", "金额，币种") + " " + currency.rawValue)
+                .accessibilityIdentifier(field == .origin ? "lio.currency.amount" : "lio.currency.result")
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 18)
+        .contentShape(Rectangle())
+        .onTapGesture { focus = field }
+    }
+
+    /// The typed field shows what was typed; the other shows the converted amount.
+    private func binding(for field: LioCurrencyField, rates: LioCurrencyRates) -> Binding<String> {
+        Binding(
+            get: {
+                if entry.active == field { return entry.text }
+                return entry.derivedText(rates: rates, origin: origin, destination: destination, locale: locale) ?? ""
+            },
+            set: { newValue in
+                entry.active = field
+                entry.text = newValue
+            }
+        )
+    }
+
+    private func invalidEntry(_ rates: LioCurrencyRates) -> Bool {
+        !entry.text.isEmpty
+            && entry.derivedText(rates: rates, origin: origin, destination: destination, locale: locale) == nil
+    }
+
+    private var quickAmountRow: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                ForEach(origin.quickAmounts, id: \.self) { amount in
+                    Button {
+                        entry.active = .origin
+                        entry.text = LioCurrencyEntry.text(for: amount, locale: locale)
+                        focus = nil
+                    } label: {
+                        Text(amount.formatted(.number.locale(locale)))
+                            .font(.subheadline.weight(.semibold))
+                            .monospacedDigit()
+                            .foregroundStyle(LioTheme.ink)
+                            .padding(.horizontal, 16)
+                            .frame(minHeight: 44)
+                            .lioCard(Capsule())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(amount.formatted(.number.locale(locale)) + " " + origin.rawValue)
+                    .accessibilityIdentifier("lio.currency.quick.\(amount)")
+                }
+            }
+        }
+        .accessibilityIdentifier("lio.currency.quickAmounts")
+    }
+
+    private func rateLine(_ rates: LioCurrencyRates) -> String? {
+        guard let rate = rates.unitRate(from: origin, to: destination) else { return nil }
+        let formatted = rate.formatted(.number.precision(.significantDigits(4)).locale(locale))
+        return "1 \(origin.rawValue) ≈ \(formatted) \(destination.rawValue)"
     }
 
     private func currencyMenu(_ label: String, selection: Binding<LioCurrencyRates.Currency>,
                               options: [LioCurrencyRates.Currency]) -> some View {
         Menu {
             ForEach(options, id: \.self) { currency in
-                Button(currency.rawValue) { selection.wrappedValue = currency }
+                Button {
+                    selection.wrappedValue = currency
+                } label: {
+                    Text("\(currency.flag) \(currency.rawValue) · \(currency.name(language))")
+                }
             }
         } label: {
-            Label(selection.wrappedValue.rawValue, systemImage: "chevron.down")
-                .foregroundStyle(LioTheme.ink)
-                .frame(minHeight: 44)
+            HStack(spacing: 6) {
+                Text(selection.wrappedValue.flag).font(.title2)
+                Text(selection.wrappedValue.rawValue)
+                    .font(.headline)
+                    .foregroundStyle(LioTheme.ink)
+                Image(systemName: "chevron.down")
+                    .font(.caption.weight(.bold))
+                    .foregroundStyle(LioTheme.inkSecondary)
+            }
+            .frame(minHeight: 44)
         }
         .accessibilityLabel(label + " " + selection.wrappedValue.rawValue)
     }

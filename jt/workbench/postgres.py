@@ -17,18 +17,15 @@ from jt.common import Signal
 from .auth import ExpiredSession
 from .queue import QueueItem, Review, SignalConflict, response_deadline
 from .security import PasswordHash, new_token
-from .store import Account, AuditAction, AuditEvent, AuditResult, CaseAuditDetail, Failures, OperationsAuditDetail, Role, Session, SetupGrant
+from .store import Account, AuditAction, AuditEvent, AuditResult, CaseAuditDetail, Failures, OperationsAuditDetail, Role, Session
 
 
 DATABASE_VARIABLE = "JT_WORKBENCH_DATABASE_URL"
 MIGRATION_ROLE = "jt_workbench_owner"
 RUNTIME_ROLE = "jt_workbench_runtime"
-SCHEMA_VERSION = 3
+SCHEMA_VERSION = 4
 LOCK_ID = 0x4A54574F524B
-ACCOUNT_COLUMNS = (
-    "username, role, password_salt, password_digest, totp_seed, last_totp_step, "
-    "setup_digest, setup_expires, enabled"
-)
+ACCOUNT_COLUMNS = "username, role, password_salt, password_digest, enabled"
 
 
 def _connect(dsn: str, role: str) -> Connection:
@@ -49,7 +46,7 @@ def _guard_role(db: Connection, role: str) -> None:
 
 def _installed_versions(db: Connection) -> list[int]:
     versions = [version for version, in db.execute("SELECT version FROM jt_workbench.schema_version ORDER BY version")]
-    for table, number in (("case_audit_version", 2), ("operations_audit_version", 3)):
+    for table, number in (("case_audit_version", 2), ("operations_audit_version", 3), ("password_auth_version", 4)):
         qualified = f"jt_workbench.{table}"
         has_extension, = db.execute("SELECT to_regclass(%s) IS NOT NULL", (qualified,)).fetchone()
         if has_extension:
@@ -64,7 +61,7 @@ def _check_version(db: Connection) -> None:
         raise RuntimeError("unsupported workbench schema version")
 
 
-def migrate(dsn: str, *, down: bool = False) -> None:
+def migrate(dsn: str, *, down: bool = False, steps: int | None = None) -> None:
     directory = Path(__file__).with_name("migrations")
     with _connect(dsn, MIGRATION_ROLE) as db:
         _guard_role(db, MIGRATION_ROLE)
@@ -73,17 +70,18 @@ def migrate(dsn: str, *, down: bool = False) -> None:
         versions = _installed_versions(db) if exists else []
         if len(versions) > SCHEMA_VERSION or versions != list(range(1, len(versions) + 1)) or (exists and not versions):
             raise RuntimeError("unsupported workbench schema version")
-        order = reversed(versions) if down else range(len(versions) + 1, SCHEMA_VERSION + 1)
+        order = list(reversed(versions)) if down else range(len(versions) + 1, SCHEMA_VERSION + 1)
+        if down and steps is not None:
+            order = order[:steps]
         direction = "down" if down else "up"
         for version in order:
             db.execute((directory / f"{version:03}_{direction}.sql").read_text())
 
 
 def _load_account(row) -> Account:
-    username, role, salt, digest, seed, step, grant_digest, grant_expires, enabled = row
+    username, role, salt, digest, enabled = row
     password = PasswordHash(salt, digest) if salt is not None else None
-    grant = SetupGrant(grant_digest, grant_expires) if grant_digest is not None else None
-    return Account(username, Role(role), password, seed, step, grant, enabled)
+    return Account(username, Role(role), password, enabled)
 
 
 class PostgresStore:
@@ -147,20 +145,17 @@ class PostgresStore:
         return tuple(map(_load_account, self._db().execute(f"SELECT {ACCOUNT_COLUMNS} FROM jt_workbench.accounts")))
 
     def save_account(self, account: Account) -> None:
-        password, grant = account.password, account.setup
+        password = account.password
+        # last_totp_step is a legacy NOT NULL column; the second factor itself no longer exists.
         self._db().execute("""
             INSERT INTO jt_workbench.accounts (
-                username, role, password_salt, password_digest, totp_seed, last_totp_step,
-                setup_digest, setup_expires, enabled
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                username, role, password_salt, password_digest, last_totp_step, enabled
+            ) VALUES (%s, %s, %s, %s, -1, %s)
             ON CONFLICT (username) DO UPDATE SET
                 role = EXCLUDED.role, password_salt = EXCLUDED.password_salt,
-                password_digest = EXCLUDED.password_digest, totp_seed = EXCLUDED.totp_seed,
-                last_totp_step = EXCLUDED.last_totp_step, setup_digest = EXCLUDED.setup_digest,
-                setup_expires = EXCLUDED.setup_expires, enabled = EXCLUDED.enabled
+                password_digest = EXCLUDED.password_digest, enabled = EXCLUDED.enabled
         """, (account.username, account.role, password.salt if password else None,
-              password.digest if password else None, account.totp_seed, account.last_totp_step,
-              grant.digest if grant else None, grant.expires_at if grant else None, account.enabled))
+              password.digest if password else None, account.enabled))
 
     def failures(self, username: str, now: float) -> Failures:
         row = self._db().execute("""
@@ -308,12 +303,15 @@ def main() -> None:
 
     parser = ArgumentParser(description="工作台数据库迁移")
     parser.add_argument("direction", choices=("up", "down"))
+    parser.add_argument("--steps", type=int, help="down 时只回退最近的 N 个迁移")
     args = parser.parse_args()
+    if args.steps is not None and (args.direction != "down" or args.steps < 1):
+        parser.error("--steps 只用于 down，且至少为 1。")
     dsn = environ.get(DATABASE_VARIABLE)
     if not dsn:
         parser.error(f"缺少 {DATABASE_VARIABLE}。")
     try:
-        migrate(dsn, down=args.direction == "down")
+        migrate(dsn, down=args.direction == "down", steps=args.steps)
     except (psycopg.Error, RuntimeError):
         parser.exit(1, "工作台迁移未完成。请核对独立库、迁移角色、版本与存量数据。\n")
 

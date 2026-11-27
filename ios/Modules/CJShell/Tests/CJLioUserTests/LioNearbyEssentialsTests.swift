@@ -26,6 +26,8 @@ import Testing
         #expect(try body([.atm])["categories"] as? [String] == ["atm"])
         #expect(try body([.pharmacy, .toilet])["categories"] as? [String] == ["pharmacy", "toilet"])
         #expect(try body([.luggage])["categories"] as? [String] == ["luggage"])
+        #expect(try body([.community])["version"] as? String == "NEARBY.2")
+        #expect(try body([.community])["categories"] as? [String] == ["community"])
         // Leisure searches keep the frozen NEARBY.1 request, byte for byte as before.
         let leisure = try body([.food, .coffee])
         #expect(leisure["version"] as? String == "NEARBY.1")
@@ -37,6 +39,34 @@ import Testing
             #expect(throws: LioNearbyFailure.unavailable) { _ = try body(Set(others + [.luggage])) }
         }
         #expect(throws: LioNearbyFailure.unavailable) { _ = try body([.food, .sights, .coffee, .shopping, .atm]) }
+    }
+
+    @Test func communityServicesAreFoundByNameOnTheirOwn() throws {
+        for others in [[LioNearbyPlace.Category.toilet], [.food], [.luggage], [.atm, .pharmacy]] {
+            #expect(throws: LioNearbyFailure.unavailable) { _ = try body(Set(others + [.community])) }
+        }
+        // Their places carry whatever code the place has, but are all community services.
+        let places = try LioNearbyWire.readPlaces(reply("NEARBY.2", ["130105", "120302"]), requested: [.community])
+        #expect(places.map(\.category) == [.community, .community])
+        #expect(LioNearbyPlace.Category.community.isEssential && LioNearbyPlace.Category.community.isSearchedByName)
+        #expect(LioNearbyPlace.Category.community.title(.chinese) == "社区服务")
+        #expect(LioNearbyPlace.Category.community.title(.english) == "Community services")
+        #expect(LioNearbyPlace.Category.essentials.contains(.atm) && LioNearbyPlace.Category.essentials.contains(.toilet)
+                && LioNearbyPlace.Category.essentials.contains(.luggage))
+    }
+
+    @Test func aServerThatDoesNotKnowCommunityServicesIsNotACrash() {
+        // The server answers 400 invalid_request for a kind it does not know; the page says so in plain words.
+        let refused = LioNearbyWire.failure(status: 400, body: Data(#"{"error":"invalid_request"}"#.utf8))
+        #expect(refused == .unavailable)
+        #expect(LioNearbyPlace.unavailableText(.chinese, community: true) == "本版本暂不可用。")
+        #expect(LioNearbyPlace.unavailableText(.english, community: true) == "Not available in this version yet.")
+        #expect(LioNearbyPlace.unavailableText(.chinese, community: false) == "附近暂时不可用，请重试。")
+    }
+
+    @Test func theGroupIsCalledConvenienceNotEssentials() {
+        #expect(LioNearbyPlace.convenienceTitle(.chinese) == "便利")
+        #expect(LioNearbyPlace.convenienceTitle(.english) == "Convenience")
     }
 
     @Test func oneEssentialLabelsEveryPlaceWithTheRequestedKind() throws {

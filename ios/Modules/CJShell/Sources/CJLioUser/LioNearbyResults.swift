@@ -5,10 +5,15 @@ struct LioNearbyPlace: Identifiable, Equatable {
         case food, sights, coffee, shopping
         /// Essentials (NEARBY.2, #1621): searched one kind at a time; luggage storage only by name.
         case atm, pharmacy, toilet, luggage
+        /// Community services (#2006): like luggage storage, found by a fixed name keyword (社区服务中心), on its own.
+        case community
 
         static let leisure: [Self] = [.food, .sights, .coffee, .shopping]
-        static let essentials: [Self] = [.atm, .pharmacy, .toilet, .luggage]
+        /// What the "Convenience" group offers (#2006, formerly "Essentials").
+        static let essentials: [Self] = [.atm, .pharmacy, .toilet, .luggage, .community]
         var isEssential: Bool { Self.essentials.contains(self) }
+        /// Kinds Gaode has no type code for: searched by a fixed keyword, so only ever on their own.
+        var isSearchedByName: Bool { self == .luggage || self == .community }
 
         /// Short chip label.
         func title(_ language: LioLanguage) -> String {
@@ -21,6 +26,7 @@ struct LioNearbyPlace: Identifiable, Equatable {
             case .pharmacy: language.text("Pharmacy", "药房")
             case .toilet: language.text("Public toilets", "公共厕所")
             case .luggage: language.text("Luggage storage", "行李寄存")
+            case .community: language.text("Community services", "社区服务")
             }
         }
 
@@ -29,6 +35,8 @@ struct LioNearbyPlace: Identifiable, Equatable {
             switch self {
             case .atm: language.text("Bank ATMs (check the machine's sign for foreign cards)", "银行 ATM（是否支持外卡请看机身标识）")
             case .luggage: language.text("Luggage storage (found by name; some may be missing)", "行李寄存（按名称搜索，结果可能不全）")
+            case .community: language.text("Community services (found by name; some may be missing)",
+                                           "社区服务（按“社区服务中心”名称搜索，结果可能不全）")
             default: title(language)
             }
         }
@@ -47,6 +55,18 @@ struct LioNearbyPlace: Identifiable, Equatable {
             case .addToTrip: language.text("Add to trip", "加进行程")
             }
         }
+    }
+
+    /// The group's name in the Nearby page (#2006). It was "Essentials" / "必需品".
+    static func convenienceTitle(_ language: LioLanguage) -> String {
+        language.text("Convenience", "便利")
+    }
+
+    /// What the page says when a search is refused or fails. Community services (#2006) are newer than the server
+    /// in some builds: until it knows the kind it answers 400, which reads as "not in this version yet", never a crash.
+    static func unavailableText(_ language: LioLanguage, community: Bool) -> String {
+        community ? language.text("Not available in this version yet.", "本版本暂不可用。")
+                  : language.text("Nearby isn’t available right now. Try again.", "附近暂时不可用，请重试。")
     }
 
     /// Essentials (NEARBY.2) appear only when the build enables them (`G2CNearbyEssentialsEnabled`, off by default);

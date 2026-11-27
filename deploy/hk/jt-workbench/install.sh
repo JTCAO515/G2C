@@ -159,7 +159,7 @@ trap - ERR
 for attempt in {1..12}; do
   if login=$(curl --noproxy '*' --fail --silent --max-time 3 \
     --resolve jtadmin.go2china.space:443:127.0.0.1 https://jtadmin.go2china.space/login) &&
-    [[ $login == *'首次设置或重绑验证器'* ]]; then
+    [[ $login == *'使用工作台账号和密码登录'* && $login != *'动态验证码'* ]]; then
     printf '%s\n' 'JT workbench login ready with a trusted HTTPS certificate.'
     exit 0
   fi

@@ -1,4 +1,5 @@
 """One-screen layout switch, per-answer layout and fixed follow-up actions (W2-1, #1727). No wire, no model."""
+import json
 import os
 import unittest
 from unittest import mock
@@ -52,6 +53,14 @@ class Switch(unittest.TestCase):
         with env('one-screen'):
             with self.assertRaises(ValueError):
                 layout.subjects()  # the list variable is required once the switch is on
+
+    def test_the_whole_invite_cohort_is_a_valid_list(self):
+        # #1977 (P0-3) prep: turning the layout on for the internal cohort is one JSON list of up to 99 names.
+        names = ['m4-synthetic-demo-%012x' % index for index in range(1, 100)]
+        with env('one-screen', json.dumps(names)):
+            self.assertEqual(layout.subjects(), frozenset(names))
+            self.assertEqual(layout.answer_layout(names[-1], 'How do I pay with Alipay?'), 'split')
+            self.assertEqual(layout.answer_layout(OTHER, 'How do I pay with Alipay?'), 'single')
 
     def test_answer_layout_is_none_when_flat_and_split_only_for_a_listed_account(self):
         with env('flat', LISTED):
@@ -179,8 +188,10 @@ class Chips(unittest.TestCase):
         self.assertEqual(followups.chips_for('How do I pay with Alipay?', 'en')[0], 'What if payment fails?')
         self.assertEqual(followups.chips_for('怎么打车去机场', 'zh')[0], '打车怎么付款')
         self.assertEqual(followups.chips_for('支付宝怎么打车', 'zh')[0], '付不了怎么办')   # payment comes first
+        # #1978: a question with no payment or taxi topic is no longer left without chips; its topic rows come
+        # from the reviewed table (more in test_lio_chip_table.py), so a normal answer always has two or three.
         for question in ('成都有什么必吃的？', '你好', ''):
-            self.assertEqual(followups.chips_for(question, 'zh'), [])
+            self.assertTrue(followups.MIN_CHIPS <= len(followups.chips_for(question, 'zh')) <= followups.MAX_CHIPS, question)
 
     def test_tickets_are_random_43_character_base64url_and_labels_hash_exactly(self):
         tickets = followups.new_tickets(3)

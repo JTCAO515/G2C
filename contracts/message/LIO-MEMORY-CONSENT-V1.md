@@ -6,7 +6,7 @@ Additive. No existing request, response or version changes. The server switch `C
 
 With the switch on, memory suggestions (the candidates Lio offers to remember after an answer) exist only while the account's **last** consent record is `granted`:
 
-- **No record, or the last record is `withdrawn`**: the server generates no suggestion (no preparation, no model call, no write); the `memory` field of a timeline row is `null` for every message, including suggestions generated earlier; `POST /v1/lio/memory/actions` for a suggestion (`remember` or `dismiss`) fails with the existing 409 "suggestion changed" failure and applies nothing.
+- **No record, or the last record is `withdrawn`**: the server generates no suggestion (no preparation, no model call, no write); the one thing code may still do is write the marker `lio_memory_prompt:consent` for an account that has never chosen (`recorded: false`, never one that withdrew), so the App can ask once (`LIO-ANSWER-RICH-V1.md`, `rich.memory.prompt`): no model call, no preparation, no preference text stored; the `memory` field of a timeline row is `null` for every message, including suggestions generated earlier; `POST /v1/lio/memory/actions` for a suggestion (`remember` or `dismiss`) fails with the existing 409 "suggestion changed" failure and applies nothing.
 - **A suggestion being prepared when the account withdraws** is not published.
 - **Already remembered items** are not touched by a withdrawal. Stopping their use and erasing them stay with the existing Memory management and account erasure; the App says so in its own wording.
 - The consent record is the only input. No request field, header or body of any other route carries consent.
