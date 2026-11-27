@@ -104,6 +104,7 @@ struct LioThemeTests {
         #expect(lioFiles.count >= 10)
         let app = Self.shell.deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("App")
         let files = lioFiles + [sources.appendingPathComponent("CJShell/LioSavedMemoryView.swift"),
+                                sources.appendingPathComponent("CJShell/LioMemoryCategory.swift"),
                                app.appendingPathComponent("DemoBetaApp.swift")]
         let forbidden = try NSRegularExpression(
             pattern: #"systemBackground|SystemBackground|accentColor|[Rr]adius\s*[:(]\s*[0-9]"#)

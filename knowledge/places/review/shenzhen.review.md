@@ -1,6 +1,6 @@
 # shenzhen 收录审核（2026-11-27）
 
-共 153 条待审，按批次排列，每批可一天审完。决定写在 CSV 的 decision 列：accept、reject 或 edit（edit 在 note 里写要改什么）。
+共 157 条待审，按批次排列，每批可一天审完。决定写在 CSV 的 decision 列：accept、reject 或 edit（edit 在 note 里写要改什么）。
 
 ## 第 1 批
 
@@ -76,12 +76,320 @@
 - 来源：https://cgj.sz.gov.cn/xsmh/gysz/twf/dgwy/content/post_10841225.html
 - [ ] accept　[ ] reject　[ ] edit：
 
+### 如家·neo（深圳东站布吉长龙地铁站店） · Home Inn neo — Shenzhen East Railway Station / Changlong  `pl_sz_rujia_neo_changlong`
+- hotel/hotel · main · 分数 36 · 龙岗区
+- 高德：未查询
+- 简介：在布吉长龙站A口附近，可搭5号线转乘火车。 / A Buji stopover near Changlong Station, with a laundry room on-site.
+- 开放时间：—
+- 来源：https://www.bthhotels.com/hotel/075510
+- 提醒：pl_sz_rujia_neo_changlong: unknown field 'hotel_class' is dropped on import
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 如家·neo（深圳东门步行街晒布路地铁站店） · Home Inn neo — Dongmen Pedestrian Street / Shaibu  `pl_sz_rujia_neo_shaibu`
+- hotel/hotel · main · 分数 36 · 罗湖区
+- 高德：未查询
+- 简介：住在东门，门店给出晒布站D1口到店路线。 / A Luohu stay for Dongmen's pedestrian streets and nearby food lanes.
+- 开放时间：—
+- 来源：https://www.bthhotels.com/hotel/075548
+- 提醒：pl_sz_rujia_neo_shaibu: unknown field 'hotel_class' is dropped on import
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 如家·neo（深圳南山蛇口海上世界店） · Home Inn neo — Shekou Sea World  `pl_sz_rujia_neo_shekou`
+- hotel/hotel · main · 分数 36 · 南山区
+- 高德：未查询
+- 简介：以蛇口为中心游玩，可从东角头站A口到店。 / Stay in Shekou for Sea World and the cruise homeport area.
+- 开放时间：—
+- 来源：https://www.bthhotels.com/hotel/075544
+- 提醒：pl_sz_rujia_neo_shekou: unknown field 'hotel_class' is dropped on import
+- [ ] accept　[ ] reject　[ ] edit：
+
 ### 平安金融中心云际观光层 · Free Sky at Ping An Finance Centre  `pl_sz_pingan_yunji`
 - attraction/landmark · main · 分数 34 · 福田区
 - 高德：未查询
 - 简介：到平安金融中心观景层看深圳街网 / Look down on Shenzhen's street grid from Ping An Finance Centre.
 - 开放时间：—
 - 来源：https://w000007.tabccc.com/about-cn.html?id=6014
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 深圳大中华希尔顿酒店 · Hilton Shenzhen Futian  `pl_sz_dazhonghuaxierdun`
+- hotel/hotel · main · 分数 31 · 福田区
+- 高德：未查询
+- 简介：福田中心区的希尔顿，可结合购物公园和福田站。 / A central Futian stay for COCO Park and onward rail to Hong Kong.
+- 开放时间：—
+- 来源：https://www.hilton.com.cn/zh-cn/hotels/szxsfhi-hilton-shenzhen-futian
+- 提醒：pl_sz_dazhonghuaxierdun: unknown field 'hotel_class' is dropped on import
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 深圳大中华喜来登酒店 · Sheraton Shenzhen Futian Hotel  `pl_sz_futianxilaideng`
+- hotel/hotel · main · 分数 31 · 福田区
+- 高德：未查询
+- 简介：往返福田高铁站时可考虑，门店列出英、韩语。 / A Futian option with English and Korean in the property language list.
+- 开放时间：—
+- 来源：https://www.marriott.com/en-us/hotels/szxsf-sheraton-shenzhen-futian-hotel/overview/
+- 提醒：pl_sz_futianxilaideng: unknown field 'hotel_class' is dropped on import
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 深圳光明福朋喜来登酒店 · Four Points by Sheraton Shenzhen Guangming  `pl_sz_guangmingfupeng`
+- hotel/hotel · main · 分数 31 · 光明区
+- 高德：未查询
+- 简介：凤凰城站和光明城站可用于光明区抵达。 / A Guangming hotel with metro and railway arrival options.
+- 开放时间：—
+- 来源：https://www.marriott.com/en-us/hotels/szxgu-four-points-shenzhen-guangming/overview/
+- 提醒：pl_sz_guangmingfupeng: unknown field 'hotel_class' is dropped on import
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 深圳瑞吉酒店 · The St. Regis Shenzhen  `pl_sz_luohuruiji`
+- hotel/hotel · main · 分数 31 · 罗湖区
+- 高德：未查询
+- 简介：罗湖深南东路的瑞吉，酒店列有英语服务。 / A Luohu stay with English listed and a high-floor pool.
+- 开放时间：—
+- 来源：https://www.marriott.com/en-us/hotels/szxxr-the-st-regis-shenzhen/overview/
+- 提醒：pl_sz_luohuruiji: unknown field 'hotel_class' is dropped on import
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 深圳益田威斯汀酒店 · The Westin Shenzhen Nanshan  `pl_sz_nanshanweisiting`
+- hotel/hotel · main · 分数 31 · 南山区
+- 高德：未查询
+- 简介：世界之窗对面，可把华侨城一带景点集中游览。 / Across from Window of the World, near OCT's themed attractions.
+- 开放时间：—
+- 来源：https://www.marriott.com/en-us/hotels/szxwi-the-westin-shenzhen-nanshan/overview/
+- 提醒：pl_sz_nanshanweisiting: unknown field 'hotel_class' is dropped on import
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 深圳南山香格里拉 · Shangri-La Nanshan, Shenzhen  `pl_sz_nanshanxianggelila`
+- hotel/hotel · main · 分数 31 · 南山区
+- 高德：未查询
+- 简介：临近睿印商场，酒店高层可看深圳湾方向。 / A Nanshan stay beside RAIL IN, with views toward Shenzhen Bay.
+- 开放时间：—
+- 来源：https://www.shangri-la.com/cn/shangrila/city/shenzhen/
+- 提醒：pl_sz_nanshanxianggelila: unknown field 'hotel_class' is dropped on import
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 海岸城购物中心 · Coastal City Mall  `pl_sz_coastal_city_nanshan`
+- shopping/mall · main · 分数 30 · 南山区
+- 高德：未查询
+- 简介：在后海有一处可以购物、看电影和歇脚的室内商场。 / An indoor Houhai mall for shopping, a movie or a break.
+- 开放时间：—
+- 来源：https://jtys.sz.gov.cn/szsjtysjwzgkml/szsjtysjwzgkml/seztfw/jtly/wyk/content/post_12990018.html
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 福田星河COCO Park · COCO Park, Futian  `pl_sz_coco_park_futian`
+- shopping/mall · main · 分数 30 · 福田区
+- 高德：未查询
+- 简介：福田中心区可顺路逛服装、数码和休闲餐饮。 / Browse fashion and electronics or stop for a meal in central Futian.
+- 开放时间：—
+- 来源：https://jtys.sz.gov.cn/szsjtysjwzgkml/szsjtysjwzgkml/seztfw/jtly/wyk/content/post_12990018.html
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 华强电子世界 · Huaqiang Electronic World  `pl_sz_huaqiang_electronics_world`
+- shopping/market · main · 分数 30 · 福田区
+- 高德：未查询
+- 简介：想找电子零件或工具，可对比这里不同柜台的货品。 / Compare components and tools between different vendor counters.
+- 开放时间：—
+- 来源：https://www.eyeshenzhen.com/content/2024-05/10/content_30929915.htm
+- [ ] accept　[ ] reject　[ ] edit：
+
+### K11 ECOAST海滨文化艺术区 · K11 ECOAST  `pl_sz_k11_ecoast_shekou`
+- shopping/mall · main · 分数 30 · 南山区
+- 高德：未查询
+- 简介：到太子湾逛海边商铺，也可把展览放进同一次行程。 / Pair waterfront shopping with an exhibition in Prince Bay.
+- 开放时间：—
+- 来源：https://qh.sz.gov.cn/en/life-in-qianhai/malls-and-places-for-leisure/content/post_10660073.html
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 深圳万象城（罗湖） · The MixC, Luohu  `pl_sz_luohu_mixc_shop`
+- shopping/mall · main · 分数 30 · 罗湖区
+- 高德：未查询
+- 简介：在罗湖可集中逛时装、配饰与生活门店。 / A Luohu stop for fashion, accessories and lifestyle stores.
+- 开放时间：—
+- 来源：https://www.sz.gov.cn/cn/xxgk/zfxxgj/bmdt/content/post_13000497.html
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 卓悦中心 · One Avenue  `pl_sz_one_avenue_sz`
+- shopping/mall · main · 分数 30 · 福田区
+- 高德：未查询
+- 简介：在福田中心区可沿连廊和店街逛生活品牌。 / Browse lifestyle shops connected by walkways in central Futian.
+- 开放时间：—
+- 来源：https://jtys.sz.gov.cn/szsjtysjwzgkml/szsjtysjwzgkml/seztfw/jtly/wyk/content/post_12990018.html
+- [ ] accept　[ ] reject　[ ] edit：
+
+## 第 2 批
+
+### 前海壹方城 · Uniwalk, Qianhai  `pl_sz_qianhai_uniwalk`
+- shopping/mall · main · 分数 30 · 宝安区
+- 高德：未查询
+- 简介：可在宝安中心地带把家庭休闲、购物和吃饭放在一起。 / Combine family activities, shopping and dining in central Bao'an.
+- 开放时间：—
+- 来源：https://www.sz.gov.cn/cn/xxgk/zfxxgj/zwdt/content/post_12822082.html
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 深圳湾万象城 · Shenzhen Bay MixC  `pl_sz_shenzhen_bay_mixc`
+- shopping/mall · main · 分数 30 · 南山区
+- 高德：未查询
+- 简介：逛过人才公园后，可步行去看时装与生活品牌。 / Walk over from Shenzhen Talent Park for fashion and lifestyle shops.
+- 开放时间：—
+- 来源：https://jtys.sz.gov.cn/szsjtysjwzgkml/szsjtysjwzgkml/seztfw/jtly/wyk/content/post_12990018.html
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 深业上城 · UpperHills  `pl_sz_upperhills_retail`
+- shopping/mall · main · 分数 30 · 福田区
+- 高德：未查询
+- 简介：在莲花山附近把室内购物与小镇步行街放到同一趟。 / Combine indoor shopping and open-air lanes near Lianhua Hill.
+- 开放时间：—
+- 来源：https://jtys.sz.gov.cn/szsjtysjwzgkml/szsjtysjwzgkml/seztfw/jtly/wyk/content/post_12990018.html
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 深圳前海华侨城瑞吉酒店 · The St. Regis Shenzhen Bao'an  `pl_sz_baoanruiji`
+- hotel/hotel · main · 分数 29 · 宝安区
+- 高德：未查询
+- 简介：酒店交通页列宝华站与宝安站，可分别搭5号线和11号线。 / Two metro options for a Bao'an stay, with English listed by Marriott.
+- 开放时间：—
+- 来源：https://www.marriott.com/en-us/hotels/szxxs-the-st-regis-shenzhen-baoan/overview/
+- 提醒：pl_sz_baoanruiji: unknown field 'hotel_class' is dropped on import
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 伊挑火腿Enrique Tomas（深圳机场T3店） · Enrique Tomas (Shenzhen Airport T3)  `pl_sz_enriquetomas_jichang`
+- food/western · main · 分数 29 · 宝安区
+- 高德：未查询
+- 简介：这家适合想吃西班牙火腿或买份轻食的旅客。 / A stop for Spanish ham or a light snack in Terminal 3.
+- 开放时间：05:30–23:00
+- 来源：https://www.szairport.com/szairport/msmk/Dining.shtml
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 翡翠拉面小笼包（深圳机场T3店） · Crystal Jade La Mian Xiao Long Bao (Shenzhen Airport T3)  `pl_sz_feicui_jichang`
+- food/local_cuisine · main · 分数 29 · 宝安区
+- 高德：未查询
+- 简介：国际出发候机时，可吃小笼包或一碗面。 / Try soup dumplings or noodles in international departures.
+- 开放时间：24小时
+- 来源：https://www.szairport.com/szairport/tscy/202507/40a51cbc6f044e4cba749ac4b5a75516.shtml
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 深圳康莱德酒店 · Conrad Shenzhen  `pl_sz_kanglaide`
+- hotel/hotel · main · 分数 29 · 南山区
+- 高德：未查询
+- 简介：前海听海大道的酒店，可把购物和餐饮集中在前海。 / A Qianhai stay on Tinghai Avenue near shops and restaurants.
+- 开放时间：—
+- 来源：https://www.hilton.com.cn/zh-cn/hotels/szxcici-conrad-shenzhen
+- 提醒：pl_sz_kanglaide: unknown field 'hotel_class' is dropped on import
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 老碗会（深圳机场T3五层店） · Laowanhui (Shenzhen Airport T3 Level 5)  `pl_sz_laowanhui_jichang`
+- food/local_cuisine · main · 分数 29 · 宝安区
+- 高德：未查询
+- 简介：想在乘机前吃碗面，可找深圳创立的陕西风味连锁。 / Try Shaanxi noodles at a chain founded in Shenzhen.
+- 开放时间：24小时
+- 来源：https://www.szairport.com/szairport/zcys/202402/f37e72c53baa4c98b67ffb6f366c4baf.shtml
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 深圳亚钢1号万豪万枫酒店 · Fairfield by Marriott Shenzhen Longgang  `pl_sz_longgangwanfeng`
+- hotel/hotel · main · 分数 29 · 龙岗区
+- 高德：未查询
+- 简介：龙岗福安大道的万枫，可用英文查看到店信息。 / A Longgang base with English on the hotel's language list.
+- 开放时间：—
+- 来源：https://www.marriott.com/en-us/hotels/szxfl-fairfield-shenzhen-longgang/overview/
+- 提醒：pl_sz_longgangwanfeng: unknown field 'hotel_class' is dropped on import
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 马有布牛肉面（深圳机场T3店） · Mayoubu Beef Noodles (Shenzhen Airport T3)  `pl_sz_mayoubu_jichang`
+- food/local_cuisine · main · 分数 29 · 宝安区
+- 高德：未查询
+- 简介：航班候机时想吃热汤面，可按店号找。 / Find a bowl of hot beef noodles in the Terminal 3 concourse.
+- 开放时间：05:30–22:30
+- 来源：https://www.szairport.com/szairport/zcys/202308/2e479ff0101243c7a37e1e524939fd73.shtml
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 深圳中洲万豪酒店 · Shenzhen Marriott Hotel Nanshan  `pl_sz_nanshanwanhao`
+- hotel/hotel · main · 分数 29 · 南山区
+- 高德：未查询
+- 简介：海德一路的万豪，酒店交通页列后海站。 / A Houhai-area hotel with metro directions from the property.
+- 开放时间：—
+- 来源：https://www.marriott.com/en-us/hotels/szxwt-shenzhen-marriott-hotel-nanshan/overview/
+- 提醒：pl_sz_nanshanwanhao: unknown field 'hotel_class' is dropped on import
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 深圳前海万枫酒店 · Fairfield by Marriott Shenzhen Qianhai  `pl_sz_qianhaiwanfeng`
+- hotel/hotel · main · 分数 29 · 宝安区
+- 高德：未查询
+- 简介：宝安西乡的万枫，去地铁可看碧海湾站。 / A Xixiang option with Bihaiwan listed for metro access.
+- 开放时间：—
+- 来源：https://www.marriott.com/en-us/hotels/szxqf-fairfield-shenzhen-qianhai/overview/
+- 提醒：pl_sz_qianhaiwanfeng: unknown field 'hotel_class' is dropped on import
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 浅海小厨·潮汕小食堂（深圳机场T3店） · Qianhai Chaozhou Kitchen (Shenzhen Airport T3)  `pl_sz_qianhaixiaochu_jichang`
+- food/local_cuisine · main · 分数 29 · 宝安区
+- 高德：未查询
+- 简介：国内候机时可尝牛肉丸粿条。 / Try Teochew rice noodles with beef balls in domestic departures.
+- 开放时间：05:30–22:30
+- 来源：https://www.szairport.com/szairport/zcys/202507/98f3e5ee9904468e8ed8bfde95bd5572.shtml
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 七爷清汤腩（深圳机场T3店） · Qiye Clear Broth Brisket (Shenzhen Airport T3)  `pl_sz_qiye_jichang`
+- food/local_cuisine · main · 分数 29 · 宝安区
+- 高德：未查询
+- 简介：等国际航班时可以点一份港式清汤牛腩。 / Try Hong Kong-style beef brisket while waiting for a flight.
+- 开放时间：24小时
+- 来源：https://www.szairport.com/szairport/zcys/202307/df9a86d7f5e94c6699903801958bf267.shtml
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 深圳蛇口希尔顿南海酒店 · Hilton Shenzhen Shekou Nanhai  `pl_sz_shekounanhaixierdun`
+- hotel/hotel · main · 分数 29 · 南山区
+- 高德：未查询
+- 简介：望海路滨海酒店，设有室内外泳池和儿童设施。 / A Shekou waterfront hotel with pools and facilities for children.
+- 开放时间：—
+- 来源：https://www.hilton.com.cn/zh-cn/hotels/szxsshi-hilton-shenzhen-shekou-nanhai
+- 提醒：pl_sz_shekounanhaixierdun: unknown field 'hotel_class' is dropped on import
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 深圳北站Moxy酒店 · Moxy Shenzhen North Station  `pl_sz_shenzhenbeimoxy`
+- hotel/hotel · main · 分数 29 · 龙华区
+- 高德：未查询
+- 简介：住红山片区，可从红山站或深圳北站接地铁。 / A Hongshan stay with connections toward Shenzhen North Railway Station.
+- 开放时间：—
+- 来源：https://www.marriott.com/en-us/hotels/szxns-moxy-shenzhen-north-station/overview/
+- 提醒：pl_sz_shenzhenbeimoxy: unknown field 'hotel_class' is dropped on import
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 深圳湾万怡酒店 · Courtyard by Marriott Shenzhen Bay  `pl_sz_shenzhenwanwanyi`
+- hotel/hotel · main · 分数 29 · 南山区
+- 高德：未查询
+- 简介：科技南路的万怡，高新南和高新园都可搭地铁。 / Two metro options for this Courtyard on Keji South Road.
+- 开放时间：—
+- 来源：https://www.marriott.com/en-us/hotels/szxsb-courtyard-shenzhen-bay/overview/
+- 提醒：pl_sz_shenzhenwanwanyi: unknown field 'hotel_class' is dropped on import
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 太兴餐厅（深圳机场T3店） · Tai Hing (Shenzhen Airport T3)  `pl_sz_taixing_jichang`
+- food/local_cuisine · main · 分数 29 · 宝安区
+- 高德：未查询
+- 简介：候机时想吃港式饭食，可考虑这一家。 / A Hong Kong-style meal option in Terminal 3.
+- 开放时间：05:30–22:30
+- 来源：https://www.szairport.com/szairport/zcys/202406/1202bf9cd4fc4fbf877bb53d433555a3.shtml
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 深圳文华东方酒店 · Mandarin Oriental, Shenzhen  `pl_sz_wenhuadongfang`
+- hotel/hotel · main · 分数 29 · 福田区
+- 高德：未查询
+- 简介：深业上城A座，逛商场后还能走莲花山或笔架山。 / An UpperHills stay between Lianhuashan and Bijia Mountain parks.
+- 开放时间：—
+- 来源：https://www.mandarinoriental.com.cn/en/shenzhen/futian/stay
+- 提醒：pl_sz_wenhuadongfang: unknown field 'hotel_class' is dropped on import
+- [ ] accept　[ ] reject　[ ] edit：
+
+### Wolfgang Puck（深圳机场T3店） · Wolfgang Puck (Shenzhen Airport T3)  `pl_sz_wolfgang_jichang`
+- food/western · main · 分数 29 · 宝安区
+- 高德：未查询
+- 简介：过安检进国际候机区后，可留作西式用餐选择。 / A Western dining option in the airport's international departures area.
+- 开放时间：24小时
+- 来源：https://www.szairport.com/szairport/msmk/Dining.shtml
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 余百年（深圳机场T3店） · Yu Bai Nian (Shenzhen Airport T3)  `pl_sz_yubainian_jichang`
+- food/local_cuisine · main · 分数 29 · 宝安区
+- 高德：未查询
+- 简介：先找三层十字指廊，再按店名选想吃的中式餐食。 / Look for this Chinese dining option in Terminal 3's cross concourse.
+- 开放时间：05:00–22:30
+- 来源：https://www.szairport.com/szairport/zcys/202407/4ed496c1d80447088a7029007a06b94e.shtml
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 翠华餐厅（深圳机场T3三层店） · Tsui Wah (Shenzhen Airport T3 Level 3)  `pl_sz_cuihua_jichang`
@@ -92,12 +400,47 @@
 - 来源：https://www.szairport.com/szairport/msmk/Dining.shtml
 - [ ] accept　[ ] reject　[ ] edit：
 
-### 翡翠拉面小笼包（深圳机场T3店） · Crystal Jade La Mian Xiao Long Bao (Shenzhen Airport T3)  `pl_sz_feicui_jichang`
-- food/local_cuisine · main · 分数 28 · 宝安区
+### 东湾·The Bay by Chef Fei · The Bay by Chef Fei  `pl_sz_dongwan_shenye`
+- food/local_cuisine · main · 分数 28 · 福田区
 - 高德：未查询
-- 简介：国际出发候机时，可吃小笼包或一碗面。 / Try soup dumplings or noodles in international departures.
-- 开放时间：24小时
-- 来源：https://www.szairport.com/szairport/tscy/202507/40a51cbc6f044e4cba749ac4b5a75516.shtml
+- 简介：在福田安排精致粤菜的一处选择。 / An option for refined Cantonese food in Futian.
+- 开放时间：—
+- 来源：https://www.szlh.gov.cn/English/news/content/mpost_12941947.html
+- [ ] accept　[ ] reject　[ ] edit：
+
+### Ensue（福田） · Ensue  `pl_sz_ensue_futian`
+- food/western · main · 分数 28 · 福田区
+- 高德：未查询
+- 简介：想在福田尝当代创意料理，可考虑这家餐厅。 / A contemporary dining option in Futian.
+- 开放时间：—
+- 来源：https://www.szlh.gov.cn/English/news/content/mpost_12941947.html
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 馥餐厅 · FOO  `pl_sz_foo_futian`
+- food/international_brand · main · 分数 28 · 福田区
+- 高德：未查询
+- 简介：福田一处国际风味自助餐厅，可安排一顿较完整的正餐。 / An international buffet in Futian for a sit-down meal.
+- 开放时间：—
+- 来源：https://www.fourseasons.com/shenzhen/dining/restaurants/foo/?_s_icmp=far_restaurant_learnmore
+- [ ] accept　[ ] reject　[ ] edit：
+
+## 第 3 批
+
+### 深圳福田福朋喜来登酒店 · Four Points by Sheraton Shenzhen Futian CBD  `pl_sz_futianfupeng`
+- hotel/hotel · main · 分数 28 · 福田区
+- 高德：未查询
+- 简介：福华三路的福朋，可从岗厦站和福田站规划到店。 / A Futian stay near Gangxia with Futian Railway Station listed for arrival.
+- 开放时间：—
+- 来源：https://www.marriott.com/en-us/hotels/szxpf-four-points-shenzhen-futian-cbd/overview/
+- 提醒：pl_sz_futianfupeng: unknown field 'hotel_class' is dropped on import
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 皓堂 · The Glasshouse  `pl_sz_haotang_futian`
+- food/western · main · 分数 28 · 福田区
+- 高德：未查询
+- 简介：想安排一顿西式正餐，可先查看英文单点菜单。 / Check the English à la carte menu for a Western dinner.
+- 开放时间：—
+- 来源：https://www.hyatt.com/content/dam/hotel/propertysites/assets/park/szxph/documents/en_us/dining/the-glasshouse/The-Glasshouse-A-La-Carte-Menu.pdf
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 吉利粿铺（深圳机场T3五层店） · Jili Guopu (Shenzhen Airport T3 Level 5)  `pl_sz_jiliguopu_jichang`
@@ -116,20 +459,12 @@
 - 来源：https://www.szairport.com/szairport/msmk/Dining.shtml
 - [ ] accept　[ ] reject　[ ] edit：
 
-### 老碗会（深圳机场T3五层店） · Laowanhui (Shenzhen Airport T3 Level 5)  `pl_sz_laowanhui_jichang`
-- food/local_cuisine · main · 分数 28 · 宝安区
+### 万象天地 · MixC World  `pl_sz_mixc_world_sz_shops`
+- shopping/mall · main · 分数 28 · 南山区
 - 高德：未查询
-- 简介：想在乘机前吃碗面，可找深圳创立的陕西风味连锁。 / Try Shaanxi noodles at a chain founded in Shenzhen.
-- 开放时间：24小时
-- 来源：https://www.szairport.com/szairport/zcys/202402/f37e72c53baa4c98b67ffb6f366c4baf.shtml
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 马有布牛肉面（深圳机场T3店） · Mayoubu Beef Noodles (Shenzhen Airport T3)  `pl_sz_mayoubu_jichang`
-- food/local_cuisine · main · 分数 28 · 宝安区
-- 高德：未查询
-- 简介：航班候机时想吃热汤面，可按店号找。 / Find a bowl of hot beef noodles in the Terminal 3 concourse.
-- 开放时间：05:30–22:30
-- 来源：https://www.szairport.com/szairport/zcys/202308/2e479ff0101243c7a37e1e524939fd73.shtml
+- 简介：适合沿步行店街逛潮流服饰、设计商品和咖啡馆。 / Stroll between fashion, design shops and cafés along the pedestrian lanes.
+- 开放时间：—
+- 来源：https://jtys.sz.gov.cn/szsjtysjwzgkml/szsjtysjwzgkml/seztfw/jtly/wyk/content/post_12990018.html
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 南华荟茶餐厅（深圳机场T3店） · Nanhuahui Cafe (Shenzhen Airport T3)  `pl_sz_nanhuahui_jichang`
@@ -140,20 +475,12 @@
 - 来源：https://www.szairport.com/szairport/msmk/Dining.shtml
 - [ ] accept　[ ] reject　[ ] edit：
 
-### 浅海小厨·潮汕小食堂（深圳机场T3店） · Qianhai Chaozhou Kitchen (Shenzhen Airport T3)  `pl_sz_qianhaixiaochu_jichang`
-- food/local_cuisine · main · 分数 28 · 宝安区
+### 赛格广场电子市场 · SEG Electronics Market  `pl_sz_seg_electronics_market`
+- shopping/market · main · 分数 28 · 福田区
 - 高德：未查询
-- 简介：国内候机时可尝牛肉丸粿条。 / Try Teochew rice noodles with beef balls in domestic departures.
-- 开放时间：05:30–22:30
-- 来源：https://www.szairport.com/szairport/zcys/202507/98f3e5ee9904468e8ed8bfde95bd5572.shtml
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 七爷清汤腩（深圳机场T3店） · Qiye Clear Broth Brisket (Shenzhen Airport T3)  `pl_sz_qiye_jichang`
-- food/local_cuisine · main · 分数 28 · 宝安区
-- 高德：未查询
-- 简介：等国际航班时可以点一份港式清汤牛腩。 / Try Hong Kong-style beef brisket while waiting for a flight.
-- 开放时间：24小时
-- 来源：https://www.szairport.com/szairport/zcys/202307/df9a86d7f5e94c6699903801958bf267.shtml
+- 简介：在华强北比较电子配件，购买前可先核对型号。 / Compare electronics accessories in Huaqiangbei and check model compatibility.
+- 开放时间：—
+- 来源：https://www.eyeshenzhen.com/content/2025-07/03/content_31595461.htm
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 深圳市民中心广场 · Civic Center Square  `pl_sz_shimin_zhongxin`
@@ -164,36 +491,29 @@
 - 来源：https://www.sz.gov.cn/en_szgov/news/infocus/park/csgy/content/post_11119846.html
 - [ ] accept　[ ] reject　[ ] edit：
 
-### 太兴餐厅（深圳机场T3店） · Tai Hing (Shenzhen Airport T3)  `pl_sz_taixing_jichang`
-- food/local_cuisine · main · 分数 28 · 宝安区
+### 香宫（罗湖） · Shang Palace (Luohu)  `pl_sz_xianggong_luohu`
+- food/local_cuisine · main · 分数 28 · 罗湖区
 - 高德：未查询
-- 简介：候机时想吃港式饭食，可考虑这一家。 / A Hong Kong-style meal option in Terminal 3.
-- 开放时间：05:30–22:30
-- 来源：https://www.szairport.com/szairport/zcys/202406/1202bf9cd4fc4fbf877bb53d433555a3.shtml
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 深圳文华东方酒店 · Mandarin Oriental, Shenzhen  `pl_sz_wenhuadongfang`
-- hotel/hotel · main · 分数 28 · 福田区
-- 高德：未查询
-- 简介：位于福田深业上城，适合安排福田一带的行程。 / A hotel in UpperHills for exploring Futian.
+- 简介：走罗湖口岸和深圳站一带时，可考虑这里吃粤菜。 / A Cantonese option near Luohu Port and Shenzhen Railway Station.
 - 开放时间：—
-- 来源：https://www.mandarinoriental.com.cn/en/shenzhen/futian/stay
+- 来源：https://www.shangri-la.com/cn/shenzhen/shangrila/dining/restaurants/shang-palace/
 - [ ] accept　[ ] reject　[ ] edit：
 
-### Wolfgang Puck（深圳机场T3店） · Wolfgang Puck (Shenzhen Airport T3)  `pl_sz_wolfgang_jichang`
-- food/western · main · 分数 28 · 宝安区
+### 宜必思深圳南新路酒店 · ibis Shenzhen Nanxin Road Hotel  `pl_sz_yibisi_nanxinlu`
+- hotel/hotel · main · 分数 28 · 南山区
 - 高德：未查询
-- 简介：过安检进国际候机区后，可留作西式用餐选择。 / A Western dining option in the airport's international departures area.
-- 开放时间：24小时
-- 来源：https://www.szairport.com/szairport/msmk/Dining.shtml
+- 简介：南新路与金鸡路附近的经济型客房，适合游南山西侧。 / A Nanxin Road base for the western side of Nanshan.
+- 开放时间：—
+- 来源：https://all.accor.com/hotel/B5X6/index.en.shtml
+- 提醒：pl_sz_yibisi_nanxinlu: unknown field 'hotel_class' is dropped on import
 - [ ] accept　[ ] reject　[ ] edit：
 
-### 余百年（深圳机场T3店） · Yu Bai Nian (Shenzhen Airport T3)  `pl_sz_yubainian_jichang`
-- food/local_cuisine · main · 分数 28 · 宝安区
+### 云璟中餐厅 · Yun Jing Chinese Restaurant  `pl_sz_yunjing_shenzhenwan`
+- food/local_cuisine · main · 分数 28 · 南山区
 - 高德：未查询
-- 简介：先找三层十字指廊，再按店名选想吃的中式餐食。 / Look for this Chinese dining option in Terminal 3's cross concourse.
-- 开放时间：05:00–22:30
-- 来源：https://www.szairport.com/szairport/zcys/202407/4ed496c1d80447088a7029007a06b94e.shtml
+- 简介：适合在深圳湾一天的行程里安排一顿粤式正餐。 / A sit-down Cantonese meal to pair with a day in Shenzhen Bay.
+- 开放时间：—
+- 来源：https://www.szlh.gov.cn/English/news/content/mpost_12941947.html
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 卓翼小厨（深圳机场T3店） · Zhuoyi Kitchen (Shenzhen Airport T3)  `pl_sz_zhuoyixiaochu_jichang`
@@ -204,62 +524,12 @@
 - 来源：https://www.szairport.com/szairport/zcys/202409/e3552a10554b441ba10e7655c1a59974.shtml
 - [ ] accept　[ ] reject　[ ] edit：
 
-## 第 2 批
-
-### 深圳宝安华盛希尔顿花园酒店 · Hilton Garden Inn Shenzhen Bao'an  `pl_sz_baoanhuashengxierdun`
-- hotel/hotel · main · 分数 26 · 宝安区
+### 卓粤轩 · Zhuo Yue Xuan  `pl_sz_zhuoyuexuan_futian`
+- food/local_cuisine · main · 分数 28 · 福田区
 - 高德：未查询
-- 简介：宝安区的希尔顿花园酒店。 / A Hilton Garden Inn in Bao'an.
+- 简介：在福田可以点粤式烧味或海鲜，点餐可参考英文菜单。 / Try Cantonese roast meats or seafood using the English menu.
 - 开放时间：—
-- 来源：https://www.hilton.com.cn/zh-cn/hotels/szxsbgi-hilton-garden-inn-shenzhen-baoan
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 深圳前海华侨城瑞吉酒店 · The St. Regis Shenzhen Bao'an  `pl_sz_baoanruiji`
-- hotel/hotel · main · 分数 26 · 区未知
-- 高德：未查询
-- 简介：宝安一带的瑞吉酒店。 / A St. Regis hotel in the Bao'an area.
-- 开放时间：—
-- 来源：https://www.marriott.com/en-us/hotels/szxxs-the-st-regis-shenzhen-baoan/overview/
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 海岸城购物中心 · Coastal City Mall  `pl_sz_coastal_city_nanshan`
-- shopping/mall · main · 分数 26 · 南山区
-- 高德：未查询
-- 简介：在后海有一处可以购物、看电影和歇脚的室内商场。 / An indoor Houhai mall for shopping, a movie or a break.
-- 开放时间：—
-- 来源：https://jtys.sz.gov.cn/szsjtysjwzgkml/szsjtysjwzgkml/seztfw/jtly/wyk/content/post_12990018.html
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 福田星河COCO Park · COCO Park, Futian  `pl_sz_coco_park_futian`
-- shopping/mall · main · 分数 26 · 福田区
-- 高德：未查询
-- 简介：福田中心区可顺路逛服装、数码和休闲餐饮。 / Browse fashion and electronics or stop for a meal in central Futian.
-- 开放时间：—
-- 来源：https://jtys.sz.gov.cn/szsjtysjwzgkml/szsjtysjwzgkml/seztfw/jtly/wyk/content/post_12990018.html
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 深圳大中华希尔顿酒店 · Hilton Shenzhen Futian  `pl_sz_dazhonghuaxierdun`
-- hotel/hotel · main · 分数 26 · 福田区
-- 高德：未查询
-- 简介：福田区内的希尔顿酒店。 / A Hilton hotel in Futian.
-- 开放时间：—
-- 来源：https://www.hilton.com.cn/zh-cn/hotels/szxsfhi-hilton-shenzhen-futian
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 东湾·The Bay by Chef Fei · The Bay by Chef Fei  `pl_sz_dongwan_shenye`
-- food/local_cuisine · main · 分数 26 · 福田区
-- 高德：未查询
-- 简介：在福田安排精致粤菜的一处选择。 / An option for refined Cantonese food in Futian.
-- 开放时间：—
-- 来源：https://www.szlh.gov.cn/English/news/content/mpost_12941947.html
-- [ ] accept　[ ] reject　[ ] edit：
-
-### Ensue（福田） · Ensue  `pl_sz_ensue_futian`
-- food/western · main · 分数 26 · 福田区
-- 高德：未查询
-- 简介：想在福田尝当代创意料理，可考虑这家餐厅。 / A contemporary dining option in Futian.
-- 开放时间：—
-- 来源：https://www.szlh.gov.cn/English/news/content/mpost_12941947.html
+- 来源：https://www.fourseasons.com/zh/shenzhen/dining/
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 石岩繁花夜市 · Shiyan Fanhua Night Market  `pl_sz_fanhua_night_market`
@@ -270,36 +540,12 @@
 - 来源：https://www.sz.gov.cn/cn/xxgk/zfxxgj/gqdt/content/post_12991832.html
 - [ ] accept　[ ] reject　[ ] edit：
 
-### 深圳福田福朋喜来登酒店 · Four Points by Sheraton Shenzhen Futian CBD  `pl_sz_futianfupeng`
-- hotel/hotel · main · 分数 26 · 区未知
-- 高德：未查询
-- 简介：福田的一家福朋喜来登酒店，按分店全名查找。 / A Four Points hotel in Futian. Use the full property name.
-- 开放时间：—
-- 来源：https://www.marriott.com/en-us/hotels/szxpf-four-points-shenzhen-futian-cbd/overview/
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 深圳大中华喜来登酒店 · Sheraton Shenzhen Futian Hotel  `pl_sz_futianxilaideng`
-- hotel/hotel · main · 分数 26 · 区未知
-- 高德：未查询
-- 简介：在福田中心一带安排住宿。 / A hotel option in central Futian.
-- 开放时间：—
-- 来源：https://www.marriott.com/en-us/hotels/szxsf-sheraton-shenzhen-futian-hotel/overview/
-- [ ] accept　[ ] reject　[ ] edit：
-
 ### 光明招待所乳鸽餐厅 · Guangming Guesthouse Pigeon Restaurant  `pl_sz_guangming_rugedian`
 - food/local_cuisine · main · 分数 26 · 光明区
 - 高德：未查询
 - 简介：可把光明乳鸽安排在同一天的光明行程。 / Try Guangming roast pigeon during a visit to the district.
 - 开放时间：—
 - 来源：https://shgzb.sz.gov.cn/szshgzb/gzyw/content/post_1972874.html
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 深圳光明福朋喜来登酒店 · Four Points by Sheraton Shenzhen Guangming  `pl_sz_guangmingfupeng`
-- hotel/hotel · main · 分数 26 · 区未知
-- 高德：未查询
-- 简介：光明区的福朋喜来登酒店。 / A Four Points hotel in Guangming.
-- 开放时间：—
-- 来源：https://www.marriott.com/en-us/hotels/szxgu-four-points-shenzhen-guangming/overview/
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 合成号文化生活体验馆 · Hechenghao Cultural Experience Store  `pl_sz_hechenghao_baoan_store`
@@ -310,28 +556,12 @@
 - 来源：https://lzhbwg.mofcom.gov.cn/edi_ecms_web_front/thb/detail/4cea3d5266bb4e47b5d5fa8e9a69021b
 - [ ] accept　[ ] reject　[ ] edit：
 
-### 华强电子世界 · Huaqiang Electronic World  `pl_sz_huaqiang_electronics_world`
-- shopping/market · main · 分数 26 · 福田区
-- 高德：未查询
-- 简介：想找电子零件或工具，可对比这里不同柜台的货品。 / Compare components and tools between different vendor counters.
-- 开放时间：—
-- 来源：https://www.eyeshenzhen.com/content/2024-05/10/content_30929915.htm
-- [ ] accept　[ ] reject　[ ] edit：
-
 ### IBC水贝黄金交易中心 · IBC Shuibei Gold Trading Center  `pl_sz_ibc_shuibei_gold`
 - shopping/market · main · 分数 26 · 罗湖区
 - 高德：未查询
 - 简介：看水贝的黄金饰品柜台时，可问清重量与加工费用。 / Compare gold jewelry at Shuibei and ask about weight and making charges.
 - 开放时间：—
 - 来源：https://amr.sz.gov.cn/xxgk/xwzx/mtbd/content/post_12081084.html
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 深圳机场怀德希尔顿花园酒店 · Hilton Garden Inn Shenzhen Airport  `pl_sz_jichanghuaidexierdun`
-- hotel/hotel · main · 分数 26 · 宝安区
-- 高德：未查询
-- 简介：在深圳宝安机场一带停留时可考虑。 / An option for staying in the Bao'an Airport area.
-- 开放时间：—
-- 来源：https://www.hilton.com.cn/zh-cn/hotels/szxhdgi-hilton-garden-inn-shenzhen-airport
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 金稻园砂锅粥（壹海城店） · Jindaoyuan Claypot Congee (One Mall)  `pl_sz_jindaoyuan_yihaicheng`
@@ -342,102 +572,12 @@
 - 来源：https://amr.sz.gov.cn/xxgk/xwzx/mtbd/content/post_12049590.html
 - [ ] accept　[ ] reject　[ ] edit：
 
-### 金茂深圳JW万豪酒店 · JW Marriott Hotel Shenzhen  `pl_sz_jinmaowan`
-- hotel/hotel · main · 分数 26 · 区未知
-- 高德：未查询
-- 简介：在深圳福田住宿的一处候选。 / A JW Marriott option in Futian.
-- 开放时间：—
-- 来源：https://www.marriott.com/en-us/hotels/szxjw-jw-marriott-hotel-shenzhen/overview/
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 深圳康莱德酒店 · Conrad Shenzhen  `pl_sz_kanglaide`
-- hotel/hotel · main · 分数 26 · 区未知
-- 高德：未查询
-- 简介：前海一带的康莱德酒店。 / A Conrad hotel in Qianhai.
-- 开放时间：—
-- 来源：https://www.hilton.com.cn/zh-cn/hotels/szxcici-conrad-shenzhen
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 深圳星河丽思卡尔顿酒店 · The Ritz-Carlton, Shenzhen  `pl_sz_lisi`
-- hotel/hotel · main · 分数 26 · 区未知
-- 高德：未查询
-- 简介：可作为福田中心一带的住宿点。 / A Ritz-Carlton hotel in central Futian.
-- 开放时间：—
-- 来源：https://www.ritzcarlton.com/en/hotels/szxrz-the-ritz-carlton-shenzhen/overview/
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 深圳亚钢1号万豪万枫酒店 · Fairfield by Marriott Shenzhen Longgang  `pl_sz_longgangwanfeng`
-- hotel/hotel · main · 分数 26 · 区未知
-- 高德：未查询
-- 简介：在龙岗停留时可考虑这家万枫。 / A Fairfield hotel in Longgang.
-- 开放时间：—
-- 来源：https://www.marriott.com/en-us/hotels/szxfl-fairfield-shenzhen-longgang/overview/
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 深圳万象城（罗湖） · The MixC, Luohu  `pl_sz_luohu_mixc_shop`
+### 罗湖益田假日广场 · Yitian Holiday Plaza, Luohu  `pl_sz_luohu_yitian`
 - shopping/mall · main · 分数 26 · 罗湖区
 - 高德：未查询
-- 简介：在罗湖可集中逛时装、配饰与生活门店。 / A Luohu stop for fashion, accessories and lifestyle stores.
+- 简介：罗湖的购物中心，有运动品牌和生活零售。 / A Luohu mall for sports brands and everyday retail.
 - 开放时间：—
-- 来源：https://www.sz.gov.cn/cn/xxgk/zfxxgj/bmdt/content/post_13000497.html
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 深圳瑞吉酒店 · The St. Regis Shenzhen  `pl_sz_luohuruiji`
-- hotel/hotel · main · 分数 26 · 区未知
-- 高德：未查询
-- 简介：罗湖区的瑞吉酒店。 / A St. Regis hotel in Luohu.
-- 开放时间：—
-- 来源：https://www.marriott.com/en-us/hotels/szxxr-the-st-regis-shenzhen/overview/
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 万象天地 · MixC World  `pl_sz_mixc_world_sz_shops`
-- shopping/mall · main · 分数 26 · 南山区
-- 高德：未查询
-- 简介：适合沿步行店街逛潮流服饰、设计商品和咖啡馆。 / Stroll between fashion, design shops and cafés along the pedestrian lanes.
-- 开放时间：—
-- 来源：https://jtys.sz.gov.cn/szsjtysjwzgkml/szsjtysjwzgkml/seztfw/jtly/wyk/content/post_12990018.html
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 深圳中洲万豪酒店 · Shenzhen Marriott Hotel Nanshan  `pl_sz_nanshanwanhao`
-- hotel/hotel · main · 分数 26 · 区未知
-- 高德：未查询
-- 简介：南山区的万豪酒店。 / A Marriott hotel in Nanshan.
-- 开放时间：—
-- 来源：https://www.marriott.com/en-us/hotels/szxwt-shenzhen-marriott-hotel-nanshan/overview/
-- [ ] accept　[ ] reject　[ ] edit：
-
-## 第 3 批
-
-### 深圳益田威斯汀酒店 · The Westin Shenzhen Nanshan  `pl_sz_nanshanweisiting`
-- hotel/hotel · main · 分数 26 · 区未知
-- 高德：未查询
-- 简介：在南山游览时可作为住处。 / A Westin hotel for a stay in Nanshan.
-- 开放时间：—
-- 来源：https://www.marriott.com/en-us/hotels/szxwi-the-westin-shenzhen-nanshan/overview/
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 卓悦中心 · One Avenue  `pl_sz_one_avenue_sz`
-- shopping/mall · main · 分数 26 · 福田区
-- 高德：未查询
-- 简介：在福田中心区可沿连廊和店街逛生活品牌。 / Browse lifestyle shops connected by walkways in central Futian.
-- 开放时间：—
-- 来源：https://jtys.sz.gov.cn/szsjtysjwzgkml/szsjtysjwzgkml/seztfw/jtly/wyk/content/post_12990018.html
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 深圳前海万枫酒店 · Fairfield by Marriott Shenzhen Qianhai  `pl_sz_qianhaiwanfeng`
-- hotel/hotel · main · 分数 26 · 区未知
-- 高德：未查询
-- 简介：前海一带的万枫酒店。 / A Fairfield hotel in the Qianhai area.
-- 开放时间：—
-- 来源：https://www.marriott.com/en-us/hotels/szxqf-fairfield-shenzhen-qianhai/overview/
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 赛格广场电子市场 · SEG Electronics Market  `pl_sz_seg_electronics_market`
-- shopping/market · main · 分数 26 · 福田区
-- 高德：未查询
-- 简介：在华强北比较电子配件，购买前可先核对型号。 / Compare electronics accessories in Huaqiangbei and check model compatibility.
-- 开放时间：—
-- 来源：https://www.eyeshenzhen.com/content/2025-07/03/content_31595461.htm
+- 来源：https://www.sz.gov.cn/cn/xxgk/zfxxgj/gqdt/content/mpost_12717492.html
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 沙头四季大排档 · Shatou Siji Da Pai Dang  `pl_sz_shatousiji_shawei`
@@ -448,60 +588,12 @@
 - 来源：https://fgw.sz.gov.cn/ztzl/qtztzl/szscjmyjjfzzhfwpt/mqfc/myqyjdxsj/content/post_13007095.html
 - [ ] accept　[ ] reject　[ ] edit：
 
-### 深圳蛇口希尔顿南海酒店 · Hilton Shenzhen Shekou Nanhai  `pl_sz_shekounanhaixierdun`
-- hotel/hotel · main · 分数 26 · 南山区
-- 高德：未查询
-- 简介：可作为探访蛇口海边的住宿点。 / A base for exploring the Shekou waterfront.
-- 开放时间：—
-- 来源：https://www.hilton.com.cn/zh-cn/hotels/szxsshi-hilton-shenzhen-shekou-nanhai
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 深圳湾万象城 · Shenzhen Bay MixC  `pl_sz_shenzhen_bay_mixc`
-- shopping/mall · main · 分数 26 · 南山区
-- 高德：未查询
-- 简介：逛过人才公园后，可步行去看时装与生活品牌。 / Walk over from Shenzhen Talent Park for fashion and lifestyle shops.
-- 开放时间：—
-- 来源：https://jtys.sz.gov.cn/szsjtysjwzgkml/szsjtysjwzgkml/seztfw/jtly/wyk/content/post_12990018.html
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 深圳北站Moxy酒店 · Moxy Shenzhen North Station  `pl_sz_shenzhenbeimoxy`
-- hotel/hotel · main · 分数 26 · 区未知
-- 高德：未查询
-- 简介：便于把深圳北站作为行程起点。 / A hotel for a trip starting near Shenzhen North Railway Station.
-- 开放时间：—
-- 来源：https://www.marriott.com/en-us/hotels/szxns-moxy-shenzhen-north-station/overview/
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 深圳湾万怡酒店 · Courtyard by Marriott Shenzhen Bay  `pl_sz_shenzhenwanwanyi`
-- hotel/hotel · main · 分数 26 · 区未知
-- 高德：未查询
-- 简介：深圳湾一带的万怡酒店。 / A Courtyard hotel in the Shenzhen Bay area.
-- 开放时间：—
-- 来源：https://www.marriott.com/en-us/hotels/szxsb-courtyard-shenzhen-bay/overview/
-- [ ] accept　[ ] reject　[ ] edit：
-
 ### 天屿水·茶蔬（卓悦中心店） · Tian yo Shui (One Avenue)  `pl_sz_tianyushui_zhuoyue`
 - food/vegetarian · main · 分数 26 · 福田区
 - 高德：未查询
 - 简介：福田逛街时可留一餐给时令素菜。 / Make time for a seasonal vegetarian meal in Futian.
 - 开放时间：—
 - 来源：https://www.eyeshenzhen.com/content/2026-02/02/content_31931787.htm
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 深业上城 · UpperHills  `pl_sz_upperhills_retail`
-- shopping/mall · main · 分数 26 · 福田区
-- 高德：未查询
-- 简介：在莲花山附近把室内购物与小镇步行街放到同一趟。 / Combine indoor shopping and open-air lanes near Lianhua Hill.
-- 开放时间：—
-- 来源：https://jtys.sz.gov.cn/szsjtysjwzgkml/szsjtysjwzgkml/seztfw/jtly/wyk/content/post_12990018.html
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 香宫（罗湖） · Shang Palace (Luohu)  `pl_sz_xianggong_luohu`
-- food/local_cuisine · main · 分数 26 · 罗湖区
-- 高德：未查询
-- 简介：走罗湖口岸和深圳站一带时，可考虑这里吃粤菜。 / A Cantonese option near Luohu Port and Shenzhen Railway Station.
-- 开放时间：—
-- 来源：https://www.shangri-la.com/cn/shenzhen/shangrila/dining/restaurants/shang-palace/
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 新荣记（平安金融中心店） · Xin Rong Ji (Ping An Finance Center)  `pl_sz_xinrongji_pingan`
@@ -512,44 +604,12 @@
 - 来源：https://www.szlh.gov.cn/English/news/content/mpost_12941947.html
 - [ ] accept　[ ] reject　[ ] edit：
 
-### 国瓷永丰源旗舰店 · Auratic Flagship Store  `pl_sz_yongfengyuan_guanglan`
-- shopping/time_honored_brand · main · 分数 26 · 龙华区
-- 高德：未查询
-- 简介：喜欢陶瓷可看品牌的日用餐具、茶具和展陈。 / Browse this porcelain maker's tableware, teaware and displays.
-- 开放时间：—
-- 来源：https://wtl.sz.gov.cn/gkmlpt/content/11/11397/post_11397154.html
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 云璟中餐厅 · Yun Jing Chinese Restaurant  `pl_sz_yunjing_shenzhenwan`
-- food/local_cuisine · main · 分数 26 · 南山区
-- 高德：未查询
-- 简介：适合在深圳湾一天的行程里安排一顿粤式正餐。 / A sit-down Cantonese meal to pair with a day in Shenzhen Bay.
-- 开放时间：—
-- 来源：https://www.szlh.gov.cn/English/news/content/mpost_12941947.html
-- [ ] accept　[ ] reject　[ ] edit：
-
 ### 七十九号渔船（光明店） · No. 79 Fishing Boat (Guangming)  `pl_sz_79yuchuan_guangming`
 - food/local_cuisine · main · 分数 25 · 光明区
 - 高德：未查询
 - 简介：想在光明吃海鲜正餐，可按分店名找。 / A seafood option in the Guangming district.
 - 开放时间：—
 - 来源：https://www.sz.gov.cn/en_szgov/news/infocus/SZCitywalk/Events/Whatshappening/content/post_11854379.html
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 馥餐厅 · FOO  `pl_sz_foo_futian`
-- food/international_brand · main · 分数 25 · 福田区
-- 高德：未查询
-- 简介：福田一处国际风味自助餐厅，可安排一顿较完整的正餐。 / An international buffet in Futian for a sit-down meal.
-- 开放时间：—
-- 来源：https://www.fourseasons.com/shenzhen/dining/restaurants/foo/?_s_icmp=far_restaurant_learnmore
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 卓粤轩 · Zhuo Yue Xuan  `pl_sz_zhuoyuexuan_futian`
-- food/local_cuisine · main · 分数 25 · 福田区
-- 高德：未查询
-- 简介：在福田可以点粤式烧味或海鲜，点餐可参考英文菜单。 / Try Cantonese roast meats or seafood using the English menu.
-- 开放时间：—
-- 来源：https://www.fourseasons.com/zh/shenzhen/dining/
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 深圳市当代艺术与城市规划馆 · Shenzhen Museum of Contemporary Art and Urban Planning  `pl_sz_dangdai_yishu_guihua`
@@ -567,6 +627,8 @@
 - 开放时间：—
 - 来源：https://www.eyeshenzhen.com/content/2025-12/15/content_31812994.htm
 - [ ] accept　[ ] reject　[ ] edit：
+
+## 第 4 批
 
 ### 余记早餐店 · Yu Ji Breakfast Shop  `pl_sz_yuji_guangming`
 - food/local_cuisine · main · 分数 23 · 光明区
@@ -591,24 +653,6 @@
 - 开放时间：—
 - 来源：https://dewan-e-khass.com/
 - [ ] accept　[ ] reject　[ ] edit：
-
-### K11 ECOAST海滨文化艺术区 · K11 ECOAST  `pl_sz_k11_ecoast_shekou`
-- shopping/mall · main · 分数 21 · 南山区
-- 高德：未查询
-- 简介：到太子湾逛海边商铺，也可把展览放进同一次行程。 / Pair waterfront shopping with an exhibition in Prince Bay.
-- 开放时间：—
-- 来源：https://qh.sz.gov.cn/en/life-in-qianhai/malls-and-places-for-leisure/content/post_10660073.html
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 深圳南山香格里拉 · Shangri-La Nanshan, Shenzhen  `pl_sz_nanshanxianggelila`
-- hotel/hotel · main · 分数 21 · 南山区
-- 高德：未查询
-- 简介：在南山安排深圳湾一带的游览。 / A Nanshan hotel for a stay around Shenzhen Bay.
-- 开放时间：—
-- 来源：https://www.shangri-la.com/cn/shangrila/city/shenzhen/
-- [ ] accept　[ ] reject　[ ] edit：
-
-## 第 4 批
 
 ### 莆田餐厅（深圳湾万象城店） · PUTIEN (MixC Shenzhen Bay)  `pl_sz_putien_shenzhenwan`
 - food/international_brand · main · 分数 21 · 南山区
@@ -738,14 +782,6 @@
 - 来源：https://wtl.sz.gov.cn/ggfw/whl/msgylb/index_2.html
 - [ ] accept　[ ] reject　[ ] edit：
 
-### 皓堂 · The Glasshouse  `pl_sz_haotang_futian`
-- food/western · main · 分数 20 · 福田区
-- 高德：未查询
-- 简介：想安排一顿西式正餐，可先查看英文单点菜单。 / Check the English à la carte menu for a Western dinner.
-- 开放时间：—
-- 来源：https://www.hyatt.com/content/dam/hotel/propertysites/assets/park/szxph/documents/en_us/dining/the-glasshouse/The-Glasshouse-A-La-Carte-Menu.pdf
-- [ ] accept　[ ] reject　[ ] edit：
-
 ### 何香凝美术馆 · He Xiangning Art Museum  `pl_sz_hexiangning`
 - attraction/museum · main · 分数 20 · 南山区
 - 高德：未查询
@@ -794,6 +830,8 @@
 - 来源：https://wtl.sz.gov.cn/ggfw/whl/bwgylb/index.html
 - [ ] accept　[ ] reject　[ ] edit：
 
+## 第 5 批
+
 ### 嘉苑饭店 · Rose Palace  `pl_sz_jiayuan_fandian`
 - food/local_cuisine · main · 分数 20 · 福田区
 - 高德：未查询
@@ -808,16 +846,6 @@
 - 简介：把微缩景观和民俗主题园区串起来 / See miniature landscapes and folk culture at Splendid China.
 - 开放时间：—
 - 来源：https://wtl.sz.gov.cn/ggfw/lyl/jqjdylb/index.html
-- [ ] accept　[ ] reject　[ ] edit：
-
-## 第 5 批
-
-### La Tablée融合料理 · La Tablée  `pl_sz_latable_ronghe`
-- food/western · main · 分数 20 · 区未知
-- 高德：未查询
-- 简介：喜欢当代西餐风味，可以考虑这家融合菜餐厅。 / A contemporary Western option for a longer meal.
-- 开放时间：—
-- 来源：https://www.eyeshenzhen.com/content/2026-02/02/content_31931787.htm
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 深圳市南山博物馆 · Shenzhen Nanshan Museum  `pl_sz_nanshan_bowuguan`
@@ -898,14 +926,6 @@
 - 简介：在深圳园博园看园林手法的变化 / Compare gardens at Shenzhen's Garden and Flower Expo Park.
 - 开放时间：—
 - 来源：https://cgj.sz.gov.cn/xsmh/gysz/csgy/content/post_10774656.html
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 罗湖益田假日广场 · Yitian Holiday Plaza, Luohu  `pl_sz_luohu_yitian`
-- shopping/mall · main · 分数 19 · 罗湖区
-- 高德：未查询
-- 简介：罗湖的购物中心，有运动品牌和生活零售。 / A Luohu mall for sports brands and everyday retail.
-- 开放时间：—
-- 来源：https://www.sz.gov.cn/cn/xxgk/zfxxgj/gqdt/content/mpost_12717492.html
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 大芬油画村 · Dafen Oil Painting Village  `pl_sz_dafen`
@@ -996,50 +1016,95 @@
 - 来源：http://www.szlhq.gov.cn/zjlh/tslh/yxlh/content/post_4613509.html
 - [ ] accept　[ ] reject　[ ] edit：
 
+### 深圳宝安华盛希尔顿花园酒店 · Hilton Garden Inn Shenzhen Bao'an  `pl_sz_baoanhuashengxierdun`
+- hotel/hotel · backup · 分数 31 · 宝安区
+- 高德：未查询
+- 简介：沙井购物广场里的希尔顿花园，可用地铁11号线。 / A Shajing stay connected to shopping, with Line 11 nearby.
+- 开放时间：—
+- 来源：https://www.hilton.com.cn/zh-cn/hotels/szxsbgi-hilton-garden-inn-shenzhen-baoan
+- 提醒：pl_sz_baoanhuashengxierdun: unknown field 'hotel_class' is dropped on import
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 金茂深圳JW万豪酒店 · JW Marriott Hotel Shenzhen  `pl_sz_jinmaowan`
+- hotel/hotel · backup · 分数 31 · 福田区
+- 高德：未查询
+- 简介：车公庙站可在四条地铁线间换乘。 / A Futian hotel with four metro lines at Chegongmiao.
+- 开放时间：—
+- 来源：https://www.marriott.com/en-us/hotels/szxjw-jw-marriott-hotel-shenzhen/overview/
+- 提醒：pl_sz_jinmaowan: unknown field 'hotel_class' is dropped on import
+- [ ] accept　[ ] reject　[ ] edit：
+
+## 第 6 批
+
+### 深圳书城中心城 · Shenzhen Book City, Central Store  `pl_sz_sz_book_city_central`
+- shopping/boutique · backup · 分数 30 · 福田区
+- 高德：未查询
+- 简介：可在市民中心旁找中文书和与阅读有关的小礼品。 / Browse Chinese books and small literary gifts near the Civic Center.
+- 开放时间：—
+- 来源：https://www.sz.gov.cn/en_szgov/life/cultural/book/content/post_7061570.html
+- [ ] accept　[ ] reject　[ ] edit：
+
 ### 大弗兰（深圳机场T3店） · Dafulan (Shenzhen Airport T3)  `pl_sz_dafulan_jichang`
-- food/international_brand · backup · 分数 28 · 宝安区
+- food/international_brand · backup · 分数 29 · 宝安区
 - 高德：未查询
 - 简介：在机场也能找到湖南米粉口味的简餐。 / Try a Hunan rice noodle meal in Terminal 3.
 - 开放时间：05:30–22:30
 - 来源：https://www.szairport.com/szairport/msmk/Dining.shtml
 - [ ] accept　[ ] reject　[ ] edit：
 
-### 伊挑火腿Enrique Tomas（深圳机场T3店） · Enrique Tomas (Shenzhen Airport T3)  `pl_sz_enriquetomas_jichang`
-- food/western · backup · 分数 28 · 宝安区
-- 高德：未查询
-- 简介：这家适合想吃西班牙火腿或买份轻食的旅客。 / A stop for Spanish ham or a light snack in Terminal 3.
-- 开放时间：05:30–23:00
-- 来源：https://www.szairport.com/szairport/msmk/Dining.shtml
-- [ ] accept　[ ] reject　[ ] edit：
-
-## 第 6 批
-
 ### 哈德逊咖啡（深圳机场T3店） · Hudson Coffee (Shenzhen Airport T3)  `pl_sz_hudson_jichang`
-- food/western · backup · 分数 28 · 宝安区
+- food/western · backup · 分数 29 · 宝安区
 - 高德：未查询
 - 简介：候机时想喝咖啡，可按三层店名找。 / Pick up coffee while waiting for a flight in Terminal 3.
 - 开放时间：07:00–23:00
 - 来源：https://www.szairport.com/szairport/msmk/Dining.shtml
 - [ ] accept　[ ] reject　[ ] edit：
 
+### 深圳机场怀德希尔顿花园酒店 · Hilton Garden Inn Shenzhen Airport  `pl_sz_jichanghuaidexierdun`
+- hotel/hotel · backup · 分数 29 · 宝安区
+- 高德：未查询
+- 简介：早晚搭宝安机场航班时，可在福永过一晚。 / A Fuyong option for a night before or after a flight from Bao'an.
+- 开放时间：—
+- 来源：https://www.hilton.com.cn/zh-cn/hotels/szxhdgi-hilton-garden-inn-shenzhen-airport
+- 提醒：pl_sz_jichanghuaidexierdun: unknown field 'hotel_class' is dropped on import
+- [ ] accept　[ ] reject　[ ] edit：
+
 ### 吉田牛（深圳机场T3五层店） · Jitian Niu (Shenzhen Airport T3 Level 5)  `pl_sz_jitianniu_jichang`
-- food/local_cuisine · backup · 分数 28 · 宝安区
+- food/local_cuisine · backup · 分数 29 · 宝安区
 - 高德：未查询
 - 简介：机场五层想就近找餐食时，可把这家作为候选。 / Another food stop on Terminal 3 Level 5.
 - 开放时间：04:00–22:30
 - 来源：https://www.szairport.com/szairport/msmk/Dining.shtml
 - [ ] accept　[ ] reject　[ ] edit：
 
-### 泰囋（深圳机场T3店） · Thai Dining (Shenzhen Airport T3)  `pl_sz_taizan_jichang`
-- food/international_brand · backup · 分数 28 · 宝安区
+### 深圳星河丽思卡尔顿酒店 · The Ritz-Carlton, Shenzhen  `pl_sz_lisi`
+- hotel/hotel · backup · 分数 29 · 福田区
 - 高德：未查询
-- 简介：想在候机前后换一餐泰式风味，可考虑这家。 / A Thai food option in Terminal 3.
-- 开放时间：24小时
+- 简介：福田室外泳池酒店，门店列出英文服务。 / A Futian stay with an outdoor pool and English listed by the hotel.
+- 开放时间：—
+- 来源：https://www.ritzcarlton.com/en/hotels/szxrz-the-ritz-carlton-shenzhen/overview/
+- 提醒：pl_sz_lisi: unknown field 'hotel_class' is dropped on import
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 美芝莲（深圳机场店） · Meizhilian (Shenzhen Airport)  `pl_sz_meizhilian_jichang`
+- food/western · backup · 分数 29 · 宝安区
+- 高德：未查询
+- 简介：旅途中想吃些烘焙点心，可留作候补。 / An airport alternative for baked snacks.
+- 开放时间：05:30–22:00
 - 来源：https://www.szairport.com/szairport/msmk/Dining.shtml
 - [ ] accept　[ ] reject　[ ] edit：
 
+### 深圳NOA酒店 · NOA Hotel Shenzhen, a Member of Design Hotels  `pl_sz_noajiudian`
+- hotel/hotel · backup · 分数 29 · 罗湖区
+- 高德：未查询
+- 简介：罗湖宝岗路上的设计酒店，店内可看展览主题。 / An industrial-design hotel on Baogang Road in Luohu.
+- 开放时间：—
+- 来源：https://www.marriott.com/en-us/hotels/szxnh-noa-hotel-shenzhen-a-member-of-design-hotels/overview/
+- 提醒：pl_sz_noajiudian: unknown field 'hotel_class' is dropped on import
+- [ ] accept　[ ] reject　[ ] edit：
+
 ### 张拉拉兰州手撕牛肉面（深圳机场T3到达层店） · Zhanglala Beef Noodles (Shenzhen Airport T3 Arrivals)  `pl_sz_zhanglala_jichangdaoda`
-- food/local_cuisine · backup · 分数 28 · 宝安区
+- food/local_cuisine · backup · 分数 29 · 宝安区
 - 高德：未查询
 - 简介：抵达后想先吃碗面，可在到达层找这家。 / Try a bowl of beef noodles on Terminal 3 arrivals level.
 - 开放时间：05:30–22:30
@@ -1047,10 +1112,26 @@
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 正东担担面（深圳机场T3店） · Zhengdong Dan Dan Noodles (Shenzhen Airport T3)  `pl_sz_zhengdong_jichang`
-- food/local_cuisine · backup · 分数 28 · 宝安区
+- food/local_cuisine · backup · 分数 29 · 宝安区
 - 高德：未查询
 - 简介：在机场想吃一碗担担面时可作候选。 / A Terminal 3 option for dan dan noodles.
 - 开放时间：05:00–22:30
+- 来源：https://www.szairport.com/szairport/msmk/Dining.shtml
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 深圳大悦城 · Shenzhen Joy City  `pl_sz_shenzhen_joy_city_baoan`
+- shopping/mall · backup · 分数 28 · 宝安区
+- 高德：未查询
+- 简介：在宝安逛时装和潮流零售，可把它排进雨天行程。 / A Bao'an mall for fashion and lifestyle shops on a rainy day.
+- 开放时间：—
+- 来源：https://www.grandjoy.com/detail/350.html
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 泰囋（深圳机场T3店） · Thai Dining (Shenzhen Airport T3)  `pl_sz_taizan_jichang`
+- food/international_brand · backup · 分数 28 · 宝安区
+- 高德：未查询
+- 简介：想在候机前后换一餐泰式风味，可考虑这家。 / A Thai food option in Terminal 3.
+- 开放时间：24小时
 - 来源：https://www.szairport.com/szairport/msmk/Dining.shtml
 - [ ] accept　[ ] reject　[ ] edit：
 
@@ -1086,30 +1167,6 @@
 - 来源：https://www.marriott.com/en-us/hotels/szxsn-sheraton-shenzhen-nanshan/overview/
 - [ ] accept　[ ] reject　[ ] edit：
 
-### 深圳NOA酒店 · NOA Hotel Shenzhen, a Member of Design Hotels  `pl_sz_noajiudian`
-- hotel/hotel · backup · 分数 26 · 区未知
-- 高德：未查询
-- 简介：一家纳入 Design Hotels 目录的独立酒店。 / An independent property listed by Design Hotels.
-- 开放时间：—
-- 来源：https://www.marriott.com/en-us/hotels/szxnh-noa-hotel-shenzhen-a-member-of-design-hotels/overview/
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 前海壹方城 · Uniwalk, Qianhai  `pl_sz_qianhai_uniwalk`
-- shopping/mall · backup · 分数 26 · 宝安区
-- 高德：未查询
-- 简介：可在宝安中心地带把家庭休闲、购物和吃饭放在一起。 / Combine family activities, shopping and dining in central Bao'an.
-- 开放时间：—
-- 来源：https://www.sz.gov.cn/cn/xxgk/zfxxgj/zwdt/content/post_12822082.html
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 深圳大悦城 · Shenzhen Joy City  `pl_sz_shenzhen_joy_city_baoan`
-- shopping/mall · backup · 分数 26 · 宝安区
-- 高德：未查询
-- 简介：在宝安逛时装和潮流零售，可把它排进雨天行程。 / A Bao'an mall for fashion and lifestyle shops on a rainy day.
-- 开放时间：—
-- 来源：https://www.grandjoy.com/detail/350.html
-- [ ] accept　[ ] reject　[ ] edit：
-
 ### 归燕夜集 · Guiyan Night Market  `pl_sz_guiyan_night_market`
 - shopping/market · backup · 分数 21 · 宝安区
 - 高德：未查询
@@ -1126,28 +1183,12 @@
 - 来源：https://www.nantoucity.com/index.php/
 - [ ] accept　[ ] reject　[ ] edit：
 
-### 美芝莲（深圳机场店） · Meizhilian (Shenzhen Airport)  `pl_sz_meizhilian_jichang`
-- food/western · backup · 分数 21 · 宝安区
-- 高德：未查询
-- 简介：旅途中想吃些烘焙点心，可留作候补。 / An airport alternative for baked snacks.
-- 开放时间：—
-- 来源：https://www.szairport.com/szairport/msmk/Dining.shtml
-- [ ] accept　[ ] reject　[ ] edit：
-
 ### 晴空·日本料理（万象城店） · Sei Ku (MixC)  `pl_sz_qingkong_wanxiangcheng`
 - food/international_brand · backup · 分数 21 · 罗湖区
 - 高德：未查询
 - 简介：在万象城找日料时，可作为正餐备选。 / A Japanese dining alternative in the MixC.
 - 开放时间：—
 - 来源：https://www.eyeshenzhen.com/content/2026-02/02/content_31931787.htm
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 深圳书城中心城 · Shenzhen Book City, Central Store  `pl_sz_sz_book_city_central`
-- shopping/boutique · backup · 分数 21 · 福田区
-- 高德：未查询
-- 简介：可在市民中心旁找中文书和与阅读有关的小礼品。 / Browse Chinese books and small literary gifts near the Civic Center.
-- 开放时间：—
-- 来源：https://www.sz.gov.cn/en_szgov/life/cultural/book/content/post_7061570.html
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 福田红树林生态公园 · Futian Mangrove Ecological Park  `pl_sz_futian_hongshulin`
@@ -1198,13 +1239,7 @@
 - 来源：https://wtl.sz.gov.cn/ggfw/lyl/jqjdylb/index.html
 - [ ] accept　[ ] reject　[ ] edit：
 
-### 静寿司SHIZUKA（深圳店） · Sushi Shizuka (Shenzhen)  `pl_sz_shizuka_shenzhen`
-- food/international_brand · backup · 分数 20 · 区未知
-- 高德：未查询
-- 简介：想在深圳安排日式寿司正餐时可考虑。 / A sushi option for a sit-down Japanese meal in Shenzhen.
-- 开放时间：—
-- 来源：https://www.eyeshenzhen.com/content/2026-02/02/content_31931787.htm
-- [ ] accept　[ ] reject　[ ] edit：
+## 第 7 批
 
 ### 中英街 · Chung Ying Street  `pl_sz_zhongyingjie`
 - attraction/history · backup · 分数 20 · 盐田区
@@ -1214,8 +1249,6 @@
 - 来源：https://wtl.sz.gov.cn/gkmlpt/content/12/12977/post_12977370.html
 - [ ] accept　[ ] reject　[ ] edit：
 
-## 第 7 批
-
 ### 坝光银叶树湿地园 · Baguang Silverleaf Tree Wetland Park  `pl_sz_baguang_shidi`
 - attraction/park · backup · 分数 18 · 大鹏新区
 - 高德：未查询
@@ -1224,12 +1257,36 @@
 - 来源：https://www.dpxq.gov.cn/ztzl/pyxsj/index.html
 - [ ] accept　[ ] reject　[ ] edit：
 
+### 国瓷永丰源旗舰店 · Auratic Flagship Store  `pl_sz_yongfengyuan_guanglan`
+- shopping/time_honored_brand · backup · 分数 18 · 龙华区
+- 高德：未查询
+- 简介：喜欢陶瓷可看品牌的日用餐具、茶具和展陈。 / Browse this porcelain maker's tableware, teaware and displays.
+- 开放时间：—
+- 来源：https://wtl.sz.gov.cn/gkmlpt/content/11/11397/post_11397154.html
+- [ ] accept　[ ] reject　[ ] edit：
+
+### La Tablée融合料理 · La Tablée  `pl_sz_latable_ronghe`
+- food/western · backup · 分数 12 · 区未知
+- 高德：未查询
+- 简介：喜欢当代西餐风味，可以考虑这家融合菜餐厅。 / A contemporary Western option for a longer meal.
+- 开放时间：—
+- 来源：https://www.eyeshenzhen.com/content/2026-02/02/content_31931787.htm
+- [ ] accept　[ ] reject　[ ] edit：
+
 ### 清平古墟 · Qingping Ancient Market  `pl_sz_qingping_guxu`
 - attraction/street · backup · 分数 12 · 宝安区
 - 高德：未查询
 - 简介：走清平古墟的旧街、桥与临水段 / Walk between old market lanes and water at Qingping.
 - 开放时间：—
 - 来源：https://www.baoan.gov.cn/xxgk/wgkzl/jggk/srdjydf/content/post_12991132.html
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 静寿司SHIZUKA（深圳店） · Sushi Shizuka (Shenzhen)  `pl_sz_shizuka_shenzhen`
+- food/international_brand · backup · 分数 12 · 区未知
+- 高德：未查询
+- 简介：想在深圳安排日式寿司正餐时可考虑。 / A sushi option for a sit-down Japanese meal in Shenzhen.
+- 开放时间：—
+- 来源：https://www.eyeshenzhen.com/content/2026-02/02/content_31931787.htm
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 塘朗山公园 · Tanglang Mountain Park  `pl_sz_tanglangshan`
