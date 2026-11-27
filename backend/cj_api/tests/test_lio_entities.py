@@ -79,6 +79,11 @@ class Linker(unittest.TestCase):
         for answer in ('王府井站很近。', '故宫路很堵。', '天坛区域不错', 'Wangfujing Station is near.', '天坛机场不存在'):
             self.assertEqual(items(answer), [], answer)
 
+    def test_a_gate_or_exit_word_before_station_is_a_station_too(self):
+        for answer in ('天坛东门站很近。', '到天坛西南门站下车', '故宫北门站出来右转'):
+            self.assertEqual(items(answer), [], answer)
+        self.assertEqual(items('天坛东门很美，故宫北门也值得看。'), [(0, 2, 'pl_bj_tiantan'), (7, 9, 'pl_bj_gugong')])   # a gate without 站 is still the place
+
     def test_retired_unapproved_short_and_markdown_names_are_never_linked(self):
         self.assertEqual(items('老地方 Old Place 很好。星*号 Star*Place 井 Jin'), [])
         unreviewed = dict(DOC, places=[place('pl_bj_new', '新地方', 'New Place', status='pending')])

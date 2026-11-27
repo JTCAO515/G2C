@@ -120,7 +120,14 @@ def _message(item, state, *, expired=False, trip=None, memory=None, identity=Tru
         answer = ''
     row = dict(message_id=item.message_id, text=item.text, answer=answer, status=status,
                failure=failure, activity=activity, sources=sources, trip=trip, memory=memory)
-    if declared:
+    if declared == 'plan-memory':
+        # #2100: a v3 calendar row of a poll that declared LIO-answer-rich.1 carries `rich` with `memory.used` and nothing else
+        # (no layout, no followups, no entities, cards, receipt or prompt). The row is exactly the undeclared row otherwise.
+        if status == 'completed' and used is not None and used_titles is not None:
+            rich = _rich(answer, None, None, None, used=(used, used_titles))
+            if rich is not None:
+                row['rich'] = rich
+    elif declared:
         # W2-1 (#1727), only for a poll that declared LIO-answer-followups.1. The layout is committed
         # before an answer's first text, so any row with text or a final status carries the same value.
         layout = layout if layout in ('split', 'single') else 'single'
@@ -263,7 +270,7 @@ def _timeline(boundary, resolve_runs, trip_cards, memory_cards, token, conversat
                 messages.append(_message(item, state, expired=expired, trip=trip, memory=memory, declared=declared,
                                          receipt=_receipt(receipt_reader, context, binding, state) if declared == 'rich' else None,
                                          prompt_open=_prompt_open(memory_cards, context) if declared == 'rich' else None,
-                                         used_titles=_used_titles(memory_cards, context) if declared == 'rich' else None))
+                                         used_titles=_used_titles(memory_cards, context) if declared in ('rich', 'plan-memory') else None))
         version = 'LIO-timeline.3' if calendar else 'LIO-timeline.2' if multiple else TIMELINE_VERSION
         response = _json(dict(version=version, conversation_id=page.conversation_id,
                               messages=messages, next_before=page.next_before))
@@ -345,8 +352,9 @@ def register_lio_dialogue_routes(app, boundary, resolve_runs, trip_cards, *, pre
             return _failure(401)
         try:
             params = _query(request, (), ('conversation_id', 'before', 'accepts'))
-            # W2-1 (#1727): only the v2 conversation timeline knows this declaration; any other value is refused.
-            if 'accepts' in params and (not multiple or calendar or params['accepts'] not in (FOLLOWUPS_VERSION, RICH_VERSION)):
+            # W2-1 (#1727): the v2 conversation timeline takes followups.1 or rich.1. #2100: the v3 calendar timeline (the App's
+            # plan rows, LIO-message.3/.4) takes rich.1 only, and its rows carry nothing from it but `rich.memory.used`.
+            if 'accepts' in params and (not multiple or params['accepts'] not in ((RICH_VERSION,) if calendar else (FOLLOWUPS_VERSION, RICH_VERSION))):
                 raise ValueError('unsupported accepts')
             conversation = params.get('conversation_id')
             if conversation is not None and not LIO_CHAT_PATTERN.fullmatch(conversation):
@@ -358,7 +366,7 @@ def register_lio_dialogue_routes(app, boundary, resolve_runs, trip_cards, *, pre
             return await run_in_threadpool(_timeline, calendar_boundary if calendar else boundary, resolve_runs,
                                            calendar_cards if calendar else trip_cards, memory_cards, token,
                                            conversation, before, multiple,calendar,
-                                           'rich' if params.get('accepts') == RICH_VERSION else 'accepts' in params,
+                                           ('plan-memory' if calendar else 'rich') if params.get('accepts') == RICH_VERSION else 'accepts' in params,
                                            trip_receipt_reader if not calendar else None)
         except Exception as exc:
             return _failure(message_failure(request, exc, False).status_code)

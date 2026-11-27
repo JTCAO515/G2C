@@ -1,6 +1,6 @@
-# chongqing 收录审核（2026-11-27）
+# chongqing 收录审核（2026-11-28）
 
-共 156 条待审，按批次排列，每批可一天审完。决定写在 CSV 的 decision 列：accept、reject 或 edit（edit 在 note 里写要改什么）。
+共 154 条待审，按批次排列，每批可一天审完。决定写在 CSV 的 decision 列：accept、reject 或 edit（edit 在 note 里写要改什么）。
 
 ## 第 1 批
 
@@ -18,7 +18,7 @@
 - 简介：石井坡一带可游磁器口，酒店公示可刷外卡。 / A Ciqikou-area stay with card acceptance listed by IHG.
 - 开放时间：—
 - 来源：https://www.ihg.com/holidayinnexpress/hotels/us/en/chongqing/ckgck/hoteldetail
-- 提醒：pl_cq_ciqikou_hiex: unknown field 'hotel_class' is dropped on import
+- 提醒：no price band: it cannot enter the library until the operator's own page gives a rate
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 重庆朝天门英迪格酒店 · Hotel Indigo Chongqing Chaotianmen  `pl_cq_chaotianmen_yingdige`
@@ -27,7 +27,7 @@
 - 简介：朝天门接圣街，酒店可看两江交汇并列有英语服务。 / A Raffles City hotel with views of the river confluence and English listed.
 - 开放时间：—
 - 来源：https://www.ihg.com/hotelindigo/hotels/us/en/chongqing/ckggq/hoteldetail
-- 提醒：pl_cq_chaotianmen_yingdige: unknown field 'hotel_class' is dropped on import
+- 提醒：no price band: it cannot enter the library until the operator's own page gives a rate
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 重庆尼依格罗酒店 · Niccolo Chongqing  `pl_cq_niyigeluo`
@@ -36,7 +36,7 @@
 - 简介：重庆IFS一号楼的酒店，官网列出护照入住。 / Stay in Chongqing IFS, with passport check-in confirmed by the hotel.
 - 开放时间：—
 - 来源：https://www.niccolohotels.com/en/niccolo-chongqing
-- 提醒：pl_cq_niyigeluo: unknown field 'hotel_class' is dropped on import
+- 提醒：no price band: it cannot enter the library until the operator's own page gives a rate
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 重庆江北国际机场 · Chongqing Jiangbei International Airport  `pl_cq_ckg`
@@ -101,6 +101,7 @@
 - 简介：坐长江索道从空中看重庆两岸 / Cross the Yangtze above the water on Chongqing's cableway.
 - 开放时间：3–11月08:00–22:00，法定节假日07:30–23:00。12月–次年2月08:00–21:00，法定节假日07:30–22:30。临时调整见运营公告。
 - 来源：https://whlyw.cq.gov.cn/hdjl_221/xzzq/202601/t20260106_15295212.html
+- 示意图：有（AI 生成，须标「示意图」；预览见 --preview-dir 生成的页面）
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 如家·neo（重庆南坪万达广场店） · Home Inn neo — Nanping Wanda Plaza  `pl_cq_rujia_neo_nanping`
@@ -109,7 +110,7 @@
 - 简介：南岸南坪住处，坐轨道3号线可到重庆北站。 / A south-bank stay with everyday amenities and access to Line 3.
 - 开放时间：—
 - 来源：https://www.bthhotels.com/hotel/023048
-- 提醒：pl_cq_rujia_neo_nanping: unknown field 'hotel_class' is dropped on import
+- 提醒：no price band: it cannot enter the library until the operator's own page gives a rate
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 重庆站 · Chongqing Railway Station  `pl_cq_chongqingzhan`
@@ -126,7 +127,7 @@
 - 简介：把洪崖洞与解放碑夜游排进同一晚，回店方便。 / A central Chongqing address for an evening at Hongyadong and Jiefangbei.
 - 开放时间：—
 - 来源：https://www.bthhotels.com/hotel/023007
-- 提醒：pl_cq_rujia_neo_hongyadong: unknown field 'hotel_class' is dropped on import
+- 提醒：no price band: it cannot enter the library until the operator's own page gives a rate
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 重庆中国三峡博物馆 · China Three Gorges Museum  `pl_cq_sanxia_bowuguan`
@@ -135,6 +136,7 @@
 - 简介：用三峡博物馆展陈认识长江与重庆 / Explore Yangtze and Chongqing history at the Three Gorges Museum.
 - 开放时间：—
 - 来源：https://whlyw.cq.gov.cn/hdjl_221/xzzq/202601/t20260106_15295212.html
+- 示意图：有（AI 生成，须标「示意图」；预览见 --preview-dir 生成的页面）
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### SKLP（新光里+） · SKLP Chongqing  `pl_cq_sklp_xinguangli_cq`
@@ -151,7 +153,6 @@
 - 简介：朝天门广场的来福士酒店，可看长江与嘉陵江。 / A Raffles City stay at Chaotianmen Square for a two-river itinerary.
 - 开放时间：—
 - 来源：https://www.ihg.com/intercontinental/hotels/cn/zh/chongqing/chghb/hoteldetail
-- 提醒：pl_cq_laifushizhouji: unknown field 'hotel_class' is dropped on import
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 重庆Moxy酒店 · Moxy Chongqing  `pl_cq_moxyjiudian`
@@ -160,7 +161,6 @@
 - 简介：八一路的Moxy，适合把解放碑和街巷小吃放在一起。 / A Bayi Road base for exploring Jiefangbei, with English listed by the hotel.
 - 开放时间：—
 - 来源：https://www.marriott.com/en-us/hotels/ckgox-moxy-chongqing/overview/
-- 提醒：pl_cq_moxyjiudian: unknown field 'hotel_class' is dropped on import
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 重庆南岸万豪万枫酒店 · Fairfield by Marriott Chongqing Nan’an District  `pl_cq_nananwanfeng`
@@ -169,7 +169,6 @@
 - 简介：南岸江南大道的万枫，官网列出工贸地铁站。 / A south-bank Fairfield with Gongmao station listed for metro trips.
 - 开放时间：—
 - 来源：https://www.marriott.com/en-us/hotels/ckgfn-fairfield-chongqing-nanan-district/overview/
-- 提醒：pl_cq_nananwanfeng: unknown field 'hotel_class' is dropped on import
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 重庆来福士购物中心 · Raffles City Chongqing  `pl_cq_raffles_chongqing_shops`
@@ -194,7 +193,6 @@
 - 简介：重庆北站行程可考虑这家，门店列有中英文服务。 / A rail-focused option that lists Chongqing North Railway Station for arrival.
 - 开放时间：—
 - 来源：https://www.marriott.com/en-us/hotels/ckgnu-four-points-chongqing-north-railway-station/overview/
-- 提醒：pl_cq_beizhanfupeng: unknown field 'hotel_class' is dropped on import
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 重庆江北嘴希尔顿花园酒店 · Hilton Garden Inn Chongqing Jiangbeizui  `pl_cq_jiangbeizuixierdun`
@@ -203,7 +201,6 @@
 - 简介：江北嘴力帆中心的希尔顿花园，可据酒店英文页抵达。 / A Jiangbeizui hotel with English arrival directions to Lifan Center.
 - 开放时间：—
 - 来源：https://www.hilton.com.cn/zh-cn/hotels/ckgjzgi-hilton-garden-inn-chongqing-jiangbeizui
-- 提醒：pl_cq_jiangbeizuixierdun: unknown field 'hotel_class' is dropped on import
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 重庆解放碑威斯汀酒店 · The Westin Chongqing Liberation Square  `pl_cq_jiefangbeiweisiting`
@@ -212,7 +209,6 @@
 - 简介：解放碑附近，出行可查小什字或临江门站。 / A central Yuzhong stay with two subway options listed by Marriott.
 - 开放时间：—
 - 来源：https://www.marriott.com/en-us/hotels/ckgwi-the-westin-chongqing-liberation-square/overview/
-- 提醒：pl_cq_jiefangbeiweisiting: unknown field 'hotel_class' is dropped on import
 - [ ] accept　[ ] reject　[ ] edit：
 
 ## 第 2 批
@@ -223,7 +219,6 @@
 - 简介：南坪西路的康莱德，高层用餐可看山城。 / A Nanping stay with high-floor dining overlooking Chongqing.
 - 开放时间：—
 - 来源：https://www.hilton.com.cn/zh-cn/hotels/ckgcici-conrad-chongqing
-- 提醒：pl_cq_kanglaide: unknown field 'hotel_class' is dropped on import
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 8楼餐厅（解放碑） · Kitchen on 8, Jiefangbei  `pl_cq_kitchen_on8_jfb`
@@ -240,7 +235,6 @@
 - 简介：礼嘉白云湖公园中的酒店，可留时间在湖边散步。 / A park stay on the Lijia Peninsula, near Baiyun Lake.
 - 开放时间：—
 - 来源：https://www.hilton.com.cn/zh-cn/hotels/ckgqqqq-chongqing-lijia-baiyun-lake-hotel-curio-collection-by-hilton
-- 提醒：pl_cq_lijiabaiyunhu: unknown field 'hotel_class' is dropped on import
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 重庆丽晶酒店 · Regent Chongqing  `pl_cq_lijing`
@@ -249,7 +243,6 @@
 - 简介：金沙门路的丽晶，可把江北嘴河岸放进散步行程。 / A Jinshamen Road base across the rivers from central Chongqing.
 - 开放时间：—
 - 来源：https://www.ihg.com/regent/hotels/cn/zh/chongqing/ckgrh/hoteldetail
-- 提醒：pl_cq_lijing: unknown field 'hotel_class' is dropped on import
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 咖啡厅（观音桥凯悦） · Market Café, Guanyinqiao  `pl_cq_market_cafe_guanyin`
@@ -266,7 +259,6 @@
 - 简介：南岸烟雨路的万豪，适合把南滨片区排进多日游。 / A Nan'an address for a trip focused on Chongqing's south bank.
 - 开放时间：—
 - 来源：https://www.marriott.com/en-us/hotels/ckgmc-chongqing-marriott-hotel/overview/
-- 提醒：pl_cq_nanbinluwanhao: unknown field 'hotel_class' is dropped on import
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 罗宾斯牛排馆 · Robin's Grill  `pl_cq_robins_grill_cq`
@@ -283,7 +275,6 @@
 - 简介：江北嘴东升门路的高层酒店，可看都市天际线。 / A Jiangbeizui high-floor hotel on Dongshengmen Road.
 - 开放时间：—
 - 来源：https://www.ihg.com/vignettecollection/hotels/cn/zh/chongqing/ckgjh/hoteldetail
-- 提醒：pl_cq_tftjiudian: unknown field 'hotel_class' is dropped on import
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 望峰居 · The Peak  `pl_cq_the_peak_cq`
@@ -300,7 +291,6 @@
 - 简介：两路口的希尔顿，可安排大田湾和宋庆龄旧居。 / A Lianglukou base for Datianwan and an outing around historic Yuzhong.
 - 开放时间：—
 - 来源：https://www.hilton.com.cn/zh-cn/hotels/ckghihi-hilton-chongqing
-- 提醒：pl_cq_xierdun: unknown field 'hotel_class' is dropped on import
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 渝呈 · YU  `pl_cq_yu_chongqing`
@@ -317,7 +307,6 @@
 - 简介：中山三路的门店，万豪列明英语与中文。 / A Yuzhong Peninsula option on Zhongshan 3rd Road, with English listed.
 - 开放时间：—
 - 来源：https://www.marriott.com/en-us/hotels/ckgyp-four-points-chongqing-yuzhong-peninsula/overview/
-- 提醒：pl_cq_yuzhongfupeng: unknown field 'hotel_class' is dropped on import
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 丛岩寺站农贸市场 · Congyansi Station Produce Market  `pl_cq_congyansi_rail_market`
@@ -358,7 +347,7 @@
 - 简介：解放碑步行街上的经济型客房，可用临江门站。 / A Jiefangbei ibis with Linjiangmen and Xiaoshizi metro options.
 - 开放时间：—
 - 来源：https://all.accor.com/hotel/B583/index.en.shtml
-- 提醒：pl_cq_yibisi_jiefangbeibuxingjie: unknown field 'hotel_class' is dropped on import
+- 提醒：no price band: it cannot enter the library until the operator's own page gives a rate
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 宜必思重庆江北机场双龙大道酒店 · ibis Chongqing Jiangbei Airport Shuanglong Avenue Hotel  `pl_cq_yibisi_shuanglong`
@@ -367,7 +356,7 @@
 - 简介：双龙大道的经济型酒店，可提前向店方约机场接驳。 / A Shuanglong Avenue ibis with airport pickup by arrangement.
 - 开放时间：—
 - 来源：https://all.accor.com/hotel/B7L0/index.en.shtml
-- 提醒：pl_cq_yibisi_shuanglong: unknown field 'hotel_class' is dropped on import
+- 提醒：no price band: it cannot enter the library until the operator's own page gives a rate
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 璧山区清真美食店 · Bishan Qingzhen Restaurant  `pl_cq_bishan_qingzhen_biquan`
@@ -450,6 +439,7 @@
 - 简介：在白鹤梁水下博物馆认识古代水位记录 / Learn about historic river levels at Baiheliang Underwater Museum.
 - 开放时间：—
 - 来源：https://whlyw.cq.gov.cn/hdjl_221/xzzq/202601/t20260106_15295212.html
+- 示意图：有（AI 生成，须标「示意图」；预览见 --preview-dir 生成的页面）
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 洪崖洞民俗风貌区 · Hongyadong  `pl_cq_hongyadong`
@@ -458,6 +448,7 @@
 - 简介：在嘉陵江边看洪崖洞的层叠吊脚楼 / See Hongyadong's stacked riverside buildings beside the Jialing.
 - 开放时间：—
 - 来源：https://whlyw.cq.gov.cn/hdjl_221/xzzq/202601/t20260106_15295212.html
+- 示意图：有（AI 生成，须标「示意图」；预览见 --preview-dir 生成的页面）
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 重庆大足石刻景区 · Dazu Rock Carvings  `pl_cq_dazu_shike`
@@ -466,6 +457,7 @@
 - 简介：在大足石刻看贴着崖面的成组造像 / See groups of figures carved into the cliffs at Dazu.
 - 开放时间：—
 - 来源：https://whlyw.cq.gov.cn/hdjl_221/xzzq/202601/t20260106_15295212.html
+- 示意图：有（AI 生成，须标「示意图」；预览见 --preview-dir 生成的页面）
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 解放碑 · Jiefangbei Monument  `pl_cq_jiefangbei`
@@ -474,6 +466,7 @@
 - 简介：从解放碑沿步行街看重庆市中心 / Start at the Jiefangbei monument and explore downtown on foot.
 - 开放时间：—
 - 来源：https://www.cq.gov.cn/igixmj/gkzxft/202512/tInterview_21689.html
+- 示意图：有（AI 生成，须标「示意图」；预览见 --preview-dir 生成的页面）
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 龙门浩老街 · Longmenhao Old Street  `pl_cq_longmenhao`
@@ -482,6 +475,7 @@
 - 简介：从龙门浩老街的坡道回望渝中半岛 / Climb Longmenhao's old lanes for views toward central Chongqing.
 - 开放时间：—
 - 来源：https://www.cqna.gov.cn/bm/qcgj/sy/dt_59966/202503/t20250317_14411210.html
+- 示意图：有（AI 生成，须标「示意图」；预览见 --preview-dir 生成的页面）
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 武隆喀斯特旅游区 · Wulong Karst Scenic Area  `pl_cq_wulong_kasite`
@@ -490,6 +484,7 @@
 - 简介：到武隆看天生石桥与喀斯特峡谷 / Explore natural rock bridges and karst valleys in Wulong.
 - 开放时间：—
 - 来源：https://whlyw.cq.gov.cn/hdjl_221/xzzq/202601/t20260106_15295212.html
+- 示意图：有（AI 生成，须标「示意图」；预览见 --preview-dir 生成的页面）
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 安心菜场（加州店） · Anxin Produce Market, Jiazhou  `pl_cq_anxin_jiazhou`
@@ -766,12 +761,122 @@
 - 来源：https://whlyw.cq.gov.cn/zwxx_221/bmdt/tzgg/202602/t20260212_15436601.html
 - [ ] accept　[ ] reject　[ ] edit：
 
+### 重庆动物园 · Chongqing Zoo  `pl_cq_chongqing_dongwuyuan`
+- attraction/experience · main · 分数 20 · 九龙坡区
+- 高德：未查询
+- 简介：在重庆动物园按动物主题做亲子路线 / Plan a family visit around favorite animals at Chongqing Zoo.
+- 开放时间：08:00–17:30，16:30停止检票。
+- 来源：https://whlyw.cq.gov.cn/hdjl_221/xzzq/202601/t20260106_15295212.html
+- 示意图：有（AI 生成，须标「示意图」；预览见 --preview-dir 生成的页面）
+- 提醒：ticket.price_cny: Codex could not confirm it from an official page; check by hand；ticket.booking: Codex could not confirm it from an official page; check by hand
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 重庆科技馆 · Chongqing Science and Technology Museum  `pl_cq_chongqing_kejiguan`
+- attraction/museum · main · 分数 20 · 江北区
+- 高德：未查询
+- 简介：在重庆科技馆找适合孩子的动手展项 / Try hands-on family exhibits at Chongqing Science and Technology Museum.
+- 开放时间：周二至周日09:30–17:00。周一闭馆，法定节假日及特殊情况看馆方通告。
+- 来源：https://whlyw.cq.gov.cn/hdjl_221/xzzq/202601/t20260106_15295212.html
+- 示意图：有（AI 生成，须标「示意图」；预览见 --preview-dir 生成的页面）
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 重庆美术馆 · Chongqing Art Museum  `pl_cq_chongqing_meishuguan`
+- attraction/museum · main · 分数 20 · 渝中区
+- 高德：未查询
+- 简介：在解放碑附近看重庆美术馆展览 / See the interlocking red forms of Chongqing Art Museum.
+- 开放时间：周二至周日10:00–18:00，17:30停止入馆。周一通常闭馆，法定节假日正常开放。
+- 来源：https://whlyw.cq.gov.cn/hdjl_221/xzzq/202601/t20260115_15320860.html
+- 示意图：有（AI 生成，须标「示意图」；预览见 --preview-dir 生成的页面）
+- 提醒：ticket.booking: Codex could not confirm it from an official page; check by hand
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 重庆自然博物馆 · Chongqing Natural History Museum  `pl_cq_chongqing_ziran`
+- attraction/museum · main · 分数 20 · 北碚区
+- 高德：未查询
+- 简介：在北碚从化石展品探索自然史 / Explore fossils and natural history at the Beibei museum.
+- 开放时间：主馆09:00–17:00，周一闭馆，法定节假日除外。
+- 来源：https://whlyw.cq.gov.cn/hdjl_221/xzzq/202601/t20260106_15295212.html
+- 示意图：有（AI 生成，须标「示意图」；预览见 --preview-dir 生成的页面）
+- 提醒：ticket.booking: Codex could not confirm it from an official page; check by hand
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 红岩革命纪念馆 · Hongyan Revolution Memorial Hall  `pl_cq_hongyan`
+- attraction/museum · main · 分数 20 · 渝中区
+- 高德：未查询
+- 简介：在红岩革命纪念馆了解重庆的战时史 / Explore wartime Chongqing at the Hongyan Revolution Memorial Hall.
+- 开放时间：红岩村52号馆09:00–17:00，停止入场时间及临时安排见馆方公告。
+- 来源：https://whlyw.cq.gov.cn/hdjl_221/xzzq/202601/t20260106_15295212.html
+- 示意图：有（AI 生成，须标「示意图」；预览见 --preview-dir 生成的页面）
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 重庆南山植物园 · Chongqing Nanshan Botanical Garden  `pl_cq_nanshan_zhiwuyuan`
+- attraction/park · main · 分数 20 · 南岸区
+- 高德：未查询
+- 简介：在重庆南山看植物园与山地步道 / Explore hillside paths and plant collections at Nanshan Botanical Garden.
+- 开放时间：园区09:00–17:30。
+- 来源：https://whlyw.cq.gov.cn/hdjl_221/xzzq/202601/t20260106_15295212.html
+- 示意图：有（AI 生成，须标「示意图」；预览见 --preview-dir 生成的页面）
+- 提醒：ticket.price_cny: Codex could not confirm it from an official page; check by hand；ticket.booking: Codex could not confirm it from an official page; check by hand
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 重庆人民大礼堂及人民广场 · Chongqing People's Auditorium and People's Square  `pl_cq_renmin_dalitang`
+- attraction/landmark · main · 分数 20 · 渝中区
+- 高德：未查询
+- 简介：在人民广场看大礼堂的层叠圆顶 / See the tiered roof of Chongqing People's Auditorium.
+- 开放时间：礼堂参观08:00–18:00，17:30停止入场。
+- 来源：https://whlyw.cq.gov.cn/hdjl_221/xzzq/202601/t20260106_15295212.html
+- 示意图：有（AI 生成，须标「示意图」；预览见 --preview-dir 生成的页面）
+- 提醒：ticket.price_cny: Codex could not confirm it from an official page; check by hand；ticket.booking: Codex could not confirm it from an official page; check by hand
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 白帝城·瞿塘峡景区 · Baidi City and Qutang Gorge  `pl_cq_baidicheng_qutangxia`
+- attraction/history · main · 分数 18 · 奉节县
+- 高德：未查询
+- 简介：从白帝城一带看瞿塘峡的山水入口 / See the entrance to Qutang Gorge near Baidi City.
+- 开放时间：07:40–19:00，摆渡船需另看班次。
+- 来源：https://whlyw.cq.gov.cn/hdjl_221/xzzq/202601/t20260106_15295212.html
+- 示意图：有（AI 生成，须标「示意图」；预览见 --preview-dir 生成的页面）
+- 提醒：ticket.price_cny: Codex could not confirm it from an official page; check by hand
+- [ ] accept　[ ] reject　[ ] edit：
+
+## 第 5 批
+
 ### 朝天门广场 · Chaotianmen Square  `pl_cq_chaotianmen`
 - attraction/landmark · main · 分数 18 · 渝中区
 - 高德：未查询
 - 简介：在朝天门看两江汇流与来福士轮廓 / See the meeting of Chongqing's two rivers at Chaotianmen.
 - 开放时间：—
 - 来源：https://www.cqyz.gov.cn/zjyz/lyyz/rmdkd/202210/t20221011_11178872.html
+- 示意图：有（AI 生成，须标「示意图」；预览见 --preview-dir 生成的页面）
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 重庆欢乐谷 · Chongqing Happy Valley  `pl_cq_chongqing_huanlegu`
+- attraction/experience · main · 分数 18 · 两江新区
+- 高德：未查询
+- 简介：在重庆欢乐谷按设施强度安排游玩 / Choose a mix of rides and shows at Chongqing Happy Valley.
+- 开放时间：街道公示参考日场10:00–18:30，节假日或暑期夜场与实际开闭园看公园当日公告。
+- 来源：https://whlyw.cq.gov.cn/hdjl_221/xzzq/202601/t20260106_15295212.html
+- 示意图：有（AI 生成，须标「示意图」；预览见 --preview-dir 生成的页面）
+- 提醒：ticket.price_cny: Codex could not confirm it from an official page; check by hand；ticket.booking: Codex could not confirm it from an official page; check by hand；official_url: Codex could not confirm it from an official page; check by hand
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 弹子石老街 · Danzishi Old Street  `pl_cq_danzishi`
+- attraction/street · main · 分数 18 · 南岸区
+- 高德：未查询
+- 简介：沿弹子石老街在台阶与江景之间漫步 / Walk between riverside paths and stepped lanes at Danzishi.
+- 开放时间：10:00–22:00。
+- 来源：https://whlyw.cq.gov.cn/hdjl_221/xzzq/202601/t20260106_15295212.html
+- 示意图：有（AI 生成，须标「示意图」；预览见 --preview-dir 生成的页面）
+- 提醒：ticket.booking: Codex could not confirm it from an official page; check by hand；official_url: Codex could not confirm it from an official page; check by hand
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 合川钓鱼城 · Diaoyu Fortress  `pl_cq_diaoyucheng`
+- attraction/history · main · 分数 18 · 合川区
+- 高德：未查询
+- 简介：在钓鱼城沿山路认识古战场地形 / Explore the defensible hilltop setting of Diaoyu Fortress.
+- 开放时间：08:30–17:00，内部步道及摆渡车另有时段。
+- 来源：https://whlyw.cq.gov.cn/hdjl_221/xzzq/202601/t20260106_15295212.html
+- 示意图：有（AI 生成，须标「示意图」；预览见 --preview-dir 生成的页面）
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 鹅岭贰厂 · Testbed 2 Arts Center  `pl_cq_eling_erchang`
@@ -780,6 +885,7 @@
 - 简介：在鹅岭贰厂看印刷旧厂与新店共处 / Explore shops and studios in the former Eling printing works.
 - 开放时间：—
 - 来源：https://www.cqyz.gov.cn/zjyz/lyyz/rmdkd/202210/t20221011_11179145.html
+- 示意图：有（AI 生成，须标「示意图」；预览见 --preview-dir 生成的页面）
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 鹅岭公园 · Eling Park  `pl_cq_eling_gongyuan`
@@ -788,6 +894,47 @@
 - 简介：在鹅岭公园找渝中半岛的高处视野 / Find views from high on the Yuzhong Peninsula at Eling Park.
 - 开放时间：—
 - 来源：https://mzj.cq.gov.cn/sy_218/bmdt/mzyw/t_14266579.html
+- 示意图：有（AI 生成，须标「示意图」；预览见 --preview-dir 生成的页面）
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 重庆工业文化博览园 · Chongqing Industrial Museum Park  `pl_cq_gongye_bolanyuan`
+- attraction/museum · main · 分数 18 · 大渡口区
+- 高德：未查询
+- 简介：在重庆工业文化博览园看重工业遗存 / Explore surviving factory spaces at Chongqing's industrial museum park.
+- 开放时间：馆内09:00–17:00。
+- 来源：https://whlyw.cq.gov.cn/hdjl_221/xzzq/202601/t20260106_15295212.html
+- 示意图：有（AI 生成，须标「示意图」；预览见 --preview-dir 生成的页面）
+- 提醒：ticket.booking: Codex could not confirm it from an official page; check by hand；official_url: Codex could not confirm it from an official page; check by hand
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 重庆湖广会馆 · Huguang Guild Hall  `pl_cq_huguang_huiguan`
+- attraction/history · main · 分数 18 · 渝中区
+- 高德：未查询
+- 简介：在湖广会馆看会馆院落与戏台 / Explore courtyards and stages at Huguang Guild Hall.
+- 开放时间：09:00–18:00，17:00停售。
+- 来源：https://whlyw.cq.gov.cn/hdjl_221/xzzq/202601/t20260106_15295212.html
+- 示意图：有（AI 生成，须标「示意图」；预览见 --preview-dir 生成的页面）
+- 提醒：ticket.price_cny: Codex could not confirm it from an official page; check by hand；ticket.booking: Codex could not confirm it from an official page; check by hand；official_url: Codex could not confirm it from an official page; check by hand
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 重庆建川博物馆 · Jianchuan Museum  `pl_cq_jianchuan_bowuguan`
+- attraction/museum · main · 分数 18 · 九龙坡区
+- 高德：未查询
+- 简介：在重庆建川博物馆看防空洞展陈 / See museum displays inside former air-raid tunnels.
+- 开放时间：09:00–17:30，17:00停止入馆。除夕闭馆。
+- 来源：https://whlyw.cq.gov.cn/hdjl_221/xzzq/202601/t20260106_15295212.html
+- 示意图：有（AI 生成，须标「示意图」；预览见 --preview-dir 生成的页面）
+- 提醒：official_url: Codex could not confirm it from an official page; check by hand
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 乐和乐都 · Leheledu Theme Park  `pl_cq_leheledu`
+- attraction/experience · main · 分数 18 · 永川区
+- 高德：未查询
+- 简介：在永川把动物观察和游乐安排成一日 / Combine animal viewing and rides at Leheledu in Yongchuan.
+- 开放时间：—
+- 来源：https://whlyw.cq.gov.cn/hdjl_221/xzzq/202601/t20260106_15295212.html
+- 示意图：有（AI 生成，须标「示意图」；预览见 --preview-dir 生成的页面）
+- 提醒：hours_zh: Codex could not confirm it from an official page; check by hand；ticket.price_cny: Codex could not confirm it from an official page; check by hand；ticket.booking: Codex could not confirm it from an official page; check by hand
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 李子坝轨道穿楼观景平台 · Liziba Monorail Viewing Platform  `pl_cq_liziba`
@@ -796,6 +943,7 @@
 - 简介：到李子坝看单轨列车穿过楼体 / Watch the monorail pass through a building at Liziba.
 - 开放时间：—
 - 来源：https://www.cq.gov.cn/ywdt/bmts/201808/t20180822_8655009.html
+- 示意图：有（AI 生成，须标「示意图」；预览见 --preview-dir 生成的页面）
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 南山一棵树观景园 · Nanshan One Tree Viewpoint  `pl_cq_nanshan_yikeshu`
@@ -804,6 +952,7 @@
 - 简介：从南山一棵树观景台俯瞰渝中半岛 / Look across the river to Yuzhong from Nanshan's viewing platform.
 - 开放时间：—
 - 来源：https://www.cqna.gov.cn/zjna/ns/hlns/nsjd/202601/t20260129_15363050.html
+- 示意图：有（AI 生成，须标「示意图」；预览见 --preview-dir 生成的页面）
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 山城巷 · Mountain City Alley  `pl_cq_shancheng_xiang`
@@ -812,6 +961,7 @@
 - 简介：沿山城巷看贴着坡地的街屋 / Explore hillside lanes and river views in Mountain City Alley.
 - 开放时间：—
 - 来源：https://www.cqyz.gov.cn/zjyz/lyyz/ctjq/202210/t20221005_11164462.html
+- 示意图：有（AI 生成，须标「示意图」；预览见 --preview-dir 生成的页面）
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 渣滓洞旧址 · Zhazidong Detention Site  `pl_cq_zhazidong`
@@ -820,56 +970,27 @@
 - 简介：在渣滓洞旧址了解关押设施的历史 / Visit the former Zhazidong detention site in Geleshan.
 - 开放时间：—
 - 来源：https://www.cq.gov.cn/zjcq/cycq/jplyxl/dsy/hyzj/202409/t20240905_13599184.html
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 重庆美术馆 · Chongqing Art Museum  `pl_cq_chongqing_meishuguan`
-- attraction/museum · main · 分数 17 · 渝中区
-- 高德：未查询
-- 简介：在解放碑附近看重庆美术馆展览 / See the interlocking red forms of Chongqing Art Museum.
-- 开放时间：—
-- 来源：https://whlyw.cq.gov.cn/hdjl_221/xzzq/202601/t20260115_15320860.html
-- [ ] accept　[ ] reject　[ ] edit：
-
-## 第 5 批
-
-### 重庆动物园 · Chongqing Zoo  `pl_cq_chongqing_dongwuyuan`
-- attraction/experience · main · 分数 12 · 九龙坡区
-- 高德：未查询
-- 简介：在重庆动物园按动物主题做亲子路线 / Plan a family visit around favorite animals at Chongqing Zoo.
-- 开放时间：—
-- 来源：https://whlyw.cq.gov.cn/hdjl_221/xzzq/202601/t20260106_15295212.html
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 重庆欢乐谷 · Chongqing Happy Valley  `pl_cq_chongqing_huanlegu`
-- attraction/experience · main · 分数 12 · 两江新区
-- 高德：未查询
-- 简介：在重庆欢乐谷按设施强度安排游玩 / Choose a mix of rides and shows at Chongqing Happy Valley.
-- 开放时间：—
-- 来源：https://whlyw.cq.gov.cn/hdjl_221/xzzq/202601/t20260106_15295212.html
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 重庆科技馆 · Chongqing Science and Technology Museum  `pl_cq_chongqing_kejiguan`
-- attraction/museum · main · 分数 12 · 江北区
-- 高德：未查询
-- 简介：在重庆科技馆找适合孩子的动手展项 / Try hands-on family exhibits at Chongqing Science and Technology Museum.
-- 开放时间：—
-- 来源：https://whlyw.cq.gov.cn/hdjl_221/xzzq/202601/t20260106_15295212.html
+- 示意图：有（AI 生成，须标「示意图」；预览见 --preview-dir 生成的页面）
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 重庆园博园 · Yuanbo Garden  `pl_cq_chongqing_yuanboyuan`
-- attraction/park · main · 分数 12 · 两江新区
+- attraction/park · main · 分数 17 · 两江新区
 - 高德：未查询
 - 简介：在重庆园博园沿湖比较不同园景 / Compare different garden styles beside the lake at Chongqing Garden Expo Park.
 - 开放时间：—
 - 来源：https://whlyw.cq.gov.cn/hdjl_221/xzzq/202601/t20260106_15295212.html
+- 示意图：有（AI 生成，须标「示意图」；预览见 --preview-dir 生成的页面）
+- 提醒：hours_zh: Codex could not confirm it from an official page; check by hand；ticket.booking: Codex could not confirm it from an official page; check by hand；official_url: Codex could not confirm it from an official page; check by hand
 - [ ] accept　[ ] reject　[ ] edit：
 
-### 重庆自然博物馆 · Chongqing Natural History Museum  `pl_cq_chongqing_ziran`
-- attraction/museum · main · 分数 12 · 北碚区
+### 万盛黑山谷 · Wansheng Black Valley  `pl_cq_heishangu`
+- attraction/park · main · 分数 17 · 万盛经开区
 - 高德：未查询
-- 简介：在北碚从化石展品探索自然史 / Explore fossils and natural history at the Beibei museum.
-- 开放时间：—
+- 简介：在黑山谷沿溪谷看水流与密林 / Follow streamside scenery and dense forest in Black Valley.
+- 开放时间：官方售票时段：3–10月08:30–15:30，11月–次年2月09:00–15:00。闭园时间看景区公告。
 - 来源：https://whlyw.cq.gov.cn/hdjl_221/xzzq/202601/t20260106_15295212.html
+- 示意图：有（AI 生成，须标「示意图」；预览见 --preview-dir 生成的页面）
+- 提醒：ticket.price_cny: Codex could not confirm it from an official page; check by hand；ticket.booking: Codex could not confirm it from an official page; check by hand；official_url: Codex could not confirm it from an official page; check by hand
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 重庆磁器口古镇 · Ciqikou Ancient Town  `pl_cq_ciqikou`
@@ -878,22 +999,8 @@
 - 简介：沿磁器口老街看江边山地聚落 / Explore Ciqikou's old lanes and hillside steps.
 - 开放时间：—
 - 来源：https://whlyw.cq.gov.cn/hdjl_221/xzzq/202601/t20260106_15295212.html
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 弹子石老街 · Danzishi Old Street  `pl_cq_danzishi`
-- attraction/street · main · 分数 12 · 南岸区
-- 高德：未查询
-- 简介：沿弹子石老街在台阶与江景之间漫步 / Walk between riverside paths and stepped lanes at Danzishi.
-- 开放时间：—
-- 来源：https://whlyw.cq.gov.cn/hdjl_221/xzzq/202601/t20260106_15295212.html
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 重庆工业文化博览园 · Chongqing Industrial Museum Park  `pl_cq_gongye_bolanyuan`
-- attraction/museum · main · 分数 12 · 大渡口区
-- 高德：未查询
-- 简介：在重庆工业文化博览园看重工业遗存 / Explore surviving factory spaces at Chongqing's industrial museum park.
-- 开放时间：—
-- 来源：https://whlyw.cq.gov.cn/hdjl_221/xzzq/202601/t20260106_15295212.html
+- 示意图：有（AI 生成，须标「示意图」；预览见 --preview-dir 生成的页面）
+- 提醒：hours_zh: Codex could not confirm it from an official page; check by hand；ticket.price_cny: Codex could not confirm it from an official page; check by hand；ticket.booking: Codex could not confirm it from an official page; check by hand；official_url: Codex could not confirm it from an official page; check by hand
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 重庆汉海海洋公园 · Chongqing Hanhai Ocean Park  `pl_cq_hanhai_haiyang`
@@ -902,6 +1009,8 @@
 - 简介：在汉海海洋公园用展区认识水下生物 / Choose favorite aquatic animals at Hanhai Ocean Park.
 - 开放时间：—
 - 来源：https://whlyw.cq.gov.cn/hdjl_221/xzzq/202601/t20260106_15295212.html
+- 示意图：有（AI 生成，须标「示意图」；预览见 --preview-dir 生成的页面）
+- 提醒：hours_zh: Codex could not confirm it from an official page; check by hand；ticket.price_cny: Codex could not confirm it from an official page; check by hand；ticket.booking: Codex could not confirm it from an official page; check by hand；official_url: Codex could not confirm it from an official page; check by hand
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 鸿恩寺公园 · Hong'en Temple Park  `pl_cq_hongensi`
@@ -910,70 +1019,8 @@
 - 简介：沿鸿恩寺公园的坡道找城市远景 / Find city views from hillside paths at Hong'en Temple Park.
 - 开放时间：—
 - 来源：https://whlyw.cq.gov.cn/hdjl_221/xzzq/202601/t20260106_15295212.html
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 红岩革命纪念馆 · Hongyan Revolution Memorial Hall  `pl_cq_hongyan`
-- attraction/museum · main · 分数 12 · 渝中区
-- 高德：未查询
-- 简介：在红岩革命纪念馆了解重庆的战时史 / Explore wartime Chongqing at the Hongyan Revolution Memorial Hall.
-- 开放时间：—
-- 来源：https://whlyw.cq.gov.cn/hdjl_221/xzzq/202601/t20260106_15295212.html
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 重庆湖广会馆 · Huguang Guild Hall  `pl_cq_huguang_huiguan`
-- attraction/history · main · 分数 12 · 渝中区
-- 高德：未查询
-- 简介：在湖广会馆看会馆院落与戏台 / Explore courtyards and stages at Huguang Guild Hall.
-- 开放时间：—
-- 来源：https://whlyw.cq.gov.cn/hdjl_221/xzzq/202601/t20260106_15295212.html
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 重庆建川博物馆 · Jianchuan Museum  `pl_cq_jianchuan_bowuguan`
-- attraction/museum · main · 分数 12 · 九龙坡区
-- 高德：未查询
-- 简介：在重庆建川博物馆看防空洞展陈 / See museum displays inside former air-raid tunnels.
-- 开放时间：—
-- 来源：https://whlyw.cq.gov.cn/hdjl_221/xzzq/202601/t20260106_15295212.html
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 乐和乐都 · Leheledu Theme Park  `pl_cq_leheledu`
-- attraction/experience · main · 分数 12 · 永川区
-- 高德：未查询
-- 简介：在永川把动物观察和游乐安排成一日 / Combine animal viewing and rides at Leheledu in Yongchuan.
-- 开放时间：—
-- 来源：https://whlyw.cq.gov.cn/hdjl_221/xzzq/202601/t20260106_15295212.html
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 重庆南山植物园 · Chongqing Nanshan Botanical Garden  `pl_cq_nanshan_zhiwuyuan`
-- attraction/park · main · 分数 12 · 南岸区
-- 高德：未查询
-- 简介：在重庆南山看植物园与山地步道 / Explore hillside paths and plant collections at Nanshan Botanical Garden.
-- 开放时间：—
-- 来源：https://whlyw.cq.gov.cn/hdjl_221/xzzq/202601/t20260106_15295212.html
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 重庆人民大礼堂及人民广场 · Chongqing People's Auditorium and People's Square  `pl_cq_renmin_dalitang`
-- attraction/landmark · main · 分数 12 · 渝中区
-- 高德：未查询
-- 简介：在人民广场看大礼堂的层叠圆顶 / See the tiered roof of Chongqing People's Auditorium.
-- 开放时间：—
-- 来源：https://whlyw.cq.gov.cn/hdjl_221/xzzq/202601/t20260106_15295212.html
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 白帝城·瞿塘峡景区 · Baidi City and Qutang Gorge  `pl_cq_baidicheng_qutangxia`
-- attraction/history · main · 分数 10 · 奉节县
-- 高德：未查询
-- 简介：从白帝城一带看瞿塘峡的山水入口 / See the entrance to Qutang Gorge near Baidi City.
-- 开放时间：—
-- 来源：https://whlyw.cq.gov.cn/hdjl_221/xzzq/202601/t20260106_15295212.html
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 合川钓鱼城 · Diaoyu Fortress  `pl_cq_diaoyucheng`
-- attraction/history · main · 分数 10 · 合川区
-- 高德：未查询
-- 简介：在钓鱼城沿山路认识古战场地形 / Explore the defensible hilltop setting of Diaoyu Fortress.
-- 开放时间：—
-- 来源：https://whlyw.cq.gov.cn/hdjl_221/xzzq/202601/t20260106_15295212.html
+- 示意图：有（AI 生成，须标「示意图」；预览见 --preview-dir 生成的页面）
+- 提醒：hours_zh: Codex could not confirm it from an official page; check by hand；ticket.price_cny: Codex could not confirm it from an official page; check by hand；ticket.booking: Codex could not confirm it from an official page; check by hand；official_url: Codex could not confirm it from an official page; check by hand
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 观音桥商圈 · Guanyinqiao Shopping District  `pl_cq_guanyinqiao`
@@ -982,14 +1029,8 @@
 - 简介：在观音桥走一段江北商圈步行街 / Explore the Guanyinqiao shopping district on foot.
 - 开放时间：—
 - 来源：https://whlyw.cq.gov.cn/hdjl_221/xzzq/202601/t20260106_15295212.html
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 万盛黑山谷 · Wansheng Black Valley  `pl_cq_heishangu`
-- attraction/park · main · 分数 10 · 万盛经开区
-- 高德：未查询
-- 简介：在黑山谷沿溪谷看水流与密林 / Follow streamside scenery and dense forest in Black Valley.
-- 开放时间：—
-- 来源：https://whlyw.cq.gov.cn/hdjl_221/xzzq/202601/t20260106_15295212.html
+- 示意图：有（AI 生成，须标「示意图」；预览见 --preview-dir 生成的页面）
+- 提醒：hours_zh: Codex could not confirm it from an official page; check by hand；ticket.price_cny: Codex could not confirm it from an official page; check by hand；ticket.booking: Codex could not confirm it from an official page; check by hand；official_url: Codex could not confirm it from an official page; check by hand
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 金佛山 · Jinfo Mountain  `pl_cq_jinfoshan`
@@ -998,6 +1039,8 @@
 - 简介：到金佛山看高山林地与崖壁轮廓 / Explore upland forests and cliffs at Jinfo Mountain.
 - 开放时间：—
 - 来源：https://whlyw.cq.gov.cn/hdjl_221/xzzq/202601/t20260106_15295212.html
+- 示意图：有（AI 生成，须标「示意图」；预览见 --preview-dir 生成的页面）
+- 提醒：hours_zh: Codex could not confirm it from an official page; check by hand；ticket.price_cny: Codex could not confirm it from an official page; check by hand；ticket.booking: Codex could not confirm it from an official page; check by hand；official_url: Codex could not confirm it from an official page; check by hand
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 十八梯传统风貌区 · Shibati  `pl_cq_shibati`
@@ -1006,6 +1049,8 @@
 - 简介：沿十八梯在坡地街道间换高度 / Move between levels on the stone steps of Shibati.
 - 开放时间：—
 - 来源：https://sww.cq.gov.cn/zwgk_247/zfxxgkml/qtfdxx/tzgg/202511/t20251124_15183087.html
+- 示意图：有（AI 生成，须标「示意图」；预览见 --preview-dir 生成的页面）
+- 提醒：hours_zh: Codex could not confirm it from an official page; check by hand；ticket.price_cny: Codex could not confirm it from an official page; check by hand；ticket.booking: Codex could not confirm it from an official page; check by hand；official_url: Codex could not confirm it from an official page; check by hand
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 巫山小三峡—小小三峡 · Wushan Lesser Three Gorges and Mini Three Gorges  `pl_cq_wushan_xiaosanxia`
@@ -1014,6 +1059,8 @@
 - 简介：沿巫山小三峡看窄峡与水道 / See narrow gorges and steep cliffs from the water near Wushan.
 - 开放时间：—
 - 来源：https://whlyw.cq.gov.cn/hdjl_221/xzzq/202601/t20260106_15295212.html
+- 示意图：有（AI 生成，须标「示意图」；预览见 --preview-dir 生成的页面）
+- 提醒：hours_zh: Codex could not confirm it from an official page; check by hand；ticket.price_cny: Codex could not confirm it from an official page; check by hand；ticket.booking: Codex could not confirm it from an official page; check by hand；official_url: Codex could not confirm it from an official page; check by hand
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 下浩里 · Xiahaoli  `pl_cq_xiahaoli`
@@ -1022,6 +1069,8 @@
 - 简介：沿下浩里的阶梯看南岸老街 / Follow the stepped lanes of Xiahaoli on the south bank.
 - 开放时间：—
 - 来源：https://sww.cq.gov.cn/zwgk_247/zfxxgkml/qtfdxx/tzgg/202511/t20251124_15183087.html
+- 示意图：有（AI 生成，须标「示意图」；预览见 --preview-dir 生成的页面）
+- 提醒：hours_zh: Codex could not confirm it from an official page; check by hand；ticket.price_cny: Codex could not confirm it from an official page; check by hand；ticket.booking: Codex could not confirm it from an official page; check by hand；official_url: Codex could not confirm it from an official page; check by hand
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 重庆江北希尔顿逸林酒店 · DoubleTree by Hilton Hotel Chongqing North  `pl_cq_jiangbeiyilin`
@@ -1030,7 +1079,6 @@
 - 简介：在观音桥北城天街附近，适合把逛店和用餐排在一起。 / A Guanyinqiao stay for the shops and restaurants of Paradise Walk.
 - 开放时间：—
 - 来源：https://www.hilton.com.cn/zh-cn/hotels/ckgjbdi-doubletree-by-hilton-hotel-chongqing-north
-- 提醒：pl_cq_jiangbeiyilin: unknown field 'hotel_class' is dropped on import
 - [ ] accept　[ ] reject　[ ] edit：
 
 ## 第 6 批
@@ -1041,7 +1089,6 @@
 - 简介：渝中民族路1号，官网列小什字为地铁选择。 / A Minzu Road hotel with Xiaoshizi listed for metro access.
 - 开放时间：—
 - 来源：https://www.marriott.com/en-us/hotels/ckggb-majestang-hotel-chongqing-a-tribute-portfolio-hotel/overview/
-- 提醒：pl_cq_kaiyuanmingdu: unknown field 'hotel_class' is dropped on import
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 重庆两江新区高科希尔顿酒店 · Hilton Chongqing Liangjiang New Area  `pl_cq_liangjiangxierdun`
@@ -1050,7 +1097,6 @@
 - 简介：财富东路的希尔顿，可安排园博园或两江新区购物。 / A Liangjiang stay for a separate outing to Chongqing Garden Expo Park.
 - 开放时间：—
 - 来源：https://www.hilton.com.cn/zh-cn/hotels/ckgcchi-hilton-chongqing-liangjiang-new-area
-- 提醒：pl_cq_liangjiangxierdun: unknown field 'hotel_class' is dropped on import
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 重庆富力艾美酒店 · Le Méridien Chongqing, Nan'an  `pl_cq_nananailimei`
@@ -1059,16 +1105,14 @@
 - 简介：江南大道的艾美，可查南坪站和地铁3号线。 / A Nanping stay with Line 3 directions from Marriott.
 - 开放时间：—
 - 来源：https://www.marriott.com/en-us/hotels/ckgmd-le-meridien-chongqing-nanan/overview/
-- 提醒：pl_cq_nananailimei: unknown field 'hotel_class' is dropped on import
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 重庆JW万豪酒店 · JW Marriott Hotel Chongqing  `pl_cq_jiefangbeiwanhao`
-- hotel/hotel · backup · 分数 29 · 区未知
+- hotel/hotel · backup · 分数 29 · 渝中区
 - 高德：未查询
 - 简介：民生路的JW万豪，适合留时间在渝中半岛步行。 / A Minsheng Road stay in Yuzhong, with an indoor pool for a break.
 - 开放时间：—
 - 来源：https://www.marriott.com/en-us/hotels/ckgjw-jw-marriott-hotel-chongqing/overview/
-- 提醒：pl_cq_jiefangbeiwanhao: unknown field 'hotel_class' is dropped on import
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 龙湖重庆金沙天街 · Longfor Chongqing Jinsha Paradise Walk  `pl_cq_jinsha_paradise_walk_cq`
@@ -1077,14 +1121,6 @@
 - 简介：到沙坪坝站附近换乘时，可在商场逛店或吃饭。 / A mall for a meal or shopping near Shapingba's railway and metro hub.
 - 开放时间：—
 - 来源：https://www.longfor.com/detail/220_5416f4c9a4a6ed71610405d776e6d40a.html
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 重庆嘉发希尔顿逸林酒店 · DoubleTree by Hilton Hotel Chongqing - Nan'an  `pl_cq_jiafayilin`
-- hotel/hotel · backup · 分数 26 · 南岸区
-- 高德：未查询
-- 简介：在南岸一带安排住宿可考虑这里。 / A DoubleTree hotel in Nan'an.
-- 开放时间：—
-- 来源：https://www.hilton.com.cn/zh-cn/hotels/ckgnadi-doubletree-by-hilton-hotel-chongqing--nanan
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 加合夏布（夏布小镇） · Jiahe Xiabu, Rongchang Xiabu Town  `pl_cq_jiahe_xiabu_store`
@@ -1101,14 +1137,6 @@
 - 简介：想逛玩偶、盲盒和角色周边，可在解放碑走到这家店。 / Browse toys, blind boxes and character goods near Jiefangbei.
 - 开放时间：—
 - 来源：https://paper.people.com.cn/rmrb/pc/attachement/202512/31/ec069756-8900-40e2-9933-09be583f3f5d.pdf
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 重庆喜来登大酒店 · Sheraton Chongqing Hotel  `pl_cq_nananxilaideng`
-- hotel/hotel · backup · 分数 26 · 区未知
-- 高德：未查询
-- 简介：在南岸寻找江边住宿的一处候选。 / A Sheraton option in Nan'an.
-- 开放时间：—
-- 来源：https://www.marriott.com/en-us/hotels/ckgsi-sheraton-chongqing-hotel/overview/
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 龙湖重庆龙兴天街 · Longfor Chongqing Longxing Paradise Walk  `pl_cq_longxing_paradise_walk_cq`
@@ -1207,62 +1235,79 @@
 - 来源：https://whlyw.cq.gov.cn/zwxx_221/bmdt/tzgg/202602/t20260212_15436601.html
 - [ ] accept　[ ] reject　[ ] edit：
 
-### 重庆史迪威博物馆 · Stilwell Museum  `pl_cq_shi_diwei`
-- attraction/museum · backup · 分数 17 · 渝中区
+### 龚滩古镇 · Gongtan Ancient Town  `pl_cq_gongtan`
+- attraction/history · backup · 分数 20 · 酉阳县
 - 高德：未查询
-- 简介：在嘉陵江一带了解史迪威的战时经历 / Learn about General Stilwell's wartime role at his former residence.
-- 开放时间：—
-- 来源：https://whlyw.cq.gov.cn/hdjl_221/xzzq/202601/t20260115_15320860.html
+- 简介：在龚滩看乌江边的坡地街巷 / Explore stepped streets above the Wu River at Gongtan.
+- 开放时间：古镇官方攻略列入园08:30–17:30。
+- 来源：https://whlyw.cq.gov.cn/hdjl_221/xzzq/202601/t20260106_15295212.html
+- 提醒：ticket.booking: Codex could not confirm it from an official page; check by hand
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 丰都名山风景区 · Fengdu Mingshan Scenic Area  `pl_cq_fengdu_mingshan`
-- attraction/history · backup · 分数 12 · 丰都县
+- attraction/history · backup · 分数 18 · 丰都县
 - 高德：未查询
 - 简介：在丰都名山看民俗题材的山地庙宇 / Explore the hillside temples of Fengdu's Mingshan.
-- 开放时间：—
+- 开放时间：3–11月08:00–17:20，16:50停止入园。淡季08:00–16:50，16:20停止入园。
 - 来源：https://whlyw.cq.gov.cn/hdjl_221/xzzq/202601/t20260106_15295212.html
+- 提醒：ticket.booking: Codex could not confirm it from an official page; check by hand；official_url: Codex could not confirm it from an official page; check by hand
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 丰都雪玉洞 · Fengdu Snow Jade Cave  `pl_cq_fengdu_xueyudong`
-- attraction/park · backup · 分数 12 · 丰都县
+- attraction/park · backup · 分数 18 · 丰都县
 - 高德：未查询
 - 简介：在雪玉洞观察浅色的洞穴沉积 / Look at pale cave formations in Fengdu's Snow Jade Cave.
-- 开放时间：—
+- 开放时间：08:30–17:30。
 - 来源：https://whlyw.cq.gov.cn/hdjl_221/xzzq/202601/t20260106_15295212.html
+- 提醒：ticket.booking: Codex could not confirm it from an official page; check by hand；official_url: Codex could not confirm it from an official page; check by hand
 - [ ] accept　[ ] reject　[ ] edit：
 
-### 龚滩古镇 · Gongtan Ancient Town  `pl_cq_gongtan`
-- attraction/history · backup · 分数 12 · 酉阳县
+### 金刀峡 · Jindao Gorge  `pl_cq_jindaoxia`
+- attraction/park · backup · 分数 18 · 北碚区
 - 高德：未查询
-- 简介：在龚滩看乌江边的坡地街巷 / Explore stepped streets above the Wu River at Gongtan.
-- 开放时间：—
+- 简介：在金刀峡看溪水穿过狭窄岩谷 / See a stream wind through the narrow Jindao Gorge.
+- 开放时间：区旅游目录载08:30–16:00，路线及季节性调整看当期公告。
 - 来源：https://whlyw.cq.gov.cn/hdjl_221/xzzq/202601/t20260106_15295212.html
+- 提醒：ticket.price_cny: Codex could not confirm it from an official page; check by hand；ticket.booking: Codex could not confirm it from an official page; check by hand；official_url: Codex could not confirm it from an official page; check by hand
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 重庆缙云山景区 · Jinyun Mountain Scenic Area  `pl_cq_jinyunshan`
+- attraction/park · backup · 分数 18 · 北碚区
+- 高德：未查询
+- 简介：在缙云山沿林间山路找北碚远景 / Take a wooded walk above Beibei on Jinyun Mountain.
+- 开放时间：区目录载09:00–17:00，索道等项目时段独立。
+- 来源：https://whlyw.cq.gov.cn/hdjl_221/xzzq/202601/t20260106_15295212.html
+- 提醒：ticket.booking: Codex could not confirm it from an official page; check by hand；official_url: Codex could not confirm it from an official page; check by hand
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 重庆史迪威博物馆 · Stilwell Museum  `pl_cq_shi_diwei`
+- attraction/museum · backup · 分数 18 · 渝中区
+- 高德：未查询
+- 简介：在嘉陵江一带了解史迪威的战时经历 / Learn about General Stilwell's wartime role at his former residence.
+- 开放时间：名录载09:00–17:00，具体闭馆日需查馆方公告。
+- 来源：https://whlyw.cq.gov.cn/hdjl_221/xzzq/202601/t20260115_15320860.html
+- 提醒：ticket.booking: Codex could not confirm it from an official page; check by hand；official_url: Codex could not confirm it from an official page; check by hand
 - [ ] accept　[ ] reject　[ ] edit：
 
 ## 第 7 批
 
-### 金刀峡 · Jindao Gorge  `pl_cq_jindaoxia`
-- attraction/park · backup · 分数 12 · 北碚区
+### 江津四面山 · Simian Mountain  `pl_cq_simianshan`
+- attraction/park · backup · 分数 17 · 江津区
 - 高德：未查询
-- 简介：在金刀峡看溪水穿过狭窄岩谷 / See a stream wind through the narrow Jindao Gorge.
-- 开放时间：—
+- 简介：在四面山挑森林与瀑布主题路线 / Choose a waterfall and woodland route at Simian Mountain.
+- 开放时间：区名录载游玩09:00–19:00；现场取票09:00–12:00、14:00–17:00。
 - 来源：https://whlyw.cq.gov.cn/hdjl_221/xzzq/202601/t20260106_15295212.html
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 重庆缙云山景区 · Jinyun Mountain Scenic Area  `pl_cq_jinyunshan`
-- attraction/park · backup · 分数 12 · 北碚区
-- 高德：未查询
-- 简介：在缙云山沿林间山路找北碚远景 / Take a wooded walk above Beibei on Jinyun Mountain.
-- 开放时间：—
-- 来源：https://whlyw.cq.gov.cn/hdjl_221/xzzq/202601/t20260106_15295212.html
+- 示意图：有（AI 生成，须标「示意图」；预览见 --preview-dir 生成的页面）
+- 提醒：ticket.price_cny: Codex could not confirm it from an official page; check by hand；ticket.booking: Codex could not confirm it from an official page; check by hand；official_url: Codex could not confirm it from an official page; check by hand
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 重庆铁山坪森林公园 · Tieshanping Forest Park  `pl_cq_tieshanping`
-- attraction/park · backup · 分数 12 · 江北区
+- attraction/park · backup · 分数 17 · 江北区
 - 高德：未查询
 - 简介：在铁山坪用林道安排近郊散步 / Walk shaded paths in Tieshanping Forest Park.
 - 开放时间：—
 - 来源：https://whlyw.cq.gov.cn/hdjl_221/xzzq/202601/t20260106_15295212.html
+- 提醒：hours_zh: Codex could not confirm it from an official page; check by hand；ticket.booking: Codex could not confirm it from an official page; check by hand；official_url: Codex could not confirm it from an official page; check by hand
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 武陵山大裂谷 · Wuling Mountain Rift Valley  `pl_cq_wulingshan_daligu`
@@ -1271,6 +1316,7 @@
 - 简介：在武陵山大裂谷看岩壁与峡谷高差 / See the depth of the Wuling Mountain rift valley.
 - 开放时间：—
 - 来源：https://whlyw.cq.gov.cn/hdjl_221/xzzq/202601/t20260106_15295212.html
+- 提醒：hours_zh: Codex could not confirm it from an official page; check by hand；ticket.price_cny: Codex could not confirm it from an official page; check by hand；ticket.booking: Codex could not confirm it from an official page; check by hand；official_url: Codex could not confirm it from an official page; check by hand
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 江津中山古镇 · Zhongshan Ancient Town (Jiangjin)  `pl_cq_zhongshan_guzhen`
@@ -1279,12 +1325,5 @@
 - 简介：到江津中山古镇看临河长街与旧屋 / Walk the long riverside street of Zhongshan Ancient Town.
 - 开放时间：—
 - 来源：https://whlyw.cq.gov.cn/hdjl_221/xzzq/202601/t20260106_15295212.html
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 江津四面山 · Simian Mountain  `pl_cq_simianshan`
-- attraction/park · backup · 分数 10 · 江津区
-- 高德：未查询
-- 简介：在四面山挑森林与瀑布主题路线 / Choose a waterfall and woodland route at Simian Mountain.
-- 开放时间：—
-- 来源：https://whlyw.cq.gov.cn/hdjl_221/xzzq/202601/t20260106_15295212.html
+- 提醒：hours_zh: Codex could not confirm it from an official page; check by hand；ticket.price_cny: Codex could not confirm it from an official page; check by hand；ticket.booking: Codex could not confirm it from an official page; check by hand；official_url: Codex could not confirm it from an official page; check by hand
 - [ ] accept　[ ] reject　[ ] edit：

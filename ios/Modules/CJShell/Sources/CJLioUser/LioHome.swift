@@ -39,6 +39,10 @@ public struct LioHome<MenuContent: View>: View {
     private let memoryActions: LioMemoryActionsClient?
     /// #1999: carries the traveller's memory choice to the server. Nil where the host has no signed Lio client.
     private let memoryConsent: LioMemoryConsentClient?
+    /// #1994: the Undo of an automatic save; nil where the host has no signed Lio client or the build has it off.
+    @State private var autosaveUndo: LioAutosaveUndo?
+    /// #1994: bumped after an undo so the trip list is read again (a withdrawn first save no longer appears in it).
+    @State private var tripListRevision = 0
     /// #1999: whether this build asks before showing memory suggestions (`G2CMemoryConsentEnabled`); off means as before.
     private let memoryConsentOn = LioMemoryConsentFeature.enabledInBuild
     private let savedMemory: AnyView?
@@ -83,6 +87,9 @@ public struct LioHome<MenuContent: View>: View {
     private let answerLayoutOn = LioAnswerLayoutFeature.enabledInBuild
     /// #1991: places the server named in an answer are tappable words (`G2CAnswerRichEnabled`).
     private let answerRichOn = LioAnswerRichFeature.enabledInBuild
+    /// #1994: what the automatic save did under an answer, and the one-time notice at the account's first
+    /// (`G2CAutosaveNoticeEnabled`; nil unless `G2CAnswerRichEnabled` is on too).
+    @State private var autosaveNotice: LioAutosaveNotice?
     @State private var feedbackDetails: FeedbackDetails?
     /// #1748: the account's in-app location choice, when the build asks for it (`G2CLocationConsentEnabled`).
     @State private var locationConsent: LioLocationConsent?
@@ -165,6 +172,7 @@ public struct LioHome<MenuContent: View>: View {
                 tripHistory: LioTripHistoryClient? = nil,
                 memoryActions: LioMemoryActionsClient? = nil,
                 memoryConsent: LioMemoryConsentClient? = nil,
+                tripUndo: LioTripUndoClient? = nil,
                 savedMemory: AnyView? = nil,
                 recordedMap: (@MainActor (StructuredTripDocument) -> AnyView)? = nil,
                 session: LioSessionAvailability? = nil,
@@ -224,6 +232,9 @@ public struct LioHome<MenuContent: View>: View {
             }, isCurrent: toolsSessionIsCurrent) : nil)
         _consent = State(initialValue: LioConsentFeature.enabledInBuild ? LioConsent(
             store: messageDirectory.map { LioConsentStore(directory: LioConsentStore.storageDirectory(inMessageDirectory: $0)) }) : nil)
+        _autosaveNotice = State(initialValue: LioAutosaveNoticeFeature.activeInBuild
+            ? LioAutosaveNotice(store: LioAutosaveNoticeStore(tripHome: tripHomeStore)) : nil)
+        _autosaveUndo = State(initialValue: LioAutosaveUndoFeature.activeInBuild ? tripUndo.map { LioAutosaveUndo(client: $0) } : nil)
         _savedPlans = State(initialValue: LioSavedPlansModel(store: plans))
         self.toolsSessionIsCurrent = toolsSessionIsCurrent
         self.answerFeedback = LioAnswerFeedbackFeature.enabledInBuild ? answerFeedback : nil
@@ -252,6 +263,25 @@ public struct LioHome<MenuContent: View>: View {
     private var tripPlan: LioTripPlan? {
         if chatID == chatLibrary?.currentID { return defaultTripPlan }
         return selectedChat?.trips?.plan
+    }
+
+    /// #1994: the one answer that carries the notice, in case more than one receipt is marked as the first.
+    private var autosaveNoticeTurnID: Data? {
+        conversation.turns.first { $0.tripReceipt?.isFirstSave == true }?.id
+    }
+
+    /// #1994: the Undo button of a receipt. The server decides; once it has answered for good the timeline and the trip are
+    /// read again through the readers the App already has, so the line and the plan show what the server says.
+    private func startAutosaveUndo(_ receipt: LioTimelineWire.TripReceipt) {
+        guard let autosaveUndo, autosaveUndo.offers(receipt, at: .now) else { return }
+        let id = conversation.conversationID
+        Task {
+            await autosaveUndo.undo(receipt, conversationID: id) {
+                await conversation.refreshTimeline()
+                await tripPlan?.reload(for: latestTripCard)
+                tripListRevision += 1
+            }
+        }
     }
 
     private var latestTripCard: LioTripCard? {
@@ -571,7 +601,8 @@ public struct LioHome<MenuContent: View>: View {
                          zoomNamespace: tripZoomNamespace, path: $tripPath,
                          plans: savedPlans.plans, openPlan: { planSheet = $0 },
                          removePlan: { savedPlans.remove($0) },
-                         backToTripHome: LioTripHomeFeature.enabledInBuild ? { showsAllTrips = false; tripPath = [] } : nil) { tab = .chat }
+                         backToTripHome: LioTripHomeFeature.enabledInBuild ? { showsAllTrips = false; tripPath = [] } : nil,
+                         listRevision: tripListRevision) { tab = .chat }
         }
     }
 
@@ -1370,6 +1401,13 @@ public struct LioHome<MenuContent: View>: View {
                     LioAnswerFollowups(actions: turn.followups, chips: turn.chips, open: { openFollowup($0) },
                                        ask: { chip in _ = sendQuestion(chip.label, chipTicket: chip.ticket) })
                 }
+            }
+            // #1994: the receipt of the automatic save, also under an answer that failed after the save committed.
+            if let receipt = turn.tripReceipt {
+                LioTripReceiptBlock(receipt: receipt, language: language,
+                                    showsNotice: turn.id == autosaveNoticeTurnID && autosaveNotice?.shows(for: receipt) == true,
+                                    gotIt: { autosaveNotice?.acknowledge() },
+                                    undo: autosaveUndo, startUndo: startAutosaveUndo)
             }
             messageStatus(turn)
             if answerShown(turn) {

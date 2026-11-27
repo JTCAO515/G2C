@@ -1,7 +1,7 @@
 {
   "version": "g2c-places-candidates.1",
   "city": "guangzhou",
-  "generated_on": "2026-11-27",
+  "generated_on": "2026-11-28",
   "candidates": [
     {
       "id": "pl_gz_anle_tongfu",
@@ -82,7 +82,7 @@
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": "站前一街26–28号",
-        "address_en": null,
+        "address_en": "26–28 Zhanqian 1st Street, Zhanqian Road, Liwan District, Guangzhou",
         "district_zh": "荔湾区",
         "nearest_metro": null,
         "foreigner_signals": {
@@ -95,7 +95,8 @@
         },
         "official_url": "https://www.lw.gov.cn/ywb/yshj/zysc/content/mpost_9589598.html",
         "sources": [
-          "https://www.lw.gov.cn/ywb/yshj/zysc/content/mpost_9589598.html"
+          "https://www.lw.gov.cn/ywb/yshj/zysc/content/mpost_9589598.html",
+          "https://www.lw.gov.cn/ywb/zx/content/mpost_9589568.html"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
@@ -115,12 +116,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 21,
+        "total": 28,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
-          "sources": 5,
-          "complete": 4,
+          "sources": 10,
+          "complete": 6,
           "amap": 0
         },
         "external_used": false
@@ -174,6 +175,7 @@
         "intro_long_en": "Stay on the Fangcun side of Liwan when your plans center on west Guangzhou. The hotel's arrival guide names Huadiwan on Line 1.",
         "star": null,
         "price_band": "500-1000",
+        "hotel_class": "midscale",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -203,9 +205,7 @@
         },
         "external_used": false
       },
-      "flags": [
-        "pl_gz_baietanfupeng: unknown field 'hotel_class' is dropped on import"
-      ]
+      "flags": []
     },
     {
       "id": "pl_gz_baiyunshan",
@@ -218,8 +218,20 @@
         "tier": "main",
         "name_zh": "白云山风景名胜区",
         "name_en": "Baiyun Mountain Scenic Area",
-        "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_zh": [
+          "白云山",
+          "白云山 (广州市)",
+          "广州白云山",
+          "白雲山風景名勝區",
+          "白雲山"
+        ],
+        "aliases_en": [
+          "Baiyun Mountain",
+          "White Cloud Mountain",
+          "Baiyun Mountain (Guangdong)",
+          "Baiyun Mountain (Guangzhou)",
+          "Baiyun Mountain Park"
+        ],
         "address_zh": "广州市广园中路",
         "address_en": null,
         "district_zh": "白云区",
@@ -273,7 +285,69 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "白云山",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q837385",
+          "kind": "label"
+        },
+        {
+          "alias": "Baiyun Mountain",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q837385",
+          "kind": "label"
+        },
+        {
+          "alias": "White Cloud Mountain",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q837385",
+          "kind": "wikidata"
+        },
+        {
+          "alias": "白云山 (广州市)",
+          "lang": "zh",
+          "url": "https://zh.wikipedia.org/wiki/%E7%99%BD%E4%BA%91%E5%B1%B1_(%E5%B9%BF%E5%B7%9E%E5%B8%82)",
+          "kind": "wikipedia"
+        },
+        {
+          "alias": "广州白云山",
+          "lang": "zh",
+          "url": "https://zh.wikipedia.org/wiki/%E5%B9%BF%E5%B7%9E%E7%99%BD%E4%BA%91%E5%B1%B1?redirect=no",
+          "kind": "redirect"
+        },
+        {
+          "alias": "Baiyun Mountain (Guangdong)",
+          "lang": "en",
+          "url": "https://en.wikipedia.org/wiki/Baiyun_Mountain_(Guangdong)",
+          "kind": "wikipedia"
+        },
+        {
+          "alias": "Baiyun Mountain (Guangzhou)",
+          "lang": "en",
+          "url": "https://en.wikipedia.org/wiki/Baiyun_Mountain_(Guangzhou)?redirect=no",
+          "kind": "redirect"
+        },
+        {
+          "alias": "Baiyun Mountain Park",
+          "lang": "en",
+          "url": "https://en.wikipedia.org/wiki/Baiyun_Mountain_Park?redirect=no",
+          "kind": "redirect"
+        },
+        {
+          "alias": "白雲山風景名勝區",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q837385",
+          "kind": "published_traditional"
+        },
+        {
+          "alias": "白雲山",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q837385",
+          "kind": "published_traditional"
+        }
+      ]
     },
     {
       "id": "pl_gz_baiyunwanhao",
@@ -324,6 +398,7 @@
         "intro_long_en": "For plans around northern Guangzhou, start with the hotel's directions to Baiyun Culture Square. Marriott also lists English among the hotel's languages.",
         "star": null,
         "price_band": "500-1000",
+        "hotel_class": "upscale",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -353,9 +428,7 @@
         },
         "external_used": false
       },
-      "flags": [
-        "pl_gz_baiyunwanhao: unknown field 'hotel_class' is dropped on import"
-      ]
+      "flags": []
     },
     {
       "id": "pl_gz_baiyunyuan",
@@ -405,6 +478,7 @@
         "intro_long_en": "Use the hotel's direction page if arriving through Guangzhou Baiyun Railway Station. Baiyun Culture Square is listed for local metro travel.",
         "star": null,
         "price_band": "<500",
+        "hotel_class": "midscale",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -434,9 +508,7 @@
         },
         "external_used": false
       },
-      "flags": [
-        "pl_gz_baiyunyuan: unknown field 'hotel_class' is dropped on import"
-      ]
+      "flags": []
     },
     {
       "id": "pl_gz_bandidos_huaxun",
@@ -514,8 +586,13 @@
         "tier": "main",
         "name_zh": "宝墨园",
         "name_en": "Baomo Garden",
-        "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_zh": [
+          "广州番禺宝墨园",
+          "寶墨園"
+        ],
+        "aliases_en": [
+          "Baomo Yuan"
+        ],
         "address_zh": "广州市番禺区沙湾镇紫坭村",
         "address_en": null,
         "district_zh": "番禺区",
@@ -569,7 +646,27 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "广州番禺宝墨园",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q10949345",
+          "kind": "wikidata"
+        },
+        {
+          "alias": "Baomo Yuan",
+          "lang": "en",
+          "url": "https://en.wikipedia.org/wiki/Baomo_Yuan",
+          "kind": "wikipedia"
+        },
+        {
+          "alias": "寶墨園",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q10949345",
+          "kind": "published_traditional"
+        }
+      ]
     },
     {
       "id": "pl_gz_beijinglu",
@@ -987,7 +1084,11 @@
         "tier": "main",
         "name_zh": "长隆野生动物世界",
         "name_en": "Chimelong Safari Park",
-        "aliases_zh": [],
+        "aliases_zh": [
+          "香江野生動物世界",
+          "广州长隆野生动物世界",
+          "長隆野生動物世界"
+        ],
         "aliases_en": [],
         "address_zh": null,
         "address_en": null,
@@ -1041,7 +1142,27 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "香江野生動物世界",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q10566319",
+          "kind": "wikidata"
+        },
+        {
+          "alias": "广州长隆野生动物世界",
+          "lang": "zh",
+          "url": "https://www.chimelong.com/gz/safaripark/index.html",
+          "kind": "discovery"
+        },
+        {
+          "alias": "長隆野生動物世界",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q10566319",
+          "kind": "published_traditional"
+        }
+      ]
     },
     {
       "id": "pl_gz_changlong_huanle",
@@ -1054,8 +1175,13 @@
         "tier": "main",
         "name_zh": "长隆欢乐世界",
         "name_en": "Chimelong Paradise",
-        "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_zh": [
+          "广州长隆欢乐世界"
+        ],
+        "aliases_en": [
+          "Chime Long Paradise",
+          "Chime-Long Paradise"
+        ],
         "address_zh": null,
         "address_en": null,
         "district_zh": "番禺区",
@@ -1108,7 +1234,27 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "Chime Long Paradise",
+          "lang": "en",
+          "url": "https://en.wikipedia.org/wiki/Chime_Long_Paradise?redirect=no",
+          "kind": "redirect"
+        },
+        {
+          "alias": "Chime-Long Paradise",
+          "lang": "en",
+          "url": "https://en.wikipedia.org/wiki/Chime-Long_Paradise?redirect=no",
+          "kind": "redirect"
+        },
+        {
+          "alias": "广州长隆欢乐世界",
+          "lang": "zh",
+          "url": "https://www.chimelong.com/gz/chimelongparadise/",
+          "kind": "discovery"
+        }
+      ]
     },
     {
       "id": "pl_gz_chaoji_longjin",
@@ -1187,10 +1333,18 @@
         "name_zh": "陈家祠",
         "name_en": "Chen Clan Ancestral Hall",
         "aliases_zh": [
-          "广东民间工艺博物馆"
+          "广东民间工艺博物馆",
+          "陈家祠堂",
+          "陈氏书院",
+          "陳家祠",
+          "陳氏書院"
         ],
         "aliases_en": [
-          "Chen Clan Academy"
+          "Chen Clan Academy",
+          "Chen Jia Ci",
+          "Chen Family Ancestral Temple",
+          "Chen Clan Temple",
+          "Guangdong Folk Art Museum"
         ],
         "address_zh": "广州市中山七路恩龙里34号",
         "address_en": null,
@@ -1248,7 +1402,69 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "广东民间工艺博物馆",
+          "lang": "zh",
+          "url": "https://www.gdfao.gov.cn/zwgk/zdly/gzscfd/content/post_1333470.html",
+          "kind": "legacy"
+        },
+        {
+          "alias": "Chen Clan Academy",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q5090739",
+          "kind": "legacy"
+        },
+        {
+          "alias": "陈家祠堂",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q5090739",
+          "kind": "wikidata"
+        },
+        {
+          "alias": "陈氏书院",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q5090739",
+          "kind": "wikidata"
+        },
+        {
+          "alias": "Chen Jia Ci",
+          "lang": "en",
+          "url": "https://en.wikipedia.org/wiki/Chen_Jia_Ci?redirect=no",
+          "kind": "redirect"
+        },
+        {
+          "alias": "Chen Family Ancestral Temple",
+          "lang": "en",
+          "url": "https://en.wikipedia.org/wiki/Chen_Family_Ancestral_Temple?redirect=no",
+          "kind": "redirect"
+        },
+        {
+          "alias": "Chen Clan Temple",
+          "lang": "en",
+          "url": "https://en.wikipedia.org/wiki/Chen_Clan_Temple?redirect=no",
+          "kind": "redirect"
+        },
+        {
+          "alias": "Guangdong Folk Art Museum",
+          "lang": "en",
+          "url": "https://en.wikipedia.org/wiki/Guangdong_Folk_Art_Museum?redirect=no",
+          "kind": "redirect"
+        },
+        {
+          "alias": "陳家祠",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q5090739",
+          "kind": "published_traditional"
+        },
+        {
+          "alias": "陳氏書院",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q5090739",
+          "kind": "published_traditional"
+        }
+      ]
     },
     {
       "id": "pl_gz_chunxin_tongfu",
@@ -1598,7 +1814,7 @@
         "aliases_en": [],
         "address_zh": "广州市小谷围街立德街66号",
         "address_en": "66 Li De Street, Xiaoguwei, Guangzhou, China 510006",
-        "district_zh": null,
+        "district_zh": "番禺区",
         "nearest_metro": {
           "station_zh": "大学城南",
           "station_en": "Higher Education Mega Center South",
@@ -1632,6 +1848,7 @@
         "intro_long_en": "Choose Xiaoguwei Island when you want time in the university district. The hotel's page identifies the south metro station and lists English among the spoken languages.",
         "star": null,
         "price_band": "<500",
+        "hotel_class": "midscale",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -1661,9 +1878,7 @@
         },
         "external_used": false
       },
-      "flags": [
-        "pl_gz_daxuechengyuelexuan: unknown field 'hotel_class' is dropped on import"
-      ]
+      "flags": []
     },
     {
       "id": "pl_gz_dayang_wenming",
@@ -1741,8 +1956,17 @@
         "tier": "backup",
         "name_zh": "孙中山大元帅府纪念馆",
         "name_en": "Memorial Hall of Sun Yat-sen's Grand Marshal Mansion",
-        "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_zh": [
+          "孙中山大元帅府旧址",
+          "孙中山大元帅府",
+          "广州大元帅府旧址",
+          "大元帅府",
+          "孫中山大元帥府紀念館"
+        ],
+        "aliases_en": [
+          "Memorial Museum of Generalissimo Sun Yat-sen's Mansion",
+          "Generalissimo Sun Yat-sen's Mansion"
+        ],
         "address_zh": "广州市海珠区纺织路东沙街18号",
         "address_en": null,
         "district_zh": "海珠区",
@@ -1799,7 +2023,51 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "孙中山大元帅府旧址",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q10945435",
+          "kind": "wikidata"
+        },
+        {
+          "alias": "孙中山大元帅府",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q10945435",
+          "kind": "wikidata"
+        },
+        {
+          "alias": "广州大元帅府旧址",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q10945435",
+          "kind": "wikidata"
+        },
+        {
+          "alias": "大元帅府",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q10945435",
+          "kind": "wikidata"
+        },
+        {
+          "alias": "Memorial Museum of Generalissimo Sun Yat-sen's Mansion",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q10945435",
+          "kind": "label"
+        },
+        {
+          "alias": "Generalissimo Sun Yat-sen's Mansion",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q10945435",
+          "kind": "wikidata"
+        },
+        {
+          "alias": "孫中山大元帥府紀念館",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q10945435",
+          "kind": "published_traditional"
+        }
+      ]
     },
     {
       "id": "pl_gz_diancuifang_huanshi",
@@ -2013,7 +2281,7 @@
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": "芳村大道中508号",
-        "address_en": null,
+        "address_en": "508 Fangcun Avenue Middle, Liwan District, Guangzhou",
         "district_zh": "荔湾区",
         "nearest_metro": null,
         "foreigner_signals": {
@@ -2028,7 +2296,8 @@
         "official_url": "https://www.lw.gov.cn/ywb/yshj/zysc/content/mpost_9589598.html",
         "sources": [
           "https://www.lw.gov.cn/ywb/yshj/zysc/content/mpost_9589598.html",
-          "https://www.lw.gov.cn/ztzl/hklwmnsf/xhjsnh/content/post_10663397.html"
+          "https://www.lw.gov.cn/ztzl/hklwmnsf/xhjsnh/content/post_10663397.html",
+          "https://www.lw.gov.cn/ywb/zx/content/mpost_9589568.html"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
@@ -2048,12 +2317,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 26,
+        "total": 28,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 4,
+          "complete": 6,
           "amap": 0
         },
         "external_used": false
@@ -2071,7 +2340,9 @@
         "tier": "backup",
         "name_zh": "广东革命历史博物馆",
         "name_en": "Guangdong Museum of Revolutionary History",
-        "aliases_zh": [],
+        "aliases_zh": [
+          "廣東革命歷史博物館"
+        ],
         "aliases_en": [],
         "address_zh": "陵园西路2号大院之二",
         "address_en": null,
@@ -2125,7 +2396,15 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "廣東革命歷史博物館",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q5613635",
+          "kind": "published_traditional"
+        }
+      ]
     },
     {
       "id": "pl_gz_grandview_retail_gz",
@@ -2200,8 +2479,14 @@
         "tier": "main",
         "name_zh": "广东省博物馆",
         "name_en": "Guangdong Museum",
-        "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_zh": [
+          "廣東省博物館"
+        ],
+        "aliases_en": [
+          "Guangdong Provincial Museum",
+          "Guangdong Province Museum",
+          "Guangdong sheng bowuguan"
+        ],
         "address_zh": "天河区珠江东路2号",
         "address_en": null,
         "district_zh": "天河区",
@@ -2257,7 +2542,33 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "Guangdong Provincial Museum",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q5613636",
+          "kind": "wikidata"
+        },
+        {
+          "alias": "Guangdong Province Museum",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q5613636",
+          "kind": "wikidata"
+        },
+        {
+          "alias": "Guangdong sheng bowuguan",
+          "lang": "en",
+          "url": "https://en.wikipedia.org/wiki/Guangdong_sheng_bowuguan?redirect=no",
+          "kind": "redirect"
+        },
+        {
+          "alias": "廣東省博物館",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q5613636",
+          "kind": "published_traditional"
+        }
+      ]
     },
     {
       "id": "pl_gz_guangdong_kexue",
@@ -2408,8 +2719,18 @@
         "tier": "main",
         "name_zh": "光孝寺",
         "name_en": "Guangxiao Temple",
-        "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_zh": [
+          "报恩光孝禅寺",
+          "光孝寺 (广州)",
+          "广州光孝寺",
+          "報恩光孝禪寺"
+        ],
+        "aliases_en": [
+          "Temple of Bright Filial Piety",
+          "Kwong Hau Temple",
+          "Guangxiao Temple (Guangzhou)",
+          "Kuang-hsiao Temple (Canton)"
+        ],
         "address_zh": "越秀区光孝路109号",
         "address_en": null,
         "district_zh": "越秀区",
@@ -2462,7 +2783,57 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "报恩光孝禅寺",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q985779",
+          "kind": "wikidata"
+        },
+        {
+          "alias": "Temple of Bright Filial Piety",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q985779",
+          "kind": "wikidata"
+        },
+        {
+          "alias": "Kwong Hau Temple",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q985779",
+          "kind": "wikidata"
+        },
+        {
+          "alias": "光孝寺 (广州)",
+          "lang": "zh",
+          "url": "https://zh.wikipedia.org/wiki/%E5%85%89%E5%AD%9D%E5%AF%BA_(%E5%B9%BF%E5%B7%9E)",
+          "kind": "wikipedia"
+        },
+        {
+          "alias": "广州光孝寺",
+          "lang": "zh",
+          "url": "https://zh.wikipedia.org/wiki/%E5%B9%BF%E5%B7%9E%E5%85%89%E5%AD%9D%E5%AF%BA?redirect=no",
+          "kind": "redirect"
+        },
+        {
+          "alias": "Guangxiao Temple (Guangzhou)",
+          "lang": "en",
+          "url": "https://en.wikipedia.org/wiki/Guangxiao_Temple_(Guangzhou)",
+          "kind": "wikipedia"
+        },
+        {
+          "alias": "Kuang-hsiao Temple (Canton)",
+          "lang": "en",
+          "url": "https://en.wikipedia.org/wiki/Kuang-hsiao_Temple_(Canton)?redirect=no",
+          "kind": "redirect"
+        },
+        {
+          "alias": "報恩光孝禪寺",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q985779",
+          "kind": "published_traditional"
+        }
+      ]
     },
     {
       "id": "pl_gz_guangzhou_bowuguan",
@@ -2475,7 +2846,9 @@
         "tier": "main",
         "name_zh": "广州博物馆（镇海楼展区）",
         "name_en": "Guangzhou Museum (Zhenhai Tower)",
-        "aliases_zh": [],
+        "aliases_zh": [
+          "镇海楼展区"
+        ],
         "aliases_en": [],
         "address_zh": "广州市越秀区越秀公园内镇海路99号",
         "address_en": null,
@@ -2532,7 +2905,15 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "镇海楼展区",
+          "lang": "zh",
+          "url": "https://www.yuexiu.gov.cn/zjyx/yxjd/ycty/content/post_8661848.html",
+          "kind": "manual"
+        }
+      ]
     },
     {
       "id": "pl_gz_guangzhou_dajuyuan",
@@ -2545,7 +2926,10 @@
         "tier": "main",
         "name_zh": "广州大剧院",
         "name_en": "Guangzhou Opera House",
-        "aliases_zh": [],
+        "aliases_zh": [
+          "广州歌剧院",
+          "廣州大劇院"
+        ],
         "aliases_en": [],
         "address_zh": null,
         "address_en": null,
@@ -2599,7 +2983,21 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "广州歌剧院",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q3354553",
+          "kind": "wikidata"
+        },
+        {
+          "alias": "廣州大劇院",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q3354553",
+          "kind": "published_traditional"
+        }
+      ]
     },
     {
       "id": "pl_gz_guangzhou_dongwuyuan",
@@ -2612,7 +3010,9 @@
         "tier": "main",
         "name_zh": "广州动物园",
         "name_en": "Guangzhou Zoo",
-        "aliases_zh": [],
+        "aliases_zh": [
+          "廣州動物園"
+        ],
         "aliases_en": [],
         "address_zh": "广州市先烈中路120号",
         "address_en": null,
@@ -2667,7 +3067,15 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "廣州動物園",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q11062008",
+          "kind": "published_traditional"
+        }
+      ]
     },
     {
       "id": "pl_gz_guangzhou_meishuguan",
@@ -2680,7 +3088,10 @@
         "tier": "main",
         "name_zh": "广州艺术博物院（广州美术馆）",
         "name_en": "Guangzhou Art Museum",
-        "aliases_zh": [],
+        "aliases_zh": [
+          "广州美术馆",
+          "广州艺术博物院"
+        ],
         "aliases_en": [],
         "address_zh": "海珠区艺苑路198号",
         "address_en": null,
@@ -2735,7 +3146,21 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "广州美术馆",
+          "lang": "zh",
+          "url": "https://wglj.gz.gov.cn/gkmlpt/content/9/9342/post_9342756.html",
+          "kind": "manual"
+        },
+        {
+          "alias": "广州艺术博物院",
+          "lang": "zh",
+          "url": "https://wglj.gz.gov.cn/gkmlpt/content/9/9342/post_9342756.html",
+          "kind": "manual"
+        }
+      ]
     },
     {
       "id": "pl_gz_guangzhou_ta",
@@ -2749,9 +3174,17 @@
         "name_zh": "广州塔",
         "name_en": "Canton Tower",
         "aliases_zh": [
-          "小蛮腰"
+          "小蛮腰",
+          "广州电视观光塔",
+          "广州新电视塔",
+          "廣州塔"
         ],
-        "aliases_en": [],
+        "aliases_en": [
+          "Guangzhou TV Astronomical and Sightseeing Tower",
+          "Guangzhou Tower",
+          "Guangzhou TV & Sightseeing Tower",
+          "Guangzhou TV and Sightseeing Tower"
+        ],
         "address_zh": "广州市海珠区阅江西路222号",
         "address_en": null,
         "district_zh": "海珠区",
@@ -2807,7 +3240,57 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "小蛮腰",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q168400",
+          "kind": "legacy"
+        },
+        {
+          "alias": "广州电视观光塔",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q168400",
+          "kind": "wikidata"
+        },
+        {
+          "alias": "广州新电视塔",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q168400",
+          "kind": "wikidata"
+        },
+        {
+          "alias": "Guangzhou TV Astronomical and Sightseeing Tower",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q168400",
+          "kind": "wikidata"
+        },
+        {
+          "alias": "Guangzhou Tower",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q168400",
+          "kind": "wikidata"
+        },
+        {
+          "alias": "Guangzhou TV & Sightseeing Tower",
+          "lang": "en",
+          "url": "https://en.wikipedia.org/wiki/Guangzhou_TV_%26_Sightseeing_Tower?redirect=no",
+          "kind": "redirect"
+        },
+        {
+          "alias": "Guangzhou TV and Sightseeing Tower",
+          "lang": "en",
+          "url": "https://en.wikipedia.org/wiki/Guangzhou_TV_and_Sightseeing_Tower?redirect=no",
+          "kind": "redirect"
+        },
+        {
+          "alias": "廣州塔",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q168400",
+          "kind": "published_traditional"
+        }
+      ]
     },
     {
       "id": "pl_gz_guangzhou_wenhuaguan",
@@ -2820,8 +3303,12 @@
         "tier": "main",
         "name_zh": "广州市文化馆",
         "name_en": "Guangzhou Cultural Center",
-        "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_zh": [
+          "广州文化馆"
+        ],
+        "aliases_en": [
+          "Guangzhou Cultural & Arts Centre"
+        ],
         "address_zh": null,
         "address_en": null,
         "district_zh": null,
@@ -2834,18 +3321,20 @@
         },
         "official_url": null,
         "sources": [
-          "https://www.gz.gov.cn/zt/hcwl/ycdy/ycbj/content/post_11017726.html"
+          "https://www.gz.gov.cn/zt/hcwl/ycdy/ycbj/content/post_11017726.html",
+          "https://wglj.gz.gov.cn/zlxz/content/post_10424869.html",
+          "https://www.haizhu.gov.cn/hzdt/ztlm/tzhz/rjhj/lyjd/csmp/content/post_9184856.html"
         ],
-        "checked_on": "2026-11-18",
+        "checked_on": "2026-11-27",
         "confidence": "low",
         "notes": "官方目录沿用既有候选记录的核对日，晋级前应重读。",
         "subcategory": "experience",
-        "hours_zh": null,
-        "hours_source": null,
+        "hours_zh": "展区周二至周日09:00–17:30，活动时段09:00–21:00。周一通常闭馆，节假日及特殊活动看馆方公告。",
+        "hours_source": "https://wglj.gz.gov.cn/zlxz/content/post_10424869.html",
         "ticket": {
-          "booking": null,
+          "booking": "required",
           "passport_required": null,
-          "price_cny": null,
+          "price_cny": 0,
           "closed_weekdays": null,
           "booking_channel_zh": null,
           "booking_url": null
@@ -2864,17 +3353,33 @@
         "alternatives": []
       },
       "score": {
-        "total": 10,
+        "total": 17,
         "parts": {
           "foreigner": 0,
           "confidence": 4,
-          "sources": 5,
-          "complete": 1,
+          "sources": 10,
+          "complete": 3,
           "amap": 0
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "official_url: Codex could not confirm it from an official page; check by hand"
+      ],
+      "alias_evidence": [
+        {
+          "alias": "Guangzhou Cultural & Arts Centre",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q130476582",
+          "kind": "label"
+        },
+        {
+          "alias": "广州文化馆",
+          "lang": "zh",
+          "url": "https://zh.wikipedia.org/wiki/%E5%B9%BF%E5%B7%9E%E6%96%87%E5%8C%96%E9%A6%86?redirect=no",
+          "kind": "redirect"
+        }
+      ]
     },
     {
       "id": "pl_gz_guangzhoubaiyun",
@@ -3003,77 +3508,6 @@
           "confidence": 20,
           "sources": 10,
           "complete": 8,
-          "amap": 0
-        },
-        "external_used": false
-      },
-      "flags": []
-    },
-    {
-      "id": "pl_gz_guangzhoudasha",
-      "source_file": "C8/guangzhou-hotel.json",
-      "status": "pending",
-      "draft": {
-        "id": "pl_gz_guangzhoudasha",
-        "city": "guangzhou",
-        "category": "hotel",
-        "tier": "backup",
-        "name_zh": "广州大厦，希尔顿启缤精选",
-        "name_en": "Canton Hotel Guangzhou, Tapestry Collection by Hilton",
-        "aliases_zh": [],
-        "aliases_en": [],
-        "address_zh": null,
-        "address_en": null,
-        "district_zh": "越秀区",
-        "nearest_metro": null,
-        "foreigner_signals": {
-          "english_signage": null,
-          "foreign_cards": null,
-          "english_service": null,
-          "evidence": [
-            "https://www.hilton.com.cn/zh-cn/hotels/canupup-canton-hotel-guangzhou-tapestry-collection-by-hilton"
-          ]
-        },
-        "official_url": "https://www.hilton.com.cn/zh-cn/hotels/canupup-canton-hotel-guangzhou-tapestry-collection-by-hilton",
-        "sources": [
-          "https://www.hilton.com.cn/zh-cn/hotels/canupup-canton-hotel-guangzhou-tapestry-collection-by-hilton",
-          "https://www.hilton.com.cn/zh-cn/locations/china/guangdong-guangzhou"
-        ],
-        "checked_on": "2026-11-27",
-        "confidence": "medium",
-        "notes": "希尔顿城市页显示 2026-11-27 入住、11-28 退房的起价。 官网样本为每房每晚人民币 ¥798。当前价以所选日期及房型的报价为准。",
-        "subcategory": "hotel",
-        "intro_short_zh": "酒店靠近北京路一带。",
-        "intro_short_en": "A hotel near Beijing Road.",
-        "intro_long_zh": "酒店靠近北京路一带。可在品牌官网查看房型和入住安排。",
-        "intro_long_en": "A hotel near Beijing Road. See the hotel's own website for room types and check-in details.",
-        "star": null,
-        "price_band": "500-1000",
-        "accepts_foreigners": true,
-        "foreign_service": {
-          "english_front_desk": null,
-          "foreign_guest_share": null,
-          "foreign_guest_experience": null,
-          "international_brand": "Hilton",
-          "evidence_zh": "广州大厦，希尔顿启缤精选由国际酒店品牌或集团 Hilton 的官网正式列出并提供预订入口。",
-          "evidence": [
-            "https://www.hilton.com.cn/zh-cn/hotels/canupup-canton-hotel-guangzhou-tapestry-collection-by-hilton"
-          ]
-        }
-      },
-      "external_signals": [],
-      "location": null,
-      "amap": {
-        "status": "not-run",
-        "alternatives": []
-      },
-      "score": {
-        "total": 26,
-        "parts": {
-          "foreigner": 0,
-          "confidence": 12,
-          "sources": 10,
-          "complete": 4,
           "amap": 0
         },
         "external_used": false
@@ -3394,6 +3828,7 @@
         "intro_long_en": "Plan a day around the cultural venues and shops of Zhujiang New Town. The hotel publishes its location and describes river-facing room options in English.",
         "star": null,
         "price_band": ">2000",
+        "hotel_class": "luxury",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -3423,9 +3858,7 @@
         },
         "external_used": false
       },
-      "flags": [
-        "pl_gz_guili: unknown field 'hotel_class' is dropped on import"
-      ]
+      "flags": []
     },
     {
       "id": "pl_gz_gztkh_shops",
@@ -3560,7 +3993,12 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "hours_zh: Codex could not confirm it from an official page; check by hand",
+        "ticket.price_cny: Codex could not confirm it from an official page; check by hand",
+        "ticket.booking: Codex could not confirm it from an official page; check by hand",
+        "official_url: Codex could not confirm it from an official page; check by hand"
+      ]
     },
     {
       "id": "pl_gz_haixinsha",
@@ -3574,7 +4012,9 @@
         "name_zh": "海心沙",
         "name_en": "Haixinsha Island",
         "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_en": [
+          "Haixinsha Park"
+        ],
         "address_zh": null,
         "address_en": null,
         "district_zh": null,
@@ -3627,7 +4067,20 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "hours_zh: Codex could not confirm it from an official page; check by hand",
+        "ticket.price_cny: Codex could not confirm it from an official page; check by hand",
+        "ticket.booking: Codex could not confirm it from an official page; check by hand",
+        "official_url: Codex could not confirm it from an official page; check by hand"
+      ],
+      "alias_evidence": [
+        {
+          "alias": "Haixinsha Park",
+          "lang": "en",
+          "url": "https://maptrip.ai/guangzhou/poi/haixinsha-park",
+          "kind": "manual"
+        }
+      ]
     },
     {
       "id": "pl_gz_haixinshaindigo",
@@ -3676,6 +4129,7 @@
         "intro_long_en": "Use the Haixinsha APM stop for the island. IHG points to nearby outings at the Guangdong Museum and Guangzhou Opera House, leaving the riverfront for a quieter part of the day.",
         "star": null,
         "price_band": ">2000",
+        "hotel_class": "upscale",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -3705,9 +4159,7 @@
         },
         "external_used": false
       },
-      "flags": [
-        "pl_gz_haixinshaindigo: unknown field 'hotel_class' is dropped on import"
-      ]
+      "flags": []
     },
     {
       "id": "pl_gz_haizhu_shidi",
@@ -3720,7 +4172,10 @@
         "tier": "main",
         "name_zh": "广州市海珠湿地公园景区",
         "name_en": "Haizhu Wetland Park Scenic Area",
-        "aliases_zh": [],
+        "aliases_zh": [
+          "广州海珠国家湿地公园",
+          "海珠国家湿地公园"
+        ],
         "aliases_en": [],
         "address_zh": "广州市海珠区新滘中路168号",
         "address_en": null,
@@ -3775,7 +4230,21 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "广州海珠国家湿地公园",
+          "lang": "zh",
+          "url": "https://www.haizhu.gov.cn/hzdt/ztlm/tzhz/rjhj/lyjd/csmp/content/post_8951501.html",
+          "kind": "manual"
+        },
+        {
+          "alias": "海珠国家湿地公园",
+          "lang": "zh",
+          "url": "https://cn.tripadvisor.com/Attraction_Review-g298555-d11816459-Reviews-Haizu_Wetland-Guangzhou_Guangdong.html",
+          "kind": "manual"
+        }
+      ]
     },
     {
       "id": "pl_gz_heyuan_xinghuan",
@@ -3853,8 +4322,12 @@
         "tier": "main",
         "name_zh": "花城广场",
         "name_en": "Flower City Square",
-        "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_zh": [
+          "花城廣場"
+        ],
+        "aliases_en": [
+          "Huacheng Square"
+        ],
         "address_zh": null,
         "address_en": null,
         "district_zh": null,
@@ -3907,7 +4380,26 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "hours_zh: Codex could not confirm it from an official page; check by hand",
+        "ticket.price_cny: Codex could not confirm it from an official page; check by hand",
+        "ticket.booking: Codex could not confirm it from an official page; check by hand",
+        "official_url: Codex could not confirm it from an official page; check by hand"
+      ],
+      "alias_evidence": [
+        {
+          "alias": "Huacheng Square",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q29469292",
+          "kind": "label"
+        },
+        {
+          "alias": "花城廣場",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q29469292",
+          "kind": "published_traditional"
+        }
+      ]
     },
     {
       "id": "pl_gz_huaji_xihua",
@@ -3985,8 +4477,18 @@
         "tier": "main",
         "name_zh": "华南植物园",
         "name_en": "South China Botanical Garden",
-        "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_zh": [
+          "中国科学院华南植物园",
+          "华南国家植物园",
+          "中科院华南植物园",
+          "華南植物園"
+        ],
+        "aliases_en": [
+          "South China Botanical Garden, Chinese Academy of Sciences",
+          "SCBG",
+          "South China National Botanical Garden",
+          "Southern China Botanical Garden"
+        ],
         "address_zh": "广州市天河区天源路1190号",
         "address_en": null,
         "district_zh": "天河区",
@@ -4040,7 +4542,57 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "中国科学院华南植物园",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q5946290",
+          "kind": "wikidata"
+        },
+        {
+          "alias": "华南国家植物园",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q5946290",
+          "kind": "wikidata"
+        },
+        {
+          "alias": "South China Botanical Garden, Chinese Academy of Sciences",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q5946290",
+          "kind": "label"
+        },
+        {
+          "alias": "SCBG",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q5946290",
+          "kind": "wikidata"
+        },
+        {
+          "alias": "中科院华南植物园",
+          "lang": "zh",
+          "url": "https://zh.wikipedia.org/wiki/%E4%B8%AD%E7%A7%91%E9%99%A2%E5%8D%8E%E5%8D%97%E6%A4%8D%E7%89%A9%E5%9B%AD?redirect=no",
+          "kind": "redirect"
+        },
+        {
+          "alias": "South China National Botanical Garden",
+          "lang": "en",
+          "url": "https://en.wikipedia.org/wiki/South_China_National_Botanical_Garden",
+          "kind": "wikipedia"
+        },
+        {
+          "alias": "Southern China Botanical Garden",
+          "lang": "en",
+          "url": "https://en.wikipedia.org/wiki/Southern_China_Botanical_Garden?redirect=no",
+          "kind": "redirect"
+        },
+        {
+          "alias": "華南植物園",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q5946290",
+          "kind": "published_traditional"
+        }
+      ]
     },
     {
       "id": "pl_gz_huangpu_gugang",
@@ -4053,7 +4605,10 @@
         "tier": "main",
         "name_zh": "黄埔古港景区",
         "name_en": "Huangpu Ancient Port Scenic Area",
-        "aliases_zh": [],
+        "aliases_zh": [
+          "黄埔古港",
+          "黄埔古港、古村历史文化景区"
+        ],
         "aliases_en": [],
         "address_zh": "广州市海珠区琶洲街道石基村",
         "address_en": null,
@@ -4067,18 +4622,20 @@
         },
         "official_url": null,
         "sources": [
-          "https://www.haizhu.gov.cn/hzdt/ztlm/ggqsy/wtsy/whfw/content/mpost_8727141.html"
+          "https://www.haizhu.gov.cn/hzdt/ztlm/ggqsy/wtsy/whfw/content/mpost_8727141.html",
+          "https://www.haizhu.gov.cn/zwgk/wgk/fwgk/content/post_8799689.html",
+          "https://www.haizhu.gov.cn/hzdt/ztlm/tzhz/rjhj/lyjd/hsgy/content/post_9196973.html"
         ],
-        "checked_on": "2026-11-18",
+        "checked_on": "2026-11-27",
         "confidence": "low",
         "notes": "官方目录沿用既有候选记录的核对日，晋级前应重读。",
         "subcategory": "history",
-        "hours_zh": null,
-        "hours_source": null,
+        "hours_zh": "09:00–22:00。",
+        "hours_source": "https://www.haizhu.gov.cn/zwgk/wgk/fwgk/content/post_8799689.html",
         "ticket": {
           "booking": null,
           "passport_required": null,
-          "price_cny": null,
+          "price_cny": 0,
           "closed_weekdays": null,
           "booking_channel_zh": null,
           "booking_url": null
@@ -4097,17 +4654,34 @@
         "alternatives": []
       },
       "score": {
-        "total": 12,
+        "total": 18,
         "parts": {
           "foreigner": 0,
           "confidence": 4,
-          "sources": 5,
-          "complete": 3,
+          "sources": 10,
+          "complete": 4,
           "amap": 0
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "ticket.booking: Codex could not confirm it from an official page; check by hand",
+        "official_url: Codex could not confirm it from an official page; check by hand"
+      ],
+      "alias_evidence": [
+        {
+          "alias": "黄埔古港",
+          "lang": "zh",
+          "url": "https://www.haizhu.gov.cn/hzdt/ztlm/tzhz/rjhj/lyjd/hsgy/content/mpost_9196973.html",
+          "kind": "manual"
+        },
+        {
+          "alias": "黄埔古港、古村历史文化景区",
+          "lang": "zh",
+          "url": "https://www.haizhu.gov.cn/hzdt/ztlm/tzhz/rjhj/lyjd/hsgy/content/mpost_9196973.html",
+          "kind": "manual"
+        }
+      ]
     },
     {
       "id": "pl_gz_huangpu_junxiao",
@@ -4120,8 +4694,18 @@
         "tier": "backup",
         "name_zh": "黄埔军校旧址纪念馆",
         "name_en": "Memorial Hall of the Whampoa Military Academy Site",
-        "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_zh": [
+          "黄埔军校旧址",
+          "国民革命军黄埔军官学校",
+          "黃埔軍校舊址紀念館",
+          "黃埔軍校舊址",
+          "國民革命軍黃埔軍官學校"
+        ],
+        "aliases_en": [
+          "Site of Whampoa Military Academy",
+          "Site of the Huangpu Military Academy",
+          "Whampoa Military Academy"
+        ],
         "address_zh": "黄埔区长洲岛军校路170号大院",
         "address_en": null,
         "district_zh": "黄埔区",
@@ -4175,78 +4759,57 @@
         },
         "external_used": false
       },
-      "flags": []
-    },
-    {
-      "id": "pl_gz_huangpufupeng",
-      "source_file": "C8/guangzhou-hotel.json",
-      "status": "pending",
-      "draft": {
-        "id": "pl_gz_huangpufupeng",
-        "city": "guangzhou",
-        "category": "hotel",
-        "tier": "backup",
-        "name_zh": "广州黄埔福朋喜来登酒店",
-        "name_en": "Four Points by Sheraton Guangzhou Huangpu",
-        "aliases_zh": [],
-        "aliases_en": [],
-        "address_zh": null,
-        "address_en": null,
-        "district_zh": null,
-        "nearest_metro": null,
-        "foreigner_signals": {
-          "english_signage": null,
-          "foreign_cards": null,
-          "english_service": null,
-          "evidence": [
-            "https://www.marriott.com/en-us/hotels/canhp-four-points-guangzhou-huangpu/overview/"
-          ]
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "黄埔军校旧址",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q11177237",
+          "kind": "label"
         },
-        "official_url": "https://www.marriott.com/en-us/hotels/canhp-four-points-guangzhou-huangpu/overview/",
-        "sources": [
-          "https://www.marriott.com/en-us/hotels/canhp-four-points-guangzhou-huangpu/overview/",
-          "https://www.marriott.com/en-us/destinations/china/guangzhou.mi?pg=2"
-        ],
-        "checked_on": "2026-11-27",
-        "confidence": "medium",
-        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sat, Dec 26 - Sun, Dec 27。 官网样本为每房每晚人民币 ¥446。当前价以所选日期及房型的报价为准。",
-        "subcategory": "hotel",
-        "intro_short_zh": "黄埔的一处福朋喜来登住宿候选。",
-        "intro_short_en": "A Four Points option in Huangpu.",
-        "intro_long_zh": "黄埔的一处福朋喜来登住宿候选。可在品牌官网查看房型和入住安排。",
-        "intro_long_en": "A Four Points option in Huangpu. See the hotel's own website for room types and check-in details.",
-        "star": null,
-        "price_band": "<500",
-        "accepts_foreigners": true,
-        "foreign_service": {
-          "english_front_desk": null,
-          "foreign_guest_share": null,
-          "foreign_guest_experience": null,
-          "international_brand": "Marriott Bonvoy",
-          "evidence_zh": "广州黄埔福朋喜来登酒店由国际酒店品牌或集团 Marriott Bonvoy 的官网正式列出并提供预订入口。",
-          "evidence": [
-            "https://www.marriott.com/en-us/hotels/canhp-four-points-guangzhou-huangpu/overview/"
-          ]
+        {
+          "alias": "Site of Whampoa Military Academy",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q11177237",
+          "kind": "label"
+        },
+        {
+          "alias": "Site of the Huangpu Military Academy",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q11177237",
+          "kind": "wikidata"
+        },
+        {
+          "alias": "Whampoa Military Academy",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q11177237",
+          "kind": "wikidata"
+        },
+        {
+          "alias": "国民革命军黄埔军官学校",
+          "lang": "zh",
+          "url": "https://zh.wikipedia.org/wiki/%E5%9B%BD%E6%B0%91%E9%9D%A9%E5%91%BD%E5%86%9B%E9%BB%84%E5%9F%94%E5%86%9B%E5%AE%98%E5%AD%A6%E6%A0%A1?redirect=no",
+          "kind": "redirect"
+        },
+        {
+          "alias": "黃埔軍校舊址紀念館",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q11177237",
+          "kind": "published_traditional"
+        },
+        {
+          "alias": "黃埔軍校舊址",
+          "lang": "zh",
+          "url": "https://zh.wikipedia.org/wiki/%E9%BB%83%E5%9F%94%E8%BB%8D%E6%A0%A1%E8%88%8A%E5%9D%80?redirect=no",
+          "kind": "published_traditional"
+        },
+        {
+          "alias": "國民革命軍黃埔軍官學校",
+          "lang": "zh",
+          "url": "https://zh.wikipedia.org/wiki/%E5%9C%8B%E6%B0%91%E9%9D%A9%E5%91%BD%E8%BB%8D%E9%BB%83%E5%9F%94%E8%BB%8D%E5%AE%98%E5%AD%B8%E6%A0%A1?redirect=no",
+          "kind": "published_traditional"
         }
-      },
-      "external_signals": [],
-      "location": null,
-      "amap": {
-        "status": "not-run",
-        "alternatives": []
-      },
-      "score": {
-        "total": 26,
-        "parts": {
-          "foreigner": 0,
-          "confidence": 12,
-          "sources": 10,
-          "complete": 4,
-          "amap": 0
-        },
-        "external_used": false
-      },
-      "flags": []
+      ]
     },
     {
       "id": "pl_gz_huangshanghuang_beijinglu_shop",
@@ -4709,7 +5272,7 @@
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": "珠江东路6号",
-        "address_en": null,
+        "address_en": "6 Zhujiang Road East, Tianhe District, Guangzhou",
         "district_zh": "天河区",
         "nearest_metro": null,
         "foreigner_signals": {
@@ -4726,7 +5289,8 @@
         "sources": [
           "https://sw.gz.gov.cn/swzx/swyw/content/post_10468673.html",
           "https://gzwxb.gov.cn/context/contextId/200738",
-          "https://ccc.spdb.com.cn/miniSite/2267/4de111e/sh3.shtml"
+          "https://ccc.spdb.com.cn/miniSite/2267/4de111e/sh3.shtml",
+          "https://www.jean-georges.com/restaurants/china/guangzhou/mercato"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
@@ -4746,12 +5310,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 26,
+        "total": 28,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 4,
+          "complete": 6,
           "amap": 0
         },
         "external_used": false
@@ -4870,6 +5434,7 @@
         "intro_long_en": "Compare the room outlooks before booking. Hilton describes several views, so you can choose a room suited to a trip centered on Guangzhou's riverfront skyline.",
         "star": null,
         "price_band": "1000-2000",
+        "hotel_class": "luxury",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -4899,9 +5464,7 @@
         },
         "external_used": false
       },
-      "flags": [
-        "pl_gz_kanglaide: unknown field 'hotel_class' is dropped on import"
-      ]
+      "flags": []
     },
     {
       "id": "pl_gz_konggangxierdunhuayuan",
@@ -4945,6 +5508,7 @@
         "intro_long_en": "Keep the focus on your flight schedule at this Huadu property. Check shuttle arrangements with the hotel before heading to or from Guangzhou Baiyun International Airport.",
         "star": null,
         "price_band": "<500",
+        "hotel_class": "midscale",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -4974,9 +5538,7 @@
         },
         "external_used": false
       },
-      "flags": [
-        "pl_gz_konggangxierdunhuayuan: unknown field 'hotel_class' is dropped on import"
-      ]
+      "flags": []
     },
     {
       "id": "pl_gz_lanpu",
@@ -4989,8 +5551,13 @@
         "tier": "backup",
         "name_zh": "广州兰圃",
         "name_en": "Guangzhou Orchid Garden",
-        "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_zh": [
+          "兰圃",
+          "廣州蘭圃"
+        ],
+        "aliases_en": [
+          "Canton Orchid Garden"
+        ],
         "address_zh": "越秀区解放北路901号",
         "address_en": null,
         "district_zh": "越秀区",
@@ -5043,7 +5610,27 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "兰圃",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q11062003",
+          "kind": "wikidata"
+        },
+        {
+          "alias": "Canton Orchid Garden",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q11062003",
+          "kind": "label"
+        },
+        {
+          "alias": "廣州蘭圃",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q11062003",
+          "kind": "published_traditional"
+        }
+      ]
     },
     {
       "id": "pl_gz_lianhuashan",
@@ -5056,8 +5643,19 @@
         "tier": "backup",
         "name_zh": "莲花山公园",
         "name_en": "Lianhua Mountain Park",
-        "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_zh": [
+          "莲花山旅游区",
+          "莲花山 (番禺)",
+          "莲花山风景旅游区",
+          "蓮花山旅遊區",
+          "蓮花山 (番禺)",
+          "蓮花山風景旅遊區"
+        ],
+        "aliases_en": [
+          "LianHua Hill",
+          "Lotus Hill",
+          "Lianhuashan, Guangzhou"
+        ],
         "address_zh": "广州市番禺区石楼镇西门路18号",
         "address_en": null,
         "district_zh": "番禺区",
@@ -5111,7 +5709,63 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "莲花山旅游区",
+          "lang": "zh",
+          "url": "https://wglj.gz.gov.cn/ztmb/gzhyn/ajjq/jqml/content/post_11062518.html",
+          "kind": "manual"
+        },
+        {
+          "alias": "莲花山 (番禺)",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q6685171",
+          "kind": "label"
+        },
+        {
+          "alias": "莲花山风景旅游区",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q6685171",
+          "kind": "wikidata"
+        },
+        {
+          "alias": "LianHua Hill",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q6685171",
+          "kind": "label"
+        },
+        {
+          "alias": "Lotus Hill",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q6685171",
+          "kind": "wikidata"
+        },
+        {
+          "alias": "Lianhuashan, Guangzhou",
+          "lang": "en",
+          "url": "https://en.wikipedia.org/wiki/Lianhuashan%2C_Guangzhou?redirect=no",
+          "kind": "redirect"
+        },
+        {
+          "alias": "蓮花山旅遊區",
+          "lang": "zh",
+          "url": "https://zh.wikipedia.org/wiki/%E8%93%AE%E8%8A%B1%E5%B1%B1%E6%97%85%E9%81%8A%E5%8D%80?redirect=no",
+          "kind": "published_traditional"
+        },
+        {
+          "alias": "蓮花山 (番禺)",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q6685171",
+          "kind": "published_traditional"
+        },
+        {
+          "alias": "蓮花山風景旅遊區",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q6685171",
+          "kind": "published_traditional"
+        }
+      ]
     },
     {
       "id": "pl_gz_lianxianglou_dishifu",
@@ -5325,7 +5979,7 @@
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": "芳信路57号",
-        "address_en": null,
+        "address_en": "57 Fangxin Road, Liwan District, Guangzhou",
         "district_zh": "荔湾区",
         "nearest_metro": null,
         "foreigner_signals": {
@@ -5340,7 +5994,8 @@
         "official_url": "https://www.lw.gov.cn/ztzl/rdjyhzxtabl/content/post_10880549.html",
         "sources": [
           "https://www.lw.gov.cn/ztzl/rdjyhzxtabl/content/post_10880549.html",
-          "https://www.lw.gov.cn/ywb/yshj/zysc/content/mpost_9589598.html"
+          "https://www.lw.gov.cn/ywb/yshj/zysc/content/mpost_9589598.html",
+          "https://www.lw.gov.cn/ywb/zx/content/mpost_9589568.html"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
@@ -5360,12 +6015,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 26,
+        "total": 28,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 4,
+          "complete": 6,
           "amap": 0
         },
         "external_used": false
@@ -5383,7 +6038,9 @@
         "tier": "backup",
         "name_zh": "岭南印象园",
         "name_en": "Lingnan Impression Park",
-        "aliases_zh": [],
+        "aliases_zh": [
+          "嶺南印象園"
+        ],
         "aliases_en": [],
         "address_zh": "广州市大学城外环西路",
         "address_en": null,
@@ -5438,7 +6095,15 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "嶺南印象園",
+          "lang": "zh",
+          "url": "https://zh.wikipedia.org/wiki/%E5%B6%BA%E5%8D%97%E5%8D%B0%E8%B1%A1%E5%9C%92",
+          "kind": "published_traditional"
+        }
+      ]
     },
     {
       "id": "pl_gz_lisi",
@@ -5482,6 +6147,7 @@
         "intro_long_en": "Plan an evening near the Opera House using the APM, or arrive via Zhujiang New Town on lines 3 and 5. English is among the hotel's listed languages.",
         "star": null,
         "price_band": "1000-2000",
+        "hotel_class": "luxury",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -5511,9 +6177,7 @@
         },
         "external_used": false
       },
-      "flags": [
-        "pl_gz_lisi: unknown field 'hotel_class' is dropped on import"
-      ]
+      "flags": []
     },
     {
       "id": "pl_gz_liurongsi",
@@ -5527,7 +6191,9 @@
         "name_zh": "六榕寺",
         "name_en": "Temple of the Six Banyan Trees",
         "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_en": [
+          "Liurong Temple"
+        ],
         "address_zh": "广州市越秀区六榕路87号",
         "address_en": null,
         "district_zh": "越秀区",
@@ -5580,7 +6246,15 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "Liurong Temple",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q683127",
+          "kind": "wikidata"
+        }
+      ]
     },
     {
       "id": "pl_gz_liuxihe",
@@ -5593,7 +6267,10 @@
         "tier": "backup",
         "name_zh": "流溪河国家森林公园",
         "name_en": "Liuxihe National Forest Park",
-        "aliases_zh": [],
+        "aliases_zh": [
+          "广州市流溪河国家森林公园",
+          "流溪河國家森林公園"
+        ],
         "aliases_en": [],
         "address_zh": null,
         "address_en": null,
@@ -5648,7 +6325,21 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "广州市流溪河国家森林公园",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q11147874",
+          "kind": "wikidata"
+        },
+        {
+          "alias": "流溪河國家森林公園",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q11147874",
+          "kind": "published_traditional"
+        }
+      ]
     },
     {
       "id": "pl_gz_liwan_gifts_yongqing",
@@ -5784,8 +6475,12 @@
         "tier": "main",
         "name_zh": "荔枝湾涌",
         "name_en": "Lizhiwan Creek",
-        "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_zh": [
+          "荔枝湾"
+        ],
+        "aliases_en": [
+          "Lychee Bay"
+        ],
         "address_zh": null,
         "address_en": null,
         "district_zh": "荔湾区",
@@ -5838,7 +6533,26 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "hours_zh: Codex could not confirm it from an official page; check by hand",
+        "ticket.price_cny: Codex could not confirm it from an official page; check by hand",
+        "ticket.booking: Codex could not confirm it from an official page; check by hand",
+        "official_url: Codex could not confirm it from an official page; check by hand"
+      ],
+      "alias_evidence": [
+        {
+          "alias": "荔枝湾",
+          "lang": "zh",
+          "url": "https://igz.gzwxb.gov.cn/context/contextId/200543",
+          "kind": "manual"
+        },
+        {
+          "alias": "Lychee Bay",
+          "lang": "en",
+          "url": "https://guangzhoutrips.com/lychee-bay-guangzhou/",
+          "kind": "manual"
+        }
+      ]
     },
     {
       "id": "pl_gz_lumingjiujia_luhu",
@@ -6049,7 +6763,7 @@
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": "珠江东路6号K11八层802",
-        "address_en": null,
+        "address_en": "Unit 802, Level 8, K11 Art Mall, 6 Zhujiang Road East, Tianhe District, Guangzhou",
         "district_zh": "天河区",
         "nearest_metro": null,
         "foreigner_signals": {
@@ -6062,7 +6776,8 @@
         },
         "official_url": "https://cguan.cancilleria.gob.ar/userfiles/guia_de_guangzhou.pdf",
         "sources": [
-          "https://cguan.cancilleria.gob.ar/userfiles/guia_de_guangzhou.pdf"
+          "https://cguan.cancilleria.gob.ar/userfiles/guia_de_guangzhou.pdf",
+          "https://www.jean-georges.com/restaurants/china/guangzhou/mercato"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
@@ -6088,12 +6803,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 23,
+        "total": 29,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
-          "sources": 5,
-          "complete": 6,
+          "sources": 10,
+          "complete": 7,
           "amap": 0
         },
         "external_used": false
@@ -6176,7 +6891,9 @@
         "tier": "backup",
         "name_zh": "南海神庙",
         "name_en": "Nanhai God Temple",
-        "aliases_zh": [],
+        "aliases_zh": [
+          "波罗庙"
+        ],
         "aliases_en": [],
         "address_zh": "广州市黄埔区庙头旭日街22号",
         "address_en": null,
@@ -6231,7 +6948,15 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "波罗庙",
+          "lang": "zh",
+          "url": "https://zh.wikipedia.org/wiki/%E6%B3%A2%E7%BD%97%E5%BA%99?redirect=no",
+          "kind": "redirect"
+        }
+      ]
     },
     {
       "id": "pl_gz_nanhaiyucun_zhujiang",
@@ -6310,7 +7035,9 @@
         "name_zh": "南沙滨海湿地景区",
         "name_en": "Nansha Binhai Wetland Scenic Area",
         "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_en": [
+          "Nansha Wetland Park"
+        ],
         "address_zh": "广州市南沙区万顷沙镇新垦十八涌",
         "address_en": null,
         "district_zh": "南沙区",
@@ -6364,7 +7091,15 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "Nansha Wetland Park",
+          "lang": "en",
+          "url": "https://en.wikipedia.org/wiki/Nansha_Wetland_Park",
+          "kind": "manual"
+        }
+      ]
     },
     {
       "id": "pl_gz_nansha_tianhougong",
@@ -6377,8 +7112,13 @@
         "tier": "backup",
         "name_zh": "南沙天后宫",
         "name_en": "Nansha Tin Hau Palace",
-        "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_zh": [
+          "南沙天后宮"
+        ],
+        "aliases_en": [
+          "Nansha Tianhou Temple",
+          "Tin Hau Temple, Nansha"
+        ],
         "address_zh": "广州市南沙区天后路88号",
         "address_en": null,
         "district_zh": "南沙区",
@@ -6432,7 +7172,27 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "Nansha Tianhou Temple",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q3008675",
+          "kind": "label"
+        },
+        {
+          "alias": "Tin Hau Temple, Nansha",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q3008675",
+          "kind": "wikidata"
+        },
+        {
+          "alias": "南沙天后宮",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q3008675",
+          "kind": "published_traditional"
+        }
+      ]
     },
     {
       "id": "pl_gz_nanyue_wanggong",
@@ -6445,8 +7205,17 @@
         "tier": "main",
         "name_zh": "南越王博物院（王宫展区）",
         "name_en": "Nanyue King Museum (Palace Exhibition Area)",
-        "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_zh": [
+          "南越王博物院王宫展区",
+          "南越王宫博物馆",
+          "南越王宮博物館",
+          "南越王博物院王宮展區"
+        ],
+        "aliases_en": [
+          "Site of Palace and Garden, Nanyue King Museum",
+          "Nanyue Palace Museum",
+          "Nanyue Kingdom Palace Museum"
+        ],
         "address_zh": "广州市越秀区中山四路316号",
         "address_en": null,
         "district_zh": "越秀区",
@@ -6502,7 +7271,51 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "南越王博物院王宫展区",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q99575674",
+          "kind": "label"
+        },
+        {
+          "alias": "南越王宫博物馆",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q99575674",
+          "kind": "wikidata"
+        },
+        {
+          "alias": "Site of Palace and Garden, Nanyue King Museum",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q99575674",
+          "kind": "label"
+        },
+        {
+          "alias": "Nanyue Palace Museum",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q99575674",
+          "kind": "wikidata"
+        },
+        {
+          "alias": "Nanyue Kingdom Palace Museum",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q99575674",
+          "kind": "wikidata"
+        },
+        {
+          "alias": "南越王宮博物館",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q99575674",
+          "kind": "published_traditional"
+        },
+        {
+          "alias": "南越王博物院王宮展區",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q99575674",
+          "kind": "published_traditional"
+        }
+      ]
     },
     {
       "id": "pl_gz_nanyue_wangmu",
@@ -6515,8 +7328,19 @@
         "tier": "main",
         "name_zh": "南越王博物院（王墓展区）",
         "name_en": "Nanyue King Museum (Tomb Exhibition Area)",
-        "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_zh": [
+          "南越王博物院王墓展区",
+          "西汉南越王博物馆",
+          "西汉南越王墓博物馆",
+          "西漢南越王博物館",
+          "南越王博物院王墓展區"
+        ],
+        "aliases_en": [
+          "Site of King's Tomb, Nanyue King Museum",
+          "Museum of the Nanyue King Mausoleum",
+          "Western Han Nanyue King Museum",
+          "Museum of the Mausoleum of King Zhao Mo"
+        ],
         "address_zh": "广州市解放北路867号",
         "address_en": null,
         "district_zh": "越秀区",
@@ -6574,7 +7398,63 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "南越王博物院王墓展区",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q1507198",
+          "kind": "label"
+        },
+        {
+          "alias": "西汉南越王博物馆",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q1507198",
+          "kind": "wikidata"
+        },
+        {
+          "alias": "西汉南越王墓博物馆",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q1507198",
+          "kind": "wikidata"
+        },
+        {
+          "alias": "Site of King's Tomb, Nanyue King Museum",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q1507198",
+          "kind": "label"
+        },
+        {
+          "alias": "Museum of the Nanyue King Mausoleum",
+          "lang": "en",
+          "url": "https://en.wikipedia.org/wiki/Museum_of_the_Nanyue_King_Mausoleum?redirect=no",
+          "kind": "redirect"
+        },
+        {
+          "alias": "Western Han Nanyue King Museum",
+          "lang": "en",
+          "url": "https://en.wikipedia.org/wiki/Western_Han_Nanyue_King_Museum?redirect=no",
+          "kind": "redirect"
+        },
+        {
+          "alias": "Museum of the Mausoleum of King Zhao Mo",
+          "lang": "en",
+          "url": "https://en.wikipedia.org/wiki/Museum_of_the_Mausoleum_of_King_Zhao_Mo?redirect=no",
+          "kind": "redirect"
+        },
+        {
+          "alias": "西漢南越王博物館",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q1507198",
+          "kind": "published_traditional"
+        },
+        {
+          "alias": "南越王博物院王墓展區",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q1507198",
+          "kind": "published_traditional"
+        }
+      ]
     },
     {
       "id": "pl_gz_oggi_guangyuetiandi",
@@ -6812,6 +7692,7 @@
         "intro_long_en": "Give southern Guangzhou a separate stop on your trip. The hotel directions list Nancun Wanbo on lines 7 and 18 and Guangzhou South Railway Station.",
         "star": null,
         "price_band": "500-1000",
+        "hotel_class": "upscale",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -6841,9 +7722,7 @@
         },
         "external_used": false
       },
-      "flags": [
-        "pl_gz_panyuxilaideng: unknown field 'hotel_class' is dropped on import"
-      ]
+      "flags": []
     },
     {
       "id": "pl_gz_parc_central_gz",
@@ -6925,8 +7804,15 @@
         "tier": "main",
         "name_zh": "珠江琶醍啤酒文化创意艺术区",
         "name_en": "Zhujiang Party Pier Beer Culture and Art Zone",
-        "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_zh": [
+          "琶醍啤酒文化创意艺术区",
+          "珠江·琶醍啤酒文化创意园区",
+          "广州珠江琶醍"
+        ],
+        "aliases_en": [
+          "Zhujiang Party Pier Beer Culture & Art Zone",
+          "Party Pier"
+        ],
         "address_zh": "广州市海珠区阅江西路磨碟沙大街118号",
         "address_en": null,
         "district_zh": "海珠区",
@@ -6980,7 +7866,39 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "琶醍啤酒文化创意艺术区",
+          "lang": "zh",
+          "url": "https://www.haizhu.gov.cn/hzdt/ztlm/tzhz/rjhj/lyjd/yxdk/content/mpost_10538113.html",
+          "kind": "manual"
+        },
+        {
+          "alias": "珠江·琶醍啤酒文化创意园区",
+          "lang": "zh",
+          "url": "https://www.haizhu.gov.cn/bmml/qcl/content/post_11018879.html",
+          "kind": "manual"
+        },
+        {
+          "alias": "Zhujiang Party Pier Beer Culture & Art Zone",
+          "lang": "en",
+          "url": "https://www.trip.com/travel-guide/attraction/guangzhou/zhujiang-party-pier-beer-culture-and-art-zone-15063607",
+          "kind": "manual"
+        },
+        {
+          "alias": "Party Pier",
+          "lang": "en",
+          "url": "https://www.haoliday.com/en/explore/guangzhou/p/party-pier",
+          "kind": "manual"
+        },
+        {
+          "alias": "广州珠江琶醍",
+          "lang": "zh",
+          "url": "https://www.ateliercns.com/new-gallery-2",
+          "kind": "manual"
+        }
+      ]
     },
     {
       "id": "pl_gz_patina_zhujiangdong",
@@ -7104,6 +8022,7 @@
         "intro_long_en": "Choose this option if you're staying on the Pazhou side of Guangzhou. The property publishes the nearest subway stop and lists a pool and on-site dining.",
         "star": null,
         "price_band": "500-1000",
+        "hotel_class": "midscale",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -7133,9 +8052,7 @@
         },
         "external_used": false
       },
-      "flags": [
-        "pl_gz_pazhouwanyi: unknown field 'hotel_class' is dropped on import"
-      ]
+      "flags": []
     },
     {
       "id": "pl_gz_piazzaitalia_huacheng",
@@ -7378,6 +8295,7 @@
         "intro_long_en": "For a first stay in central Guangzhou, Beijing Road Pedestrian Street and People's Park are close by. The hotel confirms it accepts international guests and directs arrivals to Exit A of Gongyuanqian Metro Station.",
         "star": null,
         "price_band": null,
+        "hotel_class": "economy",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -7408,7 +8326,7 @@
         "external_used": false
       },
       "flags": [
-        "pl_gz_rujia_neo_gongyuanqian: unknown field 'hotel_class' is dropped on import"
+        "no price band: it cannot enter the library until the operator's own page gives a rate"
       ]
     },
     {
@@ -7459,6 +8377,7 @@
         "intro_long_en": "Pack lighter for a few days in Haizhu. The property lists washers, dryers and a gym, and explicitly welcomes overseas guests. Its directions put Shangchong on Line 11 closer to the hotel than Kecun.",
         "star": null,
         "price_band": null,
+        "hotel_class": "economy",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -7489,7 +8408,7 @@
         "external_used": false
       },
       "flags": [
-        "pl_gz_rujia_neo_kecun: unknown field 'hotel_class' is dropped on import"
+        "no price band: it cannot enter the library until the operator's own page gives a rate"
       ]
     },
     {
@@ -7539,6 +8458,7 @@
         "intro_long_en": "If Liwan is the focus of your visit, this property is near Liwan Lake Park and the Yongqing Fang area. It confirms international guest check-in. Use Ruyifang Station's Exit B.",
         "star": null,
         "price_band": null,
+        "hotel_class": "economy",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -7569,7 +8489,7 @@
         "external_used": false
       },
       "flags": [
-        "pl_gz_rujia_neo_yongqingfang: unknown field 'hotel_class' is dropped on import"
+        "no price band: it cannot enter the library until the operator's own page gives a rate"
       ]
     },
     {
@@ -7642,8 +8562,17 @@
         "tier": "main",
         "name_zh": "沙面岛",
         "name_en": "Shamian Island",
-        "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_zh": [
+          "沙面",
+          "拾翠洲",
+          "沙面島"
+        ],
+        "aliases_en": [
+          "Shamian",
+          "Shameen",
+          "Shameen Island",
+          "Shameen Island, Canton"
+        ],
         "address_zh": null,
         "address_en": null,
         "district_zh": "荔湾区",
@@ -7696,7 +8625,56 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "hours_zh: Codex could not confirm it from an official page; check by hand",
+        "ticket.price_cny: Codex could not confirm it from an official page; check by hand",
+        "ticket.booking: Codex could not confirm it from an official page; check by hand",
+        "official_url: Codex could not confirm it from an official page; check by hand"
+      ],
+      "alias_evidence": [
+        {
+          "alias": "沙面",
+          "lang": "zh",
+          "url": "https://swj.gz.gov.cn/gkmlpt/content/10/10226/post_10226652.html",
+          "kind": "manual"
+        },
+        {
+          "alias": "Shamian",
+          "lang": "en",
+          "url": "https://en.wikipedia.org/wiki/Shamian",
+          "kind": "manual"
+        },
+        {
+          "alias": "Shameen",
+          "lang": "en",
+          "url": "https://en.wikipedia.org/wiki/Shamian",
+          "kind": "manual"
+        },
+        {
+          "alias": "拾翠洲",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q529977",
+          "kind": "wikidata"
+        },
+        {
+          "alias": "Shameen Island",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q529977",
+          "kind": "wikidata"
+        },
+        {
+          "alias": "Shameen Island, Canton",
+          "lang": "en",
+          "url": "https://en.wikipedia.org/wiki/Shameen_Island%2C_Canton?redirect=no",
+          "kind": "redirect"
+        },
+        {
+          "alias": "沙面島",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q529977",
+          "kind": "published_traditional"
+        }
+      ]
     },
     {
       "id": "pl_gz_shangxiajiu",
@@ -7709,8 +8687,15 @@
         "tier": "main",
         "name_zh": "上下九步行街",
         "name_en": "Shangxiajiu Pedestrian Street",
-        "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_zh": [
+          "上下九",
+          "广州上下九",
+          "上下九商业步行街",
+          "上下九商業步行街"
+        ],
+        "aliases_en": [
+          "Shangxiajiu"
+        ],
         "address_zh": null,
         "address_en": null,
         "district_zh": "荔湾区",
@@ -7723,9 +8708,10 @@
         },
         "official_url": null,
         "sources": [
-          "https://www.gz.gov.cn/zt/hcwl/ycdy/ycbj/content/post_11017723.html"
+          "https://www.gz.gov.cn/zt/hcwl/ycdy/ycbj/content/post_11017723.html",
+          "https://gzwxb.gov.cn/context/contextId/200738"
         ],
-        "checked_on": "2026-11-18",
+        "checked_on": "2026-11-27",
         "confidence": "low",
         "notes": "官方目录沿用既有候选记录的核对日，晋级前应重读。",
         "subcategory": "street",
@@ -7734,7 +8720,7 @@
         "ticket": {
           "booking": null,
           "passport_required": null,
-          "price_cny": null,
+          "price_cny": 0,
           "closed_weekdays": null,
           "booking_channel_zh": null,
           "booking_url": null
@@ -7753,17 +8739,53 @@
         "alternatives": []
       },
       "score": {
-        "total": 10,
+        "total": 15,
         "parts": {
           "foreigner": 0,
           "confidence": 4,
-          "sources": 5,
+          "sources": 10,
           "complete": 1,
           "amap": 0
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "hours_zh: Codex could not confirm it from an official page; check by hand",
+        "ticket.booking: Codex could not confirm it from an official page; check by hand",
+        "official_url: Codex could not confirm it from an official page; check by hand"
+      ],
+      "alias_evidence": [
+        {
+          "alias": "上下九",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q7488612",
+          "kind": "wikidata"
+        },
+        {
+          "alias": "广州上下九",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q7488612",
+          "kind": "wikidata"
+        },
+        {
+          "alias": "上下九商业步行街",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q7488612",
+          "kind": "wikidata"
+        },
+        {
+          "alias": "Shangxiajiu",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q7488612",
+          "kind": "wikidata"
+        },
+        {
+          "alias": "上下九商業步行街",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q7488612",
+          "kind": "published_traditional"
+        }
+      ]
     },
     {
       "id": "pl_gz_shawan",
@@ -7776,7 +8798,9 @@
         "tier": "main",
         "name_zh": "沙湾古镇",
         "name_en": "Shawan Ancient Town",
-        "aliases_zh": [],
+        "aliases_zh": [
+          "沙灣古鎮"
+        ],
         "aliases_en": [],
         "address_zh": "广州市番禺区沙湾大巷涌路10号沙湾古镇",
         "address_en": null,
@@ -7831,7 +8855,15 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "沙灣古鎮",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q14328614",
+          "kind": "published_traditional"
+        }
+      ]
     },
     {
       "id": "pl_gz_shengxin",
@@ -7844,8 +8876,14 @@
         "tier": "main",
         "name_zh": "圣心大教堂（石室）",
         "name_en": "Sacred Heart Cathedral (Shishi)",
-        "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_zh": [
+          "石室",
+          "耶稣圣心主教座堂",
+          "圣心大教堂"
+        ],
+        "aliases_en": [
+          "Sacred Heart Cathedral, Guangzhou"
+        ],
         "address_zh": "广州市越秀区一德路旧部前56号",
         "address_en": null,
         "district_zh": "越秀区",
@@ -7898,7 +8936,33 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "石室",
+          "lang": "zh",
+          "url": "https://zh.wikipedia.org/wiki/耶稣圣心主教座堂_(广州市)",
+          "kind": "manual"
+        },
+        {
+          "alias": "耶稣圣心主教座堂",
+          "lang": "zh",
+          "url": "https://zh.wikipedia.org/wiki/耶稣圣心主教座堂_(广州市)",
+          "kind": "manual"
+        },
+        {
+          "alias": "Sacred Heart Cathedral, Guangzhou",
+          "lang": "en",
+          "url": "https://www.trip.com/travel-guide/attraction/guangzhou/sacred-heart-cathedral-guangzhou-76956",
+          "kind": "manual"
+        },
+        {
+          "alias": "圣心大教堂",
+          "lang": "zh",
+          "url": "http://www.yuexiu.gov.cn/zjyx/yxjd/zjwh/content/post_8665100.html",
+          "kind": "discovery"
+        }
+      ]
     },
     {
       "id": "pl_gz_shisanhang",
@@ -8016,6 +9080,7 @@
         "intro_long_en": "Use the underground access from Zhujiang New Town station for a weatherproof arrival. The hotel's map also places the opera house and riverfront within the same sightseeing area.",
         "star": null,
         "price_band": ">2000",
+        "hotel_class": "luxury",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -8045,9 +9110,7 @@
         },
         "external_used": false
       },
-      "flags": [
-        "pl_gz_siji: unknown field 'hotel_class' is dropped on import"
-      ]
+      "flags": []
     },
     {
       "id": "pl_gz_taigucang",
@@ -8060,7 +9123,10 @@
         "tier": "main",
         "name_zh": "太古仓码头",
         "name_en": "Taigucang Wharf",
-        "aliases_zh": [],
+        "aliases_zh": [
+          "太古仓码头 (广州)",
+          "太古倉碼頭"
+        ],
         "aliases_en": [],
         "address_zh": "广州市海珠区革新路124号",
         "address_en": null,
@@ -8115,7 +9181,21 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "太古仓码头 (广州)",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q10941084",
+          "kind": "label"
+        },
+        {
+          "alias": "太古倉碼頭",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q10941084",
+          "kind": "published_traditional"
+        }
+      ]
     },
     {
       "id": "pl_gz_tangliyuan_huangsha",
@@ -8328,7 +9408,7 @@
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": "天河路208号",
-        "address_en": null,
+        "address_en": "208 Tianhe Road, Tianhe District, Guangzhou",
         "district_zh": "天河区",
         "nearest_metro": {
           "station_zh": "体育西路",
@@ -8350,7 +9430,8 @@
           "https://www.teemall.com.cn/gzthcgwzx/txfw/jtzn/index.html",
           "https://sw.gz.gov.cn/swzx/swyw/content/post_10468673.html",
           "https://www.eguangzhou.gov.cn/gzlatest/content/post_48904.html",
-          "https://www.gz.gov.cn/attachment/7/7792/7792257/10198995.pdf"
+          "https://www.gz.gov.cn/attachment/7/7792/7792257/10198995.pdf",
+          "https://www.eguangzhou.gov.cn/gzlatest/content/post_39401.html"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
@@ -8370,12 +9451,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 28,
+        "total": 30,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 6,
+          "complete": 8,
           "amap": 0
         },
         "external_used": false
@@ -8448,77 +9529,6 @@
       "flags": []
     },
     {
-      "id": "pl_gz_tianhefenghuangxierdun",
-      "source_file": "C8/guangzhou-hotel.json",
-      "status": "pending",
-      "draft": {
-        "id": "pl_gz_tianhefenghuangxierdun",
-        "city": "guangzhou",
-        "category": "hotel",
-        "tier": "backup",
-        "name_zh": "广州天河凤凰希尔顿花园酒店",
-        "name_en": "Hilton Garden Inn Guangzhou Tianhe Fenghuang",
-        "aliases_zh": [],
-        "aliases_en": [],
-        "address_zh": null,
-        "address_en": null,
-        "district_zh": "天河区",
-        "nearest_metro": null,
-        "foreigner_signals": {
-          "english_signage": null,
-          "foreign_cards": null,
-          "english_service": null,
-          "evidence": [
-            "https://www.hilton.com.cn/zh-cn/hotels/canesgi-hilton-garden-inn-guangzhou-tianhe-fenghuang"
-          ]
-        },
-        "official_url": "https://www.hilton.com.cn/zh-cn/hotels/canesgi-hilton-garden-inn-guangzhou-tianhe-fenghuang",
-        "sources": [
-          "https://www.hilton.com.cn/zh-cn/hotels/canesgi-hilton-garden-inn-guangzhou-tianhe-fenghuang",
-          "https://www.hilton.com.cn/zh-cn/locations/china/guangdong-guangzhou"
-        ],
-        "checked_on": "2026-11-27",
-        "confidence": "medium",
-        "notes": "希尔顿城市页显示 2026-11-27 入住、11-28 退房的起价。 官网样本为每房每晚人民币 ¥408。当前价以所选日期及房型的报价为准。",
-        "subcategory": "hotel",
-        "intro_short_zh": "在天河凤凰一带停留可考虑这里。",
-        "intro_short_en": "A hotel in the Tianhe Fenghuang area.",
-        "intro_long_zh": "在天河凤凰一带停留可考虑这里。可在品牌官网查看房型和入住安排。",
-        "intro_long_en": "A hotel in the Tianhe Fenghuang area. See the hotel's own website for room types and check-in details.",
-        "star": null,
-        "price_band": "<500",
-        "accepts_foreigners": true,
-        "foreign_service": {
-          "english_front_desk": null,
-          "foreign_guest_share": null,
-          "foreign_guest_experience": null,
-          "international_brand": "Hilton",
-          "evidence_zh": "广州天河凤凰希尔顿花园酒店由国际酒店品牌或集团 Hilton 的官网正式列出并提供预订入口。",
-          "evidence": [
-            "https://www.hilton.com.cn/zh-cn/hotels/canesgi-hilton-garden-inn-guangzhou-tianhe-fenghuang"
-          ]
-        }
-      },
-      "external_signals": [],
-      "location": null,
-      "amap": {
-        "status": "not-run",
-        "alternatives": []
-      },
-      "score": {
-        "total": 26,
-        "parts": {
-          "foreigner": 0,
-          "confidence": 12,
-          "sources": 10,
-          "complete": 4,
-          "amap": 0
-        },
-        "external_used": false
-      },
-      "flags": []
-    },
-    {
       "id": "pl_gz_tianhegongyuanwanfeng",
       "source_file": "C8/guangzhou-hotel.json",
       "status": "pending",
@@ -8560,6 +9570,7 @@
         "intro_long_en": "The hotel is on West Zhongshan Avenue. Marriott lists a 24-hour gym and publishes the arrival address and hotel information in English.",
         "star": null,
         "price_band": "<500",
+        "hotel_class": "midscale",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -8589,9 +9600,7 @@
         },
         "external_used": false
       },
-      "flags": [
-        "pl_gz_tianhegongyuanwanfeng: unknown field 'hotel_class' is dropped on import"
-      ]
+      "flags": []
     },
     {
       "id": "pl_gz_tianhewanhao",
@@ -8641,6 +9650,7 @@
         "intro_long_en": "Use the property's directions from Tianhe Sports Center station if shopping along Tianhe Road is on your itinerary. The arrival page also lists connections from Guangzhou East.",
         "star": null,
         "price_band": "1000-2000",
+        "hotel_class": "upscale",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -8670,9 +9680,7 @@
         },
         "external_used": false
       },
-      "flags": [
-        "pl_gz_tianhewanhao: unknown field 'hotel_class' is dropped on import"
-      ]
+      "flags": []
     },
     {
       "id": "pl_gz_tianheweisiting",
@@ -8716,6 +9724,7 @@
         "intro_long_en": "The property lists an around-the-clock multilingual concierge. Consider it when you want local restaurant suggestions and some time at either of the pools.",
         "star": null,
         "price_band": "1000-2000",
+        "hotel_class": "upscale",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -8745,9 +9754,7 @@
         },
         "external_used": false
       },
-      "flags": [
-        "pl_gz_tianheweisiting: unknown field 'hotel_class' is dropped on import"
-      ]
+      "flags": []
     },
     {
       "id": "pl_gz_tianhexierdun",
@@ -8792,6 +9799,7 @@
         "intro_long_en": "This option is useful when arriving via Guangzhou East Railway Station. Look up the hotel's shuttle or plan onward trips with Metro lines 1 and 3.",
         "star": null,
         "price_band": "500-1000",
+        "hotel_class": "upscale",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -8821,9 +9829,7 @@
         },
         "external_used": false
       },
-      "flags": [
-        "pl_gz_tianhexierdun: unknown field 'hotel_class' is dropped on import"
-      ]
+      "flags": []
     },
     {
       "id": "pl_gz_tianhezhongyunxierdun",
@@ -8839,7 +9845,7 @@
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": "广州市天河区广州大道北63号",
-        "address_en": null,
+        "address_en": "63 North Guangzhou Avenue, Tianhe District, Guangzhou, China 510500",
         "district_zh": "天河区",
         "nearest_metro": null,
         "foreigner_signals": {
@@ -8854,11 +9860,12 @@
         "sources": [
           "https://www.hilton.com.cn/zh-cn/hotels/cangzgi-hilton-garden-inn-guangzhou-tianhe",
           "https://www.hilton.com.cn/zh-cn/locations/china/guangdong-guangzhou",
-          "https://ir.hilton.com/_assets/_de1e637820b6842c68b34801d11a8fd1/hilton/db/3577/34740/pdf/HLT_Investor_Presentation_-_November_2026.pdf"
+          "https://ir.hilton.com/_assets/_de1e637820b6842c68b34801d11a8fd1/hilton/db/3577/34740/pdf/HLT_Investor_Presentation_-_November_2026.pdf",
+          "https://www.hilton.com/zh-hant/hotels/cangzgi-hilton-garden-inn-guangzhou-tianhe/hotel-location/"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
-        "notes": "希尔顿城市页显示 2026-11-27 入住、11-28 退房的起价。 官网样本为每房每晚人民币 ¥495。当前价以所选日期及房型的报价为准。 分档依据：希尔顿集团将品牌列为 Focused Service，本库按中档处理。 同一希尔顿物业代码 CANGZGI 的中文官网现称广州天河鼎龙希尔顿花园酒店。人工入库时核对展示名称。",
+        "notes": "希尔顿城市页显示 2026-11-27 入住、11-28 退房的起价。 官网样本为每房每晚人民币 ¥495。当前价以所选日期及房型的报价为准。 分档依据：希尔顿集团将品牌列为 Focused Service，本库按中档处理。 同一希尔顿物业代码 CANGZGI 的中文官网现称广州天河鼎龙希尔顿花园酒店。人工入库时核对展示名称。 希尔顿繁中页对同物业代码 CANGZGI 保留「中雲」，简中页显示「鼎龙」。两官方版本地址一致。",
         "subcategory": "hotel",
         "intro_short_zh": "天河北部的希尔顿花园，可结合动物园行程。",
         "intro_short_en": "A north Tianhe option for a trip that includes Guangzhou Zoo.",
@@ -8866,6 +9873,7 @@
         "intro_long_en": "If your plans are on the north side of Tianhe, use the English location page to check routes to Guangzhou Zoo and the eastern rail station.",
         "star": null,
         "price_band": "<500",
+        "hotel_class": "midscale",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -8885,19 +9893,17 @@
         "alternatives": []
       },
       "score": {
-        "total": 28,
+        "total": 29,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 6,
+          "complete": 7,
           "amap": 0
         },
         "external_used": false
       },
-      "flags": [
-        "pl_gz_tianhezhongyunxierdun: unknown field 'hotel_class' is dropped on import"
-      ]
+      "flags": []
     },
     {
       "id": "pl_gz_wagas_kshiyi",
@@ -9012,6 +10018,7 @@
         "intro_long_en": "Set aside a day for Tianhe's shops and restaurants. The hotel's bilingual site makes it possible to check the address and room choices before arriving.",
         "star": null,
         "price_band": ">2000",
+        "hotel_class": "luxury",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -9037,79 +10044,6 @@
           "confidence": 12,
           "sources": 10,
           "complete": 9,
-          "amap": 0
-        },
-        "external_used": false
-      },
-      "flags": [
-        "pl_gz_wenhuadongfang: unknown field 'hotel_class' is dropped on import"
-      ]
-    },
-    {
-      "id": "pl_gz_wjiudian",
-      "source_file": "C8/guangzhou-hotel.json",
-      "status": "pending",
-      "draft": {
-        "id": "pl_gz_wjiudian",
-        "city": "guangzhou",
-        "category": "hotel",
-        "tier": "backup",
-        "name_zh": "广州W酒店",
-        "name_en": "W Guangzhou",
-        "aliases_zh": [],
-        "aliases_en": [],
-        "address_zh": null,
-        "address_en": null,
-        "district_zh": null,
-        "nearest_metro": null,
-        "foreigner_signals": {
-          "english_signage": null,
-          "foreign_cards": null,
-          "english_service": null,
-          "evidence": [
-            "https://www.marriott.com/en-us/hotels/canwg-w-guangzhou/overview/"
-          ]
-        },
-        "official_url": "https://www.marriott.com/en-us/hotels/canwg-w-guangzhou/overview/",
-        "sources": [
-          "https://www.marriott.com/en-us/hotels/canwg-w-guangzhou/overview/",
-          "https://www.marriott.com/en-us/destinations/china/guangzhou.mi"
-        ],
-        "checked_on": "2026-11-27",
-        "confidence": "medium",
-        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sun, Dec 27 - Mon, Dec 28。 官网样本为每房每晚人民币 ¥1,454。当前价以所选日期及房型的报价为准。",
-        "subcategory": "hotel",
-        "intro_short_zh": "珠江新城一带的 W 酒店。",
-        "intro_short_en": "W Guangzhou in the Zhujiang New Town area.",
-        "intro_long_zh": "珠江新城一带的 W 酒店。可在品牌官网查看房型和入住安排。",
-        "intro_long_en": "W Guangzhou in the Zhujiang New Town area. See the hotel's own website for room types and check-in details.",
-        "star": null,
-        "price_band": "1000-2000",
-        "accepts_foreigners": true,
-        "foreign_service": {
-          "english_front_desk": null,
-          "foreign_guest_share": null,
-          "foreign_guest_experience": null,
-          "international_brand": "Marriott Bonvoy",
-          "evidence_zh": "广州W酒店由国际酒店品牌或集团 Marriott Bonvoy 的官网正式列出并提供预订入口。",
-          "evidence": [
-            "https://www.marriott.com/en-us/hotels/canwg-w-guangzhou/overview/"
-          ]
-        }
-      },
-      "external_signals": [],
-      "location": null,
-      "amap": {
-        "status": "not-run",
-        "alternatives": []
-      },
-      "score": {
-        "total": 26,
-        "parts": {
-          "foreigner": 0,
-          "confidence": 12,
-          "sources": 10,
-          "complete": 4,
           "amap": 0
         },
         "external_used": false
@@ -9485,6 +10419,7 @@
         "intro_long_en": "For a longer Haizhu stay, the property lists laundry machines, a gym and breakfast. The English Accor page gives the Xinhai Street address.",
         "star": null,
         "price_band": null,
+        "hotel_class": "economy",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -9515,7 +10450,7 @@
         "external_used": false
       },
       "flags": [
-        "pl_gz_yibisi_pazhou: unknown field 'hotel_class' is dropped on import"
+        "no price band: it cannot enter the library until the operator's own page gives a rate"
       ]
     },
     {
@@ -9558,6 +10493,7 @@
         "intro_long_en": "If you're staying on the old-city side of Guangzhou, use Accor's English listing for room options and the arrival address. Liuhua Lake Park is another outing nearby.",
         "star": null,
         "price_band": null,
+        "hotel_class": "economy",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -9588,7 +10524,7 @@
         "external_used": false
       },
       "flags": [
-        "pl_gz_yibisi_yuexiugongyuan: unknown field 'hotel_class' is dropped on import"
+        "no price band: it cannot enter the library until the operator's own page gives a rate"
       ]
     },
     {
@@ -9670,9 +10606,14 @@
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": "黄沙后道",
-        "address_en": null,
+        "address_en": "Huangshahou Road, Liwan District, Guangzhou, near Huangsha Station Exit C",
         "district_zh": "荔湾区",
-        "nearest_metro": null,
+        "nearest_metro": {
+          "station_zh": "黄沙",
+          "station_en": "Huangsha",
+          "line": "1、6号线",
+          "exit": "C"
+        },
         "foreigner_signals": {
           "english_signage": null,
           "foreign_cards": null,
@@ -9683,7 +10624,9 @@
         },
         "official_url": "https://www.lw.gov.cn/ywb/yshj/zysc/content/mpost_9589598.html",
         "sources": [
-          "https://www.lw.gov.cn/ywb/yshj/zysc/content/mpost_9589598.html"
+          "https://www.lw.gov.cn/ywb/yshj/zysc/content/mpost_9589598.html",
+          "https://www.lw.gov.cn/ywb/zx/content/mpost_9589568.html",
+          "https://www.gz.gov.cn/attachment/7/7792/7792257/10198995.pdf"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
@@ -9703,12 +10646,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 21,
+        "total": 30,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
-          "sources": 5,
-          "complete": 4,
+          "sources": 10,
+          "complete": 8,
           "amap": 0
         },
         "external_used": false
@@ -9801,7 +10744,11 @@
         "tier": "main",
         "name_zh": "西关永庆坊",
         "name_en": "Yongqing Fang",
-        "aliases_zh": [],
+        "aliases_zh": [
+          "永庆坊",
+          "西关永庆坊旅游区",
+          "广州市西关永庆坊旅游区"
+        ],
         "aliases_en": [],
         "address_zh": "广州市荔湾区恩宁路99号",
         "address_en": null,
@@ -9856,7 +10803,27 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "永庆坊",
+          "lang": "zh",
+          "url": "https://wglj.gz.gov.cn/ztmb/gzhyn/ajjq/jqml/content/post_11062518.html",
+          "kind": "manual"
+        },
+        {
+          "alias": "西关永庆坊旅游区",
+          "lang": "zh",
+          "url": "https://wglj.gz.gov.cn/ztmb/gzhyn/ajjq/jqml/content/post_11062518.html",
+          "kind": "manual"
+        },
+        {
+          "alias": "广州市西关永庆坊旅游区",
+          "lang": "zh",
+          "url": "https://wglj.gz.gov.cn/ztmb/gzhyn/ajjq/jqml/content/post_11062518.html",
+          "kind": "discovery"
+        }
+      ]
     },
     {
       "id": "pl_gz_yuehaixilaideng",
@@ -9900,6 +10867,7 @@
         "intro_long_en": "Plan a shopping day around Tianhe Road, using either of the two metro stops listed by the property. The hotel identifies English as one of its spoken languages.",
         "star": null,
         "price_band": "1000-2000",
+        "hotel_class": "upscale",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -9929,9 +10897,7 @@
         },
         "external_used": false
       },
-      "flags": [
-        "pl_gz_yuehaixilaideng: unknown field 'hotel_class' is dropped on import"
-      ]
+      "flags": []
     },
     {
       "id": "pl_gz_yueju_bowuguan",
@@ -9944,7 +10910,9 @@
         "tier": "main",
         "name_zh": "粤剧艺术博物馆",
         "name_en": "Cantonese Opera Art Museum",
-        "aliases_zh": [],
+        "aliases_zh": [
+          "粵劇藝術博物館"
+        ],
         "aliases_en": [],
         "address_zh": "广州市荔湾区恩宁路127号",
         "address_en": null,
@@ -9998,7 +10966,15 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "粵劇藝術博物館",
+          "lang": "zh",
+          "url": "https://zh.wikipedia.org/wiki/%E7%B2%B5%E5%8A%87%E8%97%9D%E8%A1%93%E5%8D%9A%E7%89%A9%E9%A4%A8",
+          "kind": "published_traditional"
+        }
+      ]
     },
     {
       "id": "pl_gz_yuexiu",
@@ -10011,7 +10987,9 @@
         "tier": "main",
         "name_zh": "越秀公园",
         "name_en": "Yuexiu Park",
-        "aliases_zh": [],
+        "aliases_zh": [
+          "越秀公園"
+        ],
         "aliases_en": [],
         "address_zh": "广州市解放北路988号",
         "address_en": null,
@@ -10066,78 +11044,15 @@
         },
         "external_used": false
       },
-      "flags": []
-    },
-    {
-      "id": "pl_gz_yuexiubinguan",
-      "source_file": "C8/guangzhou-hotel.json",
-      "status": "pending",
-      "draft": {
-        "id": "pl_gz_yuexiubinguan",
-        "city": "guangzhou",
-        "category": "hotel",
-        "tier": "main",
-        "name_zh": "广州越秀宾馆，希尔顿格芮精选酒店",
-        "name_en": "Yuexiu Hotel Guangzhou, Curio Collection by Hilton",
-        "aliases_zh": [],
-        "aliases_en": [],
-        "address_zh": null,
-        "address_en": null,
-        "district_zh": "越秀区",
-        "nearest_metro": null,
-        "foreigner_signals": {
-          "english_signage": null,
-          "foreign_cards": null,
-          "english_service": null,
-          "evidence": [
-            "https://www.hilton.com.cn/zh-cn/hotels/canqqqq-yuexiu-hotel-guangzhou-curio-collection-by-hilton"
-          ]
-        },
-        "official_url": "https://www.hilton.com.cn/zh-cn/hotels/canqqqq-yuexiu-hotel-guangzhou-curio-collection-by-hilton",
-        "sources": [
-          "https://www.hilton.com.cn/zh-cn/hotels/canqqqq-yuexiu-hotel-guangzhou-curio-collection-by-hilton",
-          "https://www.hilton.com.cn/zh-cn/locations/china/guangdong-guangzhou"
-        ],
-        "checked_on": "2026-11-27",
-        "confidence": "medium",
-        "notes": "希尔顿城市页显示 2026-11-27 入住、11-28 退房的起价。 官网样本为每房每晚人民币 ¥999。当前价以所选日期及房型的报价为准。",
-        "subcategory": "hotel",
-        "intro_short_zh": "在越秀一带安排市区游览。",
-        "intro_short_en": "A hotel in Yuexiu for exploring central Guangzhou.",
-        "intro_long_zh": "在越秀一带安排市区游览。可在品牌官网查看房型和入住安排。",
-        "intro_long_en": "A hotel in Yuexiu for exploring central Guangzhou. See the hotel's own website for room types and check-in details.",
-        "star": null,
-        "price_band": "500-1000",
-        "accepts_foreigners": true,
-        "foreign_service": {
-          "english_front_desk": null,
-          "foreign_guest_share": null,
-          "foreign_guest_experience": null,
-          "international_brand": "Hilton",
-          "evidence_zh": "广州越秀宾馆，希尔顿格芮精选酒店由国际酒店品牌或集团 Hilton 的官网正式列出并提供预订入口。",
-          "evidence": [
-            "https://www.hilton.com.cn/zh-cn/hotels/canqqqq-yuexiu-hotel-guangzhou-curio-collection-by-hilton"
-          ]
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "越秀公園",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q7209907",
+          "kind": "published_traditional"
         }
-      },
-      "external_signals": [],
-      "location": null,
-      "amap": {
-        "status": "not-run",
-        "alternatives": []
-      },
-      "score": {
-        "total": 26,
-        "parts": {
-          "foreigner": 0,
-          "confidence": 12,
-          "sources": 10,
-          "complete": 4,
-          "amap": 0
-        },
-        "external_used": false
-      },
-      "flags": []
+      ]
     },
     {
       "id": "pl_gz_yuexuan_huaxia",
@@ -10283,7 +11198,9 @@
         "tier": "main",
         "name_zh": "余荫山房",
         "name_en": "Yuyin Garden",
-        "aliases_zh": [],
+        "aliases_zh": [
+          "广州市余荫山房景区"
+        ],
         "aliases_en": [],
         "address_zh": "广州番禺区南村镇北大街",
         "address_en": null,
@@ -10338,7 +11255,15 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "广州市余荫山房景区",
+          "lang": "zh",
+          "url": "https://wglj.gz.gov.cn/ztmb/gzhyn/ajjq/jqml/content/post_11062518.html",
+          "kind": "discovery"
+        }
+      ]
     },
     {
       "id": "pl_gz_zhajiayi_tongfu",
@@ -10542,8 +11467,19 @@
         "tier": "main",
         "name_zh": "中山纪念堂",
         "name_en": "Sun Yat-sen Memorial Hall",
-        "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_zh": [
+          "广州中山纪念堂",
+          "中山纪念堂 (广州)",
+          "中山紀念堂",
+          "廣州中山紀念堂",
+          "中山紀念堂 (廣州)"
+        ],
+        "aliases_en": [
+          "Sun Yat-sen Memorial Hall (Guangdong)",
+          "Sun Yat-sen Memorial Hall, Guangzhou",
+          "Sun Yat-sen Memorial Hall (Canton)",
+          "Sun Yat-sen Memorial Hall (Guangzhou)"
+        ],
         "address_zh": "广州市东风中路259号",
         "address_en": null,
         "district_zh": "越秀区",
@@ -10597,7 +11533,63 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "广州中山纪念堂",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q1051254",
+          "kind": "wikidata"
+        },
+        {
+          "alias": "Sun Yat-sen Memorial Hall (Guangdong)",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q1051254",
+          "kind": "label"
+        },
+        {
+          "alias": "Sun Yat-sen Memorial Hall, Guangzhou",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q1051254",
+          "kind": "wikidata"
+        },
+        {
+          "alias": "Sun Yat-sen Memorial Hall (Canton)",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q1051254",
+          "kind": "wikidata"
+        },
+        {
+          "alias": "中山纪念堂 (广州)",
+          "lang": "zh",
+          "url": "https://zh.wikipedia.org/wiki/%E4%B8%AD%E5%B1%B1%E7%BA%AA%E5%BF%B5%E5%A0%82_(%E5%B9%BF%E5%B7%9E)?redirect=no",
+          "kind": "redirect"
+        },
+        {
+          "alias": "Sun Yat-sen Memorial Hall (Guangzhou)",
+          "lang": "en",
+          "url": "https://en.wikipedia.org/wiki/Sun_Yat-sen_Memorial_Hall_(Guangzhou)",
+          "kind": "wikipedia"
+        },
+        {
+          "alias": "中山紀念堂",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q1051254",
+          "kind": "published_traditional"
+        },
+        {
+          "alias": "廣州中山紀念堂",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q1051254",
+          "kind": "published_traditional"
+        },
+        {
+          "alias": "中山紀念堂 (廣州)",
+          "lang": "zh",
+          "url": "https://zh.wikipedia.org/wiki/%E4%B8%AD%E5%B1%B1%E7%B4%80%E5%BF%B5%E5%A0%82_(%E5%BB%A3%E5%B7%9E)?redirect=no",
+          "kind": "published_traditional"
+        }
+      ]
     },
     {
       "id": "pl_gz_zhujiang_yeyou",
@@ -10611,7 +11603,9 @@
         "name_zh": "珠江夜游",
         "name_en": "Pearl River Night Cruise",
         "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_en": [
+          "Pearl River Night Cruise, Guangzhou"
+        ],
         "address_zh": null,
         "address_en": null,
         "district_zh": null,
@@ -10664,7 +11658,20 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "hours_zh: Codex could not confirm it from an official page; check by hand",
+        "ticket.price_cny: Codex could not confirm it from an official page; check by hand",
+        "ticket.booking: Codex could not confirm it from an official page; check by hand",
+        "official_url: Codex could not confirm it from an official page; check by hand"
+      ],
+      "alias_evidence": [
+        {
+          "alias": "Pearl River Night Cruise, Guangzhou",
+          "lang": "en",
+          "url": "https://maptrip.ai/guangzhou/poi/pearl-river-night-cruise",
+          "kind": "manual"
+        }
+      ]
     },
     {
       "id": "pl_gz_zhuomeiya",
@@ -10707,6 +11714,7 @@
         "intro_long_en": "If the skyline is part of why you're staying in Zhujiang New Town, compare the room categories. The hotel's English page identifies suites that face Canton Tower.",
         "star": null,
         "price_band": ">2000",
+        "hotel_class": "luxury",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -10736,9 +11744,7 @@
         },
         "external_used": false
       },
-      "flags": [
-        "pl_gz_zhuomeiya: unknown field 'hotel_class' is dropped on import"
-      ]
+      "flags": []
     }
   ]
 }

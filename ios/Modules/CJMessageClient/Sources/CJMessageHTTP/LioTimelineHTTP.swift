@@ -425,6 +425,34 @@ public final class LioTimelineHTTP {
         return try undo.committed(bytes) ? bytes : nil
     }
 
+    /// The undo of an automatic save (#1994). Nothing is observed or logged here: the request and the answer hold ids
+    /// and hashes only, and the caller decides what the traveller sees.
+    func submitTripUndo(_ undo: LioTripUndoWire.Request) async throws -> LioTripUndoWire.Reply {
+        let token = try await bearer()
+        let (response, body) = try await transport.sendLioTripUndo(undo, bearer: token)
+        return try await tripUndoReply(response, body, for: undo)
+    }
+
+    func readTripUndoReceipt(_ undo: LioTripUndoWire.Request) async throws -> LioTripUndoWire.Reply {
+        let token = try await bearer()
+        let (response, body) = try await transport.readLioTripUndoReceipt(undo, bearer: token)
+        return try await tripUndoReply(response, body, for: undo)
+    }
+
+    /// 200 must be the contract's receipt for this action; 409 and 403 are the server's own refusals; everything else
+    /// (including a 200 that is not the receipt) is an answer that is not known.
+    private func tripUndoReply(_ response: HTTPResponse, _ body: HTTPBody?, for undo: LioTripUndoWire.Request) async throws -> LioTripUndoWire.Reply {
+        switch response.status.code {
+        case 200:
+            guard let bytes = try? await json(response, body, limit: 65_536),
+                  let committed = try? LioTripUndoWire.committed(bytes, for: undo) else { return .other }
+            return committed ? .committed : .notCommitted
+        case 409: return .changed
+        case 403: return .refused
+        default: return .other
+        }
+    }
+
     func submitMemoryChoice(_ action: LioMemoryWire.Action) async throws -> LioMemoryActionsClient.SubmissionResult {
         observe(.memoryChoice)
         let token = try await bearer()
