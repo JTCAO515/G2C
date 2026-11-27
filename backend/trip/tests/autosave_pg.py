@@ -311,7 +311,8 @@ def main(config, conninfo):
     not_restore = Proposal('undo-q', 'trip-auto', 9, LIO_UNDO, int(time.time()) + 3600, packed(document(retext('item-8', 'x'))))
     act(not_restore, repo.publish(not_restore), 'undo-other')
     assert origins(10)['item-8'] == 'user'   # a point matching neither version counts as a person's write
-    # #2041 P2: an undo that keeps a fixed point of the undone version (protect_fixed) is still an undo:
+    # #2041 P2 (defensive; the undo entries append version-1 exactly): an undo-basis commit that keeps a
+    # point of the undone version is still an undo:
     # the dropped Lio point leaves no tombstone and the kept point keeps its Lio origin.
     kept = chain(retext('item-8', 'x'), add('lio-fixed', text='fixed by Lio'))
     lio = commit(LIO_PLAN, document(chain(kept, add('lio-extra', text='Lio extra'))))
