@@ -4,7 +4,7 @@
 
 ## 本地启动
 
-使用仓库锁定的 Python 环境。准备一个本地验证器条目，使用 32 位 Base32 随机密钥、SHA-1、6 位、30 秒周期。启动时在终端隐式输入该密钥、当前验证码和管理员密码。密码至少 12 位。
+使用仓库锁定的 Python 环境。首次启动时在终端隐式输入管理员密码（两次）。登录只用账号和密码，没有第二因素（JT 2026-11-27 的决定，见 #1886）；密码至少 12 位，加盐 scrypt 存储。
 
 用已信任且包含 `127.0.0.1` IP SAN 的本地证书，或者生成一张仅用于本次演练的自签证书。
 
@@ -16,7 +16,7 @@ openssl req -x509 -newkey rsa:2048 -nodes -days 1 \
 uv run --locked python -m jt.workbench --cert "$jt_tls/cert.pem" --key "$jt_tls/key.pem"
 ```
 
-启动后打开 `https://127.0.0.1:8443/login`。自签证书只用于本次本地会话。绑定会消耗当前验证码，等验证器刷新后再登录。管理员可以从「账号管理」为员工分配角色、停用账号、解锁或授权重绑。创建和重绑会签发一次性设置码，管理员把它当面交给员工本人，员工通过「首次设置或重绑验证器」输入自己的密码和验证器资料。设置码只在签发时显示，有效期 15 分钟。停用、改角色和重绑都会撤销该员工的现有会话。
+启动后打开 `https://127.0.0.1:8443/login`。自签证书只用于本次本地会话。管理员在「用户管理」页添加账号（账号、角色、密码两次）、重设密码、改角色、解锁、停用、启用，以及删除已停用的账号（清除密码，用户名保留以维持审计）。停用、删除、改角色和重设密码都会撤销该员工的现有会话；管理员不能停用、删除或降级自己，可以重设自己的密码（之后需重新登录）。每个操作写审计，审计与页面都不含密码。现阶段不要求员工首次登录改密码。
 
 本地会话最长 60 分钟，连续 15 分钟未使用则过期。单账号连续失败 5 次锁定 15 分钟。整个工作台每分钟接受最多 20 次登录尝试。退出后服务端撤销当前会话。
 
@@ -26,7 +26,7 @@ uv run --locked python -m jt.workbench --cert "$jt_tls/cert.pem" --key "$jt_tls/
 uv run --locked python -B -m pytest -q -p no:cacheprovider jt
 ```
 
-鉴权测试使用合成账号、固定时间和 [RFC 6238 附录 B](https://www.rfc-editor.org/rfc/rfc6238.html#appendix-B) 的公开向量。审计接口支持追加登录、失败、查看、标注、揭示事件。工作人员查看信号与复核员提交标注、导出评测样本均写入追加审计。字段揭示功能属于后续阶段。
+鉴权测试使用合成账号和固定时间。审计接口支持追加登录、失败、查看、标注、揭示事件。工作人员查看信号与复核员提交标注、导出评测样本均写入追加审计。字段揭示功能属于后续阶段。
 
 ## 使用队列与导出
 
@@ -62,7 +62,7 @@ docker build --pull=false --network=none \
 | 入口命令 | 配置 | 用途 |
 | --- | --- | --- |
 | `migrate` | 所有者的 `JT_WORKBENCH_DATABASE_URL` | 一次性启动任务，应用工作台迁移，成功后才启动常驻应用 |
-| `bootstrap-admin` | 运行角色的 `JT_WORKBENCH_DATABASE_URL` | 在受控终端首次引导，重复执行拒绝 |
+| `bootstrap-admin --username <账号>` | 运行角色的 `JT_WORKBENCH_DATABASE_URL` | 在受控终端用隐藏提示输入密码（两次）创建首个管理员；已有启用的管理员时拒绝执行 |
 | `serve`（默认） | 运行角色的 `JT_WORKBENCH_DATABASE_URL`、`JT_WORKBENCH_PUBLIC_HOST=jtadmin.go2china.space`、`JT_WORKBENCH_HTTP_SOCKET=/run/jt-workbench/http.sock` | 通过 Unix socket 处理工作台 HTTP |
 | `healthcheck` | `JT_WORKBENCH_HTTP_SOCKET` | 走同一 socket 上的内部 Host 检查数据库，不托管公开健康路由 |
 
@@ -84,6 +84,8 @@ docker build --pull=false --network=none \
 
 值班处理员从「运营台」进入服务请求和官网线索。Part 0 的数据源仅包含合成记录，演示动作在当前进程内保留，启用 PostgreSQL 时操作审计独立保留。状态与凭据按 SERVICE-REQUEST@1 渲染，对客状态历史和员工凭据分别放在两个区域。每个相关页面标注「演示数据」。种子信号使用 JT1 合成 playbook 建单，处理员可从信号详情认领并进入案件。
 
-S 线可在禁用录制的私有交互式终端，用运行角色的连接串执行 `bootstrap-admin-code --username <JT员工账号>` 签发首个管理员设置码。在私下安全交接中仅交给 JT 使用。JT 自己打开 HTTPS 登录页的「首次设置或重绑验证器」，输入账号和设置码，并在自己的设备上设置密码及验证器。设置码有效 15 分钟，只能使用一次。首个账号绑定前可以对同一账号签发新码，原码失效；绑定后命令拒绝。既有 `bootstrap-admin` 终端入口保留，演示部署优先用设置码。两种方式都不使用聊天、PR、仓库或日志传递任何凭据。
+首个管理员由 JT 在自己的终端运行 `bootstrap-admin --username jtcao01` 创建，密码由 JT 在隐藏提示里自己输入，不经过参数、环境变量、日志、聊天或仓库。库里已有启用的管理员时命令拒绝执行；只剩已停用的占位账号时可以再次运行。命令输出里没有任何凭据。完整的现场步骤见 [`deploy/hk/jt-workbench/README.md`](../../deploy/hk/jt-workbench/README.md)。
+
+迁移 004 把审计动作扩充为含「启用、删除、重设密码」，清掉没有密码的半成品账号和所有残留的验证器密钥、设置码，并新增版本标记表 `password_auth_version`。它可重复运行，可用 `python -m jt.workbench.postgres down --steps 1` 单步撤销（审计表已有新动作时拒绝）。
 
 迁移 003 追加演示操作的动作和引用，原有基础 schema 标记不变。提交的演示操作先追加审计，再更新内存快照。应用重启会恢复演示内容，审计按 PostgreSQL 存储配置保留。

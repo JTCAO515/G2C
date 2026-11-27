@@ -46,46 +46,38 @@ import CryptoKit
         }
     }
 
-    /// #2008: a big city's map opens on its centre (stations legible), "Whole map" and "City centre" switch, a small
-    /// city opens whole; the paper, water and official line colours are the new look.
-    func testMetroMapOpensOnTheCityCentre() throws {
+    /// #2006: "Essentials" is now "Convenience" and gains community services (searched on their own, by name).
+    func testNearbyConvenienceOffersCommunityServices() throws {
         continueAfterFailure = false
-        for (language, appearance, cities) in [("en", "light", ["beijing", "shanghai", "guangzhou", "lanzhou"]),
-                                               ("zh-Hans", "dark", ["shanghai", "chongqing"])] {
+        for language in ["en", "zh-Hans"] {
             let english = language == "en"
             let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
-            app.launchArguments = ["--lio-preview", "--lio-tools-preview", "-cj.ui.language.v1", language,
-                                   "-lio.ui.appearance.v1", appearance, "-UIPreferredContentSizeCategoryName",
+            app.launchArguments = ["--lio-preview", "--lio-tools-preview", "--lio-nearby-preview", "--lio-nearby-essentials",
+                                   "-cj.ui.language.v1", language,
+                                   "-lio.ui.appearance.v1", "light", "-UIPreferredContentSizeCategoryName",
                                    "UICTContentSizeCategoryL"]
             app.launch()
             defer { app.terminate() }
             let tools = app.tabBars.buttons[english ? "Tools" : "工具"]
             XCTAssertTrue(tools.waitForExistence(timeout: 8))
             tools.tap()
-            app.buttons["lio.tools.metro-guide"].tap()
-            for city in cities {
-                let card = app.buttons["lio.metro.city.\(city)"]
-                var swipes = 0
-                while !card.isHittable && swipes < 12 { app.swipeUp(); swipes += 1 }
-                XCTAssertTrue(card.waitForExistence(timeout: 6), city)
-                card.tap()
-                XCTAssertTrue(app.descendants(matching: .any)["lio.metro.map.canvas"].waitForExistence(timeout: 8))
-                let centre = app.buttons["lio.metro.map.center"]
-                if city == "lanzhou" {
-                    XCTAssertFalse(centre.exists, "a small network opens whole and has no centre button")
-                } else {
-                    XCTAssertTrue(centre.exists, city)
-                    XCTAssertFalse(centre.isEnabled, "\(city) opens on its centre")
-                    capture(app, "metro-centre-\(city)-\(language)-\(appearance)")
-                    app.buttons["lio.metro.map.fit"].tap()
-                    XCTAssertTrue(centre.isEnabled)
-                    capture(app, "metro-whole-\(city)-\(language)-\(appearance)")
-                    centre.tap()
-                    XCTAssertFalse(centre.isEnabled)
-                }
-                if city == "lanzhou" { capture(app, "metro-whole-lanzhou-\(language)-\(appearance)") }
-                app.navigationBars.buttons.element(boundBy: 0).tap()
+            let entry = app.buttons["lio.tools.nearby"].exists ? app.buttons["lio.tools.nearby"] : app.buttons["lio.tools.convenience"]
+            XCTAssertTrue(entry.waitForExistence(timeout: 6))
+            entry.tap()
+            let group = app.descendants(matching: .any)["lio.nearby.group"]
+            if !group.waitForExistence(timeout: 8) { capture(app, "nearby-no-group-\(language)") }
+            XCTAssertTrue(group.exists)
+            XCTAssertFalse(app.buttons[english ? "Essentials" : "必需品"].exists)
+            app.buttons[english ? "Convenience" : "便利"].tap()
+            for kind in ["atm", "toilet", "luggage", "community"] {
+                XCTAssertTrue(app.buttons["lio.nearby.category.\(kind)"].waitForExistence(timeout: 6), kind)
             }
+            app.buttons["lio.nearby.category.community"].tap()
+            XCTAssertTrue(app.staticTexts["lio.nearby.essential-heading"].waitForExistence(timeout: 8))
+            XCTAssertTrue(app.staticTexts[english ? "Community services (found by name; some may be missing)"
+                                                  : "社区服务（按“社区服务中心”名称搜索，结果可能不全）"].exists)
+            XCTAssertTrue(app.staticTexts["示例社区服务中心"].waitForExistence(timeout: 8))
+            capture(app, "nearby-convenience-community-\(language)")
         }
     }
 

@@ -7,7 +7,6 @@ import re
 import signal
 import socket
 import stat
-import sys
 from collections.abc import Iterator
 from contextlib import contextmanager
 from pathlib import Path
@@ -96,14 +95,12 @@ def serve_workbench(store: PostgresStore, auth: Auth) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="JT 工作台容器入口")
-    parser.add_argument("command", choices=("migrate", "bootstrap-admin", "bootstrap-admin-code", "serve", "healthcheck"))
-    parser.add_argument("--username", help="只用于签发首个管理员设置码")
+    parser.add_argument("command", choices=("migrate", "bootstrap-admin", "serve", "healthcheck"))
+    parser.add_argument("--username", help="只用于 bootstrap-admin：首个管理员账号")
     args = parser.parse_args()
     command = args.command
-    if (command == "bootstrap-admin-code") != (args.username is not None):
-        parser.error("bootstrap-admin-code 必须提供 --username。")
-    if command == "bootstrap-admin-code" and not sys.stdout.isatty():
-        parser.error("请在私有交互式终端签发设置码。")
+    if (command == "bootstrap-admin") != (args.username is not None):
+        parser.error("bootstrap-admin 必须且只能与 --username 一起使用。")
     try:
         if command == "healthcheck":
             if not probe_health(socket_path()):
@@ -119,15 +116,9 @@ def main() -> None:
         store.check_ready()
         auth = Auth(store, clock=store.clock, monotonic=store.clock)
         if command == "bootstrap-admin":
-            with store.locked():
-                already_configured = bool(store.accounts())
-            if already_configured:
-                parser.error("工作台管理员已经引导。")
-            bootstrap_admin(auth, parser)
-        elif command == "bootstrap-admin-code":
-            code = auth.issue_initial_admin_setup(args.username)
-            print("请私下交给账号本人。在登录页选择首次设置，设置码有效 15 分钟。")
-            print(code)
+            if auth.has_admin():
+                parser.error("工作台已有管理员，拒绝执行。")
+            bootstrap_admin(auth, parser, args.username)
         else:
             serve_workbench(store, auth)
     except (AccessDenied, InvalidAccount, OSError, RuntimeError, psycopg.Error):
