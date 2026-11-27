@@ -109,3 +109,23 @@ def test_one_lio_write_is_bounded_in_new_points_and_new_days():
 def test_unknown_refusal_code_is_not_constructed():
     with pytest.raises(ValueError):
         AutosaveConflict('partial')
+
+
+class _NoAuditTables:
+    """A cursor on a frozen chain without 0061 (Supabase target at 48, older local fixtures)."""
+    def execute(self, sql, params=None):
+        assert 'to_regclass' in sql, 'nothing but the schema probe may run without 0061'
+
+    def fetchone(self):
+        return (False,)
+
+
+def test_without_0061_the_switch_off_keeps_today_and_the_switch_on_refuses():
+    from types import SimpleNamespace
+    from cj_trip.autosave import record_commit, require_undo_window
+    from cj_trip.domain import Denied
+    proposal = SimpleNamespace(basis_version='lio-plan.1', expected_version=1, trip_id='t', content=b'{}')
+    assert record_commit(SimpleNamespace(autosave=None, scope='s'), _NoAuditTables(), proposal, b'{}') is None
+    require_undo_window(SimpleNamespace(scope='s'), _NoAuditTables(), SimpleNamespace(trip_id='t', version=2))
+    with pytest.raises(Denied):
+        record_commit(SimpleNamespace(autosave=True, scope='s'), _NoAuditTables(), proposal, b'{}')

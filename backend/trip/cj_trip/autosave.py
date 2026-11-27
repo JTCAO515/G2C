@@ -178,6 +178,16 @@ def enabled(repository):
     return getattr(repository, 'autosave', None) is True
 
 
+def schema_present(cur):
+    """0061 is applied. Hong Kong readiness requires the exact image schema, so this is always true there;
+    frozen test chains (the Supabase target at 48, older local fixtures) run without it and keep today's
+    behaviour with the switch off. With the switch on, a missing table refuses instead of skipping."""
+    cur.execute("SELECT to_regclass('public.cj_trip_item_origin') IS NOT NULL AND "
+                "to_regclass('public.cj_trip_item_tombstone') IS NOT NULL AND "
+                "to_regclass('public.cj_trip_commit_time') IS NOT NULL")
+    return cur.fetchone()[0] is True
+
+
 @dataclass(frozen=True)
 class Commit:
     """What record_commit decided before the version is written; write() runs after it is."""
@@ -204,6 +214,10 @@ def record_commit(repository, cur, proposal, previous_content):
     ``previous_content`` is the current record (None for a new Trip). Raises AutosaveConflict
     before anything is written. The caller writes the version, then calls ``Commit.write``.
     """
+    if not schema_present(cur):
+        if enabled(repository):
+            raise Denied('automatic save requires the 0061 Trip audit tables')
+        return None
     kind = writer(proposal.basis_version)
     version = proposal.expected_version + 1
     before = json.loads(previous_content) if previous_content is not None else None
@@ -233,6 +247,8 @@ def require_undo_window(repository, cur, current):
 
     A version committed without autosave, or before 0061 (no record), keeps today's behaviour.
     """
+    if not schema_present(cur):
+        return
     cur.execute('SELECT t.autosave,t.committed_at+%s<=clock_timestamp() FROM cj_trip_receipt r '
                 'JOIN cj_trip_commit_time t ON (t.scope,t.action_id)=(r.scope,r.action_id) '
                 "WHERE r.scope=%s AND r.trip_id=%s AND r.committed_version=%s AND r.kind='accept'",
@@ -265,6 +281,8 @@ def _content_version(content):
 
 def autosave_receipt(repository, cur, action_id):
     """The original receipt of an autosave commit, or None (unknown action or not an autosave)."""
+    if not schema_present(cur):
+        return None
     cur.execute('SELECT r.trip_id,r.committed_version,t.committed_at,t.committed_at+%s FROM cj_trip_receipt r '
                 'JOIN cj_trip_commit_time t ON (t.scope,t.action_id)=(r.scope,r.action_id) '
                 "WHERE r.scope=%s AND r.action_id=%s AND r.kind='accept' AND t.autosave",
