@@ -94,10 +94,10 @@ def exercise(root,conninfo):
                     value['extra_fields']['pace']=fixture_pace
                     value['field_sources'].append(dict(field='pace',source_index=index,quote=fixture_pace))
             if fixture_empty_party_source and value['intent']=='plan':
-                # The Hong Kong v3 run of 2026-11-28: the model gave a party size with an empty source quote
-                # (`field_sources:string_too_short`). The plan must still be written.
-                value['party_size']=2
-                value['field_sources'].append(dict(field='party_size',source_index=index,quote=''))
+                # The exact Hong Kong v3 output of 2026-11-28 (run 9f2fa849): day count with NO source for it, and two empty
+                # sources for start_date and party_size (both null and unknown). The plan must still be written.
+                value.update(start_date=None,party_size=None,unknown_fields=['start_date','party_size'],question_fields=['start_date'])
+                value['field_sources']=[dict(field='start_date',source_index=index,quote=''),dict(field='party_size',source_index=index,quote='')]
             value['version']='LIO-planning-intake.8'
             content=json.dumps(value,ensure_ascii=False)
         elif any(profile in system for profile in PROFILES.values()):
@@ -213,7 +213,7 @@ def exercise(root,conninfo):
             fixture_empty_party_source=False
             empty_plan=read(empty_cid)
             assert empty_plan['current'] is not None and len(empty_plan['current']['days'])==3,empty_plan
-            print('PASS '+locale+' a model field source with an empty quote no longer rejects the plan: the trip is written',flush=True)
+            print('PASS '+locale+' the logged Hong Kong output (empty start/party sources, no duration source) is planned and the trip is written',flush=True)
             planned=read(cid)
             assert planned['version']=='LIO-trip-history.3' and planned['current'] is not None,planned
             card=planned['current'];assert card['calendar']=={'state':'undated'} and len(card['days'])==3

@@ -48,11 +48,10 @@ class EmptyFieldSource(unittest.TestCase):
         value = wire(party_size=2, field_sources=[dict(field='duration_days', source_index=0, quote=TEXT),
                                                     dict(field='party_size', source_index=0, quote=''),
                                                     dict(field='party_size', source_index=0, quote='三天')])
-        # the surviving quote does not mention party size, so the normal source checks still decide; no crash from the empty one
-        try:
-            self.parse(value)
-        except InvalidInput:
-            pass
+        # Only the empty reference goes. (Whether a quote really supports the fact is not decided here, as before.)
+        _, _, facts = self.parse(value)
+        self.assertEqual(facts['party_size']['value'], 2)
+        self.assertEqual([source['quote'] for source in facts['party_size']['sources']], ['三天'])
 
     def test_nothing_changes_when_no_quote_is_empty(self):
         value = wire(field_sources=[dict(field='duration_days', source_index=0, quote=TEXT)])
@@ -60,14 +59,67 @@ class EmptyFieldSource(unittest.TestCase):
         self.assertEqual(_drop_empty_field_sources(value), 0)
         self.assertEqual(value, before)
 
-    def test_a_required_fact_without_any_source_is_still_refused(self):
+    def test_a_required_fact_whose_only_source_is_empty_is_restored_only_from_the_travelers_words(self):
         value = wire(field_sources=[dict(field='duration_days', source_index=0, quote='')])
-        with self.assertRaises(InvalidInput):
-            self.parse(value)
+        _, _, facts = self.parse(value)                                    # 「三天」 is right there in the message
+        self.assertEqual(facts['duration_days']['sources'][0]['quote'], '三天')
+        other = wire(field_sources=[dict(field='duration_days', source_index=0, quote='')], duration_days=5)
+        with self.assertRaises(InvalidInput):                              # the words say 三天, the model says 5: refused
+            self.parse(other)
 
     def test_odd_shapes_are_left_to_the_schema(self):
         for bad in (None, [], {}, dict(field_sources='x'), dict(field_sources={'a': 1}), dict(field_sources=[1, None, 'x'])):
             self.assertEqual(_drop_empty_field_sources(bad), 0)
+
+
+class LoggedShape(unittest.TestCase):
+    """The exact output of Hong Kong run 9f2fa849 (v3, 2026-11-28 16:56Z), from the retained rejected-intake file: day count 2,
+    no source for it, and two empty sources for start_date and party_size, both of which were null and listed unknown."""
+    TEXT = '帮我规划一个北京2天的行程：第一天故宫和景山，第二天颐和园。'
+
+    def logged(self, **changes):
+        value = flow(self.TEXT, city='北京', days=2, intent='plan', questions=('start_date',), reply='好的，请问哪天出发？')
+        value.update(version='LIO-planning-intake.8', planning_request_index=0, needs_tools=True,
+                     unknown_fields=['start_date', 'party_size'])
+        value['field_sources'] = [dict(field='start_date', quote='', source_index=0), dict(field='party_size', quote='', source_index=0)]
+        value.update(changes)
+        return value
+
+    def test_the_logged_output_is_planned_with_the_duration_source_restored_from_the_travelers_words(self):
+        from test_lio_planning_flow import context, run
+        saved, events, lookups, _ = run(self.logged(), self.TEXT)
+        state = context(events)
+        self.assertEqual((state['status'], state['authority']), ('plan_preview', 'plan'))
+        self.assertEqual(state['facts']['duration_days']['value'], 2)
+        self.assertEqual(state['facts']['duration_days']['sources'][0]['quote'], '2天')
+        self.assertEqual(len(lookups), 1)
+
+    def test_the_duration_quote_is_exact_unambiguous_and_only_from_the_latest_message(self):
+        from cj_api.lio_flow_intake import _duration_quote
+        self.assertEqual(_duration_quote(self.TEXT, 2), '2天')
+        self.assertEqual(_duration_quote('plan 3 days in Chengdu', 3), '3 days')
+        self.assertEqual(_duration_quote('规划成都三天', 3), '三天')
+        self.assertIsNone(_duration_quote('第一天故宫，第二天颐和园', 2))                 # 第一天 / 第二天 are ordinals, not counts
+        self.assertIsNone(_duration_quote('每天走两万步', 2))
+        self.assertIsNone(_duration_quote('玩2天，再玩3天', 2))                           # two different counts
+        self.assertIsNone(_duration_quote('玩2天，也就是 二天', 2))                       # same count in two spellings: ambiguous
+        self.assertIsNone(_duration_quote('规划北京2天', 3))                              # does not match the claimed count
+        self.assertIsNone(_duration_quote('规划北京行程', 2))
+
+    def test_no_restoration_without_a_traveler_span_or_when_the_model_already_gave_a_source(self):
+        text = '规划北京行程，去故宫'
+        with self.assertRaises(InvalidInput):                                              # 2 days, nothing in the words says 2 days
+            parse_flow(json.dumps(self.logged(duration_days=2, reply='ok')), (original(text),), (), 'm', None, schema=OptionalIntake)
+        given = self.logged()
+        given['field_sources'].append(dict(field='duration_days', source_index=0, quote='2天'))
+        count = len(given['field_sources'])
+        parse_flow(json.dumps(given), (original(self.TEXT),), (), 'm', None, schema=OptionalIntake)
+        self.assertEqual(count, 3)
+
+    def test_a_model_that_omits_the_duration_source_without_any_empty_one_is_still_refused(self):
+        value = self.logged(field_sources=[])
+        with self.assertRaises(InvalidInput):
+            parse_flow(json.dumps(value), (original(self.TEXT),), (), 'm', None, schema=OptionalIntake)
 
 
 class EndToEnd(unittest.TestCase):

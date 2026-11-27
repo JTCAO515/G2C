@@ -10,7 +10,7 @@ from cj_agent.lio_intake_flat_schema import DTO,City
 from cj_needs.domain import InvalidInput,decode
 from .lio_sourced_intake import parse_sourced,BookingSourceUnclear
 from .lio_positive_trip import destination_query,known_city_term
-from .lio_planning_grounding import NUMBER,OPEN_PLAN
+from .lio_planning_grounding import NUMBER,NUMBERS,OPEN_PLAN
 from .lio_national_intake import ZONE_LITERAL,_clock_zone_marker
 
 CORE=('start_date','duration_days','party_size')
@@ -379,12 +379,46 @@ def _drop_empty_field_sources(value):
     return dropped
 
 
+_DURATION_SPAN=re.compile(r'(?<![第每])(?<![0-9])(?P<n>'+NUMBER+r')\s*(?:天|日)(?![0-9])|\b(?P<m>'+NUMBER+r')(?:\s+|-)days?\b',re.I)
+
+
+def _duration_quote(text,days):
+    """The one exact span of `text` that states `days` travel days (「2天」, 「3 days」), or None. 「第一天」 and 「每天」 are
+    not counts. A message that states two different counts, or the same count in two different spans, is not recovered."""
+    spans=[]
+    for match in _DURATION_SPAN.finditer(text):
+        number=match['n']or match['m']
+        count=int(number)if number.isdecimal()else NUMBERS.get(number.casefold())
+        if count is None:return None
+        spans.append((count,match[0]))
+    if not spans or {count for count,_ in spans}!={days}or len({span.casefold()for _,span in spans})!=1:return None
+    return spans[0][1]
+
+
+def _restore_duration_source(value,turns):
+    """The model gave a day count but no source for it (the 2026-11-28 Hong Kong run listed only two empty sources and no
+    duration source, though the traveler wrote 「2天」). Restore it from the traveler's own latest message, only when exactly
+    one span states exactly that count; never from Memory, an earlier turn or a guess. Without such a span nothing changes
+    and the normal 'original bounded duration required' check refuses it. Returns 1 when a source was added."""
+    days=value.get('duration_days')if type(value)is dict else None
+    refs=value.get('field_sources')
+    index=len(turns)-1       # the traveler's latest message; the model's own index may count Memory slots
+    if (type(days)is not int or isinstance(days,bool)or type(refs)is not list or index<0
+            or any(type(ref)is dict and ref.get('field')=='duration_days'for ref in refs)):return 0
+    quote=_duration_quote(turns[index].text,days)
+    if quote is None:return 0
+    refs.append(dict(field='duration_days',source_index=index,quote=quote))
+    return 1
+
+
 def parse_flow(raw,turns,refs,message_id,previous,*,schema=FlowIntake,memory_offset=0,read_only=None):
     value=decode(raw.encode() if type(raw)is str else raw)
     emptied=_drop_empty_field_sources(value)
+    restored=_restore_duration_source(value,turns)if emptied else 0
     if emptied:
         import logging
-        logging.getLogger('cj_usage.audit').info('LIO_INTAKE_EMPTY_SOURCE_DROPPED message_id=%s count=%s',message_id,emptied)
+        logging.getLogger('cj_usage.audit').info('LIO_INTAKE_EMPTY_SOURCE_DROPPED message_id=%s count=%s duration_restored=%s',
+            message_id,emptied,restored)
     rebound=rebind_sources(value,turns,memory_offset=memory_offset)
     if rebound:
         import logging
