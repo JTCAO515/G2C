@@ -529,7 +529,7 @@ import Testing
 
     // MARK: The switch
 
-    @Test func theSwitchIsOffByDefaultAndListedButNotOnInTheRelease() throws {
+    @Test func theSwitchIsOffByDefaultAndListedAndOnInTheRelease() throws {
         #expect(LioTripCanvasFeature.infoKey == "G2CTripCanvasEnabled")
         #expect(LioTripCanvasFeature.enabled(infoValue: "YES"))
         for value: Any? in [nil, "", "NO", "yes", "1", true, 1, "$(G2C_TRIP_CANVAS_ENABLED)"] {
@@ -547,6 +547,7 @@ import Testing
         let flags = try #require(manifest["flags"] as? [[String: String]])
         #expect(flags.contains(["setting": "G2C_TRIP_CANVAS_ENABLED", "plist": "G2CTripCanvasEnabled"]))
         let release = try #require(manifest["release"] as? [String: Any])
-        #expect(!(try #require(release["on"] as? [String])).contains("G2C_TRIP_CANVAS_ENABLED"))
+        // On for the 58.1 TestFlight build (coordinator, under JT's pre-authorisation, 2026-11-28, stop point 6); the setting itself stays unset in the project.
+        #expect((try #require(release["on"] as? [String])).contains("G2C_TRIP_CANVAS_ENABLED"))
     }
 }

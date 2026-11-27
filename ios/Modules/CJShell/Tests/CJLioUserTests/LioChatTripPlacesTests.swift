@@ -444,7 +444,7 @@ import CJTripClient
         #expect(result.outcome == .notRead && result.plan == plan && read.calls.isEmpty)
     }
 
-    @Test func flagIsOffByDefaultAndListedButNotOnInTheRelease() throws {
+    @Test func flagIsOffByDefaultAndListedAndOnInTheRelease() throws {
         #expect(LioChatTripPlacesFeature.infoKey == "G2CChatTripPlacesEnabled")
         #expect(LioChatTripPlacesFeature.enabled(infoValue: "YES"))
         for value: Any? in [nil, "", "NO", "yes", "1", true, 1, "$(G2C_CHAT_TRIP_PLACES_ENABLED)"] {
@@ -462,7 +462,8 @@ import CJTripClient
         let flags = try #require(manifest["flags"] as? [[String: String]])
         #expect(flags.contains(["setting": "G2C_CHAT_TRIP_PLACES_ENABLED", "plist": "G2CChatTripPlacesEnabled"]))
         let release = try #require(manifest["release"] as? [String: Any])
-        #expect(!(try #require(release["on"] as? [String])).contains("G2C_CHAT_TRIP_PLACES_ENABLED"))
+        // On for the 58.1 TestFlight build (coordinator, under JT's pre-authorisation, 2026-11-28, stop point 6); the setting itself stays unset in the project.
+        #expect((try #require(release["on"] as? [String])).contains("G2C_CHAT_TRIP_PLACES_ENABLED"))
     }
 
     // MARK: Saved copies

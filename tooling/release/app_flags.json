@@ -128,8 +128,8 @@
   ],
   "release": {
     "about": "The TestFlight build tooling/release/build_app.py makes. The coordinating thread updates build, previous and on before each release; turning a flag on for a build is JT's decision.",
-    "build": 58,
-    "previous": 57,
+    "build": 59,
+    "previous": 58,
     "marketing_version": "0.1.0",
     "on": [
       "G2C_TAXI_ENABLED",
@@ -149,7 +149,10 @@
       "G2C_TRIP_HOME_ENABLED",
       "G2C_AI_DISCLOSURE_ENABLED",
       "G2C_NEW_SIGN_IN_SCREEN_ENABLED",
-      "G2C_ANSWER_LAYOUT_ENABLED"
+      "G2C_ANSWER_LAYOUT_ENABLED",
+      "G2C_ANSWER_RICH_ENABLED",
+      "G2C_CHAT_TRIP_PLACES_ENABLED",
+      "G2C_TRIP_CANVAS_ENABLED"
     ]
   }
 }
