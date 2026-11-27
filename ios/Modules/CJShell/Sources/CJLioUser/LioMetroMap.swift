@@ -405,12 +405,11 @@ extension LioMetroMap {
         let interchanges = stations.filter(\.isInterchange)
         guard !interchanges.isEmpty else { return nil }
         let reach = max(width, height) * 0.15
-        let densest = interchanges.max { lhs, rhs in
-            func crowd(_ station: Station) -> Int {
-                interchanges.filter { hypot($0.x - station.x, $0.y - station.y) <= reach }.count
-            }
-            return crowd(lhs) < crowd(rhs)
+        // Count each interchange's neighbours once (the view asks on every draw), then take the busiest.
+        let crowd = interchanges.map { station in
+            interchanges.reduce(0) { $0 + (hypot($1.x - station.x, $1.y - station.y) <= reach ? 1 : 0) }
         }
+        let densest = crowd.indices.max { crowd[$0] < crowd[$1] }.map { interchanges[$0] }
         return densest.map { Focus(x: $0.x, y: $0.y, zoom: Self.centreFocusZoom) }
     }
 }
