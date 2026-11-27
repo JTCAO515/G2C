@@ -140,10 +140,15 @@
         "name_en": "Four Points by Sheraton Guangzhou Bai’e Tan",
         "aliases_zh": [],
         "aliases_en": [],
-        "address_zh": null,
-        "address_en": null,
-        "district_zh": null,
-        "nearest_metro": null,
+        "address_zh": "广州市荔湾区东漖北路588号",
+        "address_en": "588 Dongjiao North Road, Liwan District, Guangzhou, China 510000",
+        "district_zh": "荔湾区",
+        "nearest_metro": {
+          "station_zh": "花地湾",
+          "station_en": "Huadiwan",
+          "line": "1号线",
+          "exit": null
+        },
         "foreigner_signals": {
           "english_signage": null,
           "foreign_cards": null,
@@ -156,7 +161,8 @@
         "sources": [
           "https://www.marriott.com/en-us/hotels/canbu-four-points-guangzhou-baie-tan/overview/",
           "https://www.marriott.com/en-us/destinations/china/guangzhou.mi",
-          "https://help.marriott.com/s/article/Article-24483"
+          "https://help.marriott.com/s/article/Article-24483",
+          "https://www.marriott.com.cn/hotels/canbu-four-points-guangzhou-baie-tan/overview/"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
@@ -187,12 +193,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 26,
+        "total": 31,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 4,
+          "complete": 9,
           "amap": 0
         },
         "external_used": false
@@ -282,10 +288,15 @@
         "name_en": "Guangzhou Marriott Hotel Baiyun",
         "aliases_zh": [],
         "aliases_en": [],
-        "address_zh": null,
-        "address_en": null,
-        "district_zh": null,
-        "nearest_metro": null,
+        "address_zh": "广州市白云区云城中二路6、8、10号",
+        "address_en": "6, 8 and 10 Yuncheng Middle Second Road, Baiyun District, Guangzhou, China 510410",
+        "district_zh": "白云区",
+        "nearest_metro": {
+          "station_zh": "白云文化广场",
+          "station_en": "Baiyun Culture Square",
+          "line": "2号线",
+          "exit": null
+        },
         "foreigner_signals": {
           "english_signage": null,
           "foreign_cards": null,
@@ -298,7 +309,10 @@
         "sources": [
           "https://www.marriott.com/en-us/hotels/canbm-guangzhou-marriott-hotel-baiyun/overview/",
           "https://www.marriott.com/en-us/destinations/china/guangzhou.mi",
-          "https://help.marriott.com/s/article/Article-24483"
+          "https://help.marriott.com/s/article/Article-24483",
+          "https://www.marriott.com.cn/hotels/canbm-guangzhou-marriott-hotel-baiyun/rooms/",
+          "https://www.marriott.com/en-us/hotels/canbm-guangzhou-marriott-hotel-baiyun/events/",
+          "https://www.eguangzhou.gov.cn/gzlatest/content/post_41158.html"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
@@ -329,12 +343,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 26,
+        "total": 31,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 4,
+          "complete": 9,
           "amap": 0
         },
         "external_used": false
@@ -356,10 +370,15 @@
         "name_en": "Element Guangzhou Baiyun",
         "aliases_zh": [],
         "aliases_en": [],
-        "address_zh": null,
-        "address_en": null,
-        "district_zh": null,
-        "nearest_metro": null,
+        "address_zh": "广州市白云区云城中二路12号",
+        "address_en": "12 Yuncheng Middle Second Road, Baiyun District, Guangzhou, China 510410",
+        "district_zh": "白云区",
+        "nearest_metro": {
+          "station_zh": "白云文化广场",
+          "station_en": "Baiyun Culture Square",
+          "line": "2号线",
+          "exit": null
+        },
         "foreigner_signals": {
           "english_signage": null,
           "foreign_cards": null,
@@ -372,7 +391,9 @@
         "sources": [
           "https://www.marriott.com/en-us/hotels/canbe-element-guangzhou-baiyun/overview/",
           "https://www.marriott.com/en-us/destinations/china/guangzhou.mi",
-          "https://help.marriott.com/s/article/Article-24483"
+          "https://help.marriott.com/s/article/Article-24483",
+          "https://www.marriott.com.cn/hotels/canbe-element-guangzhou-baiyun/overview/",
+          "https://www.eguangzhou.gov.cn/gzlatest/content/post_41158.html"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
@@ -403,12 +424,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 26,
+        "total": 31,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 4,
+          "complete": 9,
           "amap": 0
         },
         "external_used": false
@@ -713,8 +734,8 @@
           "https://cguan.cancilleria.gob.ar/userfiles/guia_de_guangzhou.pdf"
         ],
         "checked_on": "2026-11-27",
-        "confidence": "medium",
-        "notes": "清真依据未定位到这个分店，留空。人均为领馆指南参考。 营业依据为当前经营方点位或近期主管部门的具名记录。",
+        "confidence": "low",
+        "notes": "清真依据未定位到这个分店，留空。人均为领馆指南参考。 营业依据为当前经营方点位或近期主管部门的具名记录。 待人工处理。领馆指南的兴盛路店资料仍可定位，未找到同一分店运营方公开的现行营业时段、预约规则及清真认证。清真继续留空。",
         "subcategory": "international_brand",
         "hours_zh": null,
         "hours_source": null,
@@ -736,10 +757,10 @@
         "alternatives": []
       },
       "score": {
-        "total": 23,
+        "total": 15,
         "parts": {
           "foreigner": 0,
-          "confidence": 12,
+          "confidence": 4,
           "sources": 5,
           "complete": 6,
           "amap": 0
@@ -1575,10 +1596,15 @@
         "name_en": "Aloft Guangzhou University Park",
         "aliases_zh": [],
         "aliases_en": [],
-        "address_zh": null,
-        "address_en": null,
+        "address_zh": "广州市小谷围街立德街66号",
+        "address_en": "66 Li De Street, Xiaoguwei, Guangzhou, China 510006",
         "district_zh": null,
-        "nearest_metro": null,
+        "nearest_metro": {
+          "station_zh": "大学城南",
+          "station_en": "Higher Education Mega Center South",
+          "line": "4、7、12号线",
+          "exit": null
+        },
         "foreigner_signals": {
           "english_signage": null,
           "foreign_cards": null,
@@ -1591,7 +1617,10 @@
         "sources": [
           "https://www.marriott.com/en-us/hotels/canul-aloft-guangzhou-university-park/overview/",
           "https://www.marriott.com/en-us/destinations/china/guangzhou.mi?pg=2",
-          "https://help.marriott.com/s/article/Article-24483"
+          "https://help.marriott.com/s/article/Article-24483",
+          "https://www.marriott.com.cn/hotels/canul-aloft-guangzhou-university-park/overview/",
+          "https://www.eguangzhou.gov.cn/gzlatest/content/post_42670.html",
+          "https://www.gz.gov.cn/attachment/7/7792/7792257/10198995.pdf"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
@@ -1622,12 +1651,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 26,
+        "total": 31,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 4,
+          "complete": 9,
           "amap": 0
         },
         "external_used": false
@@ -1916,9 +1945,14 @@
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": "天河路383号太古汇MU35",
-        "address_en": null,
+        "address_en": "MU35, Taikoo Hui, 383 Tianhe Road, Tianhe District, Guangzhou",
         "district_zh": "天河区",
-        "nearest_metro": null,
+        "nearest_metro": {
+          "station_zh": "石牌桥",
+          "station_en": "Shipaiqiao",
+          "line": "3号线",
+          "exit": null
+        },
         "foreigner_signals": {
           "english_signage": null,
           "foreign_cards": null,
@@ -1931,7 +1965,9 @@
         "official_url": "https://www.taikoohui.com/zh-cn/shopping/mu35/",
         "sources": [
           "https://www.taikoohui.com/zh-cn/shopping/mu35/",
-          "https://www.taikoohui.com/zh-cn/"
+          "https://www.taikoohui.com/zh-cn/",
+          "https://www.taikoohui.com/en/shopping/mu35",
+          "https://www.gz.gov.cn/attachment/7/7792/7792257/10198995.pdf"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
@@ -1951,12 +1987,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 26,
+        "total": 30,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 4,
+          "complete": 8,
           "amap": 0
         },
         "external_used": false
@@ -2105,7 +2141,7 @@
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": "天河路228号",
-        "address_en": null,
+        "address_en": "228 Tianhe Road, Tianhe District, Guangzhou",
         "district_zh": "天河区",
         "nearest_metro": null,
         "foreigner_signals": {
@@ -2120,7 +2156,8 @@
         "official_url": "https://wglj.gz.gov.cn/ztmb/gzhyn/ajjq/4a/content/post_8929272.html",
         "sources": [
           "https://wglj.gz.gov.cn/ztmb/gzhyn/ajjq/4a/content/post_8929272.html",
-          "https://sw.gz.gov.cn/swzx/swyw/content/post_10468673.html"
+          "https://sw.gz.gov.cn/swzx/swyw/content/post_10468673.html",
+          "https://www.eguangzhou.gov.cn/gzservice/content/post_42484.html"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
@@ -2140,12 +2177,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 26,
+        "total": 28,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 4,
+          "complete": 6,
           "amap": 0
         },
         "external_used": false
@@ -3087,7 +3124,7 @@
           "带上购票时使用的护照原件，闸机读不出证件时走人工通道。"
         ],
         "foreigner_tips_en": [
-          "Heading to Hong Kong? Double-check the departure station and boarding gate on your ticket.",
+          "Heading to Hong Kong? Confirm your departure station on the ticket, then check the boarding gate at the station.",
           "Bring the original passport you used to book. If the gate can't read it, use a staffed lane."
         ]
       },
@@ -3323,9 +3360,14 @@
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": "广州市天河区珠江东路6号",
-        "address_en": null,
+        "address_en": "6 East Zhujiang Road, Guangzhou, China 510623",
         "district_zh": "天河区",
-        "nearest_metro": null,
+        "nearest_metro": {
+          "station_zh": "花城大道",
+          "station_en": "Huacheng Dadao",
+          "line": "APM线",
+          "exit": null
+        },
         "foreigner_signals": {
           "english_signage": null,
           "foreign_cards": null,
@@ -3338,7 +3380,9 @@
         "sources": [
           "https://www.rosewoodhotels.com/en/guangzhou",
           "https://reservations.rosewoodhotels.com/?adult=1&arrive=2026-11-27&chain=5159&child=0&currency=CNY&depart=2026-11-28&hotel=9000&level=hotel&locale=zh-CN&productcurrency=CNY&rooms=1",
-          "https://www.rosewoodhotelgroup.com/en-us/"
+          "https://www.rosewoodhotelgroup.com/en-us/",
+          "https://www.rosewoodhotels.com/en/guangzhou/overview/location",
+          "https://www.gz.gov.cn/attachment/7/7792/7792257/10198995.pdf"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
@@ -3369,12 +3413,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 28,
+        "total": 31,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 6,
+          "complete": 9,
           "amap": 0
         },
         "external_used": false
@@ -3397,9 +3441,14 @@
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": "天河路383号",
-        "address_en": null,
+        "address_en": "383 Tianhe Road, Tianhe District, Guangzhou",
         "district_zh": "天河区",
-        "nearest_metro": null,
+        "nearest_metro": {
+          "station_zh": "石牌桥",
+          "station_en": "Shipaiqiao",
+          "line": "3号线",
+          "exit": null
+        },
         "foreigner_signals": {
           "english_signage": null,
           "foreign_cards": null,
@@ -3412,7 +3461,9 @@
         "official_url": "https://www.taikoohui.com/zh-cn/",
         "sources": [
           "https://www.taikoohui.com/zh-cn/",
-          "https://sw.gz.gov.cn/swzx/swyw/content/post_10468673.html"
+          "https://sw.gz.gov.cn/swzx/swyw/content/post_10468673.html",
+          "https://www.taikoohui.com/en",
+          "https://www.gz.gov.cn/attachment/7/7792/7792257/10198995.pdf"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
@@ -3432,12 +3483,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 26,
+        "total": 30,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 4,
+          "complete": 8,
           "amap": 0
         },
         "external_used": false
@@ -3592,9 +3643,14 @@
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": "广州市天河区临江大道32号",
-        "address_en": null,
+        "address_en": "32 Linjiang Road, Tianhe District, Guangzhou, China 510623",
         "district_zh": "天河区",
-        "nearest_metro": null,
+        "nearest_metro": {
+          "station_zh": "海心沙",
+          "station_en": "Haixinsha",
+          "line": "APM线",
+          "exit": null
+        },
         "foreigner_signals": {
           "english_signage": null,
           "foreign_cards": null,
@@ -3607,7 +3663,8 @@
         "sources": [
           "https://www.ihg.com/hotelindigo/hotels/cn/zh/guangzhou/caneh/hoteldetail",
           "https://www.ihg.com/hotels/cn/zh/find-hotels/hotel-search?qDest=Guangzhou%2C%20Guangdong%2C%20China&qPt=CASH&qCiD=31&qCoD=1&qCiMy=112026&qCoMy=002027&qAdlt=1&qChld=0&qRms=1&qRtP=6CBARC&qAAR=6CBARC&srb_u=1&qFS=false&qSrt=sHL&qRdU=km",
-          "https://www.ihgplc.com/en/news-and-media/news-releases/2025/ihg-hotels-and-resorts-conversion-friendly-brands-fuel-growth-opportunities-for-owners"
+          "https://www.ihgplc.com/en/news-and-media/news-releases/2025/ihg-hotels-and-resorts-conversion-friendly-brands-fuel-growth-opportunities-for-owners",
+          "https://www.ihg.com/hotelindigo/hotels/gb/en/guangzhou/caneh/hoteldetail"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
@@ -3638,12 +3695,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 28,
+        "total": 31,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 6,
+          "complete": 9,
           "amap": 0
         },
         "external_used": false
@@ -4453,7 +4510,7 @@
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": "林和西横路215号",
-        "address_en": null,
+        "address_en": "215 Linhe Xi Heng Road, Tianhe, Guangzhou, China 510500",
         "district_zh": "天河区",
         "nearest_metro": null,
         "foreigner_signals": {
@@ -4466,7 +4523,8 @@
         },
         "official_url": "https://www.hilton.com/en/hotels/cangthi-hilton-guangzhou-tianhe/dining/?arrivalDate=2026-09-30&departureDate=2026-10-01&displayCurrency=CNY&flexibleDates=false&numAdults=1&numChildren=0&numRooms=1&room1AdultAges=&room1ChildAges=",
         "sources": [
-          "https://www.hilton.com/en/hotels/cangthi-hilton-guangzhou-tianhe/dining/?arrivalDate=2026-09-30&departureDate=2026-10-01&displayCurrency=CNY&flexibleDates=false&numAdults=1&numChildren=0&numRooms=1&room1AdultAges=&room1ChildAges="
+          "https://www.hilton.com/en/hotels/cangthi-hilton-guangzhou-tianhe/dining/?arrivalDate=2026-09-30&departureDate=2026-10-01&displayCurrency=CNY&flexibleDates=false&numAdults=1&numChildren=0&numRooms=1&room1AdultAges=&room1ChildAges=",
+          "https://www.hilton.com/en/hotels/cangthi-hilton-guangzhou-tianhe/offers/--2000000046/"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
@@ -4492,12 +4550,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 21,
+        "total": 28,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
-          "sources": 5,
-          "complete": 4,
+          "sources": 10,
+          "complete": 6,
           "amap": 0
         },
         "external_used": false
@@ -4585,7 +4643,12 @@
         "address_zh": "白鹅潭聚龙湾片区",
         "address_en": null,
         "district_zh": "荔湾区",
-        "nearest_metro": null,
+        "nearest_metro": {
+          "station_zh": "大冲口",
+          "station_en": "Dachongkou",
+          "line": "11号线",
+          "exit": null
+        },
         "foreigner_signals": {
           "english_signage": null,
           "foreign_cards": null,
@@ -4598,7 +4661,9 @@
         "official_url": "https://www.swireproperties.com/zh-cn/portfolio/current-developments/taikoo-li-julong-wan-guangzhou/",
         "sources": [
           "https://www.swireproperties.com/zh-cn/portfolio/current-developments/taikoo-li-julong-wan-guangzhou/",
-          "https://www.swirepacific.com/sc/investor-relations/updates-to-our-shareholders/press-releases/taikoo-li-julong-wan-guangzhou-officially-launches-phase-one"
+          "https://www.swirepacific.com/sc/investor-relations/updates-to-our-shareholders/press-releases/taikoo-li-julong-wan-guangzhou-officially-launches-phase-one",
+          "https://www.swireproperties.com/en/media/press-releases/2025/20250303_jlw-naming/",
+          "https://www.swireproperties.com/en/media/press-releases/2026/20260929_tlg-phase-one-launch/"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
@@ -4618,12 +4683,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 26,
+        "total": 28,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 4,
+          "complete": 6,
           "amap": 0
         },
         "external_used": false
@@ -4771,10 +4836,15 @@
         "name_en": "Conrad Guangzhou",
         "aliases_zh": [],
         "aliases_en": [],
-        "address_zh": null,
-        "address_en": null,
+        "address_zh": "广州市天河区珠江新城兴民路222号",
+        "address_en": "222 Xingmin Road, Zhujiang New Town, Tianhe District, Guangzhou, China 510623",
         "district_zh": "天河区",
-        "nearest_metro": null,
+        "nearest_metro": {
+          "station_zh": "猎德",
+          "station_en": "Liede",
+          "line": "5号线",
+          "exit": null
+        },
         "foreigner_signals": {
           "english_signage": null,
           "foreign_cards": null,
@@ -4787,7 +4857,8 @@
         "sources": [
           "https://www.hilton.com.cn/zh-cn/hotels/canxwci-conrad-guangzhou",
           "https://www.hilton.com.cn/zh-cn/locations/china/guangdong-guangzhou",
-          "https://ir.hilton.com/_assets/_de1e637820b6842c68b34801d11a8fd1/hilton/db/3577/34740/pdf/HLT_Investor_Presentation_-_November_2026.pdf"
+          "https://ir.hilton.com/_assets/_de1e637820b6842c68b34801d11a8fd1/hilton/db/3577/34740/pdf/HLT_Investor_Presentation_-_November_2026.pdf",
+          "https://www.hilton.com/en/hotels/canxwci-conrad-guangzhou/hotel-location/"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
@@ -4818,12 +4889,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 26,
+        "total": 31,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 4,
+          "complete": 9,
           "amap": 0
         },
         "external_used": false
@@ -4845,9 +4916,9 @@
         "name_en": "Hilton Garden Inn Guangzhou Airport Aerotropolis",
         "aliases_zh": [],
         "aliases_en": [],
-        "address_zh": null,
-        "address_en": null,
-        "district_zh": null,
+        "address_zh": "广州市花都区花东镇九一村空港大道9号B3栋",
+        "address_en": "Building B3, 9 Konggang Avenue, Jiuyi Village, Huadu, Guangzhou, China 510890",
+        "district_zh": "花都区",
         "nearest_metro": null,
         "foreigner_signals": {
           "english_signage": null,
@@ -4861,7 +4932,8 @@
         "sources": [
           "https://www.hilton.com.cn/zh-cn/hotels/canapgi-hilton-garden-inn-guangzhou-airport-aerotropolis",
           "https://www.hilton.com.cn/zh-cn/locations/china/guangdong-guangzhou",
-          "https://ir.hilton.com/_assets/_de1e637820b6842c68b34801d11a8fd1/hilton/db/3577/34740/pdf/HLT_Investor_Presentation_-_November_2026.pdf"
+          "https://ir.hilton.com/_assets/_de1e637820b6842c68b34801d11a8fd1/hilton/db/3577/34740/pdf/HLT_Investor_Presentation_-_November_2026.pdf",
+          "https://www.hilton.com/zh-hans/hotels/canapgi-hilton-garden-inn-guangzhou-airport-aerotropolis/"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
@@ -4892,12 +4964,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 26,
+        "total": 29,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 4,
+          "complete": 7,
           "amap": 0
         },
         "external_used": false
@@ -5122,7 +5194,12 @@
         "address_zh": "广州东站地铁站",
         "address_en": null,
         "district_zh": "天河区",
-        "nearest_metro": null,
+        "nearest_metro": {
+          "station_zh": "广州东站",
+          "station_en": "Guangzhou East Railway Station",
+          "line": "1、11号线",
+          "exit": null
+        },
         "foreigner_signals": {
           "english_signage": null,
           "foreign_cards": null,
@@ -5135,7 +5212,9 @@
         "official_url": "https://gzw.gz.gov.cn/qy/qydt/content/post_9093200.html",
         "sources": [
           "https://gzw.gz.gov.cn/qy/qydt/content/post_9093200.html",
-          "https://www.gzr.com.cn/about/yingxiaowangluo/"
+          "https://www.gzr.com.cn/about/yingxiaowangluo/",
+          "https://jtj.gz.gov.cn/xwdt/gzdt/content/post_10050166.html",
+          "https://www.eguangzhou.gov.cn/gzspecialreports/139thCantonFair/content/post_42667.html"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
@@ -5155,12 +5234,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 26,
+        "total": 28,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 4,
+          "complete": 6,
           "amap": 0
         },
         "external_used": false
@@ -5374,9 +5453,9 @@
         "name_en": "The Ritz-Carlton, Guangzhou",
         "aliases_zh": [],
         "aliases_en": [],
-        "address_zh": null,
-        "address_en": null,
-        "district_zh": null,
+        "address_zh": "广州市天河区珠江新城兴安路3号",
+        "address_en": "3 Xing An Road, Pearl River New City, Tianhe District, Guangzhou, China 510623",
+        "district_zh": "天河区",
         "nearest_metro": null,
         "foreigner_signals": {
           "english_signage": null,
@@ -5390,7 +5469,8 @@
         "sources": [
           "https://www.ritzcarlton.com/en/hotels/canrz-the-ritz-carlton-guangzhou/overview/",
           "https://www.marriott.com/en-us/destinations/china/guangzhou.mi",
-          "https://help.marriott.com/s/article/Article-24483"
+          "https://help.marriott.com/s/article/Article-24483",
+          "https://www.ritzcarlton.com/zh-cn/hotels/canrz-the-ritz-carlton-guangzhou/overview/"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
@@ -5421,12 +5501,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 26,
+        "total": 29,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 4,
+          "complete": 7,
           "amap": 0
         },
         "external_used": false
@@ -5584,7 +5664,7 @@
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": "永庆坊粤剧艺术博物馆普天乐馆内",
-        "address_en": null,
+        "address_en": "Cantonese Opera Art Museum, 127 Enning Road, Liwan District, Guangzhou",
         "district_zh": "荔湾区",
         "nearest_metro": null,
         "foreigner_signals": {
@@ -5599,7 +5679,8 @@
         "official_url": "https://www.lw.gov.cn/zzzs/bmdt/content/post_10103400.html",
         "sources": [
           "https://www.lw.gov.cn/zzzs/bmdt/content/post_10103400.html",
-          "https://www.lw.gov.cn/ztzl/rdjyhzxtabl/content/mpost_10918800.html"
+          "https://www.lw.gov.cn/ztzl/rdjyhzxtabl/content/mpost_10918800.html",
+          "https://www.lw.gov.cn/ywb/fw/ly/whss/content/post_9105819.html"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
@@ -5619,12 +5700,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 26,
+        "total": 28,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 4,
+          "complete": 6,
           "amap": 0
         },
         "external_used": false
@@ -6697,10 +6778,15 @@
         "name_en": "Sheraton Guangzhou Panyu",
         "aliases_zh": [],
         "aliases_en": [],
-        "address_zh": null,
-        "address_en": null,
-        "district_zh": null,
-        "nearest_metro": null,
+        "address_zh": "广州市番禺区万惠一路46号",
+        "address_en": "46 Wanhui Yi Road, Panyu District, Guangzhou, China 511400",
+        "district_zh": "番禺区",
+        "nearest_metro": {
+          "station_zh": "南村万博",
+          "station_en": "Nancun Wanbo",
+          "line": "7、18号线",
+          "exit": "B"
+        },
         "foreigner_signals": {
           "english_signage": null,
           "foreign_cards": null,
@@ -6713,7 +6799,8 @@
         "sources": [
           "https://www.marriott.com/en-us/hotels/cansp-sheraton-guangzhou-panyu/overview/",
           "https://www.marriott.com/en-us/destinations/china/guangzhou.mi?pg=2",
-          "https://help.marriott.com/s/article/Article-24483"
+          "https://help.marriott.com/s/article/Article-24483",
+          "https://www.marriott.com.cn/hotels/cansp-sheraton-guangzhou-panyu/overview/"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
@@ -6744,12 +6831,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 26,
+        "total": 31,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 4,
+          "complete": 9,
           "amap": 0
         },
         "external_used": false
@@ -6772,9 +6859,14 @@
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": "天河路218号",
-        "address_en": null,
+        "address_en": "218 Tianhe Road, Tianhe District, Guangzhou",
         "district_zh": "天河区",
-        "nearest_metro": null,
+        "nearest_metro": {
+          "station_zh": "体育西路",
+          "station_en": "Tiyu Xilu",
+          "line": "1、3号线",
+          "exit": null
+        },
         "foreigner_signals": {
           "english_signage": null,
           "foreign_cards": null,
@@ -6787,7 +6879,10 @@
         "official_url": "https://www.parccentral.com.cn/zh-CN/aboutUs",
         "sources": [
           "https://www.parccentral.com.cn/zh-CN/aboutUs",
-          "https://sw.gz.gov.cn/swzx/swyw/content/post_10468673.html"
+          "https://sw.gz.gov.cn/swzx/swyw/content/post_10468673.html",
+          "https://www.eguangzhou.gov.cn/gzlatest/content/post_39401.html",
+          "https://www.eguangzhou.gov.cn/gzlatest/content/post_48904.html",
+          "https://www.gz.gov.cn/attachment/7/7792/7792257/10198995.pdf"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
@@ -6807,12 +6902,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 26,
+        "total": 30,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 4,
+          "complete": 8,
           "amap": 0
         },
         "external_used": false
@@ -6901,9 +6996,14 @@
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": "珠江东路6号",
-        "address_en": null,
+        "address_en": "6 East Zhujiang Road, Guangzhou, China 510623",
         "district_zh": "天河区",
-        "nearest_metro": null,
+        "nearest_metro": {
+          "station_zh": "花城大道",
+          "station_en": "Huacheng Dadao",
+          "line": "APM线",
+          "exit": null
+        },
         "foreigner_signals": {
           "english_signage": null,
           "foreign_cards": null,
@@ -6916,7 +7016,9 @@
         "official_url": "https://www.rosewoodhotels.com/en/guangzhou/dining/patina-european-brasserie",
         "sources": [
           "https://www.rosewoodhotels.com/en/guangzhou/dining/patina-european-brasserie",
-          "https://www.rosewoodhotels.com/content/dam/rosewoodhotels/property/guangzhou/en/documents/dining/2026-1%20Patina%20Brasserie%20Lunch%20EN.pdf"
+          "https://www.rosewoodhotels.com/content/dam/rosewoodhotels/property/guangzhou/en/documents/dining/2026-1%20Patina%20Brasserie%20Lunch%20EN.pdf",
+          "https://www.rosewoodhotels.com/en/guangzhou/overview/location",
+          "https://www.gz.gov.cn/attachment/7/7792/7792257/10198995.pdf"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
@@ -6942,12 +7044,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 26,
+        "total": 29,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 4,
+          "complete": 7,
           "amap": 0
         },
         "external_used": false
@@ -6967,10 +7069,15 @@
         "name_en": "Courtyard by Marriott Guangzhou Pazhou",
         "aliases_zh": [],
         "aliases_en": [],
-        "address_zh": null,
-        "address_en": null,
-        "district_zh": null,
-        "nearest_metro": null,
+        "address_zh": "广州市海珠区凤浦中路671号广交会展馆C区",
+        "address_en": "Area C, 671 Fengpu Zhong Road, Haizhu District, Guangzhou, China 510335",
+        "district_zh": "海珠区",
+        "nearest_metro": {
+          "station_zh": "琶洲",
+          "station_en": "Pazhou",
+          "line": "8、11号线",
+          "exit": null
+        },
         "foreigner_signals": {
           "english_signage": null,
           "foreign_cards": null,
@@ -6983,7 +7090,9 @@
         "sources": [
           "https://www.marriott.com/en-us/hotels/canyp-courtyard-guangzhou-pazhou/overview/",
           "https://www.marriott.com/en-us/destinations/china/guangzhou.mi",
-          "https://help.marriott.com/s/article/Article-24483"
+          "https://help.marriott.com/s/article/Article-24483",
+          "https://www.marriott.com.cn/hotels/canyp-courtyard-guangzhou-pazhou/overview/",
+          "https://www.eguangzhou.gov.cn/gzservice/content/post_42669.html"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
@@ -7014,12 +7123,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 26,
+        "total": 31,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 4,
+          "complete": 9,
           "amap": 0
         },
         "external_used": false
@@ -7222,6 +7331,246 @@
         "external_used": false
       },
       "flags": []
+    },
+    {
+      "id": "pl_gz_rujia_neo_gongyuanqian",
+      "source_file": "C8/guangzhou-hotel.json",
+      "status": "pending",
+      "draft": {
+        "id": "pl_gz_rujia_neo_gongyuanqian",
+        "city": "guangzhou",
+        "category": "hotel",
+        "tier": "main",
+        "name_zh": "如家·neo（广州北京路步行街公园前地铁站店）",
+        "name_en": "Home Inn neo — Beijing Road / Gongyuanqian",
+        "aliases_zh": [],
+        "aliases_en": [],
+        "address_zh": "广州市越秀区解放中路410号",
+        "address_en": null,
+        "district_zh": "越秀区",
+        "nearest_metro": {
+          "station_zh": "公园前",
+          "station_en": "Gongyuanqian",
+          "line": "1、2号线",
+          "exit": "A"
+        },
+        "foreigner_signals": {
+          "english_signage": null,
+          "foreign_cards": null,
+          "english_service": null,
+          "evidence": [
+            "https://www.bthhotels.com/hotel/020026?beginDate=2026-11-19&endDate=2026-11-20"
+          ]
+        },
+        "official_url": "https://www.bthhotels.com/hotel/020026",
+        "sources": [
+          "https://www.bthhotels.com/hotel/020026",
+          "https://www.bthhotels.com/hotel/020026?beginDate=2026-11-19&endDate=2026-11-20",
+          "https://images.bthhotels.com/investmentrelations/reports/A27E7EB0-6C86-43A9-9A79-625C3D0D8FBE.pdf"
+        ],
+        "checked_on": "2026-11-27",
+        "confidence": "high",
+        "notes": "分档依据：首旅酒店集团年报将如家 NEO 3.0 列为经济型产品升级。外宾依据：首旅如家同门店官网标明“接待外宾”。英文店名为编辑用译名。",
+        "subcategory": "hotel",
+        "intro_short_zh": "公园前站A口，适合步行逛北京路。",
+        "intro_short_en": "Use Gongyuanqian Exit A for this Old Guangzhou base.",
+        "intro_long_zh": "首旅门店页明确接待外宾。酒店靠公园前站A口，1号线和2号线在此换乘。想把北京路步行街和人民公园排在一起，可以从这里出发。",
+        "intro_long_en": "For a first stay in central Guangzhou, Beijing Road Pedestrian Street and People's Park are close by. The hotel confirms it accepts international guests and directs arrivals to Exit A of Gongyuanqian Metro Station.",
+        "star": null,
+        "price_band": null,
+        "accepts_foreigners": true,
+        "foreign_service": {
+          "english_front_desk": null,
+          "foreign_guest_share": null,
+          "foreign_guest_experience": null,
+          "international_brand": null,
+          "evidence_zh": "首旅如家门店官方页面标明“接待外宾”。",
+          "evidence": [
+            "https://www.bthhotels.com/hotel/020026?beginDate=2026-11-19&endDate=2026-11-20"
+          ]
+        }
+      },
+      "external_signals": [],
+      "location": null,
+      "amap": {
+        "status": "not-run",
+        "alternatives": []
+      },
+      "score": {
+        "total": 36,
+        "parts": {
+          "foreigner": 0,
+          "confidence": 20,
+          "sources": 10,
+          "complete": 6,
+          "amap": 0
+        },
+        "external_used": false
+      },
+      "flags": [
+        "pl_gz_rujia_neo_gongyuanqian: unknown field 'hotel_class' is dropped on import"
+      ]
+    },
+    {
+      "id": "pl_gz_rujia_neo_kecun",
+      "source_file": "C8/guangzhou-hotel.json",
+      "status": "pending",
+      "draft": {
+        "id": "pl_gz_rujia_neo_kecun",
+        "city": "guangzhou",
+        "category": "hotel",
+        "tier": "main",
+        "name_zh": "如家·neo（广州塔客村地铁站店）",
+        "name_en": "Home Inn neo — Canton Tower / Kecun",
+        "aliases_zh": [],
+        "aliases_en": [],
+        "address_zh": "广州市海珠区广州大道南898号",
+        "address_en": null,
+        "district_zh": "海珠区",
+        "nearest_metro": {
+          "station_zh": "上涌",
+          "station_en": "Shangchong",
+          "line": "11号线",
+          "exit": null
+        },
+        "foreigner_signals": {
+          "english_signage": null,
+          "foreign_cards": null,
+          "english_service": null,
+          "evidence": [
+            "https://www.bthhotels.com/hotel/020010?beginDate=2026-11-26&endDate=2026-11-27"
+          ]
+        },
+        "official_url": "https://www.bthhotels.com/hotel/020010",
+        "sources": [
+          "https://www.bthhotels.com/hotel/020010",
+          "https://www.bthhotels.com/hotel/020010?beginDate=2026-11-26&endDate=2026-11-27",
+          "https://images.bthhotels.com/investmentrelations/reports/A27E7EB0-6C86-43A9-9A79-625C3D0D8FBE.pdf",
+          "https://mzj.gz.gov.cn/gk/dmgg/content/post_9810919.html",
+          "https://www.bthhotels.com/hotel/020010?beginDate=2026-11-25&endDate=2026-11-26"
+        ],
+        "checked_on": "2026-11-27",
+        "confidence": "high",
+        "notes": "分档依据：首旅酒店集团年报将如家 NEO 3.0 列为经济型产品升级。外宾依据：首旅如家同门店官网标明“接待外宾”。英文店名为编辑用译名。",
+        "subcategory": "hotel",
+        "intro_short_zh": "海珠的外宾友好住处，设自助洗衣和烘干。",
+        "intro_short_en": "A Haizhu base with self-service laundry for a longer Guangzhou visit.",
+        "intro_long_zh": "店名带「客村」，到店也可走11号线上涌站，门店交通说明列它更近。酒店官网标明接待外宾，有自助洗衣、烘干和健身房。",
+        "intro_long_en": "Pack lighter for a few days in Haizhu. The property lists washers, dryers and a gym, and explicitly welcomes overseas guests. Its directions put Shangchong on Line 11 closer to the hotel than Kecun.",
+        "star": null,
+        "price_band": null,
+        "accepts_foreigners": true,
+        "foreign_service": {
+          "english_front_desk": null,
+          "foreign_guest_share": null,
+          "foreign_guest_experience": null,
+          "international_brand": null,
+          "evidence_zh": "首旅如家门店官方页面标明“接待外宾”。",
+          "evidence": [
+            "https://www.bthhotels.com/hotel/020010?beginDate=2026-11-26&endDate=2026-11-27"
+          ]
+        }
+      },
+      "external_signals": [],
+      "location": null,
+      "amap": {
+        "status": "not-run",
+        "alternatives": []
+      },
+      "score": {
+        "total": 36,
+        "parts": {
+          "foreigner": 0,
+          "confidence": 20,
+          "sources": 10,
+          "complete": 6,
+          "amap": 0
+        },
+        "external_used": false
+      },
+      "flags": [
+        "pl_gz_rujia_neo_kecun: unknown field 'hotel_class' is dropped on import"
+      ]
+    },
+    {
+      "id": "pl_gz_rujia_neo_yongqingfang",
+      "source_file": "C8/guangzhou-hotel.json",
+      "status": "pending",
+      "draft": {
+        "id": "pl_gz_rujia_neo_yongqingfang",
+        "city": "guangzhou",
+        "category": "hotel",
+        "tier": "main",
+        "name_zh": "如家·neo（广州白鹅潭艺术中心永庆坊店）",
+        "name_en": "Home Inn neo — Bai'etan Arts Center / Yongqing Fang",
+        "aliases_zh": [],
+        "aliases_en": [],
+        "address_zh": "广州市荔湾区黄沙大道144号",
+        "address_en": null,
+        "district_zh": "荔湾区",
+        "nearest_metro": {
+          "station_zh": "如意坊",
+          "station_en": "Ruyifang",
+          "line": "6号线",
+          "exit": "B"
+        },
+        "foreigner_signals": {
+          "english_signage": null,
+          "foreign_cards": null,
+          "english_service": null,
+          "evidence": [
+            "https://www.bthhotels.com/hotel/020051?beginDate=2026-11-24&endDate=2026-11-25"
+          ]
+        },
+        "official_url": "https://www.bthhotels.com/hotel/020051",
+        "sources": [
+          "https://www.bthhotels.com/hotel/020051",
+          "https://www.bthhotels.com/hotel/020051?beginDate=2026-11-24&endDate=2026-11-25",
+          "https://images.bthhotels.com/investmentrelations/reports/A27E7EB0-6C86-43A9-9A79-625C3D0D8FBE.pdf",
+          "https://mzj.gz.gov.cn/gk/dmgg/content/post_9810919.html"
+        ],
+        "checked_on": "2026-11-27",
+        "confidence": "high",
+        "notes": "分档依据：首旅酒店集团年报将如家 NEO 3.0 列为经济型产品升级。外宾依据：首旅如家同门店官网标明“接待外宾”。英文店名为编辑用译名。",
+        "subcategory": "hotel",
+        "intro_short_zh": "靠近荔湾湖公园，可从如意坊站B口到店。",
+        "intro_short_en": "Stay near Liwan Lake Park and explore Guangzhou's old west side.",
+        "intro_long_zh": "从6号线如意坊站B口到黄沙大道上的酒店。门店有自助洗衣，官网明确接待外宾，适合住在西关附近、慢慢逛荔湾湖和永庆坊的旅客。",
+        "intro_long_en": "If Liwan is the focus of your visit, this property is near Liwan Lake Park and the Yongqing Fang area. It confirms international guest check-in. Use Ruyifang Station's Exit B.",
+        "star": null,
+        "price_band": null,
+        "accepts_foreigners": true,
+        "foreign_service": {
+          "english_front_desk": null,
+          "foreign_guest_share": null,
+          "foreign_guest_experience": null,
+          "international_brand": null,
+          "evidence_zh": "首旅如家门店官方页面标明“接待外宾”。",
+          "evidence": [
+            "https://www.bthhotels.com/hotel/020051?beginDate=2026-11-24&endDate=2026-11-25"
+          ]
+        }
+      },
+      "external_signals": [],
+      "location": null,
+      "amap": {
+        "status": "not-run",
+        "alternatives": []
+      },
+      "score": {
+        "total": 36,
+        "parts": {
+          "foreigner": 0,
+          "confidence": 20,
+          "sources": 10,
+          "complete": 6,
+          "amap": 0
+        },
+        "external_used": false
+      },
+      "flags": [
+        "pl_gz_rujia_neo_yongqingfang: unknown field 'hotel_class' is dropped on import"
+      ]
     },
     {
       "id": "pl_gz_sansheng_letter",
@@ -7631,10 +7980,15 @@
         "name_en": "Four Seasons Hotel Guangzhou",
         "aliases_zh": [],
         "aliases_en": [],
-        "address_zh": null,
-        "address_en": null,
+        "address_zh": "广州市天河区珠江新城珠江西路5号",
+        "address_en": "5 Zhujiang West Road, Zhujiang New Town, Tianhe District, Guangzhou, China 510623",
         "district_zh": "天河区",
-        "nearest_metro": null,
+        "nearest_metro": {
+          "station_zh": "珠江新城",
+          "station_en": "Zhujiang New Town",
+          "line": "3、5号线",
+          "exit": null
+        },
         "foreigner_signals": {
           "english_signage": null,
           "foreign_cards": null,
@@ -7647,7 +8001,10 @@
         "sources": [
           "https://www.fourseasons.com/zh/guangzhou/offers/room_rate/",
           "https://reservations.fourseasons.com/zh/choose-your-room?ratePlanCode=RACBAR&hotelCode=CAN532&checkIn=2026-11-27&checkOut=2026-11-28&adults=2&children=0",
-          "https://www.fourseasons.com/about_four_seasons/"
+          "https://www.fourseasons.com/about_four_seasons/",
+          "https://www.fourseasons.com/zh/guangzhou/getting-here/",
+          "https://press.fourseasons.com/guangzhou/hotel-facts/",
+          "https://www.gz.gov.cn/attachment/7/7792/7792257/10198995.pdf"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
@@ -7678,12 +8035,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 26,
+        "total": 31,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 4,
+          "complete": 9,
           "amap": 0
         },
         "external_used": false
@@ -7973,7 +8330,12 @@
         "address_zh": "天河路208号",
         "address_en": null,
         "district_zh": "天河区",
-        "nearest_metro": null,
+        "nearest_metro": {
+          "station_zh": "体育西路",
+          "station_en": "Tiyu Xilu",
+          "line": "1、3号线",
+          "exit": null
+        },
         "foreigner_signals": {
           "english_signage": null,
           "foreign_cards": null,
@@ -7986,7 +8348,9 @@
         "official_url": "https://www.teemall.com.cn/gzthcgwzx/txfw/jtzn/index.html",
         "sources": [
           "https://www.teemall.com.cn/gzthcgwzx/txfw/jtzn/index.html",
-          "https://sw.gz.gov.cn/swzx/swyw/content/post_10468673.html"
+          "https://sw.gz.gov.cn/swzx/swyw/content/post_10468673.html",
+          "https://www.eguangzhou.gov.cn/gzlatest/content/post_48904.html",
+          "https://www.gz.gov.cn/attachment/7/7792/7792257/10198995.pdf"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
@@ -8006,12 +8370,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 26,
+        "total": 28,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 4,
+          "complete": 6,
           "amap": 0
         },
         "external_used": false
@@ -8167,8 +8531,8 @@
         "name_en": "Fairfield by Marriott Guangzhou Tianhe Park",
         "aliases_zh": [],
         "aliases_en": [],
-        "address_zh": null,
-        "address_en": null,
+        "address_zh": "广州市中山大道西277号",
+        "address_en": "277 West Zhongshan Avenue, Guangzhou, China 510665",
         "district_zh": null,
         "nearest_metro": null,
         "foreigner_signals": {
@@ -8183,7 +8547,8 @@
         "sources": [
           "https://www.marriott.com/en-us/hotels/canfi-fairfield-guangzhou-tianhe-park/overview/",
           "https://www.marriott.com/en-us/destinations/china/guangzhou.mi",
-          "https://help.marriott.com/s/article/Article-24483"
+          "https://help.marriott.com/s/article/Article-24483",
+          "https://www.marriott.com.cn/hotels/canfi-fairfield-guangzhou-tianhe-park/overview/"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
@@ -8214,12 +8579,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 26,
+        "total": 29,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 4,
+          "complete": 7,
           "amap": 0
         },
         "external_used": false
@@ -8241,10 +8606,15 @@
         "name_en": "Guangzhou Marriott Hotel Tianhe",
         "aliases_zh": [],
         "aliases_en": [],
-        "address_zh": null,
-        "address_en": null,
-        "district_zh": null,
-        "nearest_metro": null,
+        "address_zh": "广州市天河区天河路228号",
+        "address_en": "228 Tianhe Road, Tianhe District, Guangzhou, China 510620",
+        "district_zh": "天河区",
+        "nearest_metro": {
+          "station_zh": "体育中心",
+          "station_en": "Tianhe Sports Center",
+          "line": "1号线",
+          "exit": "D3"
+        },
         "foreigner_signals": {
           "english_signage": null,
           "foreign_cards": null,
@@ -8257,7 +8627,9 @@
         "sources": [
           "https://www.marriott.com/en-us/hotels/canti-guangzhou-marriott-hotel-tianhe/overview/",
           "https://www.marriott.com/en-us/destinations/china/guangzhou.mi",
-          "https://help.marriott.com/s/article/Article-24483"
+          "https://help.marriott.com/s/article/Article-24483",
+          "https://www.marriott.com.cn/hotels/canti-guangzhou-marriott-hotel-tianhe/overview/",
+          "https://www.marriott.com/hotels/hotel-rooms/canti-guangzhou-marriott-hotel-tianhe/"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
@@ -8288,12 +8660,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 26,
+        "total": 31,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 4,
+          "complete": 9,
           "amap": 0
         },
         "external_used": false
@@ -8315,9 +8687,9 @@
         "name_en": "The Westin Guangzhou",
         "aliases_zh": [],
         "aliases_en": [],
-        "address_zh": null,
-        "address_en": null,
-        "district_zh": null,
+        "address_zh": "广州市天河区林和中路6号",
+        "address_en": "6 Lin He Zhong Road, Tian He District, Guangzhou, China 510610",
+        "district_zh": "天河区",
         "nearest_metro": null,
         "foreigner_signals": {
           "english_signage": null,
@@ -8331,7 +8703,8 @@
         "sources": [
           "https://www.marriott.com/en-us/hotels/cangw-the-westin-guangzhou/overview/",
           "https://www.marriott.com/en-us/destinations/china/guangzhou.mi",
-          "https://help.marriott.com/s/article/Article-24483"
+          "https://help.marriott.com/s/article/Article-24483",
+          "https://www.marriott.com.cn/hotels/cangw-the-westin-guangzhou/overview/"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
@@ -8362,12 +8735,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 26,
+        "total": 29,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 4,
+          "complete": 7,
           "amap": 0
         },
         "external_used": false
@@ -8389,8 +8762,8 @@
         "name_en": "Hilton Guangzhou Tianhe",
         "aliases_zh": [],
         "aliases_en": [],
-        "address_zh": null,
-        "address_en": null,
+        "address_zh": "广州市天河区林和西横路215号",
+        "address_en": "215 Linhe Xi Heng Road, Tianhe, Guangzhou, China 510500",
         "district_zh": "天河区",
         "nearest_metro": null,
         "foreigner_signals": {
@@ -8405,7 +8778,9 @@
         "sources": [
           "https://www.hilton.com.cn/zh-cn/hotels/cangthi-hilton-guangzhou-tianhe",
           "https://www.hilton.com.cn/zh-cn/locations/china/guangdong-guangzhou",
-          "https://ir.hilton.com/_assets/_de1e637820b6842c68b34801d11a8fd1/hilton/db/3577/34740/pdf/HLT_Investor_Presentation_-_November_2026.pdf"
+          "https://ir.hilton.com/_assets/_de1e637820b6842c68b34801d11a8fd1/hilton/db/3577/34740/pdf/HLT_Investor_Presentation_-_November_2026.pdf",
+          "https://www.hilton.com.cn/CANGTHI/",
+          "https://www.hilton.com/en/hotels/cangthi-hilton-guangzhou-tianhe/offers/--2000000046/"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
@@ -8436,12 +8811,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 26,
+        "total": 29,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 4,
+          "complete": 7,
           "amap": 0
         },
         "external_used": false
@@ -8463,7 +8838,7 @@
         "name_en": "Hilton Garden Inn Guangzhou Tianhe",
         "aliases_zh": [],
         "aliases_en": [],
-        "address_zh": null,
+        "address_zh": "广州市天河区广州大道北63号",
         "address_en": null,
         "district_zh": "天河区",
         "nearest_metro": null,
@@ -8483,7 +8858,7 @@
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
-        "notes": "希尔顿城市页显示 2026-11-27 入住、11-28 退房的起价。 官网样本为每房每晚人民币 ¥495。当前价以所选日期及房型的报价为准。 分档依据：希尔顿集团将品牌列为 Focused Service，本库按中档处理。",
+        "notes": "希尔顿城市页显示 2026-11-27 入住、11-28 退房的起价。 官网样本为每房每晚人民币 ¥495。当前价以所选日期及房型的报价为准。 分档依据：希尔顿集团将品牌列为 Focused Service，本库按中档处理。 同一希尔顿物业代码 CANGZGI 的中文官网现称广州天河鼎龙希尔顿花园酒店。人工入库时核对展示名称。",
         "subcategory": "hotel",
         "intro_short_zh": "天河北部的希尔顿花园，可结合动物园行程。",
         "intro_short_en": "A north Tianhe option for a trip that includes Guangzhou Zoo.",
@@ -8510,12 +8885,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 26,
+        "total": 28,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 4,
+          "complete": 6,
           "amap": 0
         },
         "external_used": false
@@ -8603,9 +8978,14 @@
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": "广州市天河区天河路389号",
-        "address_en": null,
+        "address_en": "389 Tianhe Road, Tianhe District, Guangzhou, China 510620",
         "district_zh": "天河区",
-        "nearest_metro": null,
+        "nearest_metro": {
+          "station_zh": "石牌桥",
+          "station_en": "Shipaiqiao",
+          "line": "3号线",
+          "exit": null
+        },
         "foreigner_signals": {
           "english_signage": null,
           "foreign_cards": null,
@@ -8618,7 +8998,9 @@
         "sources": [
           "https://www.mandarinoriental.com/zh-cn/guangzhou/tianhe",
           "https://www.mandarinoriental.com/zh-cn/guangzhou/tianhe/stay/mandarin-room",
-          "https://www.mandarin-oriental.org/en/investors.html"
+          "https://www.mandarin-oriental.org/en/investors.html",
+          "https://cms.mandarinoriental.com/en/guangzhou/tianhe/contact-us",
+          "https://www.gz.gov.cn/attachment/7/7792/7792257/10198995.pdf"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
@@ -8649,12 +9031,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 28,
+        "total": 31,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 6,
+          "complete": 9,
           "amap": 0
         },
         "external_used": false
@@ -9077,7 +9459,7 @@
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": "新滘中路新海街9号",
-        "address_en": null,
+        "address_en": "9 Xinhai Street, Xinjiao Middle Road, Haizhu District, Guangzhou, China 510310",
         "district_zh": "海珠区",
         "nearest_metro": null,
         "foreigner_signals": {
@@ -9122,12 +9504,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 26,
+        "total": 28,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 4,
+          "complete": 6,
           "amap": 0
         },
         "external_used": false
@@ -9150,7 +9532,7 @@
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": "流花路117号",
-        "address_en": null,
+        "address_en": "117 Liuhua Road, Guangzhou, China 510016",
         "district_zh": "越秀区",
         "nearest_metro": null,
         "foreigner_signals": {
@@ -9195,12 +9577,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 26,
+        "total": 28,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 4,
+          "complete": 6,
           "amap": 0
         },
         "external_used": false
@@ -9347,9 +9729,14 @@
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": "珠江西路5号72层",
-        "address_en": null,
+        "address_en": "Level 72, 5 Zhujiang West Road, Zhujiang New Town, Tianhe District, Guangzhou, China 510623",
         "district_zh": "天河区",
-        "nearest_metro": null,
+        "nearest_metro": {
+          "station_zh": "珠江新城",
+          "station_en": "Zhujiang New Town",
+          "line": "3、5号线",
+          "exit": null
+        },
         "foreigner_signals": {
           "english_signage": null,
           "foreign_cards": null,
@@ -9362,7 +9749,10 @@
         "official_url": "https://www.fourseasons.com/guangzhou/dining/restaurants/caffe_mondo/",
         "sources": [
           "https://www.fourseasons.com/guangzhou/dining/restaurants/caffe_mondo/",
-          "https://www.fourseasons.com/guangzhou/dining/restaurants/caffe_mondo/lunch_and_dinner/"
+          "https://www.fourseasons.com/guangzhou/dining/restaurants/caffe_mondo/lunch_and_dinner/",
+          "https://www.fourseasons.com/zh/guangzhou/getting-here/",
+          "https://press.fourseasons.com/guangzhou/hotel-facts/",
+          "https://www.gz.gov.cn/attachment/7/7792/7792257/10198995.pdf"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
@@ -9388,12 +9778,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 26,
+        "total": 29,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 4,
+          "complete": 7,
           "amap": 0
         },
         "external_used": false
@@ -9481,9 +9871,9 @@
         "name_en": "Sheraton Guangzhou Hotel",
         "aliases_zh": [],
         "aliases_en": [],
-        "address_zh": null,
-        "address_en": null,
-        "district_zh": null,
+        "address_zh": "广州市天河区天河路208号",
+        "address_en": "208 Tianhe Road, Tianhe District, Guangzhou, China 510620",
+        "district_zh": "天河区",
         "nearest_metro": null,
         "foreigner_signals": {
           "english_signage": null,
@@ -9497,7 +9887,8 @@
         "sources": [
           "https://www.marriott.com/en-us/hotels/cansi-sheraton-guangzhou-hotel/overview/",
           "https://www.marriott.com/en-us/destinations/china/guangzhou.mi",
-          "https://help.marriott.com/s/article/Article-24483"
+          "https://help.marriott.com/s/article/Article-24483",
+          "https://www.marriott.com.cn/hotels/cansi-sheraton-guangzhou-hotel/overview/"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
@@ -9528,12 +9919,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 26,
+        "total": 29,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 4,
+          "complete": 7,
           "amap": 0
         },
         "external_used": false
@@ -9762,7 +10153,7 @@
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": "珠江新城华夏路16号",
-        "address_en": null,
+        "address_en": "16 Huaxia Road, Zhujiang New Town, Tianhe District, Guangzhou, China 510623",
         "district_zh": "天河区",
         "nearest_metro": null,
         "foreigner_signals": {
@@ -9777,7 +10168,8 @@
         "official_url": "https://www.hyatt.com/park-hyatt/zh-CN/guaph-park-hyatt-guangzhou/dining/dining-room",
         "sources": [
           "https://www.hyatt.com/park-hyatt/zh-CN/guaph-park-hyatt-guangzhou/dining/dining-room",
-          "https://www.hyatt.com/content/dam/hotel/propertysites/assets/park/guaph/documents/en_us/dining/dining-room/Dining-Room-Dinner-Menu.pdf"
+          "https://www.hyatt.com/content/dam/hotel/propertysites/assets/park/guaph/documents/en_us/dining/dining-room/Dining-Room-Dinner-Menu.pdf",
+          "https://www.hyatt.com/en-US/hotel/china/park-hyatt-guangzhou/guaph/dining/dining-room"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
@@ -9803,12 +10195,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 26,
+        "total": 28,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 4,
+          "complete": 6,
           "amap": 0
         },
         "external_used": false
@@ -10288,7 +10680,7 @@
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": "广州市天河区珠江东路12号",
-        "address_en": null,
+        "address_en": "12 Zhujiang East Road, Tianhe District, Guangzhou, China",
         "district_zh": "天河区",
         "nearest_metro": null,
         "foreigner_signals": {
@@ -10334,12 +10726,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 28,
+        "total": 29,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 6,
+          "complete": 7,
           "amap": 0
         },
         "external_used": false
