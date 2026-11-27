@@ -1,92 +1,14 @@
 #if os(iOS)
 import SwiftUI
 
-/// The Trips tab with no trip yet: plan with Lio in the chat, or just get ready with three questions.
-struct LioTripHomeStart: View {
-    let language: LioLanguage
-    let openChat: () -> Void
-    let getReady: () -> Void
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: LioTheme.Spacing.lg) {
-            Text(language.text("Trips", "行程"))
-                .font(LioTheme.display(.largeTitle).bold())
-                .foregroundStyle(LioTheme.ink)
-                .accessibilityAddTraits(.isHeader)
-            HStack(alignment: .center, spacing: LioTheme.Spacing.sm) {
-                LioPortrait(size: 56).accessibilityHidden(true)
-                VStack(alignment: .leading, spacing: LioTheme.Spacing.xxs) {
-                    Text(language.text("Heading to China?", "准备去中国？"))
-                        .font(LioTheme.display(.title2).weight(.semibold))
-                        .foregroundStyle(LioTheme.ink)
-                        .fixedSize(horizontal: false, vertical: true)
-                    Text(language.text("See what to sort out before you go, or let Lio plan your days.",
-                                       "先看看出发前要办哪些事，或请 Lio 排好每天去哪。"))
-                        .font(.subheadline)
-                        .foregroundStyle(LioTheme.inkSecondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-            }
-            .accessibilityElement(children: .combine)
-            // JT 2026-11-25: "Just get ready" first; planning needs a chat round first.
-            entry(symbol: "checklist", title: language.text("Just get ready", "先只做准备"),
-                  detail: language.text("Three questions, then a checklist: entry, payment, data, hotel, bookings.",
-                                        "回答三个问题，得到准备清单：入境、支付、上网、酒店、预约。"),
-                  identifier: "lio.trip-home.start.ready", action: getReady)
-            entry(symbol: "bubble.left.and.text.bubble.right", title: language.text("Plan with Lio", "帮我规划"),
-                  detail: language.text("Tell Lio your city, days and interests; it plans each day.",
-                                        "告诉 Lio 城市、天数和喜好，排好每天的行程。"),
-                  identifier: "lio.trip-home.start.plan", action: openChat)
-            Text(language.text("Trips you saved before are under All trips.", "以前保存的行程在右上角「所有行程」里。"))
-                .font(.footnote)
-                .foregroundStyle(LioTheme.inkSecondary)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-        .accessibilityIdentifier("lio.trip-home.start")
-    }
-
-    private func entry(symbol: String, title: String, detail: String, identifier: String,
-                       action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            HStack(alignment: .top, spacing: LioTheme.Spacing.sm) {
-                Image(systemName: symbol)
-                    .font(.title3.weight(.semibold))
-                    .foregroundStyle(LioTheme.vermilion)
-                    .frame(width: 40, height: 40)
-                    .background(LioTheme.surfaceSunken, in: RoundedRectangle(cornerRadius: LioTheme.Radius.small))
-                    .accessibilityHidden(true)
-                VStack(alignment: .leading, spacing: LioTheme.Spacing.xxs) {
-                    Text(title).font(.headline).foregroundStyle(LioTheme.ink)
-                    Text(detail).font(.subheadline).foregroundStyle(LioTheme.inkSecondary)
-                }
-                .multilineTextAlignment(.leading)
-                .fixedSize(horizontal: false, vertical: true)
-                Spacer(minLength: 0)
-                Image(systemName: "chevron.right")
-                    .font(.footnote.weight(.semibold))
-                    .foregroundStyle(LioTheme.inkSecondary)
-                    .accessibilityHidden(true)
-            }
-            .padding(LioTheme.Spacing.md)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .lioCard(RoundedRectangle(cornerRadius: LioTheme.Radius.card))
-            .contentShape(RoundedRectangle(cornerRadius: LioTheme.Radius.card))
-        }
-        .buttonStyle(.plain)
-        .accessibilityElement(children: .combine)
-        .accessibilityAddTraits(.isButton)
-        .accessibilityIdentifier(identifier)
-    }
-}
-
-/// "Just get ready": when you arrive and for how long, which passport, which city first. Every answer can be
-/// skipped; skipping all of them gives the general checklist. Answers stay on this phone.
+/// "Edit this trip" (#1979: the up-front "Just get ready" questions are gone; each step asks for what it needs when
+/// the traveller taps "Go"): arrival and length of stay, passport, first city. Answers stay on this phone.
 struct LioTripHomeStartSheet: View {
     static let defaultStayDays = 7
     static let maximumStayDays = 90
 
     let language: LioLanguage
-    let initial: LioTripProfile?
+    let initial: LioTripProfile
     @Binding var nationality: String
     /// Asks "Leisure or business?" (#1765) only while `G2CTripBusinessEnabled` is on; otherwise the form is unchanged
     /// and a purpose saved before is kept as it was.
@@ -100,44 +22,35 @@ struct LioTripHomeStartSheet: View {
     @State private var passport: String
     @State private var purpose: LioTripPurpose
 
-    init(language: LioLanguage, initial: LioTripProfile?, nationality: Binding<String>, offersBusiness: Bool = false,
+    init(language: LioLanguage, initial: LioTripProfile, nationality: Binding<String>, offersBusiness: Bool = false,
          save: @escaping (LioTripProfile) -> Void) {
         self.language = language
         self.initial = initial
         _nationality = nationality
         self.offersBusiness = offersBusiness
         self.save = save
-        _purpose = State(initialValue: initial?.purpose ?? .leisure)
+        _purpose = State(initialValue: initial.purpose ?? .leisure)
         let defaultArrival = LioTripDay(date: .now).adding(days: 14)
         // A new trip starts with no dates, so nothing the traveller did not pick is saved (#1665 review P3-2).
-        _datesSet = State(initialValue: initial?.arrival != nil)
-        _arrival = State(initialValue: (initial?.arrival ?? defaultArrival).start())
-        _stayDays = State(initialValue: initial?.stayDays ?? Self.defaultStayDays)
-        _cityID = State(initialValue: initial?.cityID)
+        _datesSet = State(initialValue: initial.arrival != nil)
+        _arrival = State(initialValue: (initial.arrival ?? defaultArrival).start())
+        _stayDays = State(initialValue: initial.stayDays ?? Self.defaultStayDays)
+        _cityID = State(initialValue: initial.cityID)
         _passport = State(initialValue: nationality.wrappedValue)
     }
 
-    private var editing: Bool { initial != nil }
-
-    private func profile(skipping: Bool) -> LioTripProfile {
-        let started = initial?.startedAt ?? .now
-        guard !skipping else {
-            return LioTripProfile(arrival: nil, stayDays: nil, cityID: nil, startedAt: started)
-        }
-        return LioTripProfile(arrival: datesSet ? LioTripDay(date: arrival) : nil, stayDays: datesSet ? stayDays : nil,
-                              cityID: cityID, planID: initial?.planID,
-                              onwardToThirdCountry: initial?.onwardToThirdCountry,
-                              purpose: offersBusiness ? purpose : initial?.purpose, startedAt: started)
+    private func profile() -> LioTripProfile {
+        // What the steps asked (flight or train number, hotel level) stays as it was.
+        LioTripProfile(arrival: datesSet ? LioTripDay(date: arrival) : nil, stayDays: datesSet ? stayDays : nil,
+                       cityID: cityID, planID: initial.planID, onwardToThirdCountry: initial.onwardToThirdCountry,
+                       purpose: offersBusiness ? purpose : initial.purpose, arrivalNumber: initial.arrivalNumber,
+                       stayStars: initial.stayStars, startedAt: initial.startedAt)
     }
 
     var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: LioTheme.Spacing.md) {
-                    if !editing {
-                        Text(language.text("Answer what you know; you can change it later.", "知道多少答多少，以后还能改。"))
-                            .font(.subheadline).foregroundStyle(LioTheme.inkSecondary)
-                    }
                     question(1, language.text("When do you arrive in China?", "哪天到中国？")) {
                         Toggle(language.text("Dates not decided yet", "还没定日期"), isOn: Binding(get: { !datesSet }, set: { datesSet = !$0 }))
                             .tint(LioTheme.vermilion)
@@ -199,28 +112,18 @@ struct LioTripHomeStartSheet: View {
                 VStack(spacing: LioTheme.Spacing.xs) {
                     Button {
                         if !passport.isEmpty { nationality = passport }
-                        save(profile(skipping: false))
+                        save(profile())
                         dismiss()
                     } label: {
-                        Text(editing ? language.text("Save", "保存") : language.text("Make my checklist", "生成准备清单"))
+                        Text(language.text("Save", "保存"))
                     }
                     .buttonStyle(LioPrimaryButtonStyle())
                     .accessibilityIdentifier("lio.trip-home.form.save")
-                    if !editing {
-                        Button {
-                            save(profile(skipping: true))
-                            dismiss()
-                        } label: {
-                            Text(language.text("Skip and see the general list", "跳过，先看通用清单"))
-                        }
-                        .buttonStyle(LioSecondaryButtonStyle())
-                        .accessibilityIdentifier("lio.trip-home.form.skip")
-                    }
                 }
                 .padding(LioTheme.Spacing.md)
                 .background(LioTheme.paper)
             }
-            .navigationTitle(editing ? language.text("Edit this trip", "修改这趟旅行") : language.text("Just get ready", "先只做准备"))
+            .navigationTitle(language.text("Edit this trip", "修改这趟旅行"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -268,6 +171,8 @@ struct LioTripNationalityPicker: View {
 
     let language: LioLanguage
     @Binding var selection: String
+    /// The step's own question (#1979) when the picker is opened from "Go"; nil keeps the plain title.
+    var question: String? = nil
     @Environment(\.dismiss) private var dismiss
     @State private var search = ""
 
@@ -299,7 +204,7 @@ struct LioTripNationalityPicker: View {
         }
         .searchable(text: $search, placement: .navigationBarDrawer(displayMode: .always),
                     prompt: language.text("Search countries", "搜索国家"))
-        .navigationTitle(language.text("Passport", "护照国籍"))
+        .navigationTitle(question ?? language.text("Passport", "护照国籍"))
         .navigationBarTitleDisplayMode(.inline)
     }
 }

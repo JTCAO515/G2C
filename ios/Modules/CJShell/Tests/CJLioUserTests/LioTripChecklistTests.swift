@@ -47,7 +47,7 @@ struct LioTripChecklistTests {
         LioTripChecklistInput(now: now, timeZone: timeZone, profile: profile(), plans: [beijingPlan], ticks: ticks,
                               entry: .visaFree(maxDays: 30, checkedOn: "2026-11-25"),
                               arrivalChecklist: .init(done: [], total: 6), hotelSaved: false, showCards: true,
-                              attractionBooking: true)
+                              attractionBooking: true, routableTools: [.metro])
     }
 
     // MARK: - Phase
@@ -84,42 +84,47 @@ struct LioTripChecklistTests {
 
     // MARK: - Without a trip
 
-    @Test func noProfileAndNoPlanMeansNoTripAndNoTasks() {
+    @Test func noProfileAndNoPlanIsNoSavedTripButTheSixStepsAreThere() {
+        // #1979: there is no start page, so the steps are on the page before anything is answered.
         let list = LioTripChecklist(.init(now: Self.at("2026-11-26 10:00"), entry: .missingDetails,
                                           arrivalChecklist: .init(done: [], total: 6), hotelSaved: false,
-                                          showCards: true, attractionBooking: true))
+                                          showCards: true, attractionBooking: true, routableTools: [.metro]))
         #expect(!list.hasTrip)
-        #expect(list.tasks.isEmpty)
-        #expect(list.now == nil)
+        #expect(list.tasks(in: .beforeTrip).map(\.key) == ["entry", "arrival", "hotel", "payment", "internet", "local",
+                                                          "medical-card"])
+        #expect(list.now == .prepare(done: 0, total: 7, next: list.tasks.first))
         #expect(list.schedule.isEmpty)
     }
 
-    @Test func skippingTheQuestionsGivesTheGeneralList() {
-        // "Just get ready" without answers: a profile with no dates, no city.
+    @Test func aTripWithoutDatesListsTheSameSteps() {
+        // A profile with no dates, no city.
         let profile = LioTripProfile(arrival: nil, stayDays: nil, cityID: nil, startedAt: Self.at("2026-11-25 09:00"))
         let list = LioTripChecklist(.init(now: Self.at("2026-11-26 10:00"), profile: profile, entry: .missingDetails,
                                           arrivalChecklist: .init(done: [], total: 6), hotelSaved: false,
                                           showCards: true, attractionBooking: true))
         #expect(list.hasTrip)
         #expect(list.phase == .beforeTrip(daysToGo: nil))
-        #expect(list.tasks.map(\.key) == ["entry", "arrival-card", "payment", "internet", "hotel", "medical-card",
+        #expect(list.tasks.map(\.key) == ["entry", "arrival", "hotel", "payment", "internet", "medical-card",
                                           "landing", "check-in"])
         #expect(list.tasks.first?.kind == .entry(.missingDetails))
+        #expect(list.tasks.first { $0.key == "arrival" }?.kind == .arrival(day: nil, number: nil))
         #expect(list.schedule.isEmpty)
     }
 
     // MARK: - Each task follows its tool's switch
 
-    @Test func withEveryToolOffOnlyPaymentAndTheMedicalCardRemain() {
+    @Test func withEveryToolOffOnlyTheArrivalStepPaymentAndTheMedicalCardRemain() {
         let list = LioTripChecklist(.init(now: Self.at("2026-11-26 10:00"), profile: Self.profile(), plans: [Self.beijingPlan]))
-        #expect(list.tasks.map(\.key) == ["payment", "medical-card"])
-        #expect(list.tasks.allSatisfy { $0.tick == .manual && $0.done == .open && $0.stage == .beforeTrip })
+        #expect(list.tasks.map(\.key) == ["arrival", "payment", "medical-card"])
+        // The arrival day is on the profile, so that step is done by the answer itself.
+        #expect(list.tasks.first?.done == .automatic)
+        #expect(list.tasks.dropFirst().allSatisfy { $0.tick == .manual && $0.done == .open && $0.stage == .beforeTrip })
     }
 
     @Test func withEveryToolOnTheSeedTableIsInOrder() {
         let list = LioTripChecklist(Self.everything(Self.at("2026-11-26 10:00")))
         #expect(list.tasks.map(\.key) == [
-            "entry", "arrival-card", "payment", "internet", "hotel",
+            "entry", "arrival", "hotel", "payment", "internet", "local",
             "booking.beijing.palace-museum.2026-12-09", "booking.beijing.national-museum.2026-12-11",
             "medical-card", "landing", "check-in"
         ])
@@ -156,7 +161,7 @@ struct LioTripChecklistTests {
         let tasks = LioTripChecklist(input).tasks
         #expect(tasks.first { $0.key == "entry" }?.done == .ticked)
         #expect(tasks.first { $0.key == "payment" }?.done == .ticked)
-        #expect(tasks.first { $0.key == "arrival-card" }?.done == .open)
+        #expect(tasks.first { $0.key == "local" }?.done == .open)
     }
 
     // MARK: - Arrival Mode's checklist and Back to Hotel
@@ -295,12 +300,12 @@ struct LioTripChecklistTests {
     @Test func beforeTheTripTheNextTaskIsAnUrgentBookingElseTheFirstOpenOne() {
         // 26 Nov: the first release is 2 Dec (6 days away), so the table's first open task leads.
         var ticks = LioTripTicks()
-        ticks.set("arrival-card", done: true, at: Self.at("2026-11-26 09:00"))
+        ticks.set("payment", done: true, at: Self.at("2026-11-26 09:00"))
         var list = LioTripChecklist(Self.everything(Self.at("2026-11-26 10:00"), ticks: ticks))
         guard case .prepare(let done, let total, let next) = list.now else { Issue.record("\(String(describing: list.now))"); return }
-        #expect(done == 2) // entry (visa-free) and the arrival card
-        #expect(total == 8)
-        #expect(next?.key == "payment")
+        #expect(done == 3) // entry (visa-free), arrival (the day is on the profile) and payment
+        #expect(total == 9)
+        #expect(next?.key == "hotel")
         // 30 Nov: the 2 Dec release is within three days and comes first.
         list = LioTripChecklist(Self.everything(Self.at("2026-11-30 10:00"), ticks: ticks))
         guard case .prepare(_, _, let urgent) = list.now else { Issue.record("not preparing"); return }
@@ -320,9 +325,10 @@ struct LioTripChecklistTests {
         input.arrivalChecklist = nil
         input.entry = nil
         guard case .landingTasks(_, let total, let next) = LioTripChecklist(input).now else { Issue.record("not landing"); return }
-        // Payment, hotel, medical card, check-in; the bookings still ahead now sit with the days in China.
-        #expect(total == 4)
-        #expect(next?.key == "payment")
+        // Arrival (done), hotel, payment, local, medical card, check-in; the bookings still ahead now sit with the
+        // days in China.
+        #expect(total == 6)
+        #expect(next?.key == "hotel")
     }
 
     @Test(arguments: [
