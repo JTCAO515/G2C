@@ -189,6 +189,121 @@ def test_decided_entries_survive_a_rerun_and_pending_ones_are_refreshed(tmp_path
     assert by_id['pl_bj_tiantan']['status'] == 'pending' and by_id['pl_bj_tiantan']['amap']['status'] == 'exact'
 
 
+def test_a_pending_entry_codex_took_out_is_dropped_and_a_decided_one_stays(tmp_path):
+    box = inbox(tmp_path, C1__beijing=[C1, second()])
+    out, review = tmp_path / 'out', tmp_path / 'review'
+    first, rejected, notes = importer.process(box, TODAY, library_dir=tmp_path / 'none')
+    importer.write_outputs(first, rejected, notes, TODAY, out, review, 25)
+    doc = json.loads((out / 'beijing.cand.json').read_text(encoding='utf-8'))
+    next(c for c in doc['candidates'] if c['id'] == 'pl_bj_gugong')['status'] = 'accepted'
+    (out / 'beijing.cand.json').write_text(importer.dumps(doc), encoding='utf-8')
+    box = inbox(tmp_path, C1__beijing=[second(id='pl_bj_other', name_zh='别处', name_en='Elsewhere', aliases_zh=[], aliases_en=[])])
+    again, _, notes = importer.process(box, '2026-11-30', library_dir=tmp_path / 'none', existing=importer.load_existing(out))
+    ids = {c['id']: c['status'] for c in again['beijing']}
+    assert ids == {'pl_bj_gugong': 'accepted', 'pl_bj_other': 'pending'}      # pl_bj_tiantan was pending and is gone
+    assert any('pl_bj_tiantan' in note and 'dropped' in note for note in notes)
+
+
+def test_a_pending_entry_with_an_edit_or_a_typed_answer_or_an_unreadable_file_is_not_dropped(tmp_path):
+    box = inbox(tmp_path, C1__beijing=[C1, second(), second(id='pl_bj_c', name_zh='丙', name_en='C', aliases_zh=[], aliases_en=[]),
+                                         second(id='pl_bj_d', name_zh='丁', name_en='D', aliases_zh=[], aliases_en=[])])
+    out, review = tmp_path / 'out', tmp_path / 'review'
+    first, rejected, notes = importer.process(box, TODAY, library_dir=tmp_path / 'none')
+    importer.write_outputs(first, rejected, notes, TODAY, out, review, 25)
+    doc = json.loads((out / 'beijing.cand.json').read_text(encoding='utf-8'))
+    next(c for c in doc['candidates'] if c['id'] == 'pl_bj_tiantan')['review_note'] = 'fix the hours'          # apply_review's `edit`
+    (out / 'beijing.cand.json').write_text(importer.dumps(doc), encoding='utf-8')
+    existing = importer.load_existing(out)
+    nothing_left = inbox(tmp_path, C1__beijing=[second(id='pl_bj_e', name_zh='戊', name_en='E', aliases_zh=[], aliases_en=[])])
+    again, _, notes = importer.process(nothing_left, TODAY, library_dir=tmp_path / 'none', existing=existing, protected={'pl_bj_c'})
+    assert {c['id'] for c in again['beijing']} == {'pl_bj_tiantan', 'pl_bj_c', 'pl_bj_e'}          # gugong and d were plain pending: gone
+    assert {n.split(':')[0] for n in notes} == {'pl_bj_gugong', 'pl_bj_d'}
+    (tmp_path / 'inbox' / 'C1' / 'beijing.json').write_text('not json', encoding='utf-8')            # the file cannot be read: nothing is dropped
+    unreadable, rejected, notes = importer.process(tmp_path / 'inbox', TODAY, library_dir=tmp_path / 'none', existing=existing)
+    assert {c['id'] for c in unreadable['beijing']} == {'pl_bj_gugong', 'pl_bj_tiantan', 'pl_bj_c', 'pl_bj_d'} and rejected and not notes
+
+
+def test_one_bad_alias_or_one_unlisted_field_does_not_cost_the_entry(tmp_path):
+    box = inbox(tmp_path, C1__beijing=[C1])
+    _side(tmp_path, 'aliases.json', [{'id': 'pl_bj_gugong', 'aliases_zh': ['好别名', 'tab\tbad'], 'aliases_en': ['Good Alias']}])
+    _side(tmp_path, 'recheck.json', [{'id': 'pl_bj_gugong', 'field': 'category', 'old': 'attraction', 'new': 'food', 'source': 'https://www.dpm.org.cn/', 'checked_on': '2026-11-28'}])
+    by_city, rejected, notes = importer.process(box, TODAY, library_dir=tmp_path / 'none')
+    gugong = by_city['beijing'][0]
+    assert not rejected and '好别名' in gugong['draft']['aliases_zh'] and 'Good Alias' in gugong['draft']['aliases_en']
+    assert not any('tab' in a for a in gugong['draft']['aliases_zh'])
+    assert gugong['draft']['category'] == 'attraction'
+    assert any('not added' in n for n in notes) and any("recheck of 'category' skipped" in n for n in notes)
+
+
+def _side(tmp_path, name, rows):
+    path = tmp_path / 'inbox' / 'C1' / name
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(rows, ensure_ascii=False), encoding='utf-8')
+
+
+def test_c1_aliases_are_added_to_the_drafts_own_and_their_evidence_is_kept(tmp_path):
+    box = inbox(tmp_path, C1__beijing=[C1])
+    own = C1['aliases_zh']
+    _side(tmp_path, 'aliases.json', [{'id': 'pl_bj_gugong', 'aliases_zh': [*own, '紫禁城', ' 紫禁城 ', '故宮'], 'aliases_en': ['Forbidden City', 'forbidden city'],
+                                      'evidence': [{'alias': '紫禁城', 'lang': 'zh', 'url': 'https://www.dpm.org.cn/Visit.html'}]},
+                                     {'id': 'pl_bj_nobody', 'aliases_zh': ['x'], 'aliases_en': []}])
+    by_city, rejected, notes = importer.process(box, TODAY, library_dir=tmp_path / 'none')
+    gugong = by_city['beijing'][0]
+    assert gugong['draft']['aliases_zh'] == [*dict.fromkeys([*own, '紫禁城', '故宮'])]            # the draft's own first, no repeats
+    assert gugong['draft']['aliases_en'][-1:] == ['Forbidden City'] and len({a.casefold() for a in gugong['draft']['aliases_en']}) == len(gugong['draft']['aliases_en'])
+    assert gugong['alias_evidence'][0]['url'].startswith('https://www.dpm.org.cn') and not rejected
+
+
+def test_c1_rechecks_apply_only_what_still_matches_and_flag_what_is_unconfirmed(tmp_path):
+    box = inbox(tmp_path, C1__beijing=[C1])
+    ticket_old = C1['ticket']['price_cny'] if C1.get('ticket') else None
+    _side(tmp_path, 'recheck.json', [
+        {'id': 'pl_bj_gugong', 'field': 'hours_zh', 'old': C1['hours_zh'], 'new': '周二至周日08:30–17:00', 'source': 'https://www.dpm.org.cn/Visit.html', 'checked_on': '2026-11-28'},
+        {'id': 'pl_bj_gugong', 'field': 'ticket.price_cny', 'old': ticket_old, 'new': 60, 'source': 'https://www.dpm.org.cn/Visit.html', 'checked_on': '2026-11-28'},
+        {'id': 'pl_bj_gugong', 'field': 'official_url', 'old': 'https://not-what-it-held/', 'new': 'https://www.dpm.org.cn/', 'source': 'https://www.dpm.org.cn/', 'checked_on': '2026-11-28'},
+        {'id': 'pl_bj_gugong', 'field': 'ticket.booking', 'old': C1['ticket']['booking'], 'new': 'required', 'source': 'https://www.tripadvisor.com/x', 'checked_on': '2026-11-28'},
+        {'id': 'pl_bj_gugong', 'field': 'hours_source', 'old': C1.get('hours_source'), 'new': None, 'source': 'https://www.dpm.org.cn/', 'checked_on': '2026-11-28'},
+    ])
+    by_city, rejected, notes = importer.process(box, TODAY, library_dir=tmp_path / 'none')
+    gugong = by_city['beijing'][0]
+    assert gugong['draft']['hours_zh'] == '周二至周日08:30–17:00' and gugong['draft']['ticket']['price_cny'] == 60
+    assert gugong['draft']['official_url'] == C1['official_url']                    # the draft no longer held the old value
+    assert gugong['draft']['ticket']['booking'] == C1['ticket']['booking']          # a third-party source is not applied
+    assert any('official_url' in n and 'skipped' in n for n in notes) and any('ticket.booking' in n and 'not applied' in n for n in notes)
+    assert any('hours_source' in f and 'by hand' in f for f in gugong['flags'])
+    assert 'https://www.dpm.org.cn/Visit.html' in gugong['draft']['sources'] and gugong['draft']['checked_on'] == '2026-11-28'
+    assert not rejected
+
+
+def test_a_hotel_without_a_price_band_is_flagged_for_the_reviewer(tmp_path):
+    box = inbox(tmp_path, C8__beijing_hotel=[C8_HOTEL, {**C8_HOTEL, 'id': 'pl_bj_hotel_demo2', 'name_zh': '第二家', 'name_en': 'Second', 'price_band': None}])
+    by_city, _, _ = importer.process(box, TODAY, library_dir=tmp_path / 'none')
+    flags = {c['id']: c['flags'] for c in by_city['beijing']}
+    assert not any('price band' in f for f in flags['pl_bj_hotel_demo'])
+    assert any('no price band' in f for f in flags['pl_bj_hotel_demo2'])
+
+
+def test_pictures_are_marked_in_the_review_table_and_the_local_preview_names_them(tmp_path):
+    box = inbox(tmp_path, C1__beijing=[C1, second()])
+    images = tmp_path / 'inbox' / 'C2'
+    images.mkdir(parents=True)
+    (images / 'manifest.json').write_text(json.dumps([{'id': 'pl_bj_gugong', 'file': 'pl_bj_gugong.png', 'thumb': 'pl_bj_gugong_thumb.png'},
+                                                      {'id': 'pl_bj_tiantan', 'file': 'pl_bj_tiantan.png', 'thumb': 'pl_bj_tiantan_thumb.png'}]), encoding='utf-8')
+    for name in ('pl_bj_gugong.png', 'pl_bj_gugong_thumb.png', 'pl_bj_tiantan.png'):   # the Tiantan thumbnail is missing
+        (images / name).write_bytes(b'x')
+    assert importer.read_image_ids(images) == {'pl_bj_gugong'}
+    assert importer.read_image_ids(tmp_path / 'nowhere') == set()
+    by_city, rejected, notes = importer.process(box, TODAY, library_dir=tmp_path / 'none')
+    out, review, preview = tmp_path / 'out', tmp_path / 'review', tmp_path / 'preview'
+    importer.write_outputs(by_city, rejected, notes, TODAY, out, review, 25, importer.read_image_ids(images), images, preview)
+    rows = list(csv.DictReader(io.StringIO((review / 'beijing.review.csv').read_text(encoding='utf-8-sig'))))
+    assert {row['id']: row['示意图'] for row in rows} == {'pl_bj_gugong': '有', 'pl_bj_tiantan': ''}
+    assert '示意图：有' in (review / 'beijing.review.md').read_text(encoding='utf-8')
+    page = (preview / 'beijing.preview.html').read_text(encoding='utf-8')
+    assert page.count('_thumb.png') == 1 and 'pl_bj_gugong_thumb.png' in page and '示意图' in page
+    assert str(tmp_path) not in (review / 'beijing.review.md').read_text(encoding='utf-8')      # the repository files name no local path
+
+
 # ---------------------------------------------------------------- review table
 
 def _many(count):

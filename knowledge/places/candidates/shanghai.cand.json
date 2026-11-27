@@ -1,7 +1,7 @@
 {
   "version": "g2c-places-candidates.1",
   "city": "shanghai",
-  "generated_on": "2026-11-27",
+  "generated_on": "2026-11-28",
   "candidates": [
     {
       "id": "pl_sh_aidixun",
@@ -50,6 +50,7 @@
         "intro_long_en": "Use East Nanjing Road station for lines 2 and 10. Marriott also lists English at the hotel and identifies where the sightseeing bus stops nearby.",
         "star": null,
         "price_band": ">2000",
+        "hotel_class": "luxury",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -79,9 +80,7 @@
         },
         "external_used": false
       },
-      "flags": [
-        "pl_sh_aidixun: unknown field 'hotel_class' is dropped on import"
-      ]
+      "flags": []
     },
     {
       "id": "pl_sh_baogeli",
@@ -126,6 +125,7 @@
         "intro_long_en": "Give Suzhou Creek its own outing. The hotel is part of a riverfront redevelopment with parks, shops and art spaces to explore around your stay.",
         "star": null,
         "price_band": ">2000",
+        "hotel_class": "luxury",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -155,9 +155,7 @@
         },
         "external_used": false
       },
-      "flags": [
-        "pl_sh_baogeli: unknown field 'hotel_class' is dropped on import"
-      ]
+      "flags": []
     },
     {
       "id": "pl_sh_bei_waitan",
@@ -170,7 +168,9 @@
         "tier": "main",
         "name_zh": "北外滩国客中心景区",
         "name_en": "North Bund International Cruise Terminal Waterfront",
-        "aliases_zh": [],
+        "aliases_zh": [
+          "上海北外滩国客中心景区"
+        ],
         "aliases_en": [],
         "address_zh": "虹口区东大名路500号",
         "address_en": null,
@@ -224,7 +224,15 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "上海北外滩国客中心景区",
+          "lang": "zh",
+          "url": "https://whlyj.sh.gov.cn/4ajjq/20191008/0022-28627.html",
+          "kind": "discovery"
+        }
+      ]
     },
     {
       "id": "pl_sh_boli_bowuguan",
@@ -336,6 +344,7 @@
         "intro_long_en": "For a trip centered on Jing'an, check the hotel's directions from Jing'an Temple station. Its property page also lists both indoor and outdoor pools.",
         "star": null,
         "price_band": "1000-2000",
+        "hotel_class": "luxury",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -365,9 +374,7 @@
         },
         "external_used": false
       },
-      "flags": [
-        "pl_sh_botemanlisi: unknown field 'hotel_class' is dropped on import"
-      ]
+      "flags": []
     },
     {
       "id": "pl_sh_changfengwanyi",
@@ -411,6 +418,7 @@
         "intro_long_en": "Consider this Courtyard if your itinerary is concentrated in western Shanghai. Its directions identify Weining Road on Metro Line 2.",
         "star": null,
         "price_band": "<500",
+        "hotel_class": "midscale",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -440,9 +448,7 @@
         },
         "external_used": false
       },
-      "flags": [
-        "pl_sh_changfengwanyi: unknown field 'hotel_class' is dropped on import"
-      ]
+      "flags": []
     },
     {
       "id": "pl_sh_chenghuangmiao",
@@ -455,8 +461,17 @@
         "tier": "main",
         "name_zh": "上海城隍庙",
         "name_en": "City God Temple",
-        "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_zh": [
+          "老城隍庙",
+          "上海城隍廟"
+        ],
+        "aliases_en": [
+          "City God Temple of Shanghai",
+          "Chenghuang Miao",
+          "Chénghuángmiào",
+          "City Temple of Shanghai",
+          "Shanghai City God Temple"
+        ],
         "address_zh": null,
         "address_en": null,
         "district_zh": "黄浦区",
@@ -509,7 +524,51 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "City God Temple of Shanghai",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q289901",
+          "kind": "label"
+        },
+        {
+          "alias": "老城隍庙",
+          "lang": "zh",
+          "url": "https://zh.wikipedia.org/wiki/%E8%80%81%E5%9F%8E%E9%9A%8D%E5%BA%99?redirect=no",
+          "kind": "redirect"
+        },
+        {
+          "alias": "Chenghuang Miao",
+          "lang": "en",
+          "url": "https://en.wikipedia.org/wiki/Chenghuang_Miao?redirect=no",
+          "kind": "redirect"
+        },
+        {
+          "alias": "Chénghuángmiào",
+          "lang": "en",
+          "url": "https://en.wikipedia.org/wiki/Ch%C3%A9nghu%C3%A1ngmi%C3%A0o?redirect=no",
+          "kind": "redirect"
+        },
+        {
+          "alias": "City Temple of Shanghai",
+          "lang": "en",
+          "url": "https://en.wikipedia.org/wiki/City_Temple_of_Shanghai?redirect=no",
+          "kind": "redirect"
+        },
+        {
+          "alias": "Shanghai City God Temple",
+          "lang": "en",
+          "url": "https://en.wikipedia.org/wiki/Shanghai_City_God_Temple?redirect=no",
+          "kind": "redirect"
+        },
+        {
+          "alias": "上海城隍廟",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q289901",
+          "kind": "published_traditional"
+        }
+      ]
     },
     {
       "id": "pl_sh_chengshi_guihua",
@@ -522,8 +581,15 @@
         "tier": "main",
         "name_zh": "上海城市规划展示馆",
         "name_en": "Shanghai Urban Planning Exhibition Hall",
-        "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_zh": [
+          "上海城市规划馆",
+          "上海都市計畫展示館",
+          "上海城市規劃展示館"
+        ],
+        "aliases_en": [
+          "Shanghai Urban Planning Exhibition Center",
+          "Shanghai Urban Planning Museum"
+        ],
         "address_zh": "黄浦区人民大道100号",
         "address_en": null,
         "district_zh": "黄浦区",
@@ -576,7 +642,39 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "上海城市规划馆",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q713922",
+          "kind": "wikidata"
+        },
+        {
+          "alias": "Shanghai Urban Planning Exhibition Center",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q713922",
+          "kind": "label"
+        },
+        {
+          "alias": "上海都市計畫展示館",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q713922",
+          "kind": "label"
+        },
+        {
+          "alias": "Shanghai Urban Planning Museum",
+          "lang": "en",
+          "url": "https://en.wikipedia.org/wiki/Shanghai_Urban_Planning_Museum?redirect=no",
+          "kind": "redirect"
+        },
+        {
+          "alias": "上海城市規劃展示館",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q713922",
+          "kind": "published_traditional"
+        }
+      ]
     },
     {
       "id": "pl_sh_chenshan",
@@ -589,8 +687,12 @@
         "tier": "main",
         "name_zh": "上海辰山植物园",
         "name_en": "Shanghai Chenshan Botanical Garden",
-        "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_zh": [
+          "辰山植物园"
+        ],
+        "aliases_en": [
+          "Chenshan Botanical Garden"
+        ],
         "address_zh": "松江区辰花公路3888号",
         "address_en": null,
         "district_zh": "松江区",
@@ -643,7 +745,21 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "辰山植物园",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q894641",
+          "kind": "wikidata"
+        },
+        {
+          "alias": "Chenshan Botanical Garden",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q894641",
+          "kind": "wikidata"
+        }
+      ]
     },
     {
       "id": "pl_sh_chunyuan_chongqing",
@@ -724,7 +840,7 @@
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": "蒙自路29号",
-        "address_en": null,
+        "address_en": "29 Mengzi Road, Huangpu District, Shanghai",
         "district_zh": "黄浦区",
         "nearest_metro": null,
         "foreigner_signals": {
@@ -763,12 +879,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 21,
+        "total": 23,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 5,
-          "complete": 4,
+          "complete": 6,
           "amap": 0
         },
         "external_used": false
@@ -854,7 +970,9 @@
         "name_zh": "上海当代艺术博物馆",
         "name_en": "Power Station of Art",
         "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_en": [
+          "PSA"
+        ],
         "address_zh": "黄浦区苗江路678号",
         "address_en": null,
         "district_zh": "黄浦区",
@@ -907,7 +1025,15 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "PSA",
+          "lang": "en",
+          "url": "https://english.shanghai.gov.cn/en-FirstStores/20251126/eceaf1169f0a4fc08b92b7de6dbc48e0.html",
+          "kind": "manual"
+        }
+      ]
     },
     {
       "id": "pl_sh_deda_nanjingxi",
@@ -1050,8 +1176,16 @@
         "tier": "main",
         "name_zh": "上海迪士尼乐园",
         "name_en": "Shanghai Disneyland",
-        "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_zh": [
+          "上海迪斯尼乐园",
+          "上迪",
+          "上海迪士尼樂園"
+        ],
+        "aliases_en": [
+          "Shanghai Disneyland Park",
+          "Shanghai Disney Land",
+          "Disneyland Shanghai"
+        ],
         "address_zh": null,
         "address_en": null,
         "district_zh": "浦东新区",
@@ -1104,7 +1238,45 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "上海迪斯尼乐园",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q865312",
+          "kind": "wikidata"
+        },
+        {
+          "alias": "上迪",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q865312",
+          "kind": "wikidata"
+        },
+        {
+          "alias": "Shanghai Disneyland Park",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q865312",
+          "kind": "label"
+        },
+        {
+          "alias": "Shanghai Disney Land",
+          "lang": "en",
+          "url": "https://en.wikipedia.org/wiki/Shanghai_Disney_Land?redirect=no",
+          "kind": "redirect"
+        },
+        {
+          "alias": "Disneyland Shanghai",
+          "lang": "en",
+          "url": "https://en.wikipedia.org/wiki/Disneyland_Shanghai?redirect=no",
+          "kind": "redirect"
+        },
+        {
+          "alias": "上海迪士尼樂園",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q865312",
+          "kind": "published_traditional"
+        }
+      ]
     },
     {
       "id": "pl_sh_dongfang_mingzhu",
@@ -1117,8 +1289,24 @@
         "tier": "main",
         "name_zh": "东方明珠广播电视塔",
         "name_en": "Oriental Pearl Tower",
-        "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_zh": [
+          "东方明珠",
+          "东方明珠塔",
+          "东方明珠电视塔",
+          "上海广播电视塔",
+          "上海东方明珠电视塔",
+          "東方明珠廣播電視塔",
+          "東方明珠",
+          "東方明珠塔",
+          "上海廣播電視塔",
+          "東方明珠電視塔"
+        ],
+        "aliases_en": [
+          "Oriental Pearl TV Tower",
+          "Dongfang Mingzhu",
+          "Dōngfāng Míngzhūtǎ",
+          "Tower of Oriental Pearl"
+        ],
         "address_zh": "浦东新区世纪大道1号",
         "address_en": null,
         "district_zh": "浦东新区",
@@ -1171,7 +1359,93 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "东方明珠",
+          "lang": "zh",
+          "url": "https://zh.wikipedia.org/wiki/东方明珠广播电视塔",
+          "kind": "manual"
+        },
+        {
+          "alias": "东方明珠塔",
+          "lang": "zh",
+          "url": "https://zh.wikipedia.org/wiki/东方明珠广播电视塔",
+          "kind": "manual"
+        },
+        {
+          "alias": "东方明珠电视塔",
+          "lang": "zh",
+          "url": "https://en.wikipedia.org/wiki/Oriental_Pearl_Tower",
+          "kind": "manual"
+        },
+        {
+          "alias": "Oriental Pearl TV Tower",
+          "lang": "en",
+          "url": "https://en.nia.gov.cn/n147428/n147498/n147770/n147915/c159120/content.html",
+          "kind": "manual"
+        },
+        {
+          "alias": "Dongfang Mingzhu",
+          "lang": "en",
+          "url": "https://en.nia.gov.cn/n147428/n147498/n147770/n147915/c159120/content.html",
+          "kind": "manual"
+        },
+        {
+          "alias": "上海广播电视塔",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q223207",
+          "kind": "wikidata"
+        },
+        {
+          "alias": "上海东方明珠电视塔",
+          "lang": "zh",
+          "url": "https://zh.wikipedia.org/wiki/%E4%B8%8A%E6%B5%B7%E4%B8%9C%E6%96%B9%E6%98%8E%E7%8F%A0%E7%94%B5%E8%A7%86%E5%A1%94?redirect=no",
+          "kind": "redirect"
+        },
+        {
+          "alias": "Dōngfāng Míngzhūtǎ",
+          "lang": "en",
+          "url": "https://en.wikipedia.org/wiki/D%C5%8Dngf%C4%81ng_M%C3%ADngzh%C5%ABt%C7%8E?redirect=no",
+          "kind": "redirect"
+        },
+        {
+          "alias": "Tower of Oriental Pearl",
+          "lang": "en",
+          "url": "https://en.wikipedia.org/wiki/Tower_of_Oriental_Pearl?redirect=no",
+          "kind": "redirect"
+        },
+        {
+          "alias": "東方明珠廣播電視塔",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q223207",
+          "kind": "published_traditional"
+        },
+        {
+          "alias": "東方明珠",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q223207",
+          "kind": "published_traditional"
+        },
+        {
+          "alias": "東方明珠塔",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q223207",
+          "kind": "published_traditional"
+        },
+        {
+          "alias": "上海廣播電視塔",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q223207",
+          "kind": "published_traditional"
+        },
+        {
+          "alias": "東方明珠電視塔",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q223207",
+          "kind": "published_traditional"
+        }
+      ]
     },
     {
       "id": "pl_sh_dongjinjiangyilin",
@@ -1187,7 +1461,7 @@
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": "上海市浦东新区杨高南路889号",
-        "address_en": null,
+        "address_en": "889 Yanggao Nan Road, Pudong, Shanghai, China 200127",
         "district_zh": "浦东新区",
         "nearest_metro": null,
         "foreigner_signals": {
@@ -1203,7 +1477,8 @@
           "https://www.hilton.com.cn/zh-cn/hotels/shaspdi-doubletree-by-hilton-hotel-shanghai--pudong",
           "https://www.hilton.com.cn/zh-cn/locations/china/shanghai-shanghai",
           "https://ir.hilton.com/_assets/_de1e637820b6842c68b34801d11a8fd1/hilton/db/3577/34740/pdf/HLT_Investor_Presentation_-_November_2026.pdf",
-          "https://www.hilton.com.cn/zh-CN/hotels/shaspdi-doubletree-by-hilton-hotel-shanghai--pudong"
+          "https://www.hilton.com.cn/zh-CN/hotels/shaspdi-doubletree-by-hilton-hotel-shanghai--pudong",
+          "https://www.hilton.com/en/hotels/shaspdi-doubletree-shanghai-pudong/hotel-location/"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
@@ -1215,6 +1490,7 @@
         "intro_long_en": "Stay on the east bank for a trip focused on Pudong. The location guide points to Lancun Road subway station and lists Century Park as an outing.",
         "star": null,
         "price_band": "500-1000",
+        "hotel_class": "upscale",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -1234,19 +1510,17 @@
         "alternatives": []
       },
       "score": {
-        "total": 28,
+        "total": 29,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 6,
+          "complete": 7,
           "amap": 0
         },
         "external_used": false
       },
-      "flags": [
-        "pl_sh_dongjinjiangyilin: unknown field 'hotel_class' is dropped on import"
-      ]
+      "flags": []
     },
     {
       "id": "pl_sh_dongtaixiang_chongqing",
@@ -1324,7 +1598,11 @@
         "tier": "main",
         "name_zh": "上海动物园",
         "name_en": "Shanghai Zoo",
-        "aliases_zh": [],
+        "aliases_zh": [
+          "上海西郊公园",
+          "西郊公园",
+          "上海動物園"
+        ],
         "aliases_en": [],
         "address_zh": "长宁区虹桥路2381号",
         "address_en": null,
@@ -1378,7 +1656,27 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "上海西郊公园",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q3182046",
+          "kind": "wikidata"
+        },
+        {
+          "alias": "西郊公园",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q3182046",
+          "kind": "wikidata"
+        },
+        {
+          "alias": "上海動物園",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q3182046",
+          "kind": "published_traditional"
+        }
+      ]
     },
     {
       "id": "pl_sh_fengjing",
@@ -1715,7 +2013,7 @@
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": "中山北路3300号",
-        "address_en": null,
+        "address_en": "3300 North Zhongshan Road, Putuo District, Shanghai",
         "district_zh": "普陀区",
         "nearest_metro": {
           "station_zh": "金沙江路",
@@ -1733,7 +2031,8 @@
         },
         "official_url": "https://www.shanghai.gov.cn/nw17239/20261109/dfa297c5611c4a22a83dbd713244d914.html",
         "sources": [
-          "https://www.shanghai.gov.cn/nw17239/20261109/dfa297c5611c4a22a83dbd713244d914.html"
+          "https://www.shanghai.gov.cn/nw17239/20261109/dfa297c5611c4a22a83dbd713244d914.html",
+          "https://english.shanghai.gov.cn/en-TrendyStores/20261019/79d851192aea4666a0ea9f0382334c38.html"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
@@ -1753,12 +2052,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 23,
+        "total": 30,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
-          "sources": 5,
-          "complete": 6,
+          "sources": 10,
+          "complete": 8,
           "amap": 0
         },
         "external_used": false
@@ -1776,7 +2075,11 @@
         "tier": "main",
         "name_zh": "上海共青森林公园",
         "name_en": "Gongqing Forest Park",
-        "aliases_zh": [],
+        "aliases_zh": [
+          "上海共青国家森林公园",
+          "共青森林公园",
+          "上海共青國家森林公園"
+        ],
         "aliases_en": [],
         "address_zh": "杨浦区军工路2000号",
         "address_en": null,
@@ -1830,7 +2133,27 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "上海共青国家森林公园",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q3274653",
+          "kind": "label"
+        },
+        {
+          "alias": "共青森林公园",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q3274653",
+          "kind": "wikidata"
+        },
+        {
+          "alias": "上海共青國家森林公園",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q3274653",
+          "kind": "published_traditional"
+        }
+      ]
     },
     {
       "id": "pl_sh_grand_gateway_retail",
@@ -1908,7 +2231,9 @@
         "tier": "main",
         "name_zh": "广富林文化公园",
         "name_en": "Guangfulin Cultural Park",
-        "aliases_zh": [],
+        "aliases_zh": [
+          "上海广富林文化公园"
+        ],
         "aliases_en": [],
         "address_zh": "松江区广富林路3206弄",
         "address_en": null,
@@ -1962,7 +2287,15 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "上海广富林文化公园",
+          "lang": "zh",
+          "url": "https://whlyj.sh.gov.cn/4ajjq/20191008/0022-28627.html",
+          "kind": "discovery"
+        }
+      ]
     },
     {
       "id": "pl_sh_gucun",
@@ -1975,7 +2308,9 @@
         "tier": "backup",
         "name_zh": "顾村公园",
         "name_en": "Gucun Park",
-        "aliases_zh": [],
+        "aliases_zh": [
+          "上海顾村公园景区"
+        ],
         "aliases_en": [],
         "address_zh": "宝山区沪太路4788号环岛路1号",
         "address_en": null,
@@ -2029,7 +2364,15 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "上海顾村公园景区",
+          "lang": "zh",
+          "url": "https://whlyj.sh.gov.cn/4ajjq/20191008/0022-28627.html",
+          "kind": "discovery"
+        }
+      ]
     },
     {
       "id": "pl_sh_guyiyuan",
@@ -2042,8 +2385,14 @@
         "tier": "backup",
         "name_zh": "上海古猗园",
         "name_en": "Guyi Garden",
-        "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_zh": [
+          "古猗园",
+          "古漪园"
+        ],
+        "aliases_en": [
+          "Guyiyuan",
+          "Guyi Yuan"
+        ],
         "address_zh": "嘉定区沪宜公路218号",
         "address_en": null,
         "district_zh": "嘉定区",
@@ -2096,7 +2445,33 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "古猗园",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q5622827",
+          "kind": "label"
+        },
+        {
+          "alias": "古漪园",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q5622827",
+          "kind": "wikidata"
+        },
+        {
+          "alias": "Guyiyuan",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q5622827",
+          "kind": "wikidata"
+        },
+        {
+          "alias": "Guyi Yuan",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q5622827",
+          "kind": "wikidata"
+        }
+      ]
     },
     {
       "id": "pl_sh_haiyang_shuizuguan",
@@ -2109,7 +2484,9 @@
         "tier": "main",
         "name_zh": "上海海洋水族馆",
         "name_en": "Shanghai Ocean Aquarium",
-        "aliases_zh": [],
+        "aliases_zh": [
+          "上海水族馆"
+        ],
         "aliases_en": [],
         "address_zh": "浦东新区陆家嘴环路1388号",
         "address_en": null,
@@ -2163,7 +2540,15 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "上海水族馆",
+          "lang": "zh",
+          "url": "https://ticket.sh-aquarium.com/BpsWebSale/",
+          "kind": "manual"
+        }
+      ]
     },
     {
       "id": "pl_sh_hanghai_bowuguan",
@@ -2515,7 +2900,12 @@
         "address_zh": "上海市长宁区云纱路188号",
         "address_en": "188 Yunsha Road, Changning District, Shanghai, China 200335",
         "district_zh": "长宁区",
-        "nearest_metro": null,
+        "nearest_metro": {
+          "station_zh": "虹桥1号航站楼",
+          "station_en": "Hongqiao Airport Terminal 1",
+          "line": "10号线",
+          "exit": null
+        },
         "foreigner_signals": {
           "english_signage": null,
           "foreign_cards": null,
@@ -2530,7 +2920,9 @@
           "https://www.hilton.com.cn/zh-cn/locations/china/shanghai-shanghai",
           "https://ir.hilton.com/_assets/_de1e637820b6842c68b34801d11a8fd1/hilton/db/3577/34740/pdf/HLT_Investor_Presentation_-_November_2026.pdf",
           "https://www.hilton.com.cn/zh-cn/hotel/shanghai/SHAAPHI/maps-directions.html",
-          "https://www.hilton.com/zh-hans/hotels/shaaphi-hilton-shanghai-hongqiao-international-airport/hotel-info/"
+          "https://www.hilton.com/zh-hans/hotels/shaaphi-hilton-shanghai-hongqiao-international-airport/hotel-info/",
+          "https://www.shanghaiairport.com/ensh/xwg/info_itemid_40681.html",
+          "https://english.shanghai.gov.cn/en-Individuals-Transportation-PublicTransport/20260813/7366238930024ac8b22e5adf82217bd8.html"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
@@ -2542,6 +2934,7 @@
         "intro_long_en": "Choose this Hilton if Terminal 1 is the focus of your arrival or departure. Shanghai Zoo is one of the nearby outings suggested by the hotel's location page.",
         "star": null,
         "price_band": "500-1000",
+        "hotel_class": "upscale",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -2561,19 +2954,17 @@
         "alternatives": []
       },
       "score": {
-        "total": 29,
+        "total": 31,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 7,
+          "complete": 9,
           "amap": 0
         },
         "external_used": false
       },
-      "flags": [
-        "pl_sh_hongqiaojichangxierdun: unknown field 'hotel_class' is dropped on import"
-      ]
+      "flags": []
     },
     {
       "id": "pl_sh_hongqiaowanfeng",
@@ -2622,6 +3013,7 @@
         "intro_long_en": "Staying in western Shanghai? Marriott's arrival information names Ziteng Road on Line 10. The property also lists English among its spoken languages.",
         "star": null,
         "price_band": "<500",
+        "hotel_class": "midscale",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -2651,9 +3043,7 @@
         },
         "external_used": false
       },
-      "flags": [
-        "pl_sh_hongqiaowanfeng: unknown field 'hotel_class' is dropped on import"
-      ]
+      "flags": []
     },
     {
       "id": "pl_sh_hongqiaozhan",
@@ -2796,8 +3186,12 @@
         "tier": "main",
         "name_zh": "上海欢乐谷",
         "name_en": "Shanghai Happy Valley",
-        "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_zh": [
+          "上海歡樂谷"
+        ],
+        "aliases_en": [
+          "Happy Valley Shanghai"
+        ],
         "address_zh": "松江区佘山林湖路888号",
         "address_en": null,
         "district_zh": "松江区",
@@ -2850,7 +3244,21 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "Happy Valley Shanghai",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q855246",
+          "kind": "label"
+        },
+        {
+          "alias": "上海歡樂谷",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q855246",
+          "kind": "published_traditional"
+        }
+      ]
     },
     {
       "id": "pl_sh_ilteatro_xintiandi",
@@ -2866,7 +3274,7 @@
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": "太仓路181弄19号，新天地北里一至二层",
-        "address_en": null,
+        "address_en": "Levels 1–2, Xintiandi North Block, 19 Lane 181 Taicang Road, Huangpu District, Shanghai",
         "district_zh": "黄浦区",
         "nearest_metro": null,
         "foreigner_signals": {
@@ -2905,12 +3313,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 21,
+        "total": 23,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 5,
-          "complete": 4,
+          "complete": 6,
           "amap": 0
         },
         "external_used": false
@@ -3047,7 +3455,12 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "hours_zh: Codex could not confirm it from an official page; check by hand",
+        "ticket.price_cny: Codex could not confirm it from an official page; check by hand",
+        "ticket.booking: Codex could not confirm it from an official page; check by hand",
+        "official_url: Codex could not confirm it from an official page; check by hand"
+      ]
     },
     {
       "id": "pl_sh_jinbiao_zhapu",
@@ -3063,7 +3476,7 @@
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": "乍浦路336号",
-        "address_en": null,
+        "address_en": "336 Zhapu Road, Shanghai",
         "district_zh": "虹口区",
         "nearest_metro": null,
         "foreigner_signals": {
@@ -3102,12 +3515,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 23,
+        "total": 24,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 5,
-          "complete": 6,
+          "complete": 7,
           "amap": 0
         },
         "external_used": false
@@ -3130,7 +3543,12 @@
         "address_zh": "西藏北路166号",
         "address_en": null,
         "district_zh": "静安区",
-        "nearest_metro": null,
+        "nearest_metro": {
+          "station_zh": "曲阜路",
+          "station_en": "Qufu Road",
+          "line": "8、12号线",
+          "exit": "1"
+        },
         "foreigner_signals": {
           "english_signage": null,
           "foreign_cards": null,
@@ -3141,7 +3559,8 @@
         },
         "official_url": "https://www.shanghai.gov.cn/nw17239/20260806/d59b6ca73d874620abaf66e537e405f0.html",
         "sources": [
-          "https://www.shanghai.gov.cn/nw17239/20260806/d59b6ca73d874620abaf66e537e405f0.html"
+          "https://www.shanghai.gov.cn/nw17239/20260806/d59b6ca73d874620abaf66e537e405f0.html",
+          "https://english.shanghai.gov.cn/en-ScenicSpots/20250220/48accefa828c45bd908dab51fdd77bcc.html"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
@@ -3161,12 +3580,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 21,
+        "total": 28,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
-          "sources": 5,
-          "complete": 4,
+          "sources": 10,
+          "complete": 6,
           "amap": 0
         },
         "external_used": false
@@ -3215,6 +3634,7 @@
         "intro_long_en": "Stay on the Jing'an side of central Shanghai. Check the hotel's arrival page for West Nanjing Road station or inquire about private airport transport.",
         "star": null,
         "price_band": ">2000",
+        "hotel_class": "luxury",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -3244,9 +3664,7 @@
         },
         "external_used": false
       },
-      "flags": [
-        "pl_sh_jinganruiji: unknown field 'hotel_class' is dropped on import"
-      ]
+      "flags": []
     },
     {
       "id": "pl_sh_jingansi",
@@ -3259,8 +3677,14 @@
         "tier": "main",
         "name_zh": "静安寺",
         "name_en": "Jing'an Temple",
-        "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_zh": [
+          "靜安寺"
+        ],
+        "aliases_en": [
+          "Jing An Temple",
+          "Jing'an Si",
+          "Jingan Temple"
+        ],
         "address_zh": null,
         "address_en": null,
         "district_zh": "静安区",
@@ -3313,7 +3737,33 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "Jing An Temple",
+          "lang": "en",
+          "url": "https://en.wikipedia.org/wiki/Jing_An_Temple?redirect=no",
+          "kind": "redirect"
+        },
+        {
+          "alias": "Jing'an Si",
+          "lang": "en",
+          "url": "https://en.wikipedia.org/wiki/Jing%27an_Si?redirect=no",
+          "kind": "redirect"
+        },
+        {
+          "alias": "Jingan Temple",
+          "lang": "en",
+          "url": "https://en.wikipedia.org/wiki/Jingan_Temple?redirect=no",
+          "kind": "redirect"
+        },
+        {
+          "alias": "靜安寺",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q403189",
+          "kind": "published_traditional"
+        }
+      ]
     },
     {
       "id": "pl_sh_jinganwanfeng",
@@ -3357,6 +3807,7 @@
         "intro_long_en": "Use Line 1 for travel from the Daning area, and leave time for a stroll in Zhabei Park. Marriott lists English among the languages spoken at the hotel.",
         "star": null,
         "price_band": "<500",
+        "hotel_class": "midscale",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -3382,79 +3833,6 @@
           "confidence": 12,
           "sources": 10,
           "complete": 7,
-          "amap": 0
-        },
-        "external_used": false
-      },
-      "flags": [
-        "pl_sh_jinganwanfeng: unknown field 'hotel_class' is dropped on import"
-      ]
-    },
-    {
-      "id": "pl_sh_kanglaide",
-      "source_file": "C8/shanghai-hotel.json",
-      "status": "pending",
-      "draft": {
-        "id": "pl_sh_kanglaide",
-        "city": "shanghai",
-        "category": "hotel",
-        "tier": "main",
-        "name_zh": "上海康莱德酒店",
-        "name_en": "Conrad Shanghai",
-        "aliases_zh": [],
-        "aliases_en": [],
-        "address_zh": null,
-        "address_en": null,
-        "district_zh": null,
-        "nearest_metro": null,
-        "foreigner_signals": {
-          "english_signage": null,
-          "foreign_cards": null,
-          "english_service": null,
-          "evidence": [
-            "https://www.hilton.com.cn/zh-cn/hotels/shawsci-conrad-shanghai"
-          ]
-        },
-        "official_url": "https://www.hilton.com.cn/zh-cn/hotels/shawsci-conrad-shanghai",
-        "sources": [
-          "https://www.hilton.com.cn/zh-cn/hotels/shawsci-conrad-shanghai",
-          "https://www.hilton.com.cn/zh-cn/locations/china/shanghai-shanghai"
-        ],
-        "checked_on": "2026-11-27",
-        "confidence": "medium",
-        "notes": "希尔顿城市页显示 2026-11-27 入住、11-28 退房的起价。 官网样本为每房每晚人民币 ¥1,189。当前价以所选日期及房型的报价为准。",
-        "subcategory": "hotel",
-        "intro_short_zh": "可从市中心安排步行游览。",
-        "intro_short_en": "A city-center hotel for exploring on foot.",
-        "intro_long_zh": "可从市中心安排步行游览。可在品牌官网查看房型和入住安排。",
-        "intro_long_en": "A city-center hotel for exploring on foot. See the hotel's own website for room types and check-in details.",
-        "star": null,
-        "price_band": "1000-2000",
-        "accepts_foreigners": true,
-        "foreign_service": {
-          "english_front_desk": null,
-          "foreign_guest_share": null,
-          "foreign_guest_experience": null,
-          "international_brand": "Hilton",
-          "evidence_zh": "上海康莱德酒店由国际酒店品牌或集团 Hilton 的官网正式列出并提供预订入口。",
-          "evidence": [
-            "https://www.hilton.com.cn/zh-cn/hotels/shawsci-conrad-shanghai"
-          ]
-        }
-      },
-      "external_signals": [],
-      "location": null,
-      "amap": {
-        "status": "not-run",
-        "alternatives": []
-      },
-      "score": {
-        "total": 26,
-        "parts": {
-          "foreigner": 0,
-          "confidence": 12,
-          "sources": 10,
-          "complete": 4,
           "amap": 0
         },
         "external_used": false
@@ -4050,7 +4428,7 @@
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": "浦东南路899号",
-        "address_en": null,
+        "address_en": "899 South Pudong Road, Pudong New Area, Shanghai",
         "district_zh": "浦东新区",
         "nearest_metro": null,
         "foreigner_signals": {
@@ -4063,7 +4441,8 @@
         },
         "official_url": "https://www.shanghai.gov.cn/nw17239/20260813/283e5f83f3654b088130e465229f991b.html",
         "sources": [
-          "https://www.shanghai.gov.cn/nw17239/20260813/283e5f83f3654b088130e465229f991b.html"
+          "https://www.shanghai.gov.cn/nw17239/20260813/283e5f83f3654b088130e465229f991b.html",
+          "https://english.shanghai.gov.cn/en-LatestEvents/20261014/1c39f444b66048b09ba28b3f12983028.html"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
@@ -4083,12 +4462,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 21,
+        "total": 28,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
-          "sources": 5,
-          "complete": 4,
+          "sources": 10,
+          "complete": 6,
           "amap": 0
         },
         "external_used": false
@@ -4106,8 +4485,12 @@
         "tier": "main",
         "name_zh": "上海乐高乐园",
         "name_en": "LEGOLAND Shanghai Resort",
-        "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_zh": [
+          "上海樂高樂園"
+        ],
+        "aliases_en": [
+          "Legoland Shanghai"
+        ],
         "address_zh": null,
         "address_en": null,
         "district_zh": "金山区",
@@ -4161,7 +4544,21 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "Legoland Shanghai",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q21817068",
+          "kind": "label"
+        },
+        {
+          "alias": "上海樂高樂園",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q21817068",
+          "kind": "published_traditional"
+        }
+      ]
     },
     {
       "id": "pl_sh_lenbach_xian",
@@ -4242,7 +4639,7 @@
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": "乍浦路338号",
-        "address_en": null,
+        "address_en": "338 Zhapu Road, Shanghai",
         "district_zh": "虹口区",
         "nearest_metro": null,
         "foreigner_signals": {
@@ -4281,12 +4678,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 23,
+        "total": 24,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 5,
-          "complete": 6,
+          "complete": 7,
           "amap": 0
         },
         "external_used": false
@@ -4376,8 +4773,15 @@
         "tier": "main",
         "name_zh": "龙华寺",
         "name_en": "Longhua Temple",
-        "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_zh": [
+          "龙华寺 (上海)",
+          "上海龙华寺",
+          "龍華寺",
+          "龍華寺 (上海)"
+        ],
+        "aliases_en": [
+          "Longhua Si"
+        ],
         "address_zh": null,
         "address_en": null,
         "district_zh": "徐汇区",
@@ -4430,7 +4834,39 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "龙华寺 (上海)",
+          "lang": "zh",
+          "url": "https://zh.wikipedia.org/wiki/%E9%BE%99%E5%8D%8E%E5%AF%BA_(%E4%B8%8A%E6%B5%B7)",
+          "kind": "wikipedia"
+        },
+        {
+          "alias": "上海龙华寺",
+          "lang": "zh",
+          "url": "https://zh.wikipedia.org/wiki/%E4%B8%8A%E6%B5%B7%E9%BE%99%E5%8D%8E%E5%AF%BA?redirect=no",
+          "kind": "redirect"
+        },
+        {
+          "alias": "Longhua Si",
+          "lang": "en",
+          "url": "https://en.wikipedia.org/wiki/Longhua_Si?redirect=no",
+          "kind": "redirect"
+        },
+        {
+          "alias": "龍華寺",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q41912",
+          "kind": "published_traditional"
+        },
+        {
+          "alias": "龍華寺 (上海)",
+          "lang": "zh",
+          "url": "https://zh.wikipedia.org/wiki/%E9%BE%8D%E8%8F%AF%E5%AF%BA_(%E4%B8%8A%E6%B5%B7)?redirect=no",
+          "kind": "published_traditional"
+        }
+      ]
     },
     {
       "id": "pl_sh_lujiazui_binjiang",
@@ -4444,7 +4880,10 @@
         "name_zh": "陆家嘴滨江",
         "name_en": "Lujiazui Waterfront",
         "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_en": [
+          "Lujiazui Riverside Walkway",
+          "Lujiazui Riverside Promenade"
+        ],
         "address_zh": null,
         "address_en": null,
         "district_zh": "浦东新区",
@@ -4497,7 +4936,26 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "hours_zh: Codex could not confirm it from an official page; check by hand",
+        "ticket.price_cny: Codex could not confirm it from an official page; check by hand",
+        "ticket.booking: Codex could not confirm it from an official page; check by hand",
+        "official_url: Codex could not confirm it from an official page; check by hand"
+      ],
+      "alias_evidence": [
+        {
+          "alias": "Lujiazui Riverside Walkway",
+          "lang": "en",
+          "url": "https://www.trip.com/travel-guide/attraction/shanghai/lujiazui-riverside-walkway-112366383/",
+          "kind": "manual"
+        },
+        {
+          "alias": "Lujiazui Riverside Promenade",
+          "lang": "en",
+          "url": "https://maptrip.ai/shanghai/poi/lujiazui-riverside",
+          "kind": "manual"
+        }
+      ]
     },
     {
       "id": "pl_sh_luochunge_zhejiang",
@@ -4637,7 +5095,7 @@
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": "昆山路122号",
-        "address_en": null,
+        "address_en": "122 Kunshan Road, Shanghai",
         "district_zh": "虹口区",
         "nearest_metro": null,
         "foreigner_signals": {
@@ -4676,12 +5134,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 23,
+        "total": 24,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 5,
-          "complete": 6,
+          "complete": 7,
           "amap": 0
         },
         "external_used": false
@@ -4800,6 +5258,7 @@
         "intro_long_en": "Build a central Shanghai trip around People's Square. The hotel lists lines 1, 2 and 8 and has an indoor pool for a slower afternoon.",
         "star": null,
         "price_band": "1000-2000",
+        "hotel_class": "luxury",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -4829,9 +5288,7 @@
         },
         "external_used": false
       },
-      "flags": [
-        "pl_sh_mingtianwanhao: unknown field 'hotel_class' is dropped on import"
-      ]
+      "flags": []
     },
     {
       "id": "pl_sh_moganshan_chuangyi",
@@ -4844,8 +5301,13 @@
         "tier": "main",
         "name_zh": "M50创意园",
         "name_en": "M50 Creative Park",
-        "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_zh": [
+          "M50创意园区",
+          "上海M50创意园"
+        ],
+        "aliases_en": [
+          "M50 Art District"
+        ],
         "address_zh": "普陀区莫干山路50号",
         "address_en": null,
         "district_zh": "普陀区",
@@ -4898,7 +5360,27 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "M50创意园区",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q23817",
+          "kind": "label"
+        },
+        {
+          "alias": "M50 Art District",
+          "lang": "en",
+          "url": "https://en.wikipedia.org/wiki/M50_Art_District?redirect=no",
+          "kind": "redirect"
+        },
+        {
+          "alias": "上海M50创意园",
+          "lang": "zh",
+          "url": "https://whlyj.sh.gov.cn/3ajjq/20191008/0022-29707.html",
+          "kind": "discovery"
+        }
+      ]
     },
     {
       "id": "pl_sh_nanjinglu",
@@ -4912,7 +5394,9 @@
         "name_zh": "南京路步行街",
         "name_en": "Nanjing Road Pedestrian Street",
         "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_en": [
+          "East Nanjing Road Pedestrian Street"
+        ],
         "address_zh": "黄浦区南京东路（河南中路—西藏中路段）",
         "address_en": null,
         "district_zh": "黄浦区",
@@ -4966,7 +5450,15 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "East Nanjing Road Pedestrian Street",
+          "lang": "en",
+          "url": "https://www.haoliday.com/en/explore/shanghai/p/east-nanjing-road",
+          "kind": "manual"
+        }
+      ]
     },
     {
       "id": "pl_sh_nanxiang_yuyuan",
@@ -5114,7 +5606,7 @@
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": "太仓路181弄22至23号新天地北里02a室",
-        "address_en": null,
+        "address_en": "Room 02A, Xintiandi North Block, 22–23 Lane 181 Taicang Road, Huangpu District, Shanghai",
         "district_zh": "黄浦区",
         "nearest_metro": null,
         "foreigner_signals": {
@@ -5153,12 +5645,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 21,
+        "total": 23,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 5,
-          "complete": 4,
+          "complete": 6,
           "amap": 0
         },
         "external_used": false
@@ -5241,7 +5733,11 @@
         "tier": "main",
         "name_zh": "浦东美术馆",
         "name_en": "Museum of Art Pudong",
-        "aliases_zh": [],
+        "aliases_zh": [
+          "上海浦东美术馆",
+          "浦東美術館",
+          "上海浦東美術館"
+        ],
         "aliases_en": [],
         "address_zh": "浦东新区滨江大道2777号",
         "address_en": null,
@@ -5295,78 +5791,27 @@
         },
         "external_used": false
       },
-      "flags": []
-    },
-    {
-      "id": "pl_sh_pudongfupeng",
-      "source_file": "C8/shanghai-hotel.json",
-      "status": "pending",
-      "draft": {
-        "id": "pl_sh_pudongfupeng",
-        "city": "shanghai",
-        "category": "hotel",
-        "tier": "main",
-        "name_zh": "上海浦东福朋喜来登由由酒店",
-        "name_en": "Four Points by Sheraton Shanghai, Pudong",
-        "aliases_zh": [],
-        "aliases_en": [],
-        "address_zh": null,
-        "address_en": null,
-        "district_zh": null,
-        "nearest_metro": null,
-        "foreigner_signals": {
-          "english_signage": null,
-          "foreign_cards": null,
-          "english_service": null,
-          "evidence": [
-            "https://www.marriott.com/en-us/hotels/shapf-four-points-shanghai-pudong/overview/"
-          ]
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "上海浦东美术馆",
+          "lang": "zh",
+          "url": "https://zh.wikipedia.org/wiki/%E4%B8%8A%E6%B5%B7%E6%B5%A6%E4%B8%9C%E7%BE%8E%E6%9C%AF%E9%A6%86?redirect=no",
+          "kind": "redirect"
         },
-        "official_url": "https://www.marriott.com/en-us/hotels/shapf-four-points-shanghai-pudong/overview/",
-        "sources": [
-          "https://www.marriott.com/en-us/hotels/shapf-four-points-shanghai-pudong/overview/",
-          "https://www.marriott.com/en-us/destinations/china/shanghai.mi?pg=2"
-        ],
-        "checked_on": "2026-11-27",
-        "confidence": "medium",
-        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sat, Dec 26 - Sun, Dec 27。 官网样本为每房每晚人民币 ¥435。当前价以所选日期及房型的报价为准。",
-        "subcategory": "hotel",
-        "intro_short_zh": "浦东的福朋喜来登酒店。",
-        "intro_short_en": "A Four Points hotel in Pudong.",
-        "intro_long_zh": "浦东的福朋喜来登酒店。可在品牌官网查看房型和入住安排。",
-        "intro_long_en": "A Four Points hotel in Pudong. See the hotel's own website for room types and check-in details.",
-        "star": null,
-        "price_band": "<500",
-        "accepts_foreigners": true,
-        "foreign_service": {
-          "english_front_desk": null,
-          "foreign_guest_share": null,
-          "foreign_guest_experience": null,
-          "international_brand": "Marriott Bonvoy",
-          "evidence_zh": "上海浦东福朋喜来登由由酒店由国际酒店品牌或集团 Marriott Bonvoy 的官网正式列出并提供预订入口。",
-          "evidence": [
-            "https://www.marriott.com/en-us/hotels/shapf-four-points-shanghai-pudong/overview/"
-          ]
+        {
+          "alias": "浦東美術館",
+          "lang": "zh",
+          "url": "https://zh.wikipedia.org/wiki/%E6%B5%A6%E6%9D%B1%E7%BE%8E%E8%A1%93%E9%A4%A8?redirect=no",
+          "kind": "published_traditional"
+        },
+        {
+          "alias": "上海浦東美術館",
+          "lang": "zh",
+          "url": "https://zh.wikipedia.org/wiki/%E4%B8%8A%E6%B5%B7%E6%B5%A6%E6%9D%B1%E7%BE%8E%E8%A1%93%E9%A4%A8?redirect=no",
+          "kind": "published_traditional"
         }
-      },
-      "external_signals": [],
-      "location": null,
-      "amap": {
-        "status": "not-run",
-        "alternatives": []
-      },
-      "score": {
-        "total": 26,
-        "parts": {
-          "foreigner": 0,
-          "confidence": 12,
-          "sources": 10,
-          "complete": 4,
-          "amap": 0
-        },
-        "external_used": false
-      },
-      "flags": []
+      ]
     },
     {
       "id": "pl_sh_pudonglisi",
@@ -5411,6 +5856,7 @@
         "intro_long_en": "Check the hotel's own language list if your group needs support in English, Italian, Russian or Korean. The property lists Lujiazui as its subway stop.",
         "star": null,
         "price_band": ">2000",
+        "hotel_class": "luxury",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -5440,9 +5886,7 @@
         },
         "external_used": false
       },
-      "flags": [
-        "pl_sh_pudonglisi: unknown field 'hotel_class' is dropped on import"
-      ]
+      "flags": []
     },
     {
       "id": "pl_sh_pudonglujiazuimaoqi",
@@ -5486,6 +5930,7 @@
         "intro_long_en": "Plan an east-bank Shanghai stay from Puming Road. The hotel lists a swimming pool, and Marriott identifies English and Chinese as property languages.",
         "star": null,
         "price_band": "1000-2000",
+        "hotel_class": "luxury",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -5515,9 +5960,7 @@
         },
         "external_used": false
       },
-      "flags": [
-        "pl_sh_pudonglujiazuimaoqi: unknown field 'hotel_class' is dropped on import"
-      ]
+      "flags": []
     },
     {
       "id": "pl_sh_pudongmaoyewanfeng",
@@ -5561,6 +6004,7 @@
         "intro_long_en": "In Beicai, you can plan around Line 13 or Line 18 depending on where you're headed. The operator's transport page names both stops.",
         "star": null,
         "price_band": "<500",
+        "hotel_class": "midscale",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -5590,9 +6034,7 @@
         },
         "external_used": false
       },
-      "flags": [
-        "pl_sh_pudongmaoyewanfeng: unknown field 'hotel_class' is dropped on import"
-      ]
+      "flags": []
     },
     {
       "id": "pl_sh_putuomoxy",
@@ -5641,6 +6083,7 @@
         "intro_long_en": "If you're arriving by train, the hotel's site lists Shanghai Railway Station among the transport options. English is included in the property's language information.",
         "star": null,
         "price_band": "500-1000",
+        "hotel_class": "economy",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -5670,9 +6113,7 @@
         },
         "external_used": false
       },
-      "flags": [
-        "pl_sh_putuomoxy: unknown field 'hotel_class' is dropped on import"
-      ]
+      "flags": []
     },
     {
       "id": "pl_sh_puxiwanyi",
@@ -5721,6 +6162,7 @@
         "intro_long_en": "If your train comes into Shanghai Railway Station, look at this Courtyard before choosing somewhere to stay. Hanzhong Road gives you three metro lines for the rest of the trip.",
         "star": null,
         "price_band": "500-1000",
+        "hotel_class": "midscale",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -5750,9 +6192,7 @@
         },
         "external_used": false
       },
-      "flags": [
-        "pl_sh_puxiwanyi: unknown field 'hotel_class' is dropped on import"
-      ]
+      "flags": []
     },
     {
       "id": "pl_sh_pvg",
@@ -5841,7 +6281,9 @@
         "name_zh": "上海七宝古镇",
         "name_en": "Qibao Ancient Town",
         "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_en": [
+          "Shanghai Qibao Town"
+        ],
         "address_zh": "闵行区七宝镇横沥路108号",
         "address_en": null,
         "district_zh": "闵行区",
@@ -5894,7 +6336,15 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "Shanghai Qibao Town",
+          "lang": "en",
+          "url": "https://www.tripadvisor.com/Attraction_Review-g308272-d1979462-Reviews-Shanghai_Qibao_Town-Shanghai.html",
+          "kind": "manual"
+        }
+      ]
     },
     {
       "id": "pl_sh_renheguan_zhaojiabang",
@@ -6036,7 +6486,7 @@
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": "蒙自路33号",
-        "address_en": null,
+        "address_en": "33 Mengzi Road, Huangpu District, Shanghai",
         "district_zh": "黄浦区",
         "nearest_metro": null,
         "foreigner_signals": {
@@ -6075,12 +6525,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 21,
+        "total": 23,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 5,
-          "complete": 4,
+          "complete": 6,
           "amap": 0
         },
         "external_used": false
@@ -6173,7 +6623,9 @@
         "tier": "main",
         "name_zh": "上海博物馆东馆",
         "name_en": "Shanghai Museum East",
-        "aliases_zh": [],
+        "aliases_zh": [
+          "上博东馆"
+        ],
         "aliases_en": [],
         "address_zh": "浦东新区世纪大道1952号",
         "address_en": null,
@@ -6228,7 +6680,15 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "上博东馆",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q124211936",
+          "kind": "wikidata"
+        }
+      ]
     },
     {
       "id": "pl_sh_shangbo_renmin",
@@ -6242,7 +6702,9 @@
         "name_zh": "上海博物馆人民广场馆",
         "name_en": "Shanghai Museum (People's Square)",
         "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_en": [
+          "Shanghai Museum (People's Square Hall)"
+        ],
         "address_zh": "上海市黄浦区人民大道201号",
         "address_en": null,
         "district_zh": "黄浦区",
@@ -6298,7 +6760,15 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "Shanghai Museum (People's Square Hall)",
+          "lang": "en",
+          "url": "https://mychinatrip.app/explore/places/shanghai-museum/",
+          "kind": "manual"
+        }
+      ]
     },
     {
       "id": "pl_sh_shanghai_ifc_retail",
@@ -6379,7 +6849,11 @@
         "tier": "main",
         "name_zh": "上海之巅观光厅",
         "name_en": "Top of Shanghai Observatory",
-        "aliases_zh": [],
+        "aliases_zh": [
+          "上海之巅",
+          "上海中心大厦上海之巅观光厅",
+          "上海之巅观光厅景区"
+        ],
         "aliases_en": [],
         "address_zh": "浦东新区银城中路501号",
         "address_en": null,
@@ -6433,7 +6907,27 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "上海之巅",
+          "lang": "zh",
+          "url": "https://japanese.shanghai.gov.cn/ja-Videos/20260602/0903c39db7ba4a429e78cacdbe79e8ce.html",
+          "kind": "manual"
+        },
+        {
+          "alias": "上海中心大厦上海之巅观光厅",
+          "lang": "zh",
+          "url": "https://chinatripprimer.com/zh-cn/shanghai/attractions/tower-top",
+          "kind": "manual"
+        },
+        {
+          "alias": "上海之巅观光厅景区",
+          "lang": "zh",
+          "url": "https://whlyj.sh.gov.cn/4ajjq/20191008/0022-28627.html",
+          "kind": "discovery"
+        }
+      ]
     },
     {
       "id": "pl_sh_shanghainan",
@@ -6834,8 +7328,12 @@
         "tier": "main",
         "name_zh": "上海世博会博物馆",
         "name_en": "World Expo Museum",
-        "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_zh": [
+          "世博会博物馆"
+        ],
+        "aliases_en": [
+          "WEM"
+        ],
         "address_zh": "黄浦区蒙自路818号",
         "address_en": null,
         "district_zh": "黄浦区",
@@ -6888,7 +7386,21 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "世博会博物馆",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q16858547",
+          "kind": "label"
+        },
+        {
+          "alias": "WEM",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q16858547",
+          "kind": "wikidata"
+        }
+      ]
     },
     {
       "id": "pl_sh_shibo_center_sh",
@@ -6966,8 +7478,12 @@
         "tier": "main",
         "name_zh": "上海世纪公园",
         "name_en": "Century Park",
-        "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_zh": [
+          "世纪公园（上海）"
+        ],
+        "aliases_en": [
+          "Century Park (Shanghai)"
+        ],
         "address_zh": "浦东新区锦绣路1001号",
         "address_en": null,
         "district_zh": "浦东新区",
@@ -7020,7 +7536,21 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "Century Park (Shanghai)",
+          "lang": "en",
+          "url": "https://en.wikipedia.org/wiki/Century_Park_(Shanghai)",
+          "kind": "manual"
+        },
+        {
+          "alias": "世纪公园（上海）",
+          "lang": "zh",
+          "url": "https://zh.wikipedia.org/wiki/世纪公园_(上海)",
+          "kind": "manual"
+        }
+      ]
     },
     {
       "id": "pl_sh_shucaiji_zhejiang",
@@ -7165,7 +7695,9 @@
         "tier": "main",
         "name_zh": "思南公馆",
         "name_en": "Sinan Mansions",
-        "aliases_zh": [],
+        "aliases_zh": [
+          "义品村"
+        ],
         "aliases_en": [],
         "address_zh": null,
         "address_en": null,
@@ -7220,7 +7752,15 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "义品村",
+          "lang": "zh",
+          "url": "https://zh.wikipedia.org/wiki/%E4%B9%89%E5%93%81%E6%9D%91?redirect=no",
+          "kind": "redirect"
+        }
+      ]
     },
     {
       "id": "pl_sh_siruchun_shiquan",
@@ -7363,8 +7903,16 @@
         "tier": "backup",
         "name_zh": "宋庆龄故居",
         "name_en": "Former Residence of Soong Ching Ling",
-        "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_zh": [
+          "上海宋庆龄故居",
+          "上海宋庆龄故居纪念馆",
+          "宋庆龄故居纪念馆",
+          "上海宋慶齡故居"
+        ],
+        "aliases_en": [
+          "Soong Ching-ling Memorial Residence (Shanghai)",
+          "Shanghai Residence of Soong Ching-ling"
+        ],
         "address_zh": "徐汇区淮海中路1843号",
         "address_en": null,
         "district_zh": "徐汇区",
@@ -7417,7 +7965,45 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "上海宋庆龄故居",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q4165412",
+          "kind": "label"
+        },
+        {
+          "alias": "上海宋庆龄故居纪念馆",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q4165412",
+          "kind": "wikidata"
+        },
+        {
+          "alias": "宋庆龄故居纪念馆",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q4165412",
+          "kind": "wikidata"
+        },
+        {
+          "alias": "Soong Ching-ling Memorial Residence (Shanghai)",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q4165412",
+          "kind": "label"
+        },
+        {
+          "alias": "Shanghai Residence of Soong Ching-ling",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q4165412",
+          "kind": "wikidata"
+        },
+        {
+          "alias": "上海宋慶齡故居",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q4165412",
+          "kind": "published_traditional"
+        }
+      ]
     },
     {
       "id": "pl_sh_south_bund_fabric",
@@ -7891,7 +8477,9 @@
         "name_zh": "上海天文馆",
         "name_en": "Shanghai Astronomy Museum",
         "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_en": [
+          "Shanghai Planetarium"
+        ],
         "address_zh": "浦东新区临港大道380号",
         "address_en": null,
         "district_zh": "浦东新区",
@@ -7944,7 +8532,15 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "Shanghai Planetarium",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q30595198",
+          "kind": "label"
+        }
+      ]
     },
     {
       "id": "pl_sh_tianzifang",
@@ -7957,8 +8553,12 @@
         "tier": "main",
         "name_zh": "田子坊",
         "name_en": "Tianzifang",
-        "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_zh": [
+          "上海田子坊景区"
+        ],
+        "aliases_en": [
+          "Tian Zi Fang"
+        ],
         "address_zh": "黄浦区泰康路210号",
         "address_en": null,
         "district_zh": "黄浦区",
@@ -8012,7 +8612,21 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "Tian Zi Fang",
+          "lang": "en",
+          "url": "https://en.wikipedia.org/wiki/Tian_Zi_Fang?redirect=no",
+          "kind": "redirect"
+        },
+        {
+          "alias": "上海田子坊景区",
+          "lang": "zh",
+          "url": "https://whlyj.sh.gov.cn/3ajjq/20191008/0022-29707.html",
+          "kind": "discovery"
+        }
+      ]
     },
     {
       "id": "pl_sh_waitan",
@@ -8026,10 +8640,16 @@
         "name_zh": "外滩",
         "name_en": "The Bund",
         "aliases_zh": [
-          "外滩历史文化街区"
+          "外滩历史文化街区",
+          "上海外滩",
+          "外灘",
+          "上海外灘"
         ],
         "aliases_en": [
-          "Waitan"
+          "Waitan",
+          "Bund of Shanghai",
+          "Bund (Shanghai)",
+          "The Bund (Shanghai)"
         ],
         "address_zh": null,
         "address_en": null,
@@ -8084,7 +8704,57 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "外滩历史文化街区",
+          "lang": "zh",
+          "url": "https://ghzyj.sh.gov.cn/cmsres/32/3204f707ae2140a7834cae44ec0ae1b2/cec9365a6bcdccd91f134a14968b1858.pdf",
+          "kind": "legacy"
+        },
+        {
+          "alias": "Waitan",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q125474",
+          "kind": "legacy"
+        },
+        {
+          "alias": "上海外滩",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q125474",
+          "kind": "wikidata"
+        },
+        {
+          "alias": "Bund of Shanghai",
+          "lang": "en",
+          "url": "https://en.wikipedia.org/wiki/Bund_of_Shanghai?redirect=no",
+          "kind": "redirect"
+        },
+        {
+          "alias": "Bund (Shanghai)",
+          "lang": "en",
+          "url": "https://en.wikipedia.org/wiki/Bund_(Shanghai)?redirect=no",
+          "kind": "redirect"
+        },
+        {
+          "alias": "The Bund (Shanghai)",
+          "lang": "en",
+          "url": "https://en.wikipedia.org/wiki/The_Bund_(Shanghai)?redirect=no",
+          "kind": "redirect"
+        },
+        {
+          "alias": "外灘",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q125474",
+          "kind": "published_traditional"
+        },
+        {
+          "alias": "上海外灘",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q125474",
+          "kind": "published_traditional"
+        }
+      ]
     },
     {
       "id": "pl_sh_waitanhuaerdaofu",
@@ -8128,6 +8798,7 @@
         "intro_long_en": "From the old Shanghai Club address, step out for the Bund waterfront. The hotel also has a library lounge and personal concierge service.",
         "star": null,
         "price_band": ">2000",
+        "hotel_class": "luxury",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -8157,9 +8828,7 @@
         },
         "external_used": false
       },
-      "flags": [
-        "pl_sh_waitanhuaerdaofu: unknown field 'hotel_class' is dropped on import"
-      ]
+      "flags": []
     },
     {
       "id": "pl_sh_waitanweisiting",
@@ -8203,6 +8872,7 @@
         "intro_long_en": "Pick this central address if you want time on the Bund as well as subway access to other parts of Shanghai. The hotel's guide lists Metro lines 2 and 10.",
         "star": null,
         "price_band": "1000-2000",
+        "hotel_class": "upscale",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -8232,9 +8902,7 @@
         },
         "external_used": false
       },
-      "flags": [
-        "pl_sh_waitanweisiting: unknown field 'hotel_class' is dropped on import"
-      ]
+      "flags": []
     },
     {
       "id": "pl_sh_wanshouzhai_shanyin",
@@ -8436,8 +9104,14 @@
         "tier": "main",
         "name_zh": "武康路",
         "name_en": "Wukang Road",
-        "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_zh": [
+          "武康路 (上海)"
+        ],
+        "aliases_en": [
+          "Ferguson Road",
+          "Route Ferguson",
+          "Wukang Lu"
+        ],
         "address_zh": null,
         "address_en": null,
         "district_zh": "徐汇区",
@@ -8491,7 +9165,33 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "武康路 (上海)",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q11124225",
+          "kind": "label"
+        },
+        {
+          "alias": "Ferguson Road",
+          "lang": "en",
+          "url": "https://en.wikipedia.org/wiki/Ferguson_Road?redirect=no",
+          "kind": "redirect"
+        },
+        {
+          "alias": "Route Ferguson",
+          "lang": "en",
+          "url": "https://en.wikipedia.org/wiki/Route_Ferguson?redirect=no",
+          "kind": "redirect"
+        },
+        {
+          "alias": "Wukang Lu",
+          "lang": "en",
+          "url": "https://en.wikipedia.org/wiki/Wukang_Lu?redirect=no",
+          "kind": "redirect"
+        }
+      ]
     },
     {
       "id": "pl_sh_wuyouxian_maoming",
@@ -8767,7 +9467,9 @@
         "name_zh": "上海新天地",
         "name_en": "Xintiandi",
         "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_en": [
+          "Xin Tian Di"
+        ],
         "address_zh": null,
         "address_en": null,
         "district_zh": "黄浦区",
@@ -8821,7 +9523,15 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "Xin Tian Di",
+          "lang": "en",
+          "url": "https://en.wikipedia.org/wiki/Xin_Tian_Di?redirect=no",
+          "kind": "redirect"
+        }
+      ]
     },
     {
       "id": "pl_sh_xisha_mingzhuhu",
@@ -8937,6 +9647,7 @@
         "intro_long_en": "Use the station that works best for the day's route. Marriott lists Xujiahui and Yishan Road in its directions, and English among the hotel languages.",
         "star": null,
         "price_band": "500-1000",
+        "hotel_class": "midscale",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -8966,9 +9677,7 @@
         },
         "external_used": false
       },
-      "flags": [
-        "pl_sh_xizangdashawanyi: unknown field 'hotel_class' is dropped on import"
-      ]
+      "flags": []
     },
     {
       "id": "pl_sh_xuhuimoxy",
@@ -9012,6 +9721,7 @@
         "intro_long_en": "Use the hotel's directions for Caobao Road when planning subway trips. Marriott also lists English among the languages spoken at this Tianlin property.",
         "star": null,
         "price_band": "<500",
+        "hotel_class": "economy",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -9041,9 +9751,7 @@
         },
         "external_used": false
       },
-      "flags": [
-        "pl_sh_xuhuimoxy: unknown field 'hotel_class' is dropped on import"
-      ]
+      "flags": []
     },
     {
       "id": "pl_sh_xuhuiwanfeng",
@@ -9087,6 +9795,7 @@
         "intro_long_en": "Make Xujiahui part of your trip from this Fairfield on Zhaojiabang Road. English is listed by the hotel, and the transport page names Zhaojiabang Road station.",
         "star": null,
         "price_band": "500-1000",
+        "hotel_class": "midscale",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -9116,9 +9825,7 @@
         },
         "external_used": false
       },
-      "flags": [
-        "pl_sh_xuhuiwanfeng: unknown field 'hotel_class' is dropped on import"
-      ]
+      "flags": []
     },
     {
       "id": "pl_sh_xujiahuiyuan",
@@ -9131,7 +9838,9 @@
         "tier": "main",
         "name_zh": "徐家汇源",
         "name_en": "Xujiahui Historic Area",
-        "aliases_zh": [],
+        "aliases_zh": [
+          "上海徐家汇源景区"
+        ],
         "aliases_en": [],
         "address_zh": "徐汇区漕溪北路90号",
         "address_en": null,
@@ -9185,78 +9894,15 @@
         },
         "external_used": false
       },
-      "flags": []
-    },
-    {
-      "id": "pl_sh_yajulewanhao",
-      "source_file": "C8/shanghai-hotel.json",
-      "status": "pending",
-      "draft": {
-        "id": "pl_sh_yajulewanhao",
-        "city": "shanghai",
-        "category": "hotel",
-        "tier": "main",
-        "name_zh": "上海雅居乐万豪侯爵酒店",
-        "name_en": "Shanghai Marriott Marquis City Centre",
-        "aliases_zh": [],
-        "aliases_en": [],
-        "address_zh": null,
-        "address_en": null,
-        "district_zh": null,
-        "nearest_metro": null,
-        "foreigner_signals": {
-          "english_signage": null,
-          "foreign_cards": null,
-          "english_service": null,
-          "evidence": [
-            "https://www.marriott.com/en-us/hotels/shamc-shanghai-marriott-marquis-city-centre/overview/"
-          ]
-        },
-        "official_url": "https://www.marriott.com/en-us/hotels/shamc-shanghai-marriott-marquis-city-centre/overview/",
-        "sources": [
-          "https://www.marriott.com/en-us/hotels/shamc-shanghai-marriott-marquis-city-centre/overview/",
-          "https://www.marriott.com/en-us/destinations/china/shanghai.mi"
-        ],
-        "checked_on": "2026-11-27",
-        "confidence": "medium",
-        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sat, Dec 26 - Sun, Dec 27。 官网样本为每房每晚人民币 ¥2,034。当前价以所选日期及房型的报价为准。",
-        "subcategory": "hotel",
-        "intro_short_zh": "市中心的万豪侯爵酒店。",
-        "intro_short_en": "A Marriott Marquis hotel in central Shanghai.",
-        "intro_long_zh": "市中心的万豪侯爵酒店。可在品牌官网查看房型和入住安排。",
-        "intro_long_en": "A Marriott Marquis hotel in central Shanghai. See the hotel's own website for room types and check-in details.",
-        "star": null,
-        "price_band": ">2000",
-        "accepts_foreigners": true,
-        "foreign_service": {
-          "english_front_desk": null,
-          "foreign_guest_share": null,
-          "foreign_guest_experience": null,
-          "international_brand": "Marriott Bonvoy",
-          "evidence_zh": "上海雅居乐万豪侯爵酒店由国际酒店品牌或集团 Marriott Bonvoy 的官网正式列出并提供预订入口。",
-          "evidence": [
-            "https://www.marriott.com/en-us/hotels/shamc-shanghai-marriott-marquis-city-centre/overview/"
-          ]
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "上海徐家汇源景区",
+          "lang": "zh",
+          "url": "https://whlyj.sh.gov.cn/4ajjq/20191008/0022-28627.html",
+          "kind": "discovery"
         }
-      },
-      "external_signals": [],
-      "location": null,
-      "amap": {
-        "status": "not-run",
-        "alternatives": []
-      },
-      "score": {
-        "total": 26,
-        "parts": {
-          "foreigner": 0,
-          "confidence": 12,
-          "sources": 10,
-          "complete": 4,
-          "amap": 0
-        },
-        "external_used": false
-      },
-      "flags": []
+      ]
     },
     {
       "id": "pl_sh_yelixiali_zhengda",
@@ -9338,7 +9984,9 @@
         "tier": "main",
         "name_zh": "上海野生动物园",
         "name_en": "Shanghai Wild Animal Park",
-        "aliases_zh": [],
+        "aliases_zh": [
+          "上海野生動物園"
+        ],
         "aliases_en": [],
         "address_zh": "浦东新区南六公路178号",
         "address_en": null,
@@ -9392,7 +10040,15 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "上海野生動物園",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q6140007",
+          "kind": "published_traditional"
+        }
+      ]
     },
     {
       "id": "pl_sh_yibisi_hongqiaozhan",
@@ -9434,6 +10090,7 @@
         "intro_long_en": "The property is in Qibao. Allow time for the onward trip to Hongqiao Railway Station, or make use of the old town nearby if you have an afternoon to spare.",
         "star": null,
         "price_band": null,
+        "hotel_class": "economy",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -9464,7 +10121,7 @@
         "external_used": false
       },
       "flags": [
-        "pl_sh_yibisi_hongqiaozhan: unknown field 'hotel_class' is dropped on import"
+        "no price band: it cannot enter the library until the operator's own page gives a rate"
       ]
     },
     {
@@ -9507,6 +10164,7 @@
         "intro_long_en": "This hotel is in Qingpu, beside the district stadium. Check the twin rooms if traveling with a companion, and use the Line 17 information to plan onward transit.",
         "star": null,
         "price_band": null,
+        "hotel_class": "economy",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -9537,7 +10195,7 @@
         "external_used": false
       },
       "flags": [
-        "pl_sh_yibisishangpin_qingputiyu: unknown field 'hotel_class' is dropped on import"
+        "no price band: it cannot enter the library until the operator's own page gives a rate"
       ]
     },
     {
@@ -9580,6 +10238,7 @@
         "intro_long_en": "Look up Guanglan Road on Line 2 when mapping trips from Zhangjiang. The English property page has double and twin room listings.",
         "star": null,
         "price_band": null,
+        "hotel_class": "economy",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -9610,7 +10269,7 @@
         "external_used": false
       },
       "flags": [
-        "pl_sh_yibisishangpin_zhangjiang: unknown field 'hotel_class' is dropped on import"
+        "no price band: it cannot enter the library until the operator's own page gives a rate"
       ]
     },
     {
@@ -9693,8 +10352,12 @@
         "tier": "main",
         "name_zh": "上海犹太难民纪念馆",
         "name_en": "Shanghai Jewish Refugees Museum",
-        "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_zh": [
+          "摩西会堂"
+        ],
+        "aliases_en": [
+          "Ohel Moshe Synagogue"
+        ],
         "address_zh": "虹口区长阳路62号",
         "address_en": null,
         "district_zh": "虹口区",
@@ -9747,7 +10410,21 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "摩西会堂",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q11078482",
+          "kind": "label"
+        },
+        {
+          "alias": "Ohel Moshe Synagogue",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q11078482",
+          "kind": "wikidata"
+        }
+      ]
     },
     {
       "id": "pl_sh_yuanyuan_lippo",
@@ -9825,7 +10502,12 @@
         "tier": "main",
         "name_zh": "玉佛禅寺",
         "name_en": "Jade Buddha Temple",
-        "aliases_zh": [],
+        "aliases_zh": [
+          "玉佛寺",
+          "玉佛寺 (上海)",
+          "上海玉佛寺",
+          "上海玉佛禅寺"
+        ],
         "aliases_en": [],
         "address_zh": null,
         "address_en": null,
@@ -9879,7 +10561,33 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "玉佛寺",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q967601",
+          "kind": "label"
+        },
+        {
+          "alias": "玉佛寺 (上海)",
+          "lang": "zh",
+          "url": "https://zh.wikipedia.org/wiki/%E7%8E%89%E4%BD%9B%E5%AF%BA_(%E4%B8%8A%E6%B5%B7)",
+          "kind": "wikipedia"
+        },
+        {
+          "alias": "上海玉佛寺",
+          "lang": "zh",
+          "url": "https://zh.wikipedia.org/wiki/%E4%B8%8A%E6%B5%B7%E7%8E%89%E4%BD%9B%E5%AF%BA?redirect=no",
+          "kind": "redirect"
+        },
+        {
+          "alias": "上海玉佛禅寺",
+          "lang": "zh",
+          "url": "https://www.yufotemple.com/",
+          "kind": "discovery"
+        }
+      ]
     },
     {
       "id": "pl_sh_yufosi_sushi",
@@ -9895,7 +10603,7 @@
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": "安远路170号",
-        "address_en": null,
+        "address_en": "Jade Buddha Temple, 170 Anyuan Road, Shanghai",
         "district_zh": "普陀区",
         "nearest_metro": null,
         "foreigner_signals": {
@@ -9910,7 +10618,8 @@
         "official_url": "https://www.shanghai.gov.cn/nw17239/20260331/e71d25065b4b4da7b5972d3dd2c72492.html",
         "sources": [
           "https://www.shanghai.gov.cn/nw17239/20260331/e71d25065b4b4da7b5972d3dd2c72492.html",
-          "https://www.shanghai.gov.cn/nw12344/20251205/237489c43b2c4fbbb07a448e09a7d6ff.html"
+          "https://www.shanghai.gov.cn/nw12344/20251205/237489c43b2c4fbbb07a448e09a7d6ff.html",
+          "https://english.shanghai.gov.cn/en-TrendyStores/20260401/f3c8d1e0a383457f8fd8967b73ea06b4.html"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
@@ -9936,12 +10645,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 26,
+        "total": 28,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 4,
+          "complete": 6,
           "amap": 0
         },
         "external_used": false
@@ -9960,10 +10669,15 @@
         "name_zh": "上海豫园",
         "name_en": "Yu Garden",
         "aliases_zh": [
-          "上海豫园"
+          "上海豫园",
+          "豫园",
+          "豫園"
         ],
         "aliases_en": [
-          "Yuyuan Garden"
+          "Yuyuan Garden",
+          "Yu Yuan",
+          "Yuyuan",
+          "Yuyuan Gardens"
         ],
         "address_zh": "上海市黄浦区安仁街218号",
         "address_en": null,
@@ -10021,7 +10735,51 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "上海豫园",
+          "lang": "zh",
+          "url": "https://www.shanghai.gov.cn/citywalk/20260625/3a8ac74e088f4d468d9c3434b0b43d94.html",
+          "kind": "legacy"
+        },
+        {
+          "alias": "Yuyuan Garden",
+          "lang": "en",
+          "url": "https://english.shanghai.gov.cn/en-ScenicSpots/20231205/dc76893b94c248d195eaf7f4d44c6597.html",
+          "kind": "legacy"
+        },
+        {
+          "alias": "豫园",
+          "lang": "zh",
+          "url": "https://www.yugarden.com.cn/page/articleview/message.html",
+          "kind": "manual"
+        },
+        {
+          "alias": "Yu Yuan",
+          "lang": "en",
+          "url": "https://en.wikipedia.org/wiki/Yu_Garden",
+          "kind": "manual"
+        },
+        {
+          "alias": "Yuyuan",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q1328025",
+          "kind": "wikidata"
+        },
+        {
+          "alias": "Yuyuan Gardens",
+          "lang": "en",
+          "url": "https://en.wikipedia.org/wiki/Yuyuan_Gardens?redirect=no",
+          "kind": "redirect"
+        },
+        {
+          "alias": "豫園",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q1328025",
+          "kind": "published_traditional"
+        }
+      ]
     },
     {
       "id": "pl_sh_yuyuanwanli",
@@ -10070,6 +10828,7 @@
         "intro_long_en": "Spend a morning around the old city and head back via Yuyuan Garden station. Marriott lists English at the hotel and an indoor pool for guests.",
         "star": null,
         "price_band": "1000-2000",
+        "hotel_class": "upscale",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -10099,9 +10858,7 @@
         },
         "external_used": false
       },
-      "flags": [
-        "pl_sh_yuyuanwanli: unknown field 'hotel_class' is dropped on import"
-      ]
+      "flags": []
     },
     {
       "id": "pl_sh_zhenlaodafang_nanjing_shop",
@@ -10245,7 +11002,9 @@
         "tier": "main",
         "name_zh": "上海植物园",
         "name_en": "Shanghai Botanical Garden",
-        "aliases_zh": [],
+        "aliases_zh": [
+          "上海植物園"
+        ],
         "aliases_en": [],
         "address_zh": "徐汇区龙吴路1111号",
         "address_en": null,
@@ -10299,7 +11058,15 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "上海植物園",
+          "lang": "zh",
+          "url": "https://zh.wikipedia.org/wiki/%E4%B8%8A%E6%B5%B7%E6%A4%8D%E7%89%A9%E5%9C%92?redirect=no",
+          "kind": "published_traditional"
+        }
+      ]
     },
     {
       "id": "pl_sh_zhongshangongyuanwanli",
@@ -10348,6 +11115,7 @@
         "intro_long_en": "Pack a flexible itinerary around lines 2, 3 and 4 without changing your hotel. The Renaissance sits above Zhongshan Park station.",
         "star": null,
         "price_band": "500-1000",
+        "hotel_class": "upscale",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -10377,9 +11145,7 @@
         },
         "external_used": false
       },
-      "flags": [
-        "pl_sh_zhongshangongyuanwanli: unknown field 'hotel_class' is dropped on import"
-      ]
+      "flags": []
     },
     {
       "id": "pl_sh_zhujiajiao",
@@ -10392,8 +11158,12 @@
         "tier": "main",
         "name_zh": "朱家角古镇",
         "name_en": "Zhujiajiao Ancient Town",
-        "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_zh": [
+          "朱家角"
+        ],
+        "aliases_en": [
+          "Zhujiajiao Historical and Cultural Block"
+        ],
         "address_zh": "青浦区朱家角镇内",
         "address_en": null,
         "district_zh": "青浦区",
@@ -10446,7 +11216,21 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "朱家角",
+          "lang": "zh",
+          "url": "https://whlyj.sh.gov.cn/4ajjq/20191008/0022-28627.html",
+          "kind": "manual"
+        },
+        {
+          "alias": "Zhujiajiao Historical and Cultural Block",
+          "lang": "en",
+          "url": "https://english.shanghai.gov.cn/en-HeritageZones/20240827/66903de4b44047a5aeb1284a2148fc09.html",
+          "kind": "manual"
+        }
+      ]
     },
     {
       "id": "pl_sh_ziran_bowuguan_sh",
@@ -10459,7 +11243,9 @@
         "tier": "main",
         "name_zh": "上海自然博物馆",
         "name_en": "Shanghai Natural History Museum",
-        "aliases_zh": [],
+        "aliases_zh": [
+          "上海自然博物馆（上海科技馆分馆）"
+        ],
         "aliases_en": [],
         "address_zh": "静安区北京西路510号",
         "address_en": null,
@@ -10513,7 +11299,15 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "上海自然博物馆（上海科技馆分馆）",
+          "lang": "zh",
+          "url": "https://whlyj.sh.gov.cn/bwg/20260106/265b828de4394054bdc2e61e1599ed4c.html",
+          "kind": "manual"
+        }
+      ]
     }
   ]
 }
