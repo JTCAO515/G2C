@@ -33,7 +33,7 @@
     "backend/cj_api/lio_calendar_ordinals.py": "f7f34103c4db79c5cb85e61f723f2869c91196fb71f181dd2609cc767dab09c3",
     "backend/cj_api/lio_planning_grounding.py": "36059393778a6aed7279e003ab02e66eac720e09f05e21e3c8d3b5f65f3d6ebe",
     "backend/cj_api/local_memory_history.py": "c7bbe834c80b004aea4c5d31a51a9e77cbeaa197806a5b41e2b0b8c22acd5674",
-    "backend/cj_api/local_app.py": "da534a7e611f0dcc8c6e58765d1429da6e6b0ac6a752c7cb3387ce0bd90e7af7",
+    "backend/cj_api/local_app.py": "88dd4a2ca29a1dee52e68a8f86e6e6efbb20c92c0a4e48638e841304dec30d1b",
     "backend/draft/cj_draft/lio_plan.py": "03d4ffdc6b14b10048bbbf429aa1205757fcc6e56fb8e7be869e859211fa2609",
     "backend/draft/cj_draft/grouped_plan.py": "1b7fbada1331ac101bb2572e4b885d114e157b240f49d623f0062eacd1509f05",
     "backend/draft/cj_draft/rich_first.py": "f14e57dee9f4cd0a9e75e041a9ca2bcae1bdc87eab8f2d4e09517219748dc44e",
@@ -97,7 +97,7 @@
     "example.clarification": "UNRUN"
   },
   "national_clarification_hook": "NOT_CONNECTED_NO_BASELINE_ANCHOR",
-  "system_prompt_sha256": "f3fbb38ac2bed92f6922177d1c3c6ddcb1d010f944367440dca320c134ba1017",
+  "system_prompt_sha256": "900e3a8b624f618b859c45a08c15531fe910405057b0073df45dd962417e7dd0",
   "model": {
     "endpoint": "https://dashscope.aliyuncs.com/compatible-mode/v1",
     "id": "qwen3.8-flash",

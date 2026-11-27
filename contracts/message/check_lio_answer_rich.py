@@ -152,7 +152,7 @@ def _receipt(row):
                 raise ValueError('undo target must be the committed version')
             if kind == 'withdraw_created':
                 if row['committed_version'] != 1:
-                    raise ValueError('only the save that created the trip is undone by removing it')
+                    raise ValueError('only the save that created the trip can be withdrawn')
             else:
                 if row['committed_version'] < 2:
                     raise ValueError('the first version of a trip has nothing to restore')

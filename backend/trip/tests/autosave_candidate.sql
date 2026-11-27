@@ -27,6 +27,17 @@ CREATE TABLE public.cj_trip_commit_time (
  PRIMARY KEY(scope,action_id),
  FOREIGN KEY(scope,action_id) REFERENCES public.cj_trip_receipt(scope,action_id)
 );
+CREATE TABLE public.cj_trip_withdrawal (
+ scope text NOT NULL,
+ trip_id text NOT NULL,
+ withdrawn_version bigint NOT NULL CHECK(withdrawn_version>1),
+ undo_action_id text NOT NULL,
+ created_at timestamptz NOT NULL DEFAULT clock_timestamp(),
+ PRIMARY KEY(scope,trip_id),
+ UNIQUE(scope,undo_action_id),
+ FOREIGN KEY(scope,trip_id) REFERENCES public.cj_trip_record(scope,trip_id),
+ FOREIGN KEY(scope,undo_action_id) REFERENCES public.cj_trip_receipt(scope,action_id)
+);
 CREATE FUNCTION public.cj_trip_item_origin_order() RETURNS trigger
  LANGUAGE plpgsql SECURITY INVOKER SET search_path=pg_catalog,public,pg_temp AS $$
 BEGIN

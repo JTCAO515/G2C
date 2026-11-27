@@ -431,6 +431,20 @@ def trip_configuration(value):
     return value is not None
 
 
+def _trip_receipt_reader(database, undo_route):
+    """#1994: the timeline's `rich.trip_receipt` reader, only while CJ_LIO_TRIP_AUTOSAVE is `on` (None otherwise,
+    so the timeline reads nothing new). `undo_route` is whether this app registers the v4 undo routes; an
+    account off the autosave list reads `unavailable`, because those routes refuse it (#2051 P2-1)."""
+    from .lio_trip_autosave import autosave_for, autosave_mode
+    if autosave_mode() != 'on':
+        return None
+    from .lio_trip_receipt import read
+
+    def reader(owner, run_id, effects):
+        return read(database, owner, run_id, effects, undo_route=undo_route and autosave_for(owner) is True)
+    return reader
+
+
 def create_local_app(*, conninfo_path, auth_dir, confirmation_signer=None, history_configuration=None,
                      memory_configuration=None, run_context=None, travel_context=False, needs_profile=None, trip_context=False,edit_configuration=None,
                      cleanup_configuration=None,formal_memory_configuration=None,database=None,account_admission=False,message_subjects=None,
@@ -694,7 +708,9 @@ def create_local_app(*, conninfo_path, auth_dir, confirmation_signer=None, histo
                                          LioTripCards(database, lio_checker), prepare_scope=database._provision_scope,
                                          memory_cards=memory_cards,calendar_boundary=calendar_boundary,
                                          calendar_cards=(LioTripCards(database,calendar_checker,calendar=True)
-                                             if lio_calendar_subjects else None))
+                                             if lio_calendar_subjects else None),
+                                         trip_receipt_reader=_trip_receipt_reader(database,
+                                             bool(lio_exploration_subjects) and lio_rich_undo_sources is not None))
             if lio_exploration_subjects:
                 if lio_profile_epoch_reader is None:
                     raise CompositionUnavailable('native4 requires the current Memory epoch reader')
