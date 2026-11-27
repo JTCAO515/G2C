@@ -335,6 +335,32 @@ class WishItems(unittest.TestCase):
         self.assertEqual([item['kind'] for item in mixed], ['hotel'])
 
 
+class BookingEvidenceKey(unittest.TestCase):
+    """Red-line review of #2129: parse_flow dumps by alias, so a booking sits under `booking_evidence` (an object), never under
+    `booking_status`; the wish rule has to read that key or a real booking with no fixed word in its quote is dropped as a wish."""
+    TEXT = NullQuote.TEXT
+
+    def test_an_item_with_booking_evidence_is_kept_through_parse_flow_and_logged_as_booked(self):
+        value = NullQuote().logged()
+        value['fixed_items'] = [wish('颐和园', '第二天颐和园', kind='appointment', locked=True,
+                                     booking_evidence=dict(status='booked', source_index=0, quote='第二天颐和园'))]
+        with self.assertLogs('cj_usage.audit', level='INFO') as logs:
+            try:
+                parse_flow(json.dumps(value), (original(self.TEXT),), (), 'current', None, schema=OptionalIntake)
+            except InvalidInput:
+                pass                                   # a full parse may still refuse the item for other reasons; the log is what matters
+        row = next(line for line in logs.output if 'LIO_INTAKE_FIXED_ITEMS' in line)
+        self.assertIn('|book=b|', row)
+        self.assertIn('|wish=0', row)
+        self.assertFalse(any('LIO_INTAKE_WISH_ITEMS_DROPPED' in line for line in logs.output))
+
+    def test_the_wish_rule_reads_the_alias_key(self):
+        from cj_api.lio_flow_intake import _drop_wish_items
+        kept = wish('颐和园', '第二天颐和园', booking_evidence=dict(status='booked', source_index=0, quote='第二天颐和园'))
+        self.assertEqual(_drop_wish_items([kept]), 0)
+        self.assertEqual(_drop_wish_items([wish('颐和园', '第二天颐和园', booking_evidence=None)]), 1)
+
+
 class FixedItemsDiagnostics(unittest.TestCase):
     """Hong Kong v2 retest of 2026-11-28 kept no intake output, so the next retest needs the structure of the fixed items in the log:
     kinds, flags and counts, never the traveler's words."""
@@ -342,9 +368,13 @@ class FixedItemsDiagnostics(unittest.TestCase):
 
     def test_the_structure_line_has_no_words_of_the_traveler(self):
         from cj_api.lio_flow_intake import fixed_items_structure
-        rows = fixed_items_structure([wish('故宫和景山', '第一天故宫和景山'), wish('故宫', '故宫已经订好', kind='appointment', locked=True, booking_status='booked'), 'odd'])
-        self.assertEqual(rows[0], 'intent|lock=N|book=N|when=0|where=0|detail=0|q=8|l=5|mark=0|hint=0|unk=4|unc=0')
-        self.assertTrue(rows[1].startswith('appointment|lock=T|book=b|') and '|hint=1|' in rows[1])
+        rows = fixed_items_structure([wish('故宫和景山', '第一天故宫和景山'), wish('故宫', '故宫已经订好', kind='appointment', locked=True, booking_evidence=dict(status='booked', source_index=0, quote='故宫已经订好')), 'odd'])
+        self.assertEqual(rows[0], 'intent|lock=N|book=N|when=-|where=-|detail=0|q=8|l=5|mark=0|hint=0|unk=4|unc=0|wish=1')
+        self.assertTrue(rows[1].startswith('appointment|lock=T|book=b|') and '|hint=1|' in rows[1] and rows[1].endswith('|wish=0'))
+        timed = fixed_items_structure([wish('故宫', '第一天故宫', start_time='09:00', start_place='东门')])[0]
+        self.assertIn('|when=start_time|where=start_place|', timed)         # field NAMES, never values
+        self.assertNotIn('09:00', timed)
+        self.assertNotIn('东门', timed)
         self.assertEqual(rows[2], '?')
         for row in rows:
             for word in ('故宫', '景山', '第一天', '订好'):
@@ -358,7 +388,8 @@ class FixedItemsDiagnostics(unittest.TestCase):
         lines = [line for line in logs.output if 'LIO_INTAKE_FIXED_ITEMS' in line]
         self.assertEqual(len(lines), 1)
         self.assertIn('count=2', lines[0])
-        self.assertIn('intent|lock=N|book=N|when=0|where=0', lines[0])
+        self.assertIn('intent|lock=N|book=N|when=-|where=-', lines[0])
+        self.assertIn('|wish=1', lines[0])
         for word in ('故宫', '颐和园', '第一天', '第二天'):
             self.assertNotIn(word, lines[0])
         # the wish drop of #2123 still logs its own count after it
