@@ -74,6 +74,10 @@ _SENSITIVE = re.compile(
     r'medicat|medicine|prescription|\bpills?\b|diagnos|disabilit|disabled|wheelchair|mobility|walking (?:aid|stick)|crutch|'
     r'pregnan|nursing mother|breastfeed|depress|anxiety disorder|mental health|epilep|dialysis|surgery|injur|'
     r'gluten|celiac|lactose|intoleran|'
+    r'\bulcers?\b|stomach (?:ache|pain|problem|trouble|issue|upset|hurts?|condition)|\bgastr(?!onom|opub)|\bibs\b|crohn|colitis|reflux|\bgout\b|'
+    r'insomnia|sleep (?:apnea|problem|disorder|badly|issue)|can.?t sleep|cannot sleep|migraine|vertigo|\bdizz(?:y|iness)\b|nausea|\bnauseous\b|'
+    r'hearing (?:loss|aid|impair)|vision (?:loss|impair)|poor eyesight|glaucoma|cataract|colou?r.?blind|'
+    r'bipolar|schizophren|\bptsd\b|panic attack|eating disorder|osteopor|\bwalkers\b|rollator|'
     r'religio|faith|muslim|islam|halal|ramadan|fasting|prayer|\bpray|church|mosque|synagogue|buddhis|christian|'
     r'catholic|jewish|kosher|hindu|\bsikh|taoist|no pork|(?:don.?t|do not|never) eat (?:pork|beef)|vegetarian|vegan',
     re.IGNORECASE)

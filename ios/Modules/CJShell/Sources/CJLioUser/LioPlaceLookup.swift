@@ -17,14 +17,51 @@ protocol LioPlaceLookup: Sendable {
     func match(name: String, city: String?) -> LioPlaceMatch?
 }
 
-/// The production lookup until the library has reviewed entries: it knows no place, so a canvas point keeps only its
-/// name and coordinate and its `placeID` stays nil.
+/// A lookup that knows no place: a canvas point keeps only its name and coordinate and its `placeID` stays nil.
 struct LioNoPlaceLookup: LioPlaceLookup {
     func match(name: String, city: String?) -> LioPlaceMatch? { nil }
 }
 
+/// Finds places in a `LioPlaceRepository` by name (#2033 follow-up). A name is matched, case-folded and exactly,
+/// against a place's Chinese and English names and aliases; `city` narrows it to one library city. A name that two
+/// different places answer to is a miss, never a guess. A place without a usable GCJ-02 point still matches (its id
+/// is worth keeping) and carries no coordinate.
+struct LioRepositoryPlaceLookup: LioPlaceLookup {
+    let repository: LioPlaceRepository
+
+    func match(name: String, city: String?) -> LioPlaceMatch? {
+        let key = name.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        guard !key.isEmpty else { return nil }
+        var found: LioPlace?
+        for place in repository.places where city == nil || place.city == city {
+            let names = [place.nameZH, place.nameEN] + place.aliasesZH + place.aliasesEN
+            guard names.contains(where: { $0.lowercased() == key }) else { continue }
+            if found != nil { return nil }                       // a second place answers to this name: no guess
+            found = place
+        }
+        guard let place = found else { return nil }
+        let coordinate = place.point.map { LioTripCanvas.Coordinate(latitude: $0.latitude, longitude: $0.longitude) }
+        return LioPlaceMatch(placeID: place.id, coordinate: coordinate?.isValid == true ? coordinate : nil)
+    }
+}
+
 enum LioPlaceLookups {
-    /// The lookup a build uses. Release and Beta: none yet. The Debug development pack (`LioDevPlacesPack`, #if DEBUG)
-    /// is layered on here once it is merged; nothing else reads the pack.
-    static var standard: any LioPlaceLookup { LioNoPlaceLookup() }
+    /// The lookup a build uses: the reviewed library (`LioPlaces.v1.json`, in every build; it is not in the App yet,
+    /// so until it lands nothing matches), and in a Debug build that was launched with a development pack
+    /// (`--places-dev-pack`, `LioDevPlacesPack`) the pack's unreviewed places too. The hand-written samples are not
+    /// used here: their coordinates are approximate and a canvas keeps what it is given.
+    static var standard: any LioPlaceLookup { LioRepositoryPlaceLookup(repository: bundledCanvasRepository) }
+
+    private static let bundledCanvasRepository = makeCanvasRepository(library: LioPlaceRepository.resource(LioPlaceRepository.libraryResource))
+
+    /// The places the canvas may look in. The inputs are parameters so a test can point it at a small library and pack.
+    static func makeCanvasRepository(library: Data?, arguments: [String] = ProcessInfo.processInfo.arguments,
+                                     environment: [String: String] = ProcessInfo.processInfo.environment) -> LioPlaceRepository {
+        #if DEBUG
+        if LioDevPlacesPack.load(arguments: arguments, environment: environment) != nil {
+            return LioPlaceRepository.debugRepository(library: library, samples: nil, arguments: arguments, environment: environment)
+        }
+        #endif
+        return LioPlaceRepository(places: library.map { LioPlaceRepository.places(in: $0) } ?? [])
+    }
 }
