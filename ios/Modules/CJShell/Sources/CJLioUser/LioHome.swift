@@ -272,6 +272,8 @@ public struct LioHome<MenuContent: View>: View {
     }
 
     public var body: some View {
+        // The latest session check, not the one from when this screen was made (see `rebind`).
+        let _ = locationConsent?.rebind(isCurrent: toolsSessionIsCurrent)
         let currentConversation = conversation
         let pending = conversation.pending
         let canObserve = scenePhase == .active && pending == nil && !restoringChat && session?.available != false
