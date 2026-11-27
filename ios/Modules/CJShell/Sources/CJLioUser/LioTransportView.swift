@@ -65,7 +65,7 @@ struct LioTransportView: View {
         .foregroundStyle(LioTheme.ink)
         .background(LioTheme.paper)
         .tint(LioTheme.vermilion)
-        .navigationTitle(language.text("Intercity Travel", "城际交通"))
+        .navigationTitle(language.text("Transport", "大交通"))
         .navigationBarTitleDisplayMode(.inline)
         .environment(\.calendar, LioTransportQuery.calendar)
         .environment(\.timeZone, LioTransportQuery.calendar.timeZone)

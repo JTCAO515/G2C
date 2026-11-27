@@ -46,6 +46,43 @@ import CryptoKit
         }
     }
 
+    /// #2009: the two amount boxes are linked, quick amounts fill the top one, and the currencies swap.
+    /// Sample rates: 1 EUR = 8 CNY = 1.25 USD, so 100 CNY = 15.63 USD.
+    func testCurrencyConverterLinksTheTwoAmounts() throws {
+        continueAfterFailure = false
+        for (language, appearance) in [("en", "light"), ("zh-Hans", "light"), ("en", "dark")] {
+            let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
+            app.launchArguments = ["--lio-preview", "--lio-currency-acceptance", "-cj.ui.language.v1", language,
+                                   "-lio.ui.appearance.v1", appearance, "-UIPreferredContentSizeCategoryName",
+                                   "UICTContentSizeCategoryL"]
+            app.launch()
+            defer { app.terminate() }
+            let top = app.textFields["lio.currency.amount"]
+            let bottom = app.textFields["lio.currency.result"]
+            XCTAssertTrue(top.waitForExistence(timeout: 8))
+            XCTAssertTrue(bottom.exists)
+            XCTAssertEqual(top.value as? String, "100")
+            XCTAssertEqual(bottom.value as? String, "15.63")
+            capture(app, "currency-\(language)-\(appearance)")
+            // A quick amount fills the top box and the bottom follows.
+            app.buttons["lio.currency.quick.500"].tap()
+            XCTAssertEqual(top.value as? String, "500")
+            XCTAssertEqual(bottom.value as? String, "78.13")
+            // Typing in the bottom box converts back into the top one.
+            bottom.coordinate(withNormalizedOffset: CGVector(dx: 0.99, dy: 0.5)).tap() // caret at the end
+            let current = (bottom.value as? String) ?? ""
+            bottom.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: current.count) + "10")
+            XCTAssertEqual(bottom.value as? String, "10")
+            XCTAssertEqual(top.value as? String, "64.00")
+            capture(app, "currency-typing-bottom-\(language)-\(appearance)")
+            // Swapping exchanges the two rows: each amount stays with its currency.
+            app.buttons["lio.currency.swap"].tap()
+            XCTAssertEqual(top.value as? String, "10")
+            XCTAssertEqual(bottom.value as? String, "64.00")
+            XCTAssertEqual(app.staticTexts["lio.currency.unitRate"].label, "1 USD ≈ 6.400 CNY")
+        }
+    }
+
     /// #2006: "Essentials" is now "Convenience" and gains community services (searched on their own, by name).
     func testNearbyConvenienceOffersCommunityServices() throws {
         continueAfterFailure = false
