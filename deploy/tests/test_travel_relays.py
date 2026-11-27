@@ -128,6 +128,53 @@ def test_flights_caches_fixed_read_only_tool_and_enforces_limit(tmp_path):
     assert events == ['initialize', 'notifications/initialized', 'tools/call']
 
 
+def _flight_mcp(result):
+    def reply(http):
+        call = json.loads(http.content)
+        if call['method'] == 'initialize':
+            return httpx.Response(200, json=dict(jsonrpc='2.0', id=1, result={'protocolVersion': '2025-06-18'}))
+        if call['method'] == 'notifications/initialized':
+            return httpx.Response(202)
+        return httpx.Response(200, json=dict(jsonrpc='2.0', id=2, result=result))
+    return reply
+
+
+def test_flight_number_status_maps_documented_fields_and_skips_bad_rows(tmp_path):
+    """FLIGHTS.1 (#2007): the flight-number lookup forwards supplier text as is, keeps only known fields,
+    drops one malformed row without failing the answer, and rejects mixed or malformed requests early."""
+    rows = [
+        {'flightNo': 'MU5102', 'flightDepcode': 'SHA', 'flightArrcode': 'PEK', 'isShare': 0, 'status': 'Scheduled',
+         'flightDeptimePlan': '2026-11-24 08:00:00', 'flightArrtimePlan': '2026-11-24 10:15:00',
+         'flightDepTerminal': 'T2', 'flightArrTerminal': 'T3', 'boardingGate': 'B2', 'checkinTable': 'H01-H08',
+         'baggageClaim': '12', 'airlineCnName': '东方航空', 'secret': 'dropped'},
+        {'flightNo': 'not a flight', 'flightDepcode': 'SHA'},
+    ]
+    provider = VariFlight(KEY, client=fixture_transport(_flight_mcp({'structuredContent': {'flights': rows}})))
+    with route_client(tmp_path, register_flights, provider) as client:
+        ok = client.post(FLIGHTS, json=FLIGHT_BODY, headers=HEADERS)
+        assert ok.status_code == 200
+        body = ok.json()
+        assert body['version'] == 'FLIGHTS.1' and body['source'] == 'VariFlight' and body['more'] is False
+        assert body['items'] == [{
+            'flight_number': 'MU5102', 'departure': 'SHA', 'arrival': 'PEK', 'codeshare': False,
+            'status': 'Scheduled', 'planned_departure': '2026-11-24 08:00:00', 'planned_arrival': '2026-11-24 10:15:00',
+            'departure_terminal': 'T2', 'arrival_terminal': 'T3', 'gate': 'B2', 'check_in_counter': 'H01-H08',
+            'baggage_carousel': '12', 'airline_name_zh': '东方航空'}]
+        for bad in (dict(FLIGHT_BODY, flight_number='mu5102'),
+                    dict(FLIGHT_BODY, departure='SHA', arrival='PEK'),
+                    dict(FLIGHT_BODY, flight_number=None, departure='SHA', arrival='SHA'),
+                    dict(FLIGHT_BODY, extra=1)):
+            assert client.post(FLIGHTS, json=bad, headers=HEADERS).status_code == 400
+
+
+def test_flight_number_status_with_no_usable_rows_is_supplier_unavailable(tmp_path):
+    provider = VariFlight(KEY, client=fixture_transport(_flight_mcp(
+        {'structuredContent': {'flights': [{'flightNo': 'bad number'}]}})))
+    with route_client(tmp_path, register_flights, provider) as client:
+        response = client.post(FLIGHTS, json=FLIGHT_BODY, headers=HEADERS)
+        assert response.status_code == 502 and response.json() == {'error': 'supplier_unavailable'}
+
+
 def test_provider_payment_hold_survives_restart_and_never_redirects(tmp_path, monkeypatch):
     seen = []
 
