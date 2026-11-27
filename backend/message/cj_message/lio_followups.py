@@ -20,6 +20,8 @@ import re
 import secrets
 import time
 
+from . import lio_chip_table
+
 VERSION = 'LIO-answer-followups.1'
 MAX_ACTIONS = 2
 MAX_CHIPS = 3
@@ -61,6 +63,14 @@ class Action:
 
     def wire(self):
         return dict(tool=self.tool, parameters=dict(self.parameters), label=self.label)
+
+
+@dataclass(frozen=True)
+class FollowupHint:
+    """What the answer step tells the follow-up step: the one missing fact the answer ends by asking about
+    (a `lio_tasks` field such as 'dates'), so the chips can be answers to it. Not a wire value, not model text.
+    Only the worker's answer path asks for it (`lio_layout`); the exploration answer never receives one."""
+    missing: str
 
 
 @dataclass(frozen=True)
@@ -171,6 +181,9 @@ def chips(raw, locale, *, forbidden=()):
 # Tap-to-ask questions, chosen by the code from the topic of the traveler's question and reviewed here,
 # not written by the model. The App sends the label back as the next question; it is an ordinary
 # question to Lio, so a chip cannot ask for anything a typed question could not.
+#
+# The first two rows are the original payment and taxi topics (#1727). The other topics, and the answers
+# to the one fact an answer still asks for, live in `lio_chip_table` (#1978).
 CHIP_TABLE = {
     'payment': (('付不了怎么办', 'What if payment fails?'), ('哪些地方不能用', "Where can't I use it?"),
                 ('怎么开通地铁乘车码', 'How do I ride the metro?')),
@@ -178,15 +191,99 @@ CHIP_TABLE = {
              ('机场打车注意什么', 'Airport taxi tips')),
 }
 
+# "Save to my trips" (#1976): the chip is an ordinary typed question, and the server reads it as the traveler
+# asking to save (`SAVE_ASSENT`); it is offered only after an answer that suggests a plan. The label must
+# stay one that `SAVE_ASSENT` accepts in both languages (a test pins it).
+SAVE_CHIP = ('保存到行程', 'Save to my trips')
 
-def chips_for(question, locale):
-    """The chip labels for this question's first topic that has any, at most MAX_CHIPS, checked."""
+_PLAN_REQUEST = re.compile(r'规划|安排[^。？！?!]{0,6}(?:行程|几天)|行程|玩\s*[0-9一二三四五六七八九十两]+\s*天|[0-9一二三四五六七八九十两]+\s*天(?:游|行程)|'
+                           r'\bplan (?:my|a|the|our|\d)|\bitinerar|\b\d+[- ]days?\b[^.?!]{0,20}\b(?:trip|plan|itinerary)|\bday[- ]by[- ]day\b', re.I)
+
+# Topic classifier for the chip table: first match order is the order of the answers' usefulness, not alphabetical.
+_TOPIC_PATTERNS = (
+    ('entry', re.compile(r'签证|免签|入境|出境|过境|海关|护照|visa|passport|immigration|customs|entry (?:rule|require)|border', re.I)),
+    ('money', re.compile(r'汇率|换钱|换汇|兑换|人民币|现金|取款|\bATM\b|小费|预算|花费|多少钱|价格|费用|exchange rate|currency|\bcash\b|\bRMB\b|\bCNY\b|\btip(?:ping)?\b|budget|how much|\bcost', re.I)),
+    ('network', re.compile(r'手机卡|流量|\bSIM\b|\beSIM\b|WiFi|Wi-Fi|网络|上网|翻译|\bVPN\b|微信(?!支付)|谷歌|Google|漫游|roaming|internet|data plan|translat', re.I)),
+    ('stay', re.compile(r'酒店|住宿|民宿|旅馆|青旅|入住|退房|住哪|住在|哪个区域住|(?:which|where)[^?.]{0,30}\bstay\b|hotel|hostel|accommodat|check[- ]?in|check[- ]?out|where to stay|airbnb', re.I)),
+    ('food', re.compile(r'吃|餐|饭|菜|小吃|咖啡|早餐|美食|清真|素食|restaurant|eat\b|food|dish|breakfast|lunch|dinner|halal|vegetarian|street snack', re.I)),
+    ('route', re.compile(r'怎么去|怎么走|路线|地铁|公交|高铁|火车|机场|打车|交通|航班|换乘|metro|subway|bus\b|train|airport|route|how (?:do|can) i get (?:to|from)|get from|transfer', re.I)),
+    ('sight', re.compile(r'景点|景区|博物馆|故宫|长城|公园|寺|预约|门票|开放|参观|拍照|sight|museum|palace|wall\b|park\b|temple|ticket|attraction|visit|open(?:ing)? hours|forbidden city|great wall', re.I)),
+    ('trip', _PLAN_REQUEST),
+)
+
+# The order the topic chips are tried when the traveler's question has several topics, and the topic that fills
+# the gap when it has none (every normal answer gets chips, #1978).
+FALLBACK_TOPIC = 'trip'
+MIN_CHIPS = 2
+
+
+def chip_topics(question):
+    """The chip-table topics a question is about, in the table's priority order (payment and taxi included)."""
+    found = []
+    for name, pattern in _TOPIC_PATTERNS:
+        if pattern.search(question):
+            found.append(name)
+    return found
+
+
+def is_plan_request(question):
+    return _PLAN_REQUEST.search(question) is not None
+
+
+def _rows(group, locale):
+    index = 'zh' if locale == 'zh' else 'en'
+    return [row[index] for row in group]
+
+
+def _spread(rows, question, count, *, skip=()):
+    """`count` rows from `rows`, starting at a fixed point that depends on the question, so a topic does not
+    always show the same first rows but the same question always shows the same ones (testable)."""
+    if not rows:
+        return []
+    start = int.from_bytes(sha256(question.encode('utf-8', 'replace')).digest()[:4], 'big') % len(rows)
+    picked = []
+    for offset in range(len(rows)):
+        label = rows[(start + offset) % len(rows)]
+        if label not in skip and label not in picked:
+            picked.append(label)
+        if len(picked) == count:
+            break
+    return picked
+
+
+def chips_for(question, locale, *, missing=None, plan_answer=None):
+    """The chip labels for this answer, at most MAX_CHIPS, each checked by `chips`.
+
+    Order: (1) the answers to the one fact the answer still asks for (`missing` is a task field such as
+    'dates', mapped to a table group), at most two; (2) the original payment/taxi rows when the question
+    is about them; (3) "Save to my trips" after an answer that suggests a plan (`plan_answer`, default: the
+    question asks for one); (4) rows of the question's topics, then the fallback topic, so a normal answer
+    never has fewer than MIN_CHIPS when the table has them.
+    """
     index = 0 if locale == 'zh' else 1
+    table = lio_chip_table.TABLE
+    labels = []
+
+    def add(rows):
+        for label in rows:
+            if label not in labels and label != question.strip():
+                labels.append(label)
+
+    group = lio_chip_table.MISSING_TO_GROUP.get(missing)
+    if group is not None:
+        add(_rows(table['missing_info'][group], locale)[:2])
     for topic in topics(question):
         rows = CHIP_TABLE.get(topic)
         if rows:
-            return chips([row[index] for row in rows], locale)
-    return []
+            add([row[index] for row in rows])
+            break
+    if is_plan_request(question) if plan_answer is None else plan_answer:
+        add([SAVE_CHIP[index]])
+    for topic in (*chip_topics(question), FALLBACK_TOPIC):
+        if len(labels) >= MAX_CHIPS:
+            break
+        add(_spread(_rows(table['topics'][topic], locale), question, MAX_CHIPS - len(labels), skip=labels))
+    return chips(labels, locale)
 
 
 def label_sha256(label):
