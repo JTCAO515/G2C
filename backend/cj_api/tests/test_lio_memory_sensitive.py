@@ -1,7 +1,9 @@
 """Health and religion never become a memory candidate (#2000, M-2). Candidate discovery only: no wire, no model."""
 import unittest
 from types import SimpleNamespace
+from unittest import mock
 
+from cj_api import lio_memory_preferences
 from cj_api.lio_memory_preferences import (PREFERENCE_SLOTS, allows_pilot_preference_write, explicit_pilot_preference,
                                            explicit_pilot_preferences, sensitive, supported_preference)
 
@@ -73,6 +75,20 @@ class Sensitive(unittest.TestCase):
         self.assertFalse(supported_preference(bad_quote, 'I prefer slow trips'))
         bad_text = entry('travel.pace', 'I prefer slow trips because of my asthma', quote='I prefer slow trips')
         self.assertFalse(supported_preference(bad_text, 'I prefer slow trips'))
+
+    def test_the_gate_holds_even_if_a_word_form_were_ever_widened(self):
+        # Today's closed word forms cannot say anything sensitive, so the gate is a second wall. This test widens a
+        # form on purpose (review of #2027: a deleted guard must fail a test) and requires zero candidates anyway.
+        widened = dict(lio_memory_preferences._FORMS)
+        widened['diet.taste'] = lio_memory_preferences._forms(r'halal food|kosher food', r'清真食物|洁食')
+        with mock.patch.dict(lio_memory_preferences._FORMS, widened, clear=True):
+            for text in ('I like halal food', 'I like kosher food', '我喜欢清真食物', 'Remember that I like halal food'):
+                with self.subTest(text=text):
+                    self.assertIsNotNone(lio_memory_preferences._value(lio_memory_preferences._FORMS['diet.taste'], text))
+                    self.assertIsNone(explicit_pilot_preference(text, {'diet.taste'}))
+                    self.assertIsNone(explicit_pilot_preferences(text, {'diet.taste'}, max_entries=4))
+                    self.assertFalse(supported_preference(entry('diet.taste', text), text))
+                    self.assertFalse(allows_pilot_preference_write(SimpleNamespace(slot='diet.taste', kind='preference', text=text)))
 
     def test_ordinary_preferences_still_produce_candidates(self):
         for text, slot in FINE:
