@@ -34,7 +34,7 @@ struct LioAnswerCardsWireTests {
     // MARK: Reading
 
     @Test func threeCardsAreReadInTheContractsOrder() throws {
-        let rich = try #require(read(cards("[\(currency),\(transport),\(taxi)]")))
+        let rich = try #require(try read(cards("[\(currency),\(transport),\(taxi)]")))
         #expect(rich.cards.map(\.kind) == [.taxi, .transport, .currency], "taxi, metro, transport, currency")
         #expect(rich.cards[0].parameters == ["destination": "故宫博物院", "lat": "39.918058", "lng": "116.397026"])
         #expect(rich.cards[1].detail == .transport(from: .init(id: "beijing", zh: "北京", en: "Beijing"),
@@ -46,7 +46,7 @@ struct LioAnswerCardsWireTests {
 
     @Test func aMetroCardKeepsTheCityAndIgnoresARouteThisAppDoesNotReadYet() throws {
         let withRoute = #"{"type":"metro","label":"Metro map","open":{"tool":"metro-guide","parameters":{}},"data":{"city":{"id":"beijing","zh":"北京","en":"Beijing"},"route":{"from":{"zh":"天安门西"},"to":{"zh":"王府井"},"lines":[{"zh":"1号线"}]}}}"#
-        let card = try #require(read(cards("[\(withRoute)]"))?.cards.first)
+        let card = try #require(try read(cards("[\(withRoute)]"))?.cards.first)
         #expect(card.kind == .metro && card.detail == .metro(city: .init(id: "beijing", zh: "北京", en: "Beijing")))
     }
 
@@ -86,11 +86,11 @@ struct LioAnswerCardsWireTests {
         let bad = #"{"type":"hotel","label":"x","open":{"tool":"hotels","parameters":{}}}"#
         let place = #"{"type":"place","start":4,"end":6,"place_id":"pl_bj_gugong"}"#
         let mixed = #"{"version":"LIO-answer-rich.1","entities":[\#(place)],"cards":[\#(bad)]}"#
-        let rich = try #require(read(mixed))
+        let rich = try #require(try read(mixed))
         #expect(rich.entities.count == 1 && rich.cards.isEmpty, "cards that fail leave the entities alone")
         let many = (0..<21).map { #"{"type":"place","start":\#($0 * 2),"end":\#($0 * 2 + 2),"place_id":"pl_bj_p\#($0)"}"# }.joined(separator: ",")
         let both = #"{"version":"LIO-answer-rich.1","entities":[\#(many)],"cards":[\#(taxi)]}"#
-        let other = try #require(read(both, answer: String(repeating: "甲乙", count: 30)))
+        let other = try #require(try read(both, answer: String(repeating: "甲乙", count: 30)))
         #expect(other.entities.isEmpty && other.cards.map(\.kind) == [.taxi], "entities over the limit leave the cards alone")
         #expect(try read(cards("[\(bad)]")) == nil, "nothing good in either part: no rich")
     }
@@ -147,7 +147,7 @@ struct LioAnswerCardsWireTests {
         var checked = 0
         for example in all.valid where onlyCards(example) {
             let sent = (example["rich"] as? [String: Any])?["cards"] as? [[String: Any]] ?? []
-            let rich = try #require(decode(example, all.answers), "\(example["name"] ?? "")")
+            let rich = try #require(try decode(example, all.answers), "\(example["name"] ?? "")")
             #expect(rich.cards.map(\.kind.rawValue) == sent.compactMap { $0["type"] as? String }, "\(example["name"] ?? "")")
             checked += 1
         }
@@ -181,7 +181,7 @@ struct LioAnswerCardsWireTests {
     @Test func theOutsideChinaExampleKeepsTheTaxiCardWithoutADestination() throws {
         let all = try examples()
         let example = try #require(all.invalid.first { ($0["name"] as? String) == "taxi destination outside China" })
-        let taxi = try #require(decode(example, all.answers)?.cards.first)
+        let taxi = try #require(try decode(example, all.answers)?.cards.first)
         #expect(taxi.kind == .taxi && taxi.parameters.isEmpty)
     }
 

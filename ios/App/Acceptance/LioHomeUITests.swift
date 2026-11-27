@@ -2723,6 +2723,46 @@ import CryptoKit
         }
     }
 
+    /// #1993: with `G2CAnswerRichEnabled` (Debug: `--lio-answer-rich-preview`, a fixture that sends nothing) the server's
+    /// tool cards sit under the answer. A card whose tool this build shows opens it; one whose tool it does not show
+    /// says "not in this version" and is not a button.
+    func testToolCardsOpenTheirToolOrSayNotInThisVersion() throws {
+        continueAfterFailure = false
+        for language in ["en", "zh-Hans"] {
+            let en = language == "en"
+            let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
+            app.launchArguments = ["--lio-preview", "-cj.ui.language.v1", language, "--lio-tools-preview",
+                                   "--lio-answer-layout-preview", "--lio-answer-rich-preview"]
+            app.launch()
+            defer { app.terminate() }
+            XCTAssertTrue(app.buttons["lio.menu"].waitForExistence(timeout: 12))
+            app.buttons["lio.example.0"].tap()
+            let composer = app.descendants(matching: .any).matching(identifier: "lio.composer").firstMatch
+            let starter = composer.value as? String ?? ""
+            composer.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: starter.count)
+                              + (en ? "Tell me about the Palace Museum" : "介绍一下故宫"))
+            app.buttons["lio.send"].tap()
+            let metro = app.buttons["lio.answer.card.metro"]
+            XCTAssertTrue(metro.waitForExistence(timeout: 14), app.debugDescription)
+            XCTAssertTrue(metro.label.contains(en ? "Metro map" : "看地铁线路") && metro.label.contains(en ? "Beijing" : "北京"), metro.label)
+            XCTAssertGreaterThanOrEqual(metro.frame.height, 44)
+            let notHere = en ? "This tool isn't in this version yet." : "这个版本还没有这个工具。"
+            for kind in ["taxi", "currency"] {
+                let card = app.descendants(matching: .any)["lio.answer.card.\(kind)"]
+                XCTAssertTrue(card.exists, kind)
+                XCTAssertTrue(card.label.contains(notHere), "\(kind): \(card.label)")
+                XCTAssertFalse(app.buttons["lio.answer.card.\(kind)"].exists, "\(kind) is not a button here")
+            }
+            let currency = app.descendants(matching: .any)["lio.answer.card.currency"]
+            XCTAssertTrue(currency.label.contains(en ? "Reference rate" : "参考汇率") && currency.label.contains("2026-11-26"), currency.label)
+            let shot = XCTAttachment(screenshot: app.screenshot())
+            shot.name = "tool-cards-\(language)"; shot.lifetime = .keepAlways; add(shot)
+            metro.tap()
+            let tools = app.tabBars.buttons[en ? "Tools" : "工具"]
+            XCTAssertTrue(tools.waitForExistence(timeout: 6) && tools.isSelected, "the card opened its tool")
+        }
+    }
+
     /// #1753 (W4-9): with `G2CAnswerFeedbackEnabled` (Debug: `--lio-answer-feedback-preview`, a fixture that sends
     /// nothing) a finished answer offers "Not helpful", then details. Independent of the AI line; without the flag,
     /// nothing changes.
