@@ -20,6 +20,7 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from cryptography.hazmat.primitives.serialization import Encoding,NoEncryption,PrivateFormat,PublicFormat
 from fastapi.testclient import TestClient
 from cj_api.local_app import ISSUER,LocalDatabase,create_local_app,scope_for
+from cj_api.supabase_test_database import discard_session
 from cj_api.local_worker_context import checker_for
 from cj_agent.provider import FakeProvider, ProviderFailed, ProviderUnknown
 from cj_api.local_run_context import load_run_context
@@ -415,6 +416,23 @@ def check_schema53_resume(control,backups,operator,schema_root,*,target=53):
     print(f'PASS original schema{target} rollback/export/latest/release/marker interruptions reconciled without replay')
 
 
+def check_schema59_in_public(operator):
+    """0056-0058 are frozen unqualified (applied as-is in Hong Kong); under the production operator
+    session the Demo upgrade's migration search_path must still put every 0056-0059 object in public."""
+    with operator() as (db,_):
+        assert db.execute('SHOW search_path').fetchone()[0]=='pg_catalog, public, pg_temp'
+        for name in demo_schema.ROLLBACK59_TABLES:
+            assert db.execute("SELECT n.nspname FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace "
+                              "WHERE c.relname=%s",(name,)).fetchall()==[('public',)],name
+        assert db.execute("SELECT count(*) FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace "
+                          "WHERE n.nspname='pg_catalog' AND (c.relname LIKE 'cj_%' OR c.relname LIKE 'service_%')").fetchone()==(0,)
+        assert db.execute("SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace "
+                          "WHERE n.nspname='pg_catalog' AND p.proname LIKE 'cj_%'").fetchone()==(0,)
+        assert db.execute("SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace "
+                          "WHERE n.nspname='public' AND p.proname LIKE 'cj_service_%'").fetchone()[0]>0
+    print('PASS schema59 objects from frozen unqualified 0056-0058 land in public under the HK operator session')
+
+
 def check_schema59_rollback(operator):
     """Runbook rollback 59 -> 55: the read-only emptiness check, then the committed down chain."""
     with operator() as (db,_):
@@ -479,6 +497,11 @@ def verify_upgrade(root, blueprint, target):
         @contextmanager
         def operator():
             with psycopg.connect(**config,autocommit=True) as db:
+                # The HK operator session (prepare_hk_socket_session) resets to the production search_path
+                # pg_catalog, public, pg_temp: an unqualified CREATE would land in pg_catalog and fail there
+                # (first59 apply, 2026-11-27). The local cluster default (search_path=public) hid it.
+                discard_session(db)
+                assert db.execute('SHOW search_path').fetchone()[0]=='pg_catalog, public, pg_temp'
                 yield db,config
 
         with patch.dict(os.environ,env),patch.object(checkpoint,'operator',operator),                patch.object(staging,'PG17',pg_suites.bindir()):
@@ -577,6 +600,7 @@ def verify_upgrade(root, blueprint, target):
             else:
                 raise AssertionError('schema upgrade accepted a second application')
             if target==59:
+                check_schema59_in_public(operator)
                 check_schema59_rollback(operator)
             if target>=60:
                 check_single_rollback(operator,target)
