@@ -85,27 +85,9 @@ struct LioStayView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: LioTheme.Spacing.md) {
-                if catalog.isDevelopment { LioDevelopmentDataBanner(language: language) }
-                if catalog.hotels.isEmpty {
-                    empty(language.text("We’re still collecting hotels for foreign travellers. Nothing to show yet.",
-                                        "适合外国游客的酒店还在收录中，暂时没有可看的。"), id: "lio.stay.library-empty")
-                } else {
-                    filters
-                    if results.isEmpty {
-                        VStack(spacing: LioTheme.Spacing.sm) {
-                            empty(language.text("No hotels match your filters.", "没找到符合条件的酒店。"), id: "lio.stay.empty")
-                            Button(language.text("Change filters", "调整筛选")) { filter = LioStayFilter() }
-                                .buttonStyle(LioSecondaryButtonStyle())
-                                .accessibilityIdentifier("lio.stay.reset")
-                        }
-                    } else {
-                        ForEach(results) { entry in card(entry) }
-                    }
-                }
-            }
-            .padding(LioTheme.Spacing.md)
-            .frame(maxWidth: .infinity, alignment: .leading)
+            VStack(alignment: .leading, spacing: LioTheme.Spacing.md) { content }
+                .padding(LioTheme.Spacing.md)
+                .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(LioTheme.paper)
         .foregroundStyle(LioTheme.ink)
@@ -124,10 +106,45 @@ struct LioStayView: View {
         .sheet(item: $opened) { entry in
             NavigationStack {
                 LioPlacePage(placeID: entry.id, language: language, repository: catalog.repository,
-                             onAddToTrip: addToTrip.map { add in { place in
-                                 if add(place) { showAdded(place.id) }
-                             } })
+                             onAddToTrip: placePageAction)
             }
+        }
+    }
+
+    @ViewBuilder private var content: some View {
+        if catalog.isDevelopment { LioDevelopmentDataBanner(language: language) }
+        if catalog.hotels.isEmpty {
+            empty(libraryEmptyText, id: "lio.stay.library-empty")
+        } else {
+            filters
+            resultList
+        }
+    }
+
+    private var libraryEmptyText: String {
+        language.text("We’re still collecting hotels for foreign travellers. Nothing to show yet.",
+                      "适合外国游客的酒店还在收录中，暂时没有可看的。")
+    }
+
+    @ViewBuilder private var resultList: some View {
+        let shown = results
+        if shown.isEmpty {
+            VStack(spacing: LioTheme.Spacing.sm) {
+                empty(language.text("No hotels match your filters.", "没找到符合条件的酒店。"), id: "lio.stay.empty")
+                Button(language.text("Change filters", "调整筛选")) { filter = LioStayFilter() }
+                    .buttonStyle(LioSecondaryButtonStyle())
+                    .accessibilityIdentifier("lio.stay.reset")
+            }
+        } else {
+            ForEach(shown) { entry in card(entry) }
+        }
+    }
+
+    /// "Add to trip" on the place page: the host's action, then the notice here.
+    private var placePageAction: (@MainActor (LioPlace) -> Void)? {
+        guard let add = addToTrip else { return nil }
+        return { place in
+            if add(place) { showAdded(place.id) }
         }
     }
 
@@ -135,41 +152,59 @@ struct LioStayView: View {
 
     private var filters: some View {
         VStack(alignment: .leading, spacing: 4) {
-            chips(id: "city") {
+            cityChips
+            priceChips
+            if LioStayFilter.offersStars(in: catalog) { starChips }
+        }
+    }
+
+    private var cityChips: some View {
+        let cities: [LioStayFilter.City] = LioStayFilter.cities
+        return ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: LioTheme.Spacing.xs) {
                 LioFilterChip(title: language.text("All cities", "全部城市"), selected: filter.city == nil,
                               identifier: "lio.stay.city.all") { filter.city = nil }
-                ForEach(LioStayFilter.cities, id: \.id) { city in
+                ForEach(cities) { city in
                     LioFilterChip(title: language.text(city.en, city.zh), selected: filter.city == city.id,
                                   identifier: "lio.stay.city." + city.id) { filter.city = city.id }
                 }
             }
-            chips(id: "price") {
+        }
+        .accessibilityIdentifier("lio.stay.filters.city")
+    }
+
+    private var priceChips: some View {
+        let bands: [LioPlaceCatalog.PriceBand] = LioPlaceCatalog.PriceBand.allCases
+        return ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: LioTheme.Spacing.xs) {
                 LioFilterChip(title: language.text("Any price", "不限价位"), selected: filter.band == nil,
                               identifier: "lio.stay.band.any") { filter.band = nil }
-                ForEach(LioPlaceCatalog.PriceBand.allCases, id: \.self) { band in
+                ForEach(bands, id: \.rawValue) { band in
                     LioFilterChip(title: band.title(language), selected: filter.band == band,
                                   identifier: "lio.stay.band." + band.rawValue) { filter.band = band }
                 }
             }
-            if LioStayFilter.offersStars(in: catalog) {
-                chips(id: "star") {
-                    LioFilterChip(title: language.text("Any rating", "不限星级"), selected: filter.minimumStar == nil,
-                                  identifier: "lio.stay.star.any") { filter.minimumStar = nil }
-                    ForEach([3, 4, 5], id: \.self) { star in
-                        LioFilterChip(title: language.text("\(star)★ and up", "\(star) 星及以上"),
-                                      selected: filter.minimumStar == star,
-                                      identifier: "lio.stay.star.\(star)") { filter.minimumStar = star }
-                    }
+        }
+        .accessibilityIdentifier("lio.stay.filters.price")
+    }
+
+    private var starChips: some View {
+        let stars: [Int] = [3, 4, 5]
+        return ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: LioTheme.Spacing.xs) {
+                LioFilterChip(title: language.text("Any rating", "不限星级"), selected: filter.minimumStar == nil,
+                              identifier: "lio.stay.star.any") { filter.minimumStar = nil }
+                ForEach(stars, id: \.self) { star in
+                    LioFilterChip(title: starTitle(star), selected: filter.minimumStar == star,
+                                  identifier: "lio.stay.star.\(star)") { filter.minimumStar = star }
                 }
             }
         }
+        .accessibilityIdentifier("lio.stay.filters.star")
     }
 
-    private func chips<Content: View>(id: String, @ViewBuilder _ content: () -> Content) -> some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: LioTheme.Spacing.xs) { content() }
-        }
-        .accessibilityIdentifier("lio.stay.filters." + id)
+    private func starTitle(_ star: Int) -> String {
+        language == .english ? "\(star)★ and up" : "\(star) 星及以上"
     }
 
     private func empty(_ text: String, id: String) -> some View {
