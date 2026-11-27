@@ -148,6 +148,8 @@ def main():
         '            LioChatHistoryFixture(shell: shell)\n'
         '        } else if ProcessInfo.processInfo.arguments.contains("--lio-journey-acceptance") {\n'
         '            LioJourneyFixture(shell: shell)\n'
+        '        } else if ProcessInfo.processInfo.arguments.contains("--lio-explore-acceptance") {\n'
+        '            LioExploreFixture(chinese: UserDefaults.standard.string(forKey: "cj.ui.language.v1") == "zh-Hans", dark: UserDefaults.standard.string(forKey: "lio.ui.appearance.v1") == "dark", emptyLibrary: ProcessInfo.processInfo.arguments.contains("--lio-explore-empty-library"))\n'
         '        } else if ProcessInfo.processInfo.arguments.contains("--lio-place-tools-acceptance") {\n'
         '            LioPlaceToolsFixture(chinese: UserDefaults.standard.string(forKey: "cj.ui.language.v1") == "zh-Hans", dark: UserDefaults.standard.string(forKey: "lio.ui.appearance.v1") == "dark")\n'
         '        } else if ProcessInfo.processInfo.arguments.contains("--lio-currency-acceptance") {\n'
