@@ -130,7 +130,8 @@ def test_build_context_uses_committed_allowed_blobs_only(tmp_path):
                  'eval/lio_simulated_user/local_controls.py',
                  'eval/lio_simulated_user/tests/test_core.py',
                  'eval/lio_simulated_user/private-profile-notes.json',
-                 'eval/lio_simulated_user/profiles.backup.json'):
+                 'eval/lio_simulated_user/profiles.backup.json',
+                 'deploy/release-tools/hk-operator.py','deploy/release-tools/README.md'):
         path=repo/name;path.parent.mkdir(parents=True,exist_ok=True);path.write_text(name)
     subprocess.run(['git','add','.'],cwd=repo,check=True)
     subprocess.run(['git','-c','user.name=Synthetic','-c','user.email=synthetic@example.invalid','commit','-qm','fixture'],cwd=repo,check=True)
