@@ -55,7 +55,14 @@ struct LioToolsView: View {
 
     var body: some View {
         let context = context
-        let visible = LioToolCatalog.visible(context.availability())
+        let availability = context.availability()
+        // Cards are the nine tools of #1980; a route also opens a tool that has no card of its own.
+        let visible = LioToolCatalog.visible(availability)
+        var cards = LioToolCatalog.cards(availability)
+        #if DEBUG
+        // Acceptance runs that open a tool the nine cards no longer show (Local Support, Payment Guide) ask for them all.
+        if context.arguments.contains("--lio-tools-all-cards") { cards = visible }
+        #endif
         NavigationStack(path: path) {
             ScrollView {
                 VStack(alignment: .leading, spacing: LioTheme.Spacing.md) {
@@ -68,7 +75,7 @@ struct LioToolsView: View {
                     // and the Dynamic Type audit then reported their text as not scaling. Cards in a row share its
                     // height.
                     Grid(horizontalSpacing: LioTheme.Spacing.sm, verticalSpacing: LioTheme.Spacing.sm) {
-                        ForEach(rows(visible), id: \.self) { row in
+                        ForEach(rows(cards), id: \.self) { row in
                             GridRow(alignment: .top) {
                                 ForEach(row, id: \.self) { tool in card(tool) }
                                 if row.count < columnCount {
