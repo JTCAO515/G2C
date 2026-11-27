@@ -1,6 +1,5 @@
 """Opt-in integration tests which create their own socket-only PostgreSQL cluster."""
 
-import base64
 import os
 import re
 import socket
@@ -25,7 +24,7 @@ from jt.workbench.app import HEALTH_HOST, ProxyEntry, SESSION_COOKIE, create_app
 from jt.workbench.auth import SESSION_IDLE, AccessDenied, AccountAction, Auth, AuthenticationRequired, InvalidAccount
 from jt.workbench.postgres import PostgresStore, migrate
 from jt.workbench.queue import Review
-from jt.workbench.security import new_token, token_digest, totp_at_step
+from jt.workbench.security import PasswordHash, new_token, token_digest
 from jt.workbench.store import (
     Account, AuditAction, AuditEvent, AuditResult, CaseAuditDetail, MemoryStore, OperationsAuditDetail, Role, Session,
 )
@@ -35,8 +34,6 @@ ORIGIN = "https://127.0.0.1:8443"
 ADMIN = "synthetic-admin"
 STAFF = "synthetic-reviewer"
 PASSWORD = "synthetic local database test password"
-SEED = bytes(range(20))
-STAFF_SEED = bytes(range(20, 40))
 NOW = 1_734_000_030
 
 
@@ -84,10 +81,6 @@ def database(cluster):
             db.execute("DROP DATABASE jt_workbench")
 
 
-def seed_text(seed):
-    return base64.b32encode(seed).decode()
-
-
 def account_auth(store, at=NOW):
     return Auth(store, clock=lambda: at, monotonic=lambda: at)
 
@@ -97,9 +90,7 @@ def prepare(database):
     migrate(owner)
     store = PostgresStore(runtime)
     store.check_ready()
-    account_auth(store, NOW - 30).bootstrap_admin(
-        ADMIN, PASSWORD, seed_text(SEED), totp_at_step(SEED, (NOW - 30) // 30),
-    )
+    account_auth(store, NOW - 30).bootstrap_admin(ADMIN, PASSWORD)
     return store, runtime
 
 
@@ -135,14 +126,15 @@ def test_migration_empty_roundtrip_and_runtime_grants(database, cluster):
 
 
 def worker_login(dsn):
-    return account_auth(PostgresStore(dsn)).login(ADMIN, PASSWORD, totp_at_step(SEED, NOW // 30))
+    return account_auth(PostgresStore(dsn)).login(ADMIN, PASSWORD)
 
 
-def test_workers_share_totp_replay_sessions_and_audit(database):
+def test_workers_share_sessions_and_audit(database):
     store, runtime = prepare(database)
     with ProcessPoolExecutor(max_workers=2, mp_context=get_context("spawn")) as pool:
         tokens = tuple(pool.map(worker_login, (runtime, runtime)))
-    [token] = [value for value in tokens if value is not None]
+    token, other_token = tokens
+    assert token and other_token and token != other_token
     another = account_auth(PostgresStore(runtime))
     assert another.require_session(token).username == ADMIN
     csrf = another.require_session(token).csrf
@@ -153,7 +145,7 @@ def test_workers_share_totp_replay_sessions_and_audit(database):
         account_auth(store).require_session(token)
     with store.locked():
         assert [event.action for event in store.audit_events()] == [
-            AuditAction.ACCOUNT_CREATED, AuditAction.LOGIN, AuditAction.LOGIN_FAILED,
+            AuditAction.ACCOUNT_CREATED, AuditAction.LOGIN, AuditAction.LOGIN,
             AuditAction.ACCOUNT_CREATED, AuditAction.LOGOUT,
         ]
         assert store.audit_events()[-2].result == AuditResult.DENIED
@@ -162,8 +154,8 @@ def test_workers_share_totp_replay_sessions_and_audit(database):
 def test_limits_and_lockouts_are_shared(database):
     store, runtime = prepare(database)
     for i in range(5):
-        assert account_auth(PostgresStore(runtime), NOW + i).login(ADMIN, "bad", "123456") is None
-    assert account_auth(store, NOW + 5).login(ADMIN, PASSWORD, totp_at_step(SEED, NOW // 30)) is None
+        assert account_auth(PostgresStore(runtime), NOW + i).login(ADMIN, "bad password value") is None
+    assert account_auth(store, NOW + 5).login(ADMIN, PASSWORD) is None
     with store.locked():
         assert store.failures(ADMIN, NOW + 5).count == 5
 
@@ -190,11 +182,9 @@ def test_seed_review_export_and_audit_survive_restart(database):
     with pytest.raises(ValueError, match="conflicting signal"):
         run(other.publish(original.model_copy(update={"redacted_fragments": ("different",)})))
     auth = account_auth(store)
-    admin_token = auth.login(ADMIN, PASSWORD, totp_at_step(SEED, NOW // 30))
-    setup = auth.manage_account(admin_token, auth.require_session(admin_token).csrf,
-                                AccountAction.CREATE, STAFF, "reviewer")
-    assert account_auth(other).bind_account(STAFF, setup, PASSWORD, seed_text(STAFF_SEED),
-                                            totp_at_step(STAFF_SEED, NOW // 30))
+    admin_token = auth.login(ADMIN, PASSWORD)
+    auth.manage_account(admin_token, auth.require_session(admin_token).csrf,
+                        AccountAction.CREATE, STAFF, "reviewer", PASSWORD)
     staff_auth = account_auth(PostgresStore(runtime), NOW + 30)
     app = create_app(staff_auth, port=8443, queue=staff_auth.store)
     reference = other.snapshot()[0].reference
@@ -202,9 +192,7 @@ def test_seed_review_export_and_audit_survive_restart(database):
     with TestClient(app, base_url=ORIGIN, follow_redirects=False) as browser:
         response = browser.get("/login")
         csrf = re.search(r'name="csrf" value="([^"]+)"', response.text).group(1)
-        credentials = {
-            "username": STAFF, "password": PASSWORD, "code": totp_at_step(STAFF_SEED, (NOW + 30) // 30), "csrf": csrf,
-        }
+        credentials = {"username": STAFF, "password": PASSWORD, "csrf": csrf}
         assert browser.post("/login", headers={"Origin": ORIGIN},
                             data={**credentials, "username": STAFF + "\0"}).status_code == 400
         login = browser.post("/login", headers={"Origin": ORIGIN}, data=credentials)
@@ -228,7 +216,7 @@ def test_seed_review_export_and_audit_survive_restart(database):
         assert any(event.action == AuditAction.ANNOTATE and event.signal_reference == reference
                    for event in reopened.audit_events())
     with pytest.raises(AccessDenied):
-        account_auth(reopened).bootstrap_admin(ADMIN, PASSWORD, seed_text(SEED), "000000")
+        account_auth(reopened).bootstrap_admin("another-admin", PASSWORD)
 
 
 def test_review_and_audit_rollback_together(database):
@@ -247,7 +235,7 @@ def test_review_and_audit_rollback_together(database):
 
 def test_expired_session_cannot_return_after_clock_moves_back(database):
     store, runtime = prepare(database)
-    token = account_auth(store).login(ADMIN, PASSWORD, totp_at_step(SEED, NOW // 30))
+    token = account_auth(store).login(ADMIN, PASSWORD)
     another = PostgresStore(runtime)
     with pytest.raises(AuthenticationRequired):
         account_auth(another, NOW + SESSION_IDLE).require_session(token)
@@ -276,10 +264,9 @@ def test_production_commands_and_socket_boundary(database, monkeypatch):
     production.main()
 
     monkeypatch.setenv(production.DATABASE_VARIABLE, runtime)
-    monkeypatch.setattr(sys, "argv", ["production", "bootstrap-admin"])
+    monkeypatch.setattr(sys, "argv", ["production", "bootstrap-admin", "--username", ADMIN])
     monkeypatch.setattr(local_cli.sys.stdin, "isatty", lambda: True)
-    monkeypatch.setattr("builtins.input", lambda _prompt: ADMIN)
-    inputs = iter((PASSWORD, seed_text(SEED), totp_at_step(SEED, int(time.time()) // 30)))
+    inputs = iter((PASSWORD, PASSWORD))
     monkeypatch.setattr(local_cli, "getpass", lambda _prompt: next(inputs))
     production.main()
     with pytest.raises(SystemExit) as duplicate:
@@ -413,50 +400,91 @@ def test_case_audit_migrates_from_v1_and_remains_append_only(database):
     reopened.check_ready()
 
 
-def test_demo_bootstrap_command_binds_web_and_operations_audit_persists(database, monkeypatch, capsys):
+def test_upgrade_retires_half_finished_accounts_and_first_admin_command(database, monkeypatch, capsys):
     owner, runtime = database
-    # Model an upgrade from the case workbench that already had durable records.
+    # Model an upgrade from the TOTP workbench (schema 3) that already had durable records.
     migrations = Path(__file__).resolve().parents[1] / "migrations"
     with psycopg.connect(owner) as db:
-        db.execute((migrations / "001_up.sql").read_text())
-        db.execute((migrations / "002_up.sql").read_text())
+        for version in (1, 2, 3):
+            db.execute((migrations / f"{version:03}_up.sql").read_text())
+        legacy = PasswordHash.make(PASSWORD)
+        db.execute("""INSERT INTO jt_workbench.accounts (username, role, last_totp_step, setup_digest, setup_expires, enabled)
+                      VALUES ('jtadmin', 'admin', -1, %s, 99, true), ('unused-draft', 'reviewer', -1, NULL, NULL, true)""",
+                   (bytes(32),))
+        db.execute("""INSERT INTO jt_workbench.accounts (username, role, password_salt, password_digest, totp_seed,
+                          last_totp_step, enabled) VALUES ('old-reviewer', 'reviewer', %s, %s, %s, 7, true)""",
+                   (legacy.salt, legacy.digest, bytes(20)))
+        db.execute("INSERT INTO jt_workbench.audit (timestamp, action, result, staff_target) "
+                   "VALUES (1, 'account_created', 'success', 'jtadmin')")
+    migrate(owner)
     migrate(owner)
     store = PostgresStore(runtime)
     store.check_ready()
+    with store.locked():
+        accounts = {account.username: account for account in store.accounts()}
+        assert set(accounts) == {"jtadmin", "old-reviewer"}
+        assert not accounts["jtadmin"].enabled and accounts["jtadmin"].password is None
+        assert accounts["old-reviewer"].enabled
+    with psycopg.connect(owner) as db:
+        assert db.execute("""SELECT count(*) FROM jt_workbench.accounts
+                             WHERE totp_seed IS NOT NULL OR setup_digest IS NOT NULL OR last_totp_step <> -1""").fetchone() == (0,)
+    assert account_auth(store).login("old-reviewer", PASSWORD)
+    assert account_auth(store).login("jtadmin", PASSWORD) is None
+
     monkeypatch.setenv(production.DATABASE_VARIABLE, runtime)
-    monkeypatch.setattr(sys, "argv", ["production", "bootstrap-admin-code", "--username", ADMIN])
-    monkeypatch.setattr(production.sys.stdout, "isatty", lambda: False)
+    monkeypatch.setattr(sys, "argv", ["production", "bootstrap-admin", "--username", "jtcao01"])
+    monkeypatch.setattr(local_cli.sys.stdin, "isatty", lambda: False)
     with pytest.raises(SystemExit) as non_interactive:
         production.main()
     assert non_interactive.value.code == 2
     with store.locked():
-        assert store.accounts() == ()
-    monkeypatch.setattr(production.sys.stdout, "isatty", lambda: True)
-    production.main()
-    synthetic_setup_code = capsys.readouterr().out.splitlines()[-1]
-    auth = Auth(store, clock=store.clock, monotonic=store.clock)
-    with TestClient(create_app(auth), base_url=ORIGIN, follow_redirects=False) as browser:
-        setup = browser.get("/setup")
-        nonce = re.search(r'name="csrf" value="([^"]+)"', setup.text).group(1)
-        response = browser.post("/setup", headers={"Origin": ORIGIN}, data={
-            "username": ADMIN, "password": PASSWORD, "seed": seed_text(SEED),
-            "setup_code": synthetic_setup_code, "csrf": nonce,
-            "code": totp_at_step(SEED, int(time.time()) // 30),
-        })
-        assert "设置完成" in response.text
-        assert PASSWORD not in response.text and synthetic_setup_code not in response.text
-    with pytest.raises(SystemExit) as already_bound:
+        assert not any(account.username == "jtcao01" for account in store.accounts())
+    monkeypatch.setattr(local_cli.sys.stdin, "isatty", lambda: True)
+    inputs = iter(("a different long password", "typo in the confirmation"))
+    monkeypatch.setattr(local_cli, "getpass", lambda _prompt: next(inputs))
+    with pytest.raises(SystemExit) as mismatch:
         production.main()
-    assert already_bound.value.code == 1
-    assert synthetic_setup_code not in capsys.readouterr().out
+    assert mismatch.value.code == 2
+    inputs = iter(("a first administrator password", "a first administrator password"))
+    production.main()
+    output = capsys.readouterr()
+    assert "jtcao01" in output.out and "first administrator password" not in output.out + output.err
+    auth = Auth(store, clock=store.clock, monotonic=store.clock)
+    assert auth.login("jtcao01", "a first administrator password")
+    inputs = iter(("a first administrator password", "a first administrator password"))
+    with pytest.raises(SystemExit) as already_configured:
+        production.main()
+    assert already_configured.value.code == 2
 
     detail = OperationsAuditDetail("request:accepted", "sr_demo_01")
     with store.locked():
-        store.append_audit(AuditEvent(store.clock(), AuditAction.DECIDE, ADMIN, operations_detail=detail))
+        store.append_audit(AuditEvent(store.clock(), AuditAction.DECIDE, "jtcao01", operations_detail=detail))
     reopened = PostgresStore(runtime)
     with reopened.locked():
         assert reopened.audit_events()[-1].operations_detail == detail
     with psycopg.connect(runtime, autocommit=True) as db:
         assert db.execute("SELECT version FROM jt_workbench.case_audit_version").fetchall() == [(2,)]
+        assert db.execute("SELECT version FROM jt_workbench.password_auth_version").fetchall() == [(4,)]
         with pytest.raises(psycopg.errors.InsufficientPrivilege):
             db.execute("UPDATE jt_workbench.audit SET operations_action = 'request:completed'")
+
+
+def test_password_auth_migration_rolls_back_one_step_and_reapplies(database):
+    store, runtime = prepare(database)
+    owner, _ = database
+    with store.locked():
+        store.append_audit(AuditEvent(NOW, AuditAction.PASSWORD_RESET, ADMIN, staff_target=ADMIN))
+    with pytest.raises(psycopg.errors.RaiseException, match="narrow"):
+        migrate(owner, down=True, steps=1)
+    PostgresStore(runtime).check_ready()
+    with psycopg.connect(owner, autocommit=True) as db:
+        db.execute("DELETE FROM jt_workbench.audit WHERE action = 'password_reset'")
+    migrate(owner, down=True, steps=1)
+    with pytest.raises(RuntimeError, match="schema version"):
+        PostgresStore(runtime).check_ready()
+    with psycopg.connect(runtime, autocommit=True) as db:
+        with pytest.raises(psycopg.errors.CheckViolation):
+            db.execute("INSERT INTO jt_workbench.audit (timestamp, action, result) VALUES (0, 'password_reset', 'success')")
+    migrate(owner)
+    PostgresStore(runtime).check_ready()
+    assert account_auth(store).login(ADMIN, PASSWORD)
