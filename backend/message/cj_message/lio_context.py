@@ -357,7 +357,7 @@ _MEMORY_CLAIM_ZH = re.compile(r'(?:我(?:已经|已)?(?:为你)?(?:记住了|记
 # answer does not have. The prompt no longer asks for it; this drops the sentence if a model still writes it.
 _SAVE_BUTTON_ZH = re.compile(r'(?:点(?:击|一下|按)?|按(?:下)?|轻点)\s*[「『"“\'‘]?\s*(?:记住|保存|Remember)\s*[」』"”\'’]?[^。！？\n]{0,24}(?:保存|存到|存入|加入|行程)'
                              r'|(?:保存|存到|存入|加入)[^。！？\n]{0,12}(?:点(?:击|一下)?|按)\s*[「『"“\'‘]?\s*(?:记住|Remember)')
-_SAVE_BUTTON_EN = re.compile(r'\b(?:tap|press|click|hit|select)\s+(?:the\s+)?[“"\'‘]?\s*(?:Remember|Save)\b[^.!?\n]{0,40}\b(?:save|saved|trips?|itinerary|plan)\b'
+_SAVE_BUTTON_EN = re.compile(r'\b(?:tap|press|click|hit|select)\s+(?:the\s+)?[“"\'‘]?\s*(?:Remember|Save)\b[^.!?\n]{0,40}\b(?:save|saved|saving|trips?|itinerary)\b'
                              r'|\b(?:to save|save (?:it|this|the (?:trip|plan|itinerary)))\b[^.!?\n]{0,30}\b(?:tap|press|click)\s+(?:the\s+)?[“"\'‘]?\s*Remember\b', re.I)
 _SENTENCE_END = re.compile(r'(?<=[。！？!?\n])|(?<=\.)(?=\s)')
 

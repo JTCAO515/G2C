@@ -150,6 +150,18 @@ class SaveButtonSentences(unittest.TestCase):
             with self.subTest(text=text):
                 self.assertEqual(display_answer(text, locale), text)
 
+    def test_the_fixed_copy_that_mentions_remember_is_untouched(self):
+        # CI found the first version cutting "Tap Remember and I'll use it next time I plan." out of the approved
+        # capability copy; every fixed text of the module that says Remember or 记住 must come through unchanged.
+        from cj_message import lio_context
+        texts = [(name, value) for name, value in vars(lio_context).items()
+                 if name.isupper() and type(value) is str and ('Remember' in value or '记住' in value)
+                 and name != 'PERSONA' and not name.endswith('_PROMPT')]   # prompts are instructions, not answers
+        self.assertIn('CAPABILITIES_EN', [name for name, _ in texts])
+        for name, value in texts:
+            with self.subTest(name=name):
+                self.assertEqual(display_answer(value, 'zh' if name.endswith('_ZH') else 'en'), value)
+
     def test_an_answer_that_is_only_such_a_sentence_is_not_emptied(self):
         text = '点「记住」即可保存到行程卡。'
         self.assertEqual(display_answer(text, 'zh'), text)
