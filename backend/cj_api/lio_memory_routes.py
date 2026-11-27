@@ -81,6 +81,23 @@ class LioMemoryCards:
         # on, a store that is missing counts as no consent.
         self.consent = consent
 
+    def used_titles(self, scope, item_ids, *, checked=False):
+        """`{item_id: title}` of the memories an answer used that are still active with a valid source (#2001, M-3).
+
+        Relation to consent (#1970): with the consent switch on, an account that is not granted now gets nothing, the
+        same refusal `project` makes (`checked=True`: the caller already asked `used_allowed` for this page); items remembered earlier are still not shown after a withdrawal. A reader that is
+        not mounted, or any failure, gives `{}`: the row simply has no `used`.
+        """
+        reader = getattr(self.collection, 'titles', None)
+        if reader is None or not (checked or self.used_allowed(scope)):
+            return {}
+        return reader(scope, list(item_ids))
+
+    def used_allowed(self, scope):
+        """False while the consent switch is on and the account is not granted (never chosen, or withdrawn)."""
+        from .lio_memory_consent import consent_required
+        return not (consent_required() and (self.consent is None or not self.consent.granted(scope)))
+
     def project(self, context, token, mid, run_id=None):
         from .lio_memory_consent import consent_required
         if consent_required() and (self.consent is None or not self.consent.granted(context.scope)):

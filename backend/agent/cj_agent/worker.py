@@ -644,6 +644,25 @@ class RunWorker:
                 if actions or tickets:
                     state = self._event(binding, state, 'effect_committed',
                                         LioFollowups(followups_payload(actions, zip(labels, tickets) if tickets else ())).effect())
+            if split_layout and state.text.strip() and self.memory_run is not None:
+                # #2001 (M-3): the ids of the memories this turn really gave the model (the server's own payload, never the
+                # model's claim); ids and a count only. Off unless CJ_LIO_MEMORY_USED=on; a failure never touches the answer.
+                try:
+                    from cj_memory.titles import used_effect
+                    used = used_effect(self.memory_run)
+                    if used is not None:
+                        state = self._event(binding, state, 'effect_committed', used)
+                except Exception as error:
+                    logging.getLogger('cj_usage.audit').info('LIO_MEMORY_USED_UNAVAILABLE run_id=%s error=%s', binding.run_id, type(error).__name__)
+            if split_layout and state.text.strip() and self.lio_memory is not None and hasattr(self.lio_memory, 'consent_prompt'):
+                # #1999 (M-1): the one-time "may Lio remember your preferences?" marker; code only, no model, nothing stored
+                # about the preference. A failure here never touches the answer.
+                try:
+                    marker = self.lio_memory.consent_prompt(binding, text)
+                    if marker is not None:
+                        state = self._event(binding, state, 'effect_committed', marker)
+                except Exception as error:
+                    logging.getLogger('cj_usage.audit').info('LIO_MEMORY_PROMPT_UNAVAILABLE run_id=%s error=%s', binding.run_id, type(error).__name__)
             if self.drafts is not None and command['creation_intent'] == 'consider_trip':
                 phase='draft'
                 state, proposal_id = self._draft(binding, state, text, stored)

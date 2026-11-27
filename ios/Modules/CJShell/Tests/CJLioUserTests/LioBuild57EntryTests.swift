@@ -100,6 +100,7 @@ struct LioBuild57EntryTests {
             ("G2CAttractionBookingEnabled", "G2C_ATTRACTION_BOOKING_ENABLED"),
             ("G2CShowCardEnabled", "G2C_SHOW_CARD_ENABLED"),
             ("G2CMenuOrderEnabled", "G2C_MENU_ORDER_ENABLED"),
+            ("G2CPlaceToolsEnabled", "G2C_PLACE_TOOLS_ENABLED"),
             ("G2CTripHomeEnabled", "G2C_TRIP_HOME_ENABLED"),
         ]
         for (key, setting) in flags {
