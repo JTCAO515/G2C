@@ -713,7 +713,7 @@ docker compose --env-file /srv/g2c-beta/compose.env -f /srv/g2c-beta/deploy/hk/c
 - 前置条件：52–55 的 anchor 都是 COMPLETE；`demo-schema59` 是 COMPLETE，且 `from_version=55`；60..N-1 的 anchor 都是 COMPLETE；所有 lineage 与原记录相同。库里正好是 1..N-1，镜像正好带 1..N。处于空闲状态：API 和 worker 在公告的维护窗口里停止，没有未确认投递，也没有排队或运行中的 RUN。
 - 执行：`python -B -m deploy.hk.demo_schema --target N`。同一事务里执行这一个迁移，并断言 `cj_ops_console` 仍是 NOLOGIN。之后导出新的签名本地备份基准，再把 anchor 标为 COMPLETE。镜像最高版本大于 59 时，readiness 会逐个要求 60..N 的 anchor 都是 COMPLETE。
 - 中断：用同一镜像运行 `--resume-schemaN`，只对同一个 intent 对账。
-- 回滚 N → N-1：先用新镜像跑只读核对 `python -B -m deploy.hk.demo_schema --check-rollback N`。它解析迁移 N 的 down 脚本里所有 `DROP TABLE`，逐表统计行数；有任何一行就报错退出，遇到认不出的 `DROP TABLE` 写法也报错。报错时停下来找统筹转 JT，不能执行 down，因为这会删除香港真实用户数据。down 脚本删掉的列由各迁移自己的 down 守卫保护，这个核对不管列。核对通过后，执行 `migrate.down` 到 N-1，再换回 N-1 的镜像。
+- 回滚 N → N-1：先用新镜像跑只读核对 `python -B -m deploy.hk.demo_schema --check-rollback N`。它解析迁移 N 的 down 脚本，逐表统计其中 `DROP TABLE` 各表的行数，有任何一行就报错退出。以下几种情况也报错：文件里 `DROP TABLE` 出现的次数（不分大小写、不管空白和换行、包括 DO 块和注释）不等于单行 `DROP TABLE [public.]名字;` 的条数；出现 `DROP SCHEMA`、`DROP OWNED`、`DROP DATABASE`、`TRUNCATE` 或 `DELETE FROM`。报错时停下来找统筹转 JT，不能执行 down，因为这会删除香港真实用户数据。down 脚本删掉的列由各迁移自己的 down 守卫保护，这个核对不管列。核对通过后，执行 `migrate.down` 到 N-1，再换回 N-1 的镜像。和 59 那一节一样，要把 `demo-schemaN` 的 anchor 和备份目录改名归档（不删除），并恢复 N-1 的 release 和备份基准，否则以后再升到 N 会被拒绝。
 - 本地演练：`scripts/hk_demo_local_check.py` 在 main 还没有 0060 时，用一个只含一张表的合成 0060 演练。覆盖前置条件拒绝（包括 59 缺 `from_version`）、各处中断续跑、二次应用拒绝、NOLOGIN、回滚核对拒绝，以及 down 到 59。main 有了真 0060 以后，自动改用真的 0060。
 
 ### Native4 accounting schema55

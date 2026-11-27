@@ -114,25 +114,29 @@ ROLLBACK59_TABLES=('cj_service_request_scope','cj_service_request','cj_service_r
 
 
 _DROP_TABLE=re.compile(r'^DROP TABLE (?:public\.)?([a-z_][a-z0-9_]*);$')
+_ANY_DROP_TABLE=re.compile(r'\bDROP\s+TABLE\b',re.IGNORECASE)
+_UNCHECKED=re.compile(r'\b(?:DROP\s+(?:SCHEMA|OWNED|DATABASE)|TRUNCATE|DELETE\s+FROM)\b',re.IGNORECASE)
 
 
 def rollback_tables(target):
     """Tables that the committed down script of migration `target` drops (target -> target-1).
 
-    Only plain `DROP TABLE [public.]name;` lines are recognised. Any other DROP TABLE form fails
-    closed: the read-only check cannot prove what the step would delete.
+    Only plain single-line `DROP TABLE [public.]name;` statements are recognised. Every
+    `DROP TABLE` anywhere in the file (any case, spacing, line split, inside DO blocks or
+    comments) must be one of those lines, and DROP SCHEMA/OWNED/DATABASE, TRUNCATE and
+    DELETE FROM are refused: the read-only check fails closed whenever it cannot prove
+    which rows the step would delete.
     """
     if target<FIRST_SINGLE:raise ValueError('use --check-rollback-59 for the reviewed 55 -> 59 chain')
     found=[m for m in migrate.load() if m['version']==target]
     if len(found)!=1:raise ValueError('exact Demo migration required for rollback check')
-    tables=[]
-    for line in (migrate.ROOT/found[0]['down']).read_text().splitlines():
-        line=line.strip()
-        if not line.upper().startswith('DROP TABLE'):continue
-        match=_DROP_TABLE.fullmatch(line)
-        if match is None:raise ValueError('unrecognised DROP TABLE in down script; check by hand')
-        tables.append(match[1])
-    return tuple(tables)
+    text=(migrate.ROOT/found[0]['down']).read_text()
+    if _UNCHECKED.search(text):raise ValueError('down script deletes rows outside DROP TABLE; check by hand')
+    tables=tuple(match[1] for match in map(_DROP_TABLE.fullmatch,(line.strip() for line in text.splitlines()))
+                 if match is not None)
+    if len(_ANY_DROP_TABLE.findall(text))!=len(tables):
+        raise ValueError('unrecognised DROP TABLE in down script; check by hand')
+    return tables
 
 
 def rollback_rows(db,target):
@@ -411,7 +415,7 @@ if __name__=='__main__':
             with checkpoint.operator() as (db,_),db.transaction():
                 db.execute('SET TRANSACTION READ ONLY')
                 counts=rollback_rows(db,single[1])
-            print(f'PASS {len(counts)} table(s) of migration {single[1]} hold no rows; its down drops no data')
+            print(f'PASS {len(counts)} table(s) dropped by migration {single[1]} hold no rows (columns are its down guard)')
         elif single is not None and single[0]=='resume-schema':
             resume_schema(control,Path('/backups'),target=single[1])
             print(f'PASS original HK schema{single[1]} backup resumed')

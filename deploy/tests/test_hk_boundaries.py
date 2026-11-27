@@ -862,3 +862,22 @@ def test_demo_schema_single_step_commands_after_59():
         demo_schema._supported(t) for t in (48,56,57,58))
     assert demo_schema._previous(59)==list(range(1,56)) and demo_schema._previous(61)==list(range(1,61))
     with pytest.raises(ValueError):demo_schema.rollback_tables(59)
+
+
+@pytest.mark.parametrize('down,expected',[
+    ('DROP TABLE public.a;\nDROP FUNCTION f();\n',('a',)),
+    ('-- refuse to drop retained rows\nDROP TABLE a;\nDROP TABLE public.b;\n',('a','b')),
+    ('DROP\nTABLE a;\n',None),('DROP  TABLE a;\n',None),('drop table a;\n',None),
+    ('ALTER TABLE x DROP COLUMN y; DROP TABLE a;\n',None),('DO $$ BEGIN DROP TABLE a; END $$;\n',None),
+    ('DROP TABLE IF EXISTS a;\n',None),('DROP TABLE a, b;\n',None),('DROP TABLE a CASCADE;\n',None),
+    ('DROP TABLE a;\nTRUNCATE b;\n',None),('DELETE FROM b;\n',None),('DROP SCHEMA s CASCADE;\n',None),
+    ('DROP OWNED BY r;\n',None),('-- drop table a\nDROP TABLE a;\n',None)])
+def test_single_step_rollback_tables_fail_closed_on_unrecognised_deletes(tmp_path,monkeypatch,down,expected):
+    from deploy.hk import demo_schema
+    import migrate
+    path=tmp_path/'0060.down.sql';path.write_text(down)
+    monkeypatch.setattr(migrate,'load',lambda:[dict(version=60,down=str(path))])
+    if expected is None:
+        with pytest.raises(ValueError,match='check by hand'):demo_schema.rollback_tables(60)
+    else:
+        assert demo_schema.rollback_tables(60)==expected

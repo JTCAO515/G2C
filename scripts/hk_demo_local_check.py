@@ -438,7 +438,7 @@ def check_schema59_rollback(operator):
 def check_single_rollback(operator,target):
     """Runbook rollback target -> target-1: read-only emptiness of the tables its down drops, then that down."""
     tables=demo_schema.rollback_tables(target)
-    assert tables and demo_schema.single_command(['--check-rollback',str(target)])==('check-rollback',target)
+    assert type(tables) is tuple and demo_schema.single_command(['--check-rollback',str(target)])==('check-rollback',target)
     with operator() as (db,_):
         assert demo_schema.rollback_rows(db,target)==dict.fromkeys(tables,0)
         if tables==('cj_synthetic_after59',):
