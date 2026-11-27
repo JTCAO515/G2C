@@ -287,6 +287,10 @@ def _normalize_city_phrase(city,turns):
 
 
 _WHEN_WHERE=('start_date','start_time','start_timezone','start_place','end_date','end_time','end_timezone','end_place')
+# Anything that says an item is fixed, booked or timed keeps it out of the wish rule (red-line review of #2123: the shared FIXED words are
+# narrow, so 「已经订好票」「booked」 and a clock or date in the quote are added here; a larger set only drops fewer items).
+_FIXED_HINT=re.compile(r'订好|订了|买好|买了|订票|订位|订房|预订|预约|预定|已定|定好|锁定|固定|确定|票|门票|reserv|booked|booking|ticket|confirmed|fixed|locked|'
+                       r'[0-9]{1,2}\s*[:：点时]|[0-9]{1,2}\s*(?:am|pm)\b|[0-9]{4}[-/.][0-9]{1,2}[-/.][0-9]{1,2}|[0-9]{1,2}\s*月\s*[0-9]{1,2}\s*[日号]',re.I)
 
 
 def _drop_wish_items(items):
@@ -298,7 +302,8 @@ def _drop_wish_items(items):
     def wish(item):
         return (type(item)is dict and item.get('kind')=='intent' and item.get('locked')is not True and item.get('booking_status')is None
                 and not item.get('detail_refs')and all(item.get(key)is None for key in _WHEN_WHERE)
-                and not _FIXED_MARK.search(str(item.get('quote'))+' '+str(item.get('label'))))
+                and not _FIXED_MARK.search(str(item.get('quote'))+' '+str(item.get('label')))
+                and not _FIXED_HINT.search(str(item.get('quote'))+' '+str(item.get('label'))))
     kept=[item for item in items if not wish(item)]
     dropped=len(items)-len(kept)
     items[:]=kept

@@ -276,7 +276,11 @@ class WishItems(unittest.TestCase):
         from cj_api.lio_flow_intake import _drop_wish_items
         keep = [wish('故宫', '第一天故宫', locked=True), wish('故宫', '第一天故宫', booking_status='booked'), wish('故宫', '第一天故宫', start_time='09:00'),
                 wish('故宫', '第一天故宫', start_date='2026-12-01'), wish('故宫', '第一天故宫', start_place='东门'),
-                wish('故宫', '第一天故宫已预约'), wish('故宫（固定安排）', '第一天故宫'), wish('故宫', '第一天故宫', detail_refs=[dict(source_index=0, quote='x')]),
+                wish('故宫', '第一天故宫已预约'), wish('故宫（固定安排）', '第一天故宫'),
+                # red-line review round: real bookings and clocks the shared marker words miss
+                wish('故宫', '第一天故宫和景山已经订好票'), wish('故宫', '故宫门票订好了'), wish('故宫', '已经买好票'), wish('故宫', '已经订了故宫的票'),
+                wish('Palace Museum', 'I booked the Palace Museum'), wish('Palace Museum', 'tickets booked'), wish('Palace Museum', 'Day 1: Palace Museum 9am'),
+                wish('故宫', '第一天9:30故宫'), wish('故宫', '第一天上午9点故宫'), wish('故宫', '12月1日故宫'), wish('故宫', '2026-12-01 故宫'), wish('故宫', '第一天故宫', detail_refs=[dict(source_index=0, quote='x')]),
                 wish('故宫', '第一天故宫', kind='appointment'), wish('酒店', '第一天酒店', kind='hotel'), wish('机票', '第一天航班', kind='transport')]
         items = [dict(item) for item in keep]
         self.assertEqual(_drop_wish_items(items), 0)
