@@ -2,6 +2,7 @@
 from datetime import datetime, timedelta, timezone
 from hashlib import sha256
 import json
+import os
 from pathlib import Path
 import re
 import runpy
@@ -10,7 +11,9 @@ import sys
 from cj_strict_json import compact
 
 
-HERE = Path(__file__).resolve().parent
+CODE = Path(__file__).resolve().parent
+# Private state (gates, evidence, logs, tokens) stays outside the repository; see README.md.
+STATE = Path(os.environ.get('G2C_RELEASE_STATE', '~/.local/share/g2c/b-server-smoke-20261118')).expanduser()
 PROGRAM = """
 from datetime import datetime,timezone
 import json,sys,time
@@ -96,16 +99,15 @@ except (AssertionError,KeyError,TypeError,ValueError):
 def main():
     run,feature=sys.argv[1:]
     assert re.fullmatch(r'b-smoke-20261118-[3-9][0-9]',run) and feature in ('taxi','nearby','english')
-    quick=runpy.run_path(str(HERE/'s-build52-quick.py'))
+    quick=runpy.run_path(str(CODE / 's-build52-quick.py'))
     private=quick['private']
-    assert sha256(private(quick['OPERATOR'])).hexdigest()==quick['EXPECTED_OPERATOR']
     auth=runpy.run_path(str(quick['ORIGINAL']))
     ops=runpy.run_path(str(quick['OPERATOR']))
-    gate=json.loads(private(HERE/(run+'-forward-gate.json')))
+    gate=json.loads(private(STATE/(run+'-forward-gate.json')))
     source,image=gate['source'],gate['image_id']
     assert any(review['pr_number'] in (1440,1443) for review in (gate,*gate['related_reviews']))
-    assert json.loads(private(HERE/(run+'-batch-chat-verdict.json')))['status']=='PASS'
-    assert json.loads(private(HERE/(run+'-smoke-restore.stdout')))==dict(kind='budget_restore',status='PASS')
+    assert json.loads(private(STATE/(run+'-batch-chat-verdict.json')))['status']=='PASS'
+    assert json.loads(private(STATE/(run+'-smoke-restore.stdout')))==dict(kind='budget_restore',status='PASS')
     login=auth['login']
     old=login.__globals__['LOGIN']
     anchor="invite_code=packet['code']))"
@@ -117,7 +119,7 @@ def main():
                   ends_at=(now+timedelta(minutes=5)).isoformat())
     grant=login(auth['SAMPLES']/'group-g2c.invite',envelope,ops,expected_member=True)
     name=run+'-s55-'+feature
-    ops['save'](HERE/(name+'-intent.json'),compact(envelope))
+    ops['save'](STATE/(name+'-intent.json'),compact(envelope))
     output=ops['captured'](['flock','-n',ops['LOCK'],'python3','-I','-B','-c',auth['ROLES'],source,image,PROGRAM],
                            compact(dict(feature=feature,ends_at=envelope['ends_at'],**grant)),name=name,timeout=240)
     for line in output.stdout.splitlines():

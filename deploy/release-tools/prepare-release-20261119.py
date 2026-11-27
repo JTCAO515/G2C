@@ -2,6 +2,7 @@
 from concurrent.futures import ThreadPoolExecutor
 import hashlib
 import json
+import os
 from pathlib import Path
 import re
 import runpy
@@ -14,8 +15,10 @@ from deploy.build import ROOT, source_context
 from deploy.hk.application_release import verify_release_ci, verify_release_review
 from deploy.hk.application_release_host import require_source_abi
 
-DIR=Path(__file__).resolve().parent
-OPS=runpy.run_path(str(DIR/'hk-operator.py'))
+CODE = Path(__file__).resolve().parent
+# Private state (gates, evidence, logs, tokens) stays outside the repository; see README.md.
+STATE = Path(os.environ.get('G2C_RELEASE_STATE', '~/.local/share/g2c/b-server-smoke-20261118')).expanduser()
+OPS=runpy.run_path(str(CODE / 'hk-operator.py'))
 RELATED=(1170,1174,1177,1178,1181,1184,1201,1207,1211,1213,1214,1215,1216,1221,1222,1223,1226)
 
 def github(path):
@@ -79,14 +82,14 @@ def main():
     additional=tuple(int(number) for number in sys.argv[4:])
     assert subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()==source
     assert re.fullmatch('[a-f0-9]{40}',source)
-    proof=DIR/('release-20261119-'+source[:8]+'-evidence.json')
+    proof=STATE/('release-20261119-'+source[:8]+'-evidence.json')
     tag='g2c-beta:'+source
     image,arch,rev=subprocess.check_output(['docker','image','inspect',tag,'--format',
         '{{.Id}} {{.Architecture}} {{index .Config.Labels "org.opencontainers.image.revision"}}'],
          text=True).strip().split()
     assert (arch,rev)==('amd64',source)
     inputs=image_inputs(source)
-    policy=json.loads((DIR/'policy-58547d31-dccaf289-20261125.json').read_text())  # b994-gc-20261115 dir gone locally (2026-11-25); s54 overrides the policy anyway
+    policy=json.loads((STATE/'policy-58547d31-dccaf289-20261125.json').read_text())  # b994-gc-20261115 dir gone locally (2026-11-25); s54 overrides the policy anyway
     require_source_abi({name:inputs[name] for name in policy['required_source_hashes']},policy)
     if phase=='local':
         verify_release_ci(github,source)
@@ -125,7 +128,7 @@ def main():
             name='release-20261119-'+source[:8]+'-image-proof',timeout=80)
         assert check.returncode==0 and json.loads(check.stdout)==values['local']
         identity=dict(source=source,image=hk_id,local_image=image,config_equal=True,layers_equal=True)
-        OPS['save'](DIR/('release-20261119-'+source[:8]+'-hk-identity.json'),json.dumps(identity).encode())
+        OPS['save'](STATE/('release-20261119-'+source[:8]+'-hk-identity.json'),json.dumps(identity).encode())
         print(json.dumps(dict(identity,verified=json.loads(check.stdout))))
     else:
         raise ValueError('unknown phase')

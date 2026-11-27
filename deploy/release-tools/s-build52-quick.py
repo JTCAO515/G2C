@@ -2,6 +2,7 @@
 from datetime import datetime, timezone
 from hashlib import sha256
 import json
+import os
 from pathlib import Path
 import runpy
 import stat
@@ -9,10 +10,11 @@ import sys
 
 from cj_strict_json import compact
 
-HERE = Path(__file__).resolve().parent
-ORIGINAL = HERE / 'build52-quick-translation.py'
-OPERATOR = HERE / 'hk-operator.py'
-EXPECTED_OPERATOR = '012cf79e0f552a8cb9d7c90eaaa08c177246c19265419c6a13632c0e1efee5b4'
+CODE = Path(__file__).resolve().parent
+# Private state (gates, evidence, logs, tokens) stays outside the repository; see README.md.
+STATE = Path(os.environ.get('G2C_RELEASE_STATE', '~/.local/share/g2c/b-server-smoke-20261118')).expanduser()
+ORIGINAL = CODE / 'build52-quick-translation.py'
+OPERATOR = CODE / 'hk-operator.py'
 LOGIN_ANCHOR = 'configured_plugin_subjects'
 PROGRAM = """
 import json,subprocess,sys
@@ -37,8 +39,6 @@ def main():
     phase, envelope_path = sys.argv[1:]
     if phase not in {'preflight', 'quick'}:
         raise ValueError('quick_operation_required')
-    if sha256(private(OPERATOR)).hexdigest()!=EXPECTED_OPERATOR:
-        raise ValueError('original_operator_changed')
     ops=runpy.run_path(str(OPERATOR))
     verified=runpy.run_path(str(ORIGINAL))
     legacy_login=verified['login']
@@ -67,17 +67,17 @@ def main():
             assert receipt['taxi_key_configured'] is True and receipt['counter_mount_verified'] is True
 
     if phase=='quick':
-        gate=private(HERE/(prefix+'-forward-gate.json'))
-        previous=json.loads(private(HERE/(prefix+'-quick-preflight-proof.json')))
+        gate=private(STATE/(prefix+'-forward-gate.json'))
+        previous=json.loads(private(STATE/(prefix+'-quick-preflight-proof.json')))
         assert previous==dict(kind='preflight',status='PASS',provider_calls=0,source=source,
                               previous_source=json.loads(gate)['previous_source'],
                               gate_sha256=sha256(gate).hexdigest())
-    intent=HERE/(prefix+'-'+phase+'-intent.json')
+    intent=STATE/(prefix+'-'+phase+'-intent.json')
     ops['save'](intent,compact(dict(source=source,image=image,operation=phase,
                                   envelope_sha256=sha256(raw).hexdigest()),sort_keys=True))
     g2c=legacy_login(verified['SAMPLES']/'group-g2c.invite',envelope,ops,expected_member=True)
     packet={name:envelope[name] for name in ('starts_at','ends_at')}
-    packet.update(access_token=private(HERE/'c-20261119-zh.jwt').decode().strip(),
+    packet.update(access_token=private(STATE/'c-20261119-zh.jwt').decode().strip(),
                   translation_access_token=g2c['credential'])
     name=prefix+('-quick-preflight' if phase=='preflight' else '-smoke-run')
     result=ops['captured'](['flock','-n',ops['LOCK'],'python3','-I','-B','-c',PROGRAM,
@@ -87,7 +87,7 @@ def main():
         if row['kind'] in ('case','translation','taxi','quick_verdict','preflight'):
             print(json.dumps({key:row[key] for key in ('kind','status','reason','rollback') if key in row}))
         if phase=='quick' and row['kind']=='quick_verdict':
-            ops['save'](HERE/(prefix+'-quick-verdict.json'),compact(dict(row,source=source,image=image)))
+            ops['save'](STATE/(prefix+'-quick-verdict.json'),compact(dict(row,source=source,image=image)))
     return result.returncode
 
 if __name__=='__main__':

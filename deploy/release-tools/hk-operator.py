@@ -10,18 +10,21 @@ import stat
 import subprocess
 import sys
 
-DIR = Path(__file__).resolve().parent
+CODE = Path(__file__).resolve().parent
+# Private state (gates, evidence, logs, tokens) stays outside the repository; see README.md.
+STATE = Path(os.environ.get('G2C_RELEASE_STATE', '~/.local/share/g2c/b-server-smoke-20261118')).expanduser()
 OLD = '2e5560cf3c794df4aff48c8431e8424330580e10'
 NEW = '7f8dbe9617833a4af4900f21499a6db5616d5eb6'
 OLD_IMAGE = 'sha256:0ad586bea92662028112887ba37351fb307a06717cb84e17a507039c727feeba'
 NEW_IMAGE = 'sha256:8d6bc9f8edfab02a98c6c423b7654292b6f36fcdb0171995e3ba8bc069d6b467'
 FORWARD_SHA = '90d802f0802080852d7af919afeef2069f88305d7d5649cea86bde3783ac78b3'
 ROOT = '/srv/g2c-beta'
-PREVIOUS = DIR.parent / 'b1048-m1-deploy-20261116'
-SESSION = DIR.parent / 'b759-national-20261112-03/zh.jwt'
-WORKTREE = Path.home()/'.codex/worktrees/g2c-b1048-hk-server-smoke'
-GATE_WORKTREE = Path.home()/'.codex/worktrees/g2c-b1048-exact-workflow-ci'
-SSH = ['ssh', '-i', os.path.expanduser('~/.ssh/g2c-beta.pem'), '-o', 'BatchMode=yes', '-o',
+PREVIOUS = STATE.parent / 'b1048-m1-deploy-20261116'
+SESSION = STATE.parent / 'b759-national-20261112-03/zh.jwt'
+# Callers (s-build53-batch-stage.py) rebind both to the exact release checkout before use.
+WORKTREE = Path.cwd()
+GATE_WORKTREE = Path.cwd()
+SSH = ['ssh', '-i', os.path.expanduser(os.environ.get('G2C_RELEASE_SSH_KEY', '~/.ssh/g2c-beta.pem')), '-o', 'BatchMode=yes', '-o',
        'StrictHostKeyChecking=yes', '-o', 'ConnectTimeout=8', 'root@47.83.147.176']
 COMPOSE = ['docker','compose','--env-file',ROOT+'/compose.env','-f',ROOT+'/deploy/hk/compose.yaml',
            '-f',ROOT+'/deploy/hk/compose.local-pg.yaml']
@@ -43,8 +46,8 @@ def save(path, raw):
 
 def captured(args, data=None, *, name, timeout=400):
     result = remote(args, data=data, timeout=timeout)
-    save(DIR/(name+'.stdout'), result.stdout)
-    save(DIR/(name+'.stderr'), result.stderr)
+    save(STATE/(name+'.stdout'), result.stdout)
+    save(STATE/(name+'.stderr'), result.stderr)
     return result
 
 
@@ -86,7 +89,7 @@ def gate(run, rollback=False):
                   ends_at=(now+timedelta(minutes=25)).isoformat(timespec='microseconds'))
     filename = 'rollback-gate.json' if rollback else 'forward-gate.json'
     raw = json.dumps(before,sort_keys=True).encode()
-    save(DIR/(run+'-'+filename), raw)
+    save(STATE/(run+'-'+filename), raw)
     safe_upload(ROOT+'/probes/'+run+'/'+filename, raw)
     print(json.dumps(dict(starts_at=before['starts_at'], ends_at=before['ends_at'])))
 
@@ -109,7 +112,7 @@ def run_bootstrap(head):
 
 
 def smoke_action(run, phase, head, permit_file=None):
-    before = json.loads((DIR/(run+'-forward-gate.json')).read_bytes())
+    before = json.loads((STATE/(run+'-forward-gate.json')).read_bytes())
     packet = {'starts_at':before['starts_at'],'ends_at':before['ends_at']}
     if phase == 'restore':
         data = Path(permit_file).read_bytes()
@@ -139,7 +142,7 @@ raise SystemExit(subprocess.call(['docker','exec','-i','g2c-beta-worker-1','pyth
 
 
 def filtered_wire(run):
-    before = json.loads((DIR/(run+'-forward-gate.json')).read_bytes())
+    before = json.loads((STATE/(run+'-forward-gate.json')).read_bytes())
     program = """import subprocess,sys
 p=subprocess.Popen(['docker','logs','--since',sys.argv[1],'g2c-beta-worker-1'],
                    stdout=subprocess.PIPE,stderr=subprocess.STDOUT, universal_newlines=True)
@@ -178,7 +181,7 @@ def main():
             code=subprocess.check_output(
                 ['git','show',args.release_head+':deploy/hk/'+name],cwd=GATE_WORKTREE)
             safe_upload(path+'/'+name,code)
-        save(DIR/(run+'-bundle.json'),json.dumps({'release_head':args.release_head}).encode())
+        save(STATE/(run+'-bundle.json'),json.dumps({'release_head':args.release_head}).encode())
         print('Versioned permanent host release bundle staged')
     elif phase == 'stage':
         if run!='b-smoke-20261118-01':
@@ -196,7 +199,7 @@ def main():
     elif phase in ('preflight','apply'):
         script = 'forward.py' if run=='b-smoke-20261118-01' else 'application_release_host.py'
         if run!='b-smoke-20261118-01':
-            bundle=json.loads((DIR/(run+'-bundle.json')).read_bytes())
+            bundle=json.loads((STATE/(run+'-bundle.json')).read_bytes())
             for name in ('application_release.py', script):
                 code=subprocess.check_output(
                     ['git','show',bundle['release_head']+':deploy/hk/'+name],cwd=GATE_WORKTREE)
@@ -220,15 +223,15 @@ print(json.dumps({r:run(['docker','inspect','--format',fmt,'g2c-beta-'+r+'-1'])
         print(result.stdout.decode())
         return result.returncode
     elif phase=='weekly':
-        source=(DIR/'weekly-run-metadata.py').read_text()
+        source=(CODE / 'weekly-run-metadata.py').read_text()
         result=captured([*COMPOSE, 'run','--rm','--no-deps','-T','--entrypoint','python',
                          'migrate','-B','-c',source],name=run+'-'+phase,timeout=60)
         print(result.stdout.decode())
         return result.returncode
     elif phase=='timings':
-        gate_info=json.loads((DIR/(run+'-forward-gate.json')).read_bytes())
+        gate_info=json.loads((STATE/(run+'-forward-gate.json')).read_bytes())
         queries=[dict(case=row['case'],message_id=row.get('message_id'),request_id=row.get('message_ref'))
-                 for line in (DIR/(run+'-smoke-run.stdout')).read_bytes().splitlines()
+                 for line in (STATE/(run+'-smoke-run.stdout')).read_bytes().splitlines()
                  for row in [json.loads(line)] if row.get('kind')=='case']
         program = '''import json,re,sys
 from pathlib import Path
@@ -262,7 +265,7 @@ print(json.dumps(result))
                        json.dumps(queries).encode(),30)
         if matched.returncode:
             raise ValueError('original HTTP timeline metadata unavailable')
-        source=(DIR/'smoke-run-latency.py').read_text()
+        source=(CODE / 'smoke-run-latency.py').read_text()
         result=captured([*COMPOSE,'run','--rm','--no-deps','-T','--entrypoint','python',
                          'migrate','-B','-c',source],matched.stdout,name=run+'-timings',timeout=70)
         print(result.stdout.decode())

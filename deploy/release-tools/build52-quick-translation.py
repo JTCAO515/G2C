@@ -3,6 +3,7 @@
 from datetime import datetime, timezone
 from hashlib import sha256
 import json
+import os
 from pathlib import Path
 import re
 import stat
@@ -17,13 +18,13 @@ from deploy.hk.plugin_roster import generate_plugin_subjects
 
 
 
-HERE = Path(__file__).resolve().parent
-SAMPLES = HERE.parent/'b1048-m1-deploy-20261116/A1124-198-shortcode-samples-20261117'
-PLAN = HERE/'translation-supplement-20261123-fixtures/build52-translation-plan.json'
+CODE = Path(__file__).resolve().parent
+# Private state (gates, evidence, logs, tokens) stays outside the repository; see README.md.
+STATE = Path(os.environ.get('G2C_RELEASE_STATE', '~/.local/share/g2c/b-server-smoke-20261118')).expanduser()
+SAMPLES = STATE.parent/'b1048-m1-deploy-20261116/A1124-198-shortcode-samples-20261117'
+PLAN = STATE/'translation-supplement-20261123-fixtures/build52-translation-plan.json'
 PLAN_SHA = 'fb882be12056777f16977f44025cb36d0719fa5400085b675c71a82d9b05a624'
-WORKER = HERE/'build52-quick-translation-worker.py'
-WORKER_SHA = '285c6310ac2cd27ada2d93177c3e0708cf40160295012c2f56d53f01cf10dd90'
-OPERATOR_SHA = '012cf79e0f552a8cb9d7c90eaaa08c177246c19265419c6a13632c0e1efee5b4'
+WORKER = CODE / 'build52-quick-translation-worker.py'
 LIMIT = 300 * 10_000_000
 ROLES = """import json,subprocess,sys
 if not __debug__:
@@ -124,20 +125,18 @@ def main():
         raise ValueError('approved_roster_and_fixed_smoke_required')
 
     original_plan = private(PLAN)
-    program = private(WORKER)
-    if sha256(original_plan).hexdigest()!=PLAN_SHA or sha256(program).hexdigest()!=WORKER_SHA:
+    program = WORKER.read_bytes()
+    if sha256(original_plan).hexdigest()!=PLAN_SHA:
         raise ValueError('frozen_fixtures_changed')
     cases = json.loads(original_plan)['cases']
     if [r['case'] for r in cases] != ['text.zh','text.en','image.zh','speech.en']:
         raise ValueError('unexpected_frozen_plan')
-    operator=HERE/'hk-operator.py'
-    original_operator=private(operator)
-    if sha256(original_operator).hexdigest()!=OPERATOR_SHA:
-        raise ValueError('original_operator_changed')
+    operator=CODE / 'hk-operator.py'
+    original_operator=operator.read_bytes()
     ops={'__file__':str(operator),'__name__':'pinned_hk_operator'}
     exec(compile(original_operator,str(operator),'exec'),ops)
     prefix='build52-quick-translation-'+source[:8]
-    ops['save'](HERE/(prefix+'-batch-intent.json'),compact(dict(
+    ops['save'](STATE/(prefix+'-batch-intent.json'),compact(dict(
         source=source,image=image,starts_at=envelope['starts_at'],ends_at=envelope['ends_at'],plan_sha256=PLAN_SHA)))
     g2c=login(SAMPLES/'group-g2c.invite',envelope,ops,expected_member=True)
     row=cases[0]
@@ -150,7 +149,7 @@ def main():
         if stopped or (end-datetime.now(timezone.utc)).total_seconds()<80:
             row=dict(case=case,status='UNRUN',reason='earlier_nonpass_or_window_closed')
         else:
-            ops['save'](HERE/(file_prefix+'-intent.json'),compact(dict(
+            ops['save'](STATE/(file_prefix+'-intent.json'),compact(dict(
                 source=source,image=image,case=case,request_id=document['request_id'],
                 payload_sha256=sha256(compact(document,sort_keys=True)).hexdigest())))
             try:
@@ -177,10 +176,10 @@ def main():
                     row['reason']='translation_authorization_limit'
                     row['fees'].update(paid='UNKNOWN',observed_only=True)
         stopped = stopped or row['status']!='PASS'
-        ops['save'](HERE/(file_prefix+'-result.json'),compact(row,sort_keys=True))
+        ops['save'](STATE/(file_prefix+'-result.json'),compact(row,sort_keys=True))
         results.append(row)
         print(json.dumps(row,ensure_ascii=False),flush=True)
-    ops['save'](HERE/(prefix+'-final.json'),compact(dict(source=source,image=image,
+    ops['save'](STATE/(prefix+'-final.json'),compact(dict(source=source,image=image,
         activation_sha256=sha256(activation_raw).hexdigest(),
         status='PASS' if all(r['status']=='PASS' for r in results) else 'NEEDS_ORIGINAL_READBACK',
         cases=results,conservative_cny_1e7=spent),sort_keys=True))

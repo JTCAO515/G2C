@@ -17,13 +17,16 @@ Writes nothing on the host; installing is a separate reviewed step.
 from datetime import datetime, timezone
 import hashlib
 import json
+import os
 from pathlib import Path
 import re
 import subprocess
 import sys
 
-HERE = Path(__file__).resolve().parent
-PREVIOUS = HERE / 'policy-47c89be1-e0bea843-20261127.json'
+CODE = Path(__file__).resolve().parent
+# Private state (gates, evidence, logs, tokens) stays outside the repository; see README.md.
+STATE = Path(os.environ.get('G2C_RELEASE_STATE', '~/.local/share/g2c/b-server-smoke-20261118')).expanduser()
+PREVIOUS = STATE / 'policy-47c89be1-e0bea843-20261127.json'
 PREVIOUS_SHA = '94f78d0ae64281aeb0018de035debeb9bef5c5e426ae83f7e23af252fdceaeed'
 
 
@@ -58,7 +61,7 @@ def main():
     if next_set == live_set:
         raise SystemExit('next source has the same ABI set; no rotation needed')
     rotated = dict(policy, required_source_hashes=live_set, accepted_source_hash_sets=[live_set, next_set])
-    out = HERE / ('policy-%s-%s-%s.json' % (live[:8], following[:8], datetime.now(timezone.utc).strftime('%Y%m%d')))
+    out = STATE / ('policy-%s-%s-%s.json' % (live[:8], following[:8], datetime.now(timezone.utc).strftime('%Y%m%d')))
     data = encode(rotated)
     with open(out, 'xb') as output:
         output.write(data)

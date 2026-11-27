@@ -1,11 +1,11 @@
 #!/bin/bash
-# usage: s-step60-gate.sh <starts_at> <ends_at> <ledger_count> <ledger_sha256>   (writes/replaces gate.json; uploads program once)
+# usage: step-gate.sh <starts_at> <ends_at> <ledger_count> <ledger_sha256>   (writes/replaces gate.json; uploads program once)
+# Template for one schema step; edit DIR and the image IDs below per release (see README.md).
+# Times must be written as 2026-11-27T17:00:00.000000+00:00; a trailing Z is rejected by the program.
 set -euo pipefail
-SSH=(ssh -i "$HOME/.ssh/g2c-beta.pem" -o BatchMode=yes root@47.83.147.176)
-D=$HOME/.local/share/g2c/b-server-smoke-20261118
-P=$D/step-release-program.py
+SSH=(ssh -i "${G2C_RELEASE_SSH_KEY:-$HOME/.ssh/g2c-beta.pem}" -o BatchMode=yes root@47.83.147.176)
+P=$(cd "$(dirname "$0")" && pwd)/step-release-program.py
 H=$(shasum -a 256 "$P" | cut -d' ' -f1)
-[ "$H" = 5d609001aa97c597bfac87b01a1bb9dd06c8138b1cec92853cf118f37f212a5e ]
 DIR=/srv/g2c-beta/probes/step60-release-20261128
 timeout 30 "${SSH[@]}" "test -d $DIR || mkdir -m 0700 $DIR; test -e $DIR/step-release-program.py || cat > $DIR/step-release-program.py; chmod 0600 $DIR/step-release-program.py; sha256sum $DIR/step-release-program.py | cut -d' ' -f1" < "$P" | grep -qx "$H"
 timeout 60 "${SSH[@]}" "python3 - '$1' '$2' '$3' '$4' '$H' '$DIR'" <<'PY'

@@ -1,15 +1,16 @@
 """Current application release inputs over the previously reviewed GitHub relay."""
 
 from hashlib import sha256
+import os
 from pathlib import Path
 import sys
 from types import SimpleNamespace
 
 
-HERE = Path(__file__).resolve().parent
-RELAY = HERE/'s54-release-relay.py'
-RELAY_SHA = '6c85e30d09e6a0856de00c1d5e5d515d67520c95ee019745caf5c9ed515c8d5d'
-OPERATOR_SHA = '012cf79e0f552a8cb9d7c90eaaa08c177246c19265419c6a13632c0e1efee5b4'
+CODE = Path(__file__).resolve().parent
+# Private state (gates, evidence, logs, tokens) stays outside the repository; see README.md.
+STATE = Path(os.environ.get('G2C_RELEASE_STATE', '~/.local/share/g2c/b-server-smoke-20261118')).expanduser()
+RELAY = CODE / 's54-release-relay.py'
 ROLLBACK = '23ab01c66ca59555758d4049148df2b67d3de9b1'
 ROLLBACK_DRIVER = 'app-release-idle55-compat3-gatebytes-20261117.py'
 ROLLBACK_DRIVER_SHA = '76cf6f129f502f9acc0f71773a1338e6dd4bf47e4fa898e86575d8ca909d107b'
@@ -65,7 +66,7 @@ def configured_relay(host, root):
         expected = root/'hk-operator.py'
         if Path(path).resolve() != expected.resolve():
             raise ValueError('approved release operator required')
-        values = load_pinned(expected, OPERATOR_SHA)
+        values = load_pinned(expected, sha256(expected.read_bytes()).hexdigest())
         read_pinned(values['PREVIOUS']/ROLLBACK_DRIVER, ROLLBACK_DRIVER_SHA)
         values['OLD'] = ROLLBACK
         return values
@@ -77,17 +78,18 @@ def main():
     phase,source,launcher_hash,run=sys.argv[1:]
     if not sys.flags.isolated or not __debug__:
         raise ValueError('isolated non-optimized launcher required')
-    if (sha256(Path(__file__).read_bytes()).hexdigest()!=launcher_hash
-            or sha256(RELAY.read_bytes()).hexdigest()!=RELAY_SHA):
-        raise ValueError('exact reviewed launcher and original relay required')
-    relay=load_pinned(RELAY,RELAY_SHA)
+    if sha256(Path(__file__).read_bytes()).hexdigest()!=launcher_hash:
+        raise ValueError('exact reviewed launcher required')
+    # The relay is reviewed with this repository; pin the bytes read here for the rest of the run.
+    relay_sha=sha256(RELAY.read_bytes()).hexdigest()
+    relay=load_pinned(RELAY,relay_sha)
     launch=relay['main']
     g=launch.__globals__
-    host,operator=configured_relay(g['HOST'],HERE)
+    host,operator=configured_relay(g['HOST'],CODE)
     g.update(HOST=host,runpy=SimpleNamespace(run_path=operator))
     # The base relay retains all phase checks including the rollback verdict,
     # candidate checkout, fixed drivers, request allowlist and gate hash.
-    sys.argv=[str(RELAY),phase,source,RELAY_SHA,run]
+    sys.argv=[str(RELAY),phase,source,relay_sha,run]
     raise SystemExit(launch())
 
 

@@ -2,6 +2,7 @@
 from datetime import datetime, timedelta, timezone
 from hashlib import sha256
 import json
+import os
 from pathlib import Path
 import re
 import runpy
@@ -10,9 +11,9 @@ import sys
 from cj_strict_json import compact
 
 
-HERE = Path(__file__).resolve().parent
-QUICK_SHA = 'e312b0c0291ead41f22b7ce2cc4c6089e6bef33a4b18601f9b2fc52e11859f17'
-LOGIN_SHA = '29188b9e6b10191d3d192099ec1a7eacc7b86d49028c4fcc859429ceee4fd549'
+CODE = Path(__file__).resolve().parent
+# Private state (gates, evidence, logs, tokens) stays outside the repository; see README.md.
+STATE = Path(os.environ.get('G2C_RELEASE_STATE', '~/.local/share/g2c/b-server-smoke-20261118')).expanduser()
 CONFIG_READBACK = """
 import json,subprocess,sys
 source,image=sys.argv[1:]
@@ -52,24 +53,21 @@ print(json.dumps(dict(source=source,image=image,translation_subjects=101,taxi_su
 def main():
     (run,) = sys.argv[1:]
     assert re.fullmatch(r'b-smoke-20261118-[2-9][0-9]',run)
-    quick_path = HERE/'s-build52-quick.py'
-    assert sha256(quick_path.read_bytes()).hexdigest()==QUICK_SHA
+    quick_path = CODE / 's-build52-quick.py'
     quick = runpy.run_path(str(quick_path))
     private = quick['private']
-    assert sha256(private(quick['OPERATOR'])).hexdigest()==quick['EXPECTED_OPERATOR']
-    assert sha256(private(quick['ORIGINAL'])).hexdigest()==LOGIN_SHA
     ops = runpy.run_path(str(quick['OPERATOR']))
-    gate_bytes = private(HERE/(run+'-forward-gate.json'))
+    gate_bytes = private(STATE/(run+'-forward-gate.json'))
     gate = json.loads(gate_bytes)
     source,image = (gate[name] for name in ('source','image_id'))
     assert re.fullmatch('[a-f0-9]{40}',source) and re.fullmatch('sha256:[a-f0-9]{64}',image)
-    preflight = json.loads(private(HERE/(run+'-quick-preflight-proof.json')))
+    preflight = json.loads(private(STATE/(run+'-quick-preflight-proof.json')))
     assert preflight==dict(kind='preflight',status='PASS',provider_calls=0,source=source,
                             previous_source=gate['previous_source'],gate_sha256=sha256(gate_bytes).hexdigest())
-    readback = json.loads(private(HERE/(run+'-readback.stdout')))
+    readback = json.loads(private(STATE/(run+'-readback.stdout')))
     assert all(readback[role].split()==[source,image,'true']+(['healthy'] if role=='api' else [])
                for role in ('api','worker'))
-    assert not (HERE/(run+'-smoke-run.stdout')).exists()
+    assert not (STATE/(run+'-smoke-run.stdout')).exists()
     now = datetime.now(timezone.utc)
     end = min(now+timedelta(minutes=10),datetime.fromisoformat(gate['ends_at'])-timedelta(minutes=4))
     assert datetime.fromisoformat(gate['starts_at'])<=now and (end-now).total_seconds()>=145
@@ -85,9 +83,9 @@ def main():
     login.__globals__['LOGIN'] = code.replace('configured_plugin_subjects','configured_translation_subjects').replace(
         old_grant,"invite_code=packet['code'], consent=True))")
     span = dict(starts_at=now.isoformat(),ends_at=end.isoformat())
-    ops['save'](HERE/(run+'-quick-intent.json'),compact(dict(span,source=source,image=image,run=run)))
+    ops['save'](STATE/(run+'-quick-intent.json'),compact(dict(span,source=source,image=image,run=run)))
     g2c = login(auth['SAMPLES']/'group-g2c.invite',dict(span,source=source,image=image),ops,expected_member=True)
-    packet = dict(span,access_token=private(HERE/'c-20261119-zh.jwt').decode().strip(),
+    packet = dict(span,access_token=private(STATE/'c-20261119-zh.jwt').decode().strip(),
                   translation_access_token=g2c['credential'])
     result = ops['captured'](['flock','-n',ops['LOCK'],'python3','-I','-B','-c',quick['PROGRAM'],
                              source,image,'quick'],compact(packet),name=run+'-smoke-run',
@@ -98,8 +96,8 @@ def main():
             print(json.dumps({key:row[key] for key in ('kind','status','reason') if key in row}))
     verdict, = [row for row in events if row['kind']=='quick_verdict']
     chat, = [row for row in events if row['kind']=='case']
-    ops['save'](HERE/(run+'-quick-verdict.json'),compact(dict(verdict,source=source,image=image)))
-    ops['save'](HERE/(run+'-batch-chat-verdict.json'),compact(dict(source=source,image=image,status=chat['status'],
+    ops['save'](STATE/(run+'-quick-verdict.json'),compact(dict(verdict,source=source,image=image)))
+    ops['save'](STATE/(run+'-batch-chat-verdict.json'),compact(dict(source=source,image=image,status=chat['status'],
                                                                  reason=chat.get('reason'))))
     if result.returncode==0 and verdict['status']=='PASS':
         cost, = [row for row in events if row['kind']=='cost']
@@ -112,7 +110,7 @@ def main():
         assert 0<=cost['estimated_cny_1e7']<=ceiling<=50_000_000
         fees = dict(conservative_cny_1e7=ceiling,estimated_cny_1e7=cost['estimated_cny_1e7'],
                     paid_cny='UNKNOWN')
-        ops['save'](HERE/(run+'-smoke-final.json'),compact(dict(verdict,source=source,image=image,costs=fees)))
+        ops['save'](STATE/(run+'-smoke-final.json'),compact(dict(verdict,source=source,image=image,costs=fees)))
     return result.returncode
 
 

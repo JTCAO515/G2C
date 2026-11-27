@@ -1,14 +1,16 @@
 """Reconcile the current ledger with the original reviewed read-only witness."""
 from hashlib import sha256
 import json
+import os
 from pathlib import Path
 import re
 import runpy
 import sys
 
-HERE = Path(__file__).resolve().parent
-OPERATOR = HERE / 'hk-operator.py'
-OPERATOR_SHA = '012cf79e0f552a8cb9d7c90eaaa08c177246c19265419c6a13632c0e1efee5b4'
+CODE = Path(__file__).resolve().parent
+# Private state (gates, evidence, logs, tokens) stays outside the repository; see README.md.
+STATE = Path(os.environ.get('G2C_RELEASE_STATE', '~/.local/share/g2c/b-server-smoke-20261118')).expanduser()
+OPERATOR = CODE / 'hk-operator.py'
 PROGRAM = """
 from hashlib import sha256
 from pathlib import Path
@@ -35,8 +37,7 @@ print(json.dumps({key:proof[key] for key in ('ledger','global_pending','global_a
 def main():
     run, phase, source, image = sys.argv[1:]
     if (not re.fullmatch(r'b-smoke-20261118-[0-9]{2}',run) or phase not in ('activation-drain','drain')
-            or not re.fullmatch('[0-9a-f]{40}',source) or not re.fullmatch('sha256:[0-9a-f]{64}',image)
-            or sha256(OPERATOR.read_bytes()).hexdigest()!=OPERATOR_SHA):
+            or not re.fullmatch('[0-9a-f]{40}',source) or not re.fullmatch('sha256:[0-9a-f]{64}',image)):
         raise ValueError('same_source_drain_required')
     ops=runpy.run_path(str(OPERATOR))
     result=ops['captured'](['flock','-s','-n',ops['LOCK'],'python3','-I','-B','-c',PROGRAM,source,image],

@@ -1,15 +1,18 @@
 """Install the exact R-reviewed current/next source pair under the release lock."""
 
 import hashlib
+import os
 from pathlib import Path
 import runpy
 import sys
 
-DIR = Path(__file__).resolve().parent
-OPS = runpy.run_path(str(DIR / 'hk-operator.py'))
+CODE = Path(__file__).resolve().parent
+# Private state (gates, evidence, logs, tokens) stays outside the repository; see README.md.
+STATE = Path(os.environ.get('G2C_RELEASE_STATE', '~/.local/share/g2c/b-server-smoke-20261118')).expanduser()
+OPS = runpy.run_path(str(CODE / 'hk-operator.py'))
 OLD = '94f78d0ae64281aeb0018de035debeb9bef5c5e426ae83f7e23af252fdceaeed'
 NEW = 'c449d04115f5911c5187c03e7a80032cc98627bd4647eb5d25ef251c9bdf7b7b'
-INPUT = DIR / 'policy-e0bea843-dfc8a8d8-20261127.json'
+INPUT = STATE / 'policy-e0bea843-dfc8a8d8-20261127.json'
 PROGRAM = r"""
 import hashlib,os,stat,subprocess,sys
 from pathlib import Path

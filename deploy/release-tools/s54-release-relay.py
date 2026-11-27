@@ -12,7 +12,9 @@ import sys
 import time
 from urllib.parse import urlsplit
 
-DIR=Path(__file__).resolve().parent
+CODE = Path(__file__).resolve().parent
+# Private state (gates, evidence, logs, tokens) stays outside the repository; see README.md.
+STATE = Path(os.environ.get('G2C_RELEASE_STATE', '~/.local/share/g2c/b-server-smoke-20261118')).expanduser()
 PREFIX=b'G2C_RELEASE_GITHUB_GET '
 HOST='''import base64, hashlib, io, json, runpy, sys
 from pathlib import Path
@@ -99,7 +101,7 @@ def public_github_read(ssh,path):
 def main():
     if sys.flags.optimize:
         raise SystemExit('Run the transport without Python optimization')
-    ops=runpy.run_path(str(DIR/'hk-operator.py'))
+    ops=runpy.run_path(str(CODE / 'hk-operator.py'))
     phase,source,reviewed_hash,run=sys.argv[1:]
     assert phase in ('preflight','apply','rollback-preflight','rollback-apply')
     assert sys.flags.isolated and os.environ.get('GH_HOST')=='github.com'
@@ -109,10 +111,10 @@ def main():
     remote_dir=ops['ROOT']+'/probes/'+run
     rollback=phase.startswith('rollback-')
     gate_name='rollback-gate.json' if rollback else 'forward-gate.json'
-    gate_bytes=(DIR/(run+'-'+gate_name)).read_bytes()
+    gate_bytes=(STATE/(run+'-'+gate_name)).read_bytes()
     local_gate=json.loads(gate_bytes)
     if rollback:
-        verdict=json.loads((DIR/(run+'-smoke-verdict.json')).read_bytes())
+        verdict=json.loads((STATE/(run+'-smoke-verdict.json')).read_bytes())
         assert verdict['source']==source and verdict['status'] in ('FAIL','UNKNOWN')
         assert (local_gate['source'],local_gate['previous_source'])==(ops['OLD'],source)
         script='app-release-idle55-compat3-gatebytes-20261117.py'
@@ -130,7 +132,7 @@ def main():
     name=run+'-authenticated-'+phase
     requests=[]
     public_reads=0
-    with (DIR/(name+'.stdout')).open('xb') as output, (DIR/(name+'.stderr')).open('xb') as errors:
+    with (STATE/(name+'.stdout')).open('xb') as output, (STATE/(name+'.stderr')).open('xb') as errors:
         with subprocess.Popen([*ops['SSH'],shlex.join(command)],stdin=subprocess.PIPE,stdout=subprocess.PIPE,
                               stderr=errors) as remote:
             for line in remote.stdout:
@@ -155,7 +157,7 @@ def main():
                     sys.stdout.buffer.write(line)
                     sys.stdout.buffer.flush()
             result=remote.wait()
-    ops['save'](DIR/(name+'-github-evidence.json'),json.dumps(requests).encode())
+    ops['save'](STATE/(name+'-github-evidence.json'),json.dumps(requests).encode())
     return result
 
 if __name__=='__main__':

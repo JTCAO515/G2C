@@ -1,27 +1,30 @@
 """Build 54: bind an app release to merged GitHub evidence and the existing HK image witness."""
 from hashlib import sha256
 import json
+import os
 from pathlib import Path
 import runpy
 import subprocess
 import sys
 
-support = Path(__file__).resolve().parent
+CODE = Path(__file__).resolve().parent
+# Private state (gates, evidence, logs, tokens) stays outside the repository; see README.md.
+STATE = Path(os.environ.get('G2C_RELEASE_STATE', '~/.local/share/g2c/b-server-smoke-20261118')).expanduser()
 phase, source, primary_raw = sys.argv[1:]
 primary = int(primary_raw)
-release = runpy.run_path(str(support / 'prepare-release-20261119.py'))
+release = runpy.run_path(str(CODE / 'prepare-release-20261119.py'))
 context = release['main'].__globals__
-transport = runpy.run_path(str(support / 's54-release-relay.py'))
-policy = (support / 'policy-e0bea843-dfc8a8d8-20261127.json').read_bytes()
+transport = runpy.run_path(str(CODE / 's54-release-relay.py'))
+policy = (STATE / 'policy-e0bea843-dfc8a8d8-20261127.json').read_bytes()
 assert sha256(policy).hexdigest() == 'c449d04115f5911c5187c03e7a80032cc98627bd4647eb5d25ef251c9bdf7b7b'
 require_source_abi = context['require_source_abi']
 context['require_source_abi'] = lambda actual, _: require_source_abi(actual, json.loads(policy))
 
-previous = json.loads((support / 'release-20261119-3820da8b-evidence.json').read_bytes())
+previous = json.loads((STATE / 'release-20261119-3820da8b-evidence.json').read_bytes())
 records = {row['pr_number']: row for row in (previous['primary'], *previous['related'])}
 # #1355 explicitly replaces the withdrawn #1342 evidence for the combined smoke cost.
 del records[1342]
-qualified = json.loads((support / 'release-20261119-86028c3f-evidence.json').read_bytes())
+qualified = json.loads((STATE / 'release-20261119-86028c3f-evidence.json').read_bytes())
 for row in (qualified['primary'], *qualified['related']):
     if row['pr_number'] in (1354, 1355):
         records[row['pr_number']] = row
