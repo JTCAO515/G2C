@@ -71,25 +71,29 @@ enum LioTripCanvasFeature {
         return (usable, usable.count != archive.canvases.count)
     }
 
-    /// The most damaged-file copies kept beside the file; the oldest go first.
-    static let maximumDamagedCopies = 3
+    /// The damaged-file copies kept beside the file, newest first. The names are fixed (a ring of three) so that account
+    /// cleanup can remove exactly these (`LioTripHomeCleanup`) and a long run of bad writes cannot fill the phone.
+    public static let damagedCopyNames = (1...3).map { "trip-canvas.damaged-\($0).json" }
 
-    /// Before a damaged file is replaced by a save, its bytes are copied to `trip-canvas.damaged-<n>.json` in the
-    /// same protected folder (removed with it by account cleanup), so one bad canvas or one bad write never costs the
-    /// traveller the rest of the file for good. Nothing is kept for a file that was fine.
+    /// Before a damaged file is replaced by a save, its bytes are kept as `trip-canvas.damaged-1.json` (the older copies
+    /// move one place down and the oldest goes), in the same protected folder, with the same file protection, and
+    /// removed with the account's trip home. So one bad canvas or one bad write never costs the traveller the rest of
+    /// the file for good. Nothing is kept for a file that was fine. If the copy cannot be written the save fails and the
+    /// damaged file stays as it is.
     private func keepDamagedCopy() throws {
         let manager = FileManager.default
-        let prefix = "trip-canvas.damaged-", suffix = ".json"
-        let existing = ((try? manager.contentsOfDirectory(atPath: directory.path)) ?? []).compactMap { name -> Int? in
-            guard name.hasPrefix(prefix), name.hasSuffix(suffix) else { return nil }
-            return Int(name.dropFirst(prefix.count).dropLast(suffix.count))
-        }.sorted()
-        let next = (existing.last ?? 0) + 1
-        let copy = directory.appendingPathComponent("\(prefix)\(next)\(suffix)")
-        try manager.copyItem(at: file, to: copy)
-        for old in existing.dropLast(Self.maximumDamagedCopies - 1) {
-            try? manager.removeItem(at: directory.appendingPathComponent("\(prefix)\(old)\(suffix)"))
+        let names = Self.damagedCopyNames
+        let bytes = try Data(contentsOf: file)
+        func url(_ name: String) -> URL { directory.appendingPathComponent(name) }
+        try? manager.removeItem(at: url(names[2]))
+        for index in stride(from: 1, through: 0, by: -1) where manager.fileExists(atPath: url(names[index]).path) {
+            try manager.moveItem(at: url(names[index]), to: url(names[index + 1]))
         }
+        #if os(iOS)
+        try bytes.write(to: url(names[0]), options: [.atomic, .completeFileProtection])
+        #else
+        try bytes.write(to: url(names[0]), options: .atomic)
+        #endif
     }
 
     func canvas(for tripID: String) throws -> LioTripCanvas? { try load().first { $0.tripID == tripID } }

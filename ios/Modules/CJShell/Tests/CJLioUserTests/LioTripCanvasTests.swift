@@ -403,7 +403,7 @@ import Testing
         try oneBad.write(to: file)
         try store.save(canvas(Self.plan(id: "trip-3")))
         #expect(try names() == ["trip-canvas.damaged-1.json", LioTripCanvasStore.fileName])
-        #expect(try Data(contentsOf: directory.appendingPathComponent("trip-canvas.damaged-1.json")) == oneBad)
+        #expect(try Data(contentsOf: directory.appendingPathComponent(LioTripCanvasStore.damagedCopyNames[0])) == oneBad)
         #expect(try store.load().map(\.tripID) == ["trip-3", "trip-2", "trip-1"])        // the file itself is whole again
         try store.save(canvas(Self.plan(id: "trip-4")))
         #expect(try names().count == 2)                                                  // and now saves leave nothing more
@@ -412,7 +412,8 @@ import Testing
         try store.remove("nothing-here")
         #expect(try names().count == 2)
         try store.save(canvas())
-        #expect(try Data(contentsOf: directory.appendingPathComponent("trip-canvas.damaged-2.json")) == Data("not json".utf8))
+        #expect(try Data(contentsOf: directory.appendingPathComponent("trip-canvas.damaged-1.json")) == Data("not json".utf8))
+        #expect(try Data(contentsOf: directory.appendingPathComponent("trip-canvas.damaged-2.json")) == oneBad)    // the earlier copy moved down
         #expect(try store.load().map(\.tripID) == ["trip-1"])
     }
 
@@ -427,8 +428,10 @@ import Testing
             try store.save(canvas())
         }
         let copies = try FileManager.default.contentsOfDirectory(atPath: directory.path).filter { $0.hasPrefix("trip-canvas.damaged-") }.sorted()
-        #expect(copies == ["trip-canvas.damaged-3.json", "trip-canvas.damaged-4.json", "trip-canvas.damaged-5.json"])
-        #expect(try Data(contentsOf: directory.appendingPathComponent("trip-canvas.damaged-5.json")) == Data("bad 5".utf8))
+        #expect(copies == LioTripCanvasStore.damagedCopyNames)
+        for (index, name) in LioTripCanvasStore.damagedCopyNames.enumerated() {          // newest first: bad 5, bad 4, bad 3
+            #expect(try Data(contentsOf: directory.appendingPathComponent(name)) == Data("bad \(5 - index)".utf8))
+        }
     }
 
     @Test func aNewerAppsFileIsNeverWrittenOver() throws {
