@@ -112,3 +112,59 @@ def test_accepting_again_replaces_the_entry_and_keeps_the_rest(tmp_path):
     fill(review, {'pl_bj_gugong': ('', '', ''), 'pl_bj_tiantan': ('accept', 2, None)})
     assert run(tmp_path, out, review) == 0
     assert [p['id'] for p in placelib.load_city(tmp_path / 'lib' / 'beijing.v1.json')['places']] == ['pl_bj_gugong', 'pl_bj_tiantan']
+
+
+def test_an_accept_never_overwrites_a_library_entry_unless_asked_and_says_so(tmp_path, capsys):
+    out, review = imported(tmp_path, [C1, second()])
+    fill(review, {'pl_bj_gugong': ('accept', 1, None)})
+    (tmp_path / 'lib').mkdir()
+    assert run(tmp_path, out, review) == 0
+    first = (tmp_path / 'lib' / 'beijing.v1.json').read_bytes()
+    capsys.readouterr()
+    # the same id again: the candidate is no longer pending, and the entry is in the library
+    fill(review, {'pl_bj_gugong': ('accept', 5, '再审')})
+    assert run(tmp_path, out, review) == 1
+    assert 'already in the library' in capsys.readouterr().err and (tmp_path / 'lib' / 'beijing.v1.json').read_bytes() == first
+    assert run(tmp_path, out, review, '--replace') == 0
+    printed = capsys.readouterr().out
+    assert '1 replaced' in printed and 'replaced pl_bj_gugong' in printed
+    assert placelib.load_city(tmp_path / 'lib' / 'beijing.v1.json')['places'][0]['rank'] == 5
+
+
+@pytest.mark.parametrize('first, second_decision', [('reject', 'accept'), ('accept', 'reject')])
+def test_only_a_pending_candidate_can_be_decided_on(tmp_path, capsys, first, second_decision):
+    out, review = imported(tmp_path, [C1, second()])
+    fill(review, {'pl_bj_gugong': (first, 1 if first == 'accept' else '', '第一次')})
+    (tmp_path / 'lib').mkdir()
+    assert run(tmp_path, out, review) == 0
+    capsys.readouterr()
+    fill(review, {'pl_bj_gugong': (second_decision, 1 if second_decision == 'accept' else '', '改主意')})
+    assert run(tmp_path, out, review) == 1
+    message = capsys.readouterr().err
+    assert 'not pending' in message or 'in the library' in message
+
+
+def test_a_kill_between_writing_and_renaming_leaves_the_old_files_and_no_temporary(tmp_path, monkeypatch):
+    out, review = imported(tmp_path, [C1, second()])
+    fill(review, {'pl_bj_gugong': ('accept', 1, None)})
+    (tmp_path / 'lib').mkdir()
+    before = (out / 'beijing.cand.json').read_bytes()
+    monkeypatch.setattr(apply_review.os, 'replace', lambda *a: (_ for _ in ()).throw(OSError('disk full')))
+    assert run(tmp_path, out, review) == 1
+    assert (out / 'beijing.cand.json').read_bytes() == before and not (tmp_path / 'lib' / 'beijing.v1.json').exists()
+    assert not list((tmp_path / 'lib').glob('.*')) and not list(out.glob('.*'))
+
+
+def test_a_renamed_header_or_a_broken_candidate_file_is_a_clean_failure(tmp_path, capsys):
+    out, review = imported(tmp_path, [C1])
+    (tmp_path / 'lib').mkdir()
+    table = review / 'beijing.review.csv'
+    table.write_text(table.read_text(encoding='utf-8-sig').replace('decision', 'decision ', 1), encoding='utf-8-sig')
+    assert run(tmp_path, out, review) == 1 and 'decision' in capsys.readouterr().err
+    out2, review2 = imported(tmp_path / 'again', [C1])
+    fill(review2, {'pl_bj_gugong': ('accept', 1, None)})
+    doc = json.loads((out2 / 'beijing.cand.json').read_text(encoding='utf-8'))
+    del doc['candidates'][0]['location']
+    (out2 / 'beijing.cand.json').write_text(json.dumps(doc), encoding='utf-8')
+    (tmp_path / 'lib').mkdir(exist_ok=True)
+    assert run(tmp_path, out2, review2) == 1 and 'FAIL' in capsys.readouterr().err
