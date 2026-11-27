@@ -916,6 +916,8 @@ private var developmentHostEnvironment: [String: String] {
     let lioTripHistory: LioTripHistoryClient
     let lioMemoryActions: LioMemoryActionsClient
     let lioMemoryConsent: LioMemoryConsentClient
+    /// #1994: the Undo of an automatic save (does nothing unless `G2CAutosaveUndoEnabled`).
+    let lioTripUndo: LioTripUndoClient
     /// #1723 PR-2: reads a chat plan's places before saving (does nothing unless `G2CChatTripPlacesEnabled`).
     let lioChatTripPlaces: LioChatTripPlaces
     let lioTranslationHistory: LioTranslationHistory
@@ -1014,6 +1016,7 @@ private var developmentHostEnvironment: [String: String] {
         lioTripHistory = LioTripHistoryClient(timeline: lioClient, recovery: recovery, scope: scope, lease: lease)
         lioMemoryActions = LioMemoryActionsClient(timeline: lioClient, recovery: recovery, scope: scope, lease: lease)
         lioMemoryConsent = LioMemoryConsentClient(timeline: lioClient)
+        lioTripUndo = LioTripUndoClient(timeline: lioClient)
         lioChatTripPlaces = .signed(lioClient)
         #endif
         let betaRead = configuration.endpoint.host == "api-beta.go2china.space"

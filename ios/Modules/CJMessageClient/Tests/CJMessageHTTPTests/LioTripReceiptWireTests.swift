@@ -38,14 +38,15 @@ struct LioTripReceiptWireTests {
     private let until = "2026-11-28T03:04:05.678+00:00"
     private let day1 = #"{"day":1,"city":{"id":"beijing","zh":"北京","en":"Beijing"},"added":3,"updated":0,"removed":0}"#
 
-    private func restoreUndo(version: Int = 7) -> String {
-        #"{"state":"available","action_id":"\#(undoID)","until":"\#(until)","target":{"trip_id":"trip-9a1b","expected_version":\#(version),"original_hash":"\#(String(repeating: "a", count: 64))","content_version":"structured.4","restore_version":\#(version - 1),"restore_hash":"\#(String(repeating: "b", count: 64))","restore_content_version":"structured.4"}}"#
+    private func restoreUndo(version: Int = 7, saveID: String = "lio-plan-run-5c1f") -> String {
+        let undoID = LioTimelineWire.undoActionID(forSave: saveID)
+        return #"{"state":"available","action_id":"\#(undoID)","until":"\#(until)","target":{"trip_id":"trip-9a1b","expected_version":\#(version),"original_hash":"\#(String(repeating: "a", count: 64))","content_version":"structured.4","restore_version":\#(version - 1),"restore_hash":"\#(String(repeating: "b", count: 64))","restore_content_version":"structured.4"}}"#
     }
 
     private func saved(version: Int = 7, first: String = "", summary: String? = nil, undo: String? = nil, actionID: String = "lio-plan-run-5c1f",
                        tripID: String = "trip-9a1b") -> String {
         let summaryJSON = summary.map { #","summary":\#($0)"# } ?? ""
-        return #"{"status":"saved","action_id":"\#(actionID)","trip_id":"\#(tripID)","committed_version":\#(version)\#(first)\#(summaryJSON),"undo":\#(undo ?? restoreUndo(version: version))}"#
+        return #"{"status":"saved","action_id":"\#(actionID)","trip_id":"\#(tripID)","committed_version":\#(version)\#(first)\#(summaryJSON),"undo":\#(undo ?? restoreUndo(version: version, saveID: actionID))}"#
     }
 
     private func summary(days: String? = nil, wishlist: Int = 0, legs: Int = 0) -> String {
@@ -62,7 +63,10 @@ struct LioTripReceiptWireTests {
         #expect(value.summary == .init(days: [.init(day: 1, city: .init(id: "beijing", zh: "北京", en: "Beijing"), added: 3)],
                                        wishlistAdded: 2, legsUpdated: 1))
         #expect(value.summary?.added == 3 && value.summary?.updated == 0 && value.summary?.removed == 0)
-        #expect(value.undo == .init(state: .available, kind: .restore, actionID: undoID, until: until))
+        #expect(value.undo == .init(state: .available, kind: .restore, actionID: undoID, until: until,
+                                    target: .init(tripID: "trip-9a1b", expectedVersion: 7, originalHash: String(repeating: "a", count: 64),
+                                                  contentVersion: "structured.4",
+                                                  restore: .init(version: 6, hash: String(repeating: "b", count: 64), contentVersion: "structured.4"))))
     }
 
     @Test func theFirstAutosaveFlagIsReadOnlyWhenItIsTrue() throws {
@@ -112,6 +116,40 @@ struct LioTripReceiptWireTests {
         let noKind = created.replacingOccurrences(of: #""kind":"withdraw_created","#, with: "")
         #expect(try receipt(saved(version: 1, undo: noKind)) == nil, "withdraw_created needs its kind")
         #expect(try receipt(saved(version: 3, undo: restoreUndo(version: 3).replacingOccurrences(of: #""action_id""#, with: #""kind":"restore","action_id""#)))?.undo?.kind == .restore)
+    }
+
+    @Test func theUndoNeedsItsExactTargetAndTheIdTheServerDerives() throws {
+        let hash = String(repeating: "a", count: 64)
+        func restore(_ target: String) -> String {
+            #"{"state":"available","action_id":"\#(undoID)","until":"\#(until)","target":\#(target)}"#
+        }
+        let fields = #""trip_id":"trip-9a1b","expected_version":7,"original_hash":"\#(hash)","content_version":"structured.4","restore_version":6,"restore_hash":"\#(hash)","restore_content_version":"structured.3""#
+        let value = try #require(try receipt(saved(undo: restore("{" + fields + "}"))))
+        #expect(value.undo?.target?.restore == .init(version: 6, hash: hash, contentVersion: "structured.3"))
+        let bad: [(String, String)] = [
+            ("no target", #"{"state":"available","action_id":"\#(undoID)","until":"\#(until)"}"#),
+            ("extra field", restore("{" + fields + #","title":"x"}"#)),
+            ("a field missing", restore(#"{"trip_id":"trip-9a1b","expected_version":7,"original_hash":"\#(hash)","content_version":"structured.4","restore_version":6,"restore_hash":"\#(hash)"}"#)),
+            ("not the committed version", restore("{" + fields.replacingOccurrences(of: #""expected_version":7"#, with: #""expected_version":6"#).replacingOccurrences(of: #""restore_version":6"#, with: #""restore_version":5"#) + "}")),
+            ("restores a version other than the previous", restore("{" + fields.replacingOccurrences(of: #""restore_version":6"#, with: #""restore_version":4"#) + "}")),
+            ("restore version 0", restore("{" + fields.replacingOccurrences(of: #""restore_version":6"#, with: #""restore_version":0"#) + "}")),
+            ("upper case hash", restore("{" + fields.replacingOccurrences(of: hash, with: String(repeating: "A", count: 64)) + "}")),
+            ("short hash", restore("{" + fields.replacingOccurrences(of: #""original_hash":"\#(hash)""#, with: #""original_hash":"abc""#) + "}")),
+            ("unknown content version", restore("{" + fields.replacingOccurrences(of: "structured.4", with: "structured.9") + "}")),
+            ("version a string", restore("{" + fields.replacingOccurrences(of: #""expected_version":7"#, with: #""expected_version":"7""#) + "}")),
+            ("trip id bad", restore("{" + fields.replacingOccurrences(of: "trip-9a1b", with: "trip 1") + "}")),
+            ("id not derived from the save id", #"{"state":"available","action_id":"undo-\#(String(repeating: "0", count: 40))","until":"\#(until)","target":{\#(fields)}}"#),
+        ]
+        for (name, undo) in bad { #expect(try receipt(saved(undo: undo)) == nil, "\(name)") }
+        let created = #"{"state":"available","kind":"withdraw_created","action_id":"\#(undoID)","until":"\#(until)","target":"#
+        let four = #""trip_id":"trip-9a1b","expected_version":1,"original_hash":"\#(hash)","content_version":"structured.1""#
+        let withdraw = try #require(try receipt(saved(version: 1, undo: created + "{" + four + "}}")))
+        #expect(withdraw.undo?.target == .init(tripID: "trip-9a1b", expectedVersion: 1, originalHash: hash, contentVersion: "structured.1"))
+        for (name, target) in [("restore fields", "{" + four + #","restore_version":0,"restore_hash":"\#(hash)","restore_content_version":"structured.1""# + "}"),
+                               ("version 2", "{" + four.replacingOccurrences(of: #""expected_version":1"#, with: #""expected_version":2"#) + "}"),
+                               ("no hash", #"{"trip_id":"trip-9a1b","expected_version":1,"content_version":"structured.1"}"#)] {
+            #expect(try receipt(saved(version: 1, undo: created + target + "}")) == nil, "withdraw_created: \(name)")
+        }
     }
 
     // MARK: Rows
@@ -305,14 +343,11 @@ struct LioTripReceiptWireTests {
         #expect(seen.values.filter(\.isFirstSave).count == 2)
     }
 
-    /// What the contract calls invalid but the App does not look at, because it uses neither the undo target nor the
-    /// sentence the server must not send. They are read as the receipt they otherwise are; none of them can start the
-    /// one-time notice.
+    /// What the contract calls invalid but the App does not look at, because it does not use the field or the state makes
+    /// it moot. They are read as the receipt they otherwise are; none of them can start the one-time notice. The undo
+    /// target and the derived undo id are checked now that the App sends the undo.
     private static let notChecked: Set<String> = [
-        "undo available without a target", "undo expired with a target", "undo target with an extra field",
-        "undo target not the committed version", "undo restores a version other than the previous",
-        "withdraw_created target says version 2", "withdraw_created target with restore fields",
-        "withdraw_created target without the hash", "undo action id not derived from the save id",
+        "undo expired with a target",
         "first_autosave on a not-saved receipt", "first_autosave on an unknown receipt",
         "not saved with a summary", "not saved reason disabled", "summary carries a place name",
     ]
