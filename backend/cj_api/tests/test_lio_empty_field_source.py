@@ -272,6 +272,18 @@ class WishItems(unittest.TestCase):
                 self.assertEqual((state['status'], state['authority']), ('plan_preview', 'plan'))
                 self.assertEqual(len(lookups), 1)
 
+    def test_known_residual_a_fixed_item_with_no_fixed_word_is_taken_for_a_wish(self):
+        # Known and accepted (statement 2026-11-28 under JT's pre-authorization, P2): a real fixed arrangement whose quote and name have none
+        # of the fixed, booked, paid or timed words above is dropped as if not provided: it is not locked, nothing false is written, and
+        # the planner still sees the traveler's words. A number rule would also keep a whole-sentence quote with 「2天」 and bring the
+        # Hong Kong failure back, so there is none. Whether to replace this by a residual whitelist waits for the real `fixed_items` of
+        # the v2 retest.
+        from cj_api.lio_flow_intake import _drop_wish_items
+        for quote in ('Day 1 Palace Museum at nine', 'Palace Museum 0900', '故宫14h', '9到11故宫', '12.1故宫', '1日故宫', 'on the 1st Palace Museum',
+                      '12-01故宫', '第一天故宫，三个人', '一号故宫'):
+            with self.subTest(quote=quote):
+                self.assertEqual(_drop_wish_items([wish('故宫', quote)]), 1)
+
     def test_an_item_with_anything_that_says_it_is_fixed_is_kept(self):
         from cj_api.lio_flow_intake import _drop_wish_items
         keep = [wish('故宫', '第一天故宫', locked=True), wish('故宫', '第一天故宫', booking_status='booked'), wish('故宫', '第一天故宫', start_time='09:00'),
@@ -292,16 +304,19 @@ class WishItems(unittest.TestCase):
                 wish('故宫', '第一天故宫，已经付款了'), wish('故宫', '交了定金'), wish('Palace Museum', 'already paid'), wish('Palace Museum', 'deposit sent'),
                 wish('故宫', '已经报名了故宫'), wish('Palace Museum', 'signed up for the Palace Museum'), wish('故宫', '第一天故宫上午场'),
                 wish('故宫', '故宫讲解员'), wish('故宫', '故宫名额已经拿到'), wish('故宫', '第一天开会，会议'),
-                # fourth review round: times, dates, payments and orders written other ways; any number that is not a day ordinal keeps the item
-                wish('Palace Museum', 'Day 1 Palace Museum at nine'), wish('Palace Museum', 'Palace Museum 0900'), wish('Palace Museum', 'Palace Museum at 09h30'),
-                wish('故宫', '故宫14h'), wish('故宫', '上午9-11故宫'), wish('故宫', '9到11故宫'), wish('故宫', '12.1故宫'), wish('故宫', '1日故宫'),
-                wish('故宫', '下周一故宫'), wish('故宫', '周六故宫'), wish('Palace Museum', 'on the 1st Palace Museum'), wish('Palace Museum', '1 December Palace Museum'),
-                wish('Palace Museum', 'on Saturday Palace Museum'), wish('Palace Museum', 'Dec. 1st Palace Museum'), wish('故宫', '12-01故宫'),
+                # fourth review round (words only, no number rule): times, dates, payments, orders, confirmations written with a word
+                wish('故宫', '下周一故宫'), wish('故宫', '周六故宫'), wish('Palace Museum', '1 December Palace Museum'),
+                wish('Palace Museum', 'on Saturday Palace Museum'),
                 wish('故宫', '付过钱了'), wish('故宫', '已支付'), wish('故宫', '已经买单'), wish('故宫', '已经下单'), wish('Palace Museum', 'already purchased'),
                 wish('Palace Museum', 'I bought entry'), wish('Palace Museum', 'order placed'), wish('Palace Museum', 'I have a pass'),
                 wish('Palace Museum', 'I have an appointment'), wish('故宫', '已约'), wish('故宫', '约了故宫'), wish('故宫', '预留了故宫'), wish('故宫', '订单号123456'),
                 wish('故宫', '已经订上了'), wish('故宫', '订到了故宫'), wish('故宫', '买到了故宫'), wish('故宫', '入场券到手'), wish('故宫', '已核销'),
-                wish('Palace Museum', 'scheduled'), wish('Palace Museum', 'all set'), wish('故宫', '第一天故宫，三个人'), wish('故宫', '一号故宫'),
+                wish('Palace Museum', 'scheduled'), wish('Palace Museum', 'all set'),
+                # added in the word-only round: holidays, next month, confirmations
+                wish('故宫', '春节故宫'), wish('故宫', '下个月故宫'), wish('故宫', '国庆去故宫'), wish('故宫', '今晚故宫'), wish('故宫', '已经确认'), wish('故宫', '已经落实'),
+                wish('故宫', '敲定了故宫'), wish('故宫', '定下来了'), wish('故宫', '已经办好'), wish('故宫', '人家给留了位'), wish('Palace Museum', 'secured entry'),
+                wish('Palace Museum', 'settled'), wish('Palace Museum', 'registered'), wish('Palace Museum', 'we are on the list'), wish('Palace Museum', 'next month'),
+                wish('Palace Museum', 'on Christmas'), wish('故宫', '掏了钱'), wish('Palace Museum', 'comped'),
                 wish('故宫', '第一天9:30故宫'), wish('故宫', '第一天上午9点故宫'), wish('故宫', '12月1日故宫'), wish('故宫', '2026-12-01 故宫'), wish('故宫', '第一天故宫', detail_refs=[dict(source_index=0, quote='x')]),
                 wish('故宫', '第一天故宫', kind='appointment'), wish('酒店', '第一天酒店', kind='hotel'), wish('机票', '第一天航班', kind='transport')]
         items = [dict(item) for item in keep]
