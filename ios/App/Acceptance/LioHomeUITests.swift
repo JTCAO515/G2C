@@ -46,6 +46,41 @@ import CryptoKit
         }
     }
 
+    /// #2006: "Essentials" is now "Convenience" and gains community services (searched on their own, by name).
+    func testNearbyConvenienceOffersCommunityServices() throws {
+        continueAfterFailure = false
+        for language in ["en", "zh-Hans"] {
+            let english = language == "en"
+            let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
+            app.launchArguments = ["--lio-preview", "--lio-tools-preview", "--lio-nearby-preview", "--lio-nearby-essentials",
+                                   "-cj.ui.language.v1", language,
+                                   "-lio.ui.appearance.v1", "light", "-UIPreferredContentSizeCategoryName",
+                                   "UICTContentSizeCategoryL"]
+            app.launch()
+            defer { app.terminate() }
+            let tools = app.tabBars.buttons[english ? "Tools" : "工具"]
+            XCTAssertTrue(tools.waitForExistence(timeout: 8))
+            tools.tap()
+            let entry = app.buttons["lio.tools.nearby"].exists ? app.buttons["lio.tools.nearby"] : app.buttons["lio.tools.convenience"]
+            XCTAssertTrue(entry.waitForExistence(timeout: 6))
+            entry.tap()
+            let group = app.descendants(matching: .any)["lio.nearby.group"]
+            if !group.waitForExistence(timeout: 8) { capture(app, "nearby-no-group-\(language)") }
+            XCTAssertTrue(group.exists)
+            XCTAssertFalse(app.buttons[english ? "Essentials" : "必需品"].exists)
+            app.buttons[english ? "Convenience" : "便利"].tap()
+            for kind in ["atm", "toilet", "luggage", "community"] {
+                XCTAssertTrue(app.buttons["lio.nearby.category.\(kind)"].waitForExistence(timeout: 6), kind)
+            }
+            app.buttons["lio.nearby.category.community"].tap()
+            XCTAssertTrue(app.staticTexts["lio.nearby.essential-heading"].waitForExistence(timeout: 8))
+            XCTAssertTrue(app.staticTexts[english ? "Community services (found by name; some may be missing)"
+                                                  : "社区服务（按“社区服务中心”名称搜索，结果可能不全）"].exists)
+            XCTAssertTrue(app.staticTexts["示例社区服务中心"].waitForExistence(timeout: 8))
+            capture(app, "nearby-convenience-community-\(language)")
+        }
+    }
+
     /// #1450 item 2: the interactive map opens from a city, finds a station and shows its lines,
     /// the taxi and directions actions, and the operator source with its check date.
     func testMetroMapFindsAStationAndShowsItsLines() throws {

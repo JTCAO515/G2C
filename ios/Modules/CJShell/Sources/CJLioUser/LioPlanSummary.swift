@@ -38,13 +38,13 @@ struct LioPlanSummary: Equatable, Identifiable, Sendable {
     var id: String { tripID }
     var title: String { itinerary.title }
     var undated: Bool { itinerary.undated }
-    /// The itinerary's days as names and times (Chinese names, as the booking rules match them; a template's
-    /// English names ride along for the English trip home).
+    /// The itinerary's days as names and times (Chinese names, as the booking rules match them; a template's, or a
+    /// checked chat place's, English names ride along for the English trip home).
     var days: [Day] {
         itinerary.days.map { day in
             Day(number: day.number, date: day.date, items: day.stops.map {
                 Item(id: $0.id, label: $0.place.nameZH, startTime: $0.time, endTime: nil, fixed: $0.fixed,
-                     labelEN: source == .template ? $0.place.nameEN : nil)
+                     labelEN: source == .template || $0.place.nameEN != $0.place.nameZH ? $0.place.nameEN : nil)
             })
         }
     }
@@ -321,11 +321,20 @@ final class LioSavedPlansModel {
         return plans.contains { $0.tripID == id }
     }
 
+    /// #1976: trips whose last save did not reach the phone (a full disk, a locked phone). Cleared by a save that does.
+    private(set) var failedTripIDs: Set<String> = []
+    func saveFailed(_ plan: LioPlanSummary) -> Bool { failedTripIDs.contains(plan.tripID) }
+
     func save(_ plan: LioPlanSummary) {
         guard let store else { return }
         do {
             try store.save(plan)
-        } catch {}
+            failedTripIDs.remove(plan.tripID)
+        } catch is CancellationError {
+            // The account is no longer current: nothing to show.
+        } catch {
+            failedTripIDs.insert(plan.tripID)
+        }
         reload()
     }
 

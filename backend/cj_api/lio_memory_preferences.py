@@ -54,6 +54,32 @@ _FORMS = {
     ),
 }
 
+# #2000 (M-2): health (allergy, illness, disability, mobility, pregnancy, medication) and religion (faith, halal /
+# kosher / fasting, places of worship, "no pork" style diet rules) never become a memory candidate. The seven slots
+# above are already ordinary tastes and habits; this is a second, independent gate over the WHOLE original turn and
+# over the entry itself, so a sensitive word anywhere makes the turn yield nothing, whatever the model proposed.
+# Allergies stay only in the phone-local show card. The match is deliberately broad: a missed preference costs one
+# tap; a remembered diagnosis or faith costs trust. Travel-only words (a "temple" to visit) are not on the list.
+_SENSITIVE = re.compile(
+    r'过敏|敏感体质|哮喘|糖尿病|高血压|心脏病|癌|病史|疾病|生病|患有|患者|胃病|肠胃|肠炎|癫痫|抑郁|焦虑症|精神疾病|精神类|失眠|药|'
+    r'怀孕|孕妇|孕期|哺乳|残疾|残障|行动不便|行动困难|腿脚不便|轮椅|拐杖|助行|视障|盲人|听障|耳聋|乳糖不耐|麸质|乳糜|'
+    r'透析|手术|康复|医疗|医生|就医|诊断|低糖|无糖|忌口|'
+    r'宗教|信仰|信教|教徒|穆斯林|回教|伊斯兰|清真|斋月|开斋|礼拜|祷告|祈祷|佛教|佛祖|拜佛|信佛|基督|天主|耶稣|教会|犹太|印度教|锡克|道教|'
+    r'不吃猪|不吃牛|不吃荤|吃素|素食|斋戒|洁食|'
+    r'allerg|asthma|diabet|hypertension|blood pressure|heart (?:disease|condition)|cancer|chronic|disease|illness|medical|'
+    r'medicat|medicine|prescription|\bpills?\b|diagnos|disabilit|disabled|wheelchair|mobility|walking (?:aid|stick)|crutch|'
+    r'pregnan|nursing mother|breastfeed|depress|anxiety disorder|mental health|epilep|dialysis|surgery|injur|'
+    r'gluten|celiac|lactose|intoleran|'
+    r'religio|faith|muslim|islam|halal|ramadan|fasting|prayer|\bpray|church|mosque|synagogue|buddhis|christian|'
+    r'catholic|jewish|kosher|hindu|\bsikh|taoist|no pork|(?:don.?t|do not|never) eat (?:pork|beef)|vegetarian|vegan',
+    re.IGNORECASE)
+
+
+def sensitive(text):
+    """True when text mentions health or religion (see above)."""
+    return type(text) is not str or _SENSITIVE.search(text) is not None
+
+
 PREFERENCE_SLOTS = frozenset(_FORMS)
 _EXISTING_SLOTS = frozenset({'diet.spicy', 'quiet.entrance'})
 
@@ -71,6 +97,8 @@ def _value(form, text):
 
 
 def allows_pilot_preference_write(command):
+    if sensitive(command.text):
+        return False
     if command.slot in _EXISTING_SLOTS:
         return True
     form = _FORMS.get(command.slot)
@@ -80,6 +108,8 @@ def allows_pilot_preference_write(command):
 
 def explicit_pilot_preference(text, slots):
     """Resolve one complete statement within the newly approved pilot slots."""
+    if sensitive(text):
+        return None
     statement = _REMEMBER.sub('', text.strip())
     matches = [slot for slot in slots
                if slot in PREFERENCE_SLOTS - _EXISTING_SLOTS and _value(_FORMS[slot], statement) is not None]
@@ -111,6 +141,8 @@ def explicit_pilot_preferences(text, slots, *, max_entries):
 
 def supported_preference(entry, original):
     """Accept only a supported value stated in the complete original turn."""
+    if sensitive(original) or sensitive(entry.text) or any(sensitive(evidence.quote) for evidence in entry.evidence):
+        return False
     form = _FORMS.get(entry.slot)
     if entry.kind != 'preference' or form is None:
         return False
