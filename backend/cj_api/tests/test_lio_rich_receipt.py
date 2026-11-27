@@ -98,6 +98,11 @@ class Row(unittest.TestCase):
 
 
 class Reader(unittest.TestCase):
+    def setUp(self):
+        patcher = mock.patch.dict(os.environ, {'CJ_LIO_ANSWER_RICH': 'on'})
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
     def test_the_reader_is_asked_only_for_a_run_with_a_receipt_effect(self):
         from cj_api.lio_dialogue_routes import _receipt
         asked = []
@@ -112,6 +117,18 @@ class Reader(unittest.TestCase):
         self.assertEqual(asked, [('scope-a', 'run-1')])
         self.assertIsNone(_receipt(None, context, binding, state('completed', 'x', 'lio_trip_receipt:{}')))
         self.assertIsNone(_receipt(reader, context, binding, None))
+
+    def test_the_reader_is_not_asked_while_the_switch_is_off_or_the_run_is_still_going(self):
+        from cj_api.lio_dialogue_routes import _receipt
+        asked = []
+        reader = lambda *args: asked.append(args) or SAVED
+        context, binding = SimpleNamespace(scope='s'), SimpleNamespace(run_id='r')
+        with mock.patch.dict(os.environ, {'CJ_LIO_ANSWER_RICH': 'off'}):
+            self.assertIsNone(_receipt(reader, context, binding, state('completed', 'x', 'lio_trip_receipt:{}')))
+        with mock.patch.dict(os.environ, {'CJ_LIO_ANSWER_RICH': 'on'}):
+            self.assertIsNone(_receipt(reader, context, binding, state('running', 'x', 'lio_trip_receipt:{}')))
+            self.assertEqual(_receipt(reader, context, binding, state('failed', '', 'lio_trip_receipt:{}')), SAVED)
+        self.assertEqual(len(asked), 1)
 
     def test_a_failing_reader_never_fails_the_page(self):
         from cj_api.lio_dialogue_routes import _receipt

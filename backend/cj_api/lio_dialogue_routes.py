@@ -175,9 +175,12 @@ def _rich(answer, entities, cards=None, receipt=None):
 def _receipt(reader, context, binding, state):
     """The trip side's receipt for one RUN (T-1, `cj_api.lio_trip_receipt.read`), only when the RUN wrote a receipt effect
     and the poll declared rich; any failure of the reader leaves the receipt out and never fails the page."""
-    if reader is None or state is None or not any(e.startswith(RECEIPT_EFFECT) for e in state.effects):
+    if reader is None or state is None or state.status not in ('completed', 'failed', 'unknown') \
+            or not any(e.startswith(RECEIPT_EFFECT) for e in state.effects):
         return None
     try:
+        if not lio_entities.rich_enabled():
+            return None   # off: no extra database read (contract R-1)
         return reader(context.scope, binding.run_id, state.effects)
     except Exception:
         return None
