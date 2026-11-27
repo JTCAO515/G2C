@@ -48,6 +48,29 @@ class Sensitive(unittest.TestCase):
         for text in ('我想去故宫', 'Where is the Temple of Heaven?', '我喜欢吃辣', 'I like spicy food', '我不吃辣', 'I prefer quiet entrances'):
             self.assertFalse(sensitive(text), text)
 
+    def test_the_words_that_were_too_wide_no_longer_block_ordinary_travel_talk(self):
+        # #2083: each is a word that used to block a turn only because it contained or resembled a health or faith word.
+        for text in ('The tour operator was very helpful and the cooperation was great', 'I am a fast walker, I like museums',
+                     '我喜欢吃拜拜肉', 'I like accessible prices', 'I enjoy a blind tasting of local food', 'Johnnie Walker tasting', 'a slow walker like me', '我喜欢博物馆，不太喜欢盲目跟团'):
+            with self.subTest(text=text):
+                self.assertFalse(sensitive(text))
+
+    def test_the_narrowed_words_still_catch_the_real_meaning(self):
+        for text in ('I am recovering after an operation', 'I need a walker, I like museums', 'I use a walker', '我去拜拜，喜欢慢节奏',
+                     'I need accessibility features', 'I need a wheelchair accessible hotel', 'I am blind and like museums',
+                     'My cousin is a blind traveler',
+                     # found by the red-line review of #2099: these must stay blocked
+                     'I rely on a walker', 'my mom relies on her walker', 'grandma has a walker', 'bring a walker for my dad',
+                     'walker needed', 'I cannot go without a walker', 'I have a blind spot in my left eye', 'I need an accessible ticket',
+                     'an accessible rate for a room'):
+            with self.subTest(text=text):
+                self.assertTrue(sensitive(text))
+
+    def test_words_added_for_the_gaps_the_review_found(self):
+        for text in ('我有聋哑朋友同行', '我朋友失聪，喜欢博物馆', '我是佛门弟子', '我家人全盲，喜欢安静的酒店', '我孩子是盲童', 'I have gout and arthritis'):
+            with self.subTest(text=text):
+                self.assertTrue(sensitive(text))
+
     def test_non_text_is_treated_as_sensitive(self):
         for value in (None, 7, b'x', ['a']):
             self.assertTrue(sensitive(value))
