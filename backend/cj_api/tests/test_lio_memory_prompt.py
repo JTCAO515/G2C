@@ -15,6 +15,8 @@ STATEMENTS = ('我不喜欢辣的，帮我推荐北京的晚饭', '我平时喜�
 PLAIN = ('故宫怎么走', '北京天气怎么样', '地铁几点停运', 'How do I get from the airport to the city center?', 'Is the Great Wall open today?', '你好', '')
 REVIEW_FALSE_POSITIVES = ('我有孕在身，想要慢节奏', '我腿不好，想要轻松一点', '我经常头疼', '我身体不好想要慢节奏', '我有心脏问题，节奏慢一点',
                           '我不吃早饭，因为在做化疗', '我需要无障碍通道', '带着孩子去，他有自闭症', '我喜欢念经', "I don't eat meat on Fridays",
+                          '我吃斋，预算每天300元', '我守斋期，慢节奏', '我只吃斋饭', '我视力不好，慢节奏', '我晕车，喜欢慢节奏',
+                          "I fast during Lent, I prefer light food", "I'm recovering from an operation, slow pace please", "I use a cane, I prefer short walks",
                           '我需要打车', '我需要厕所', '我想要一杯咖啡', '我经常出差', '我爱你')
 SENSITIVE = ('我对花生过敏，不吃辣', '我是穆斯林，我喜欢清真食物', 'I am allergic to peanuts and I prefer quiet places', 'I keep kosher, I like museums',
              '我有糖尿病，预算每晚1000', '我坐轮椅，喜欢慢节奏')
@@ -139,10 +141,6 @@ class Row(unittest.TestCase):
         self.assertEqual(calls, [])
 
 
-if __name__ == '__main__':
-    unittest.main()
-
-
 class PageCheck(unittest.TestCase):
     def test_the_consent_table_is_read_once_per_page(self):
         from cj_api.lio_dialogue_routes import _prompt_open
@@ -156,3 +154,7 @@ class PageCheck(unittest.TestCase):
             check = _prompt_open(SimpleNamespace(consent=Store()), SimpleNamespace(scope='s'))
             self.assertTrue(check() and check() and check())
         self.assertEqual(reads, ['s'])
+
+
+if __name__ == '__main__':
+    unittest.main()
