@@ -9,8 +9,27 @@ import CJTripClient
 #endif
 
 /// The native product uses Lio. Development profiles keep their existing shell.
+///
+/// The scene's content factory is called by SwiftUI's `LazyView`, which on iOS 27 may run it on the
+/// `com.apple.SwiftUI.AsyncRenderer` thread. A closure written inside this `@MainActor` `App.body` is
+/// inferred `@MainActor`, and Swift 6 traps at its entry when that happens off the main thread.
+/// So the factory is a `@Sendable` function reference with no isolation, which only builds an empty
+/// entry view. The state and the whole view tree live in `CJProbeRoot`, created from the entry view's
+/// `body`, which SwiftUI always evaluates on the main thread.
 @main
 struct CJProbeApp: App {
+    private static let makeEntry: @Sendable () -> CJProbeRootEntry = CJProbeRootEntry.init
+
+    var body: some Scene { WindowGroup(content: Self.makeEntry) }
+}
+
+struct CJProbeRootEntry: View {
+    nonisolated init() {}
+
+    var body: some View { CJProbeRoot() }
+}
+
+struct CJProbeRoot: View {
     @State private var shell: ShellState
     #if G2C_LIO_APP
     @AppStorage(LioAppearance.preferenceKey) private var appearance = LioAppearance.system
@@ -61,8 +80,9 @@ struct CJProbeApp: App {
         #endif
     }
 
-    var body: some Scene {
-        WindowGroup {
+    // The nesting below keeps the layout the acceptance scripts patch by exact text.
+    var body: some View {
+        Group {
             Group {
                 #if G2C_DEMO_BETA
                 if let demo { DemoBetaRootView(shell: shell, root: demo) }
