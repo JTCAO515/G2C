@@ -44,6 +44,14 @@ class Shape(unittest.TestCase):
         for content in (PREFIX + 'not json', PREFIX + '{}', PREFIX + '{"items":5}', PREFIX + '{"items":[7,"x"]}'):
             self.assertEqual(pm.shape([dict(role='user', content=content)], True), ([], False))
 
+    def test_a_memory_message_with_non_string_content_is_dropped(self):
+        weird = dict(role='user', content=[dict(type='text', text=PREFIX + '{"items":[]}')])
+        self.assertEqual(pm.shape([weird, dict(role='user', content='x')], True), ([dict(role='user', content='x')], False))
+
+    def test_the_guidance_does_not_limit_the_places(self):
+        self.assertIn('do not assume preferences that are not listed', pm.GUIDANCE)
+        self.assertNotIn('use nothing', pm.GUIDANCE)
+
     def test_the_switch_is_off_by_default_and_strict(self):
         with mock.patch.dict(os.environ):
             os.environ.pop('CJ_LIO_PLAN_MEMORY', None)
@@ -133,6 +141,21 @@ class Discussion(unittest.TestCase):
             self.assertEqual(any(e.startswith('lio_memory_used:') for e in state.effects), bool(expected))
         worker, _ = self.run_discussion(None)                                        # switch on, no consent store: no memory
         self.assertEqual(self.memory_texts(worker), [])
+
+    def test_a_consent_check_that_fails_means_no_memory_but_the_reply_is_still_made(self):
+        os.environ.update(CJ_LIO_PLAN_MEMORY='on', CJ_LIO_MEMORY_CONSENT_REQUIRED='1')
+
+        def broken(scope):
+            raise RuntimeError('consent store down')
+        worker, state = self.run_discussion(SimpleNamespace(plan_memory_allowed=broken))
+        self.assertEqual(self.memory_texts(worker), [])
+        self.assertEqual(state.status, 'completed')
+
+    def test_two_memory_messages_are_each_filtered(self):
+        out, used = pm.shape([memory_message('我对花生过敏'), dict(role='user', content='x'), memory_message('我喜欢慢节奏的旅行')], True)
+        self.assertTrue(used)
+        self.assertEqual(len(out), 2)
+        self.assertEqual(json.loads(out[1]['content'][len(PREFIX):])['items'][0]['text'], '我喜欢慢节奏的旅行')
 
     def test_nothing_clean_left_means_no_guidance_and_no_used(self):
         os.environ.update(CJ_LIO_PLAN_MEMORY='on', CJ_LIO_MEMORY_USED='on')

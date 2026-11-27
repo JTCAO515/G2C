@@ -280,7 +280,10 @@ def discuss(worker, binding, state, locale, turns, references, *, day_count=None
             # #2010 (M-5): only memory this account may use, without health or religion items, plus one guidance sentence.
             from .lio_memory_consent import consent_required
             lio_memory = getattr(worker, 'lio_memory', None)
-            allowed = not consent_required() or (lio_memory is not None and lio_memory.plan_memory_allowed(binding.scope))
+            try:
+                allowed = not consent_required() or (lio_memory is not None and lio_memory.plan_memory_allowed(binding.scope))
+            except Exception:
+                allowed = False   # no memory is better than unchecked memory; the reply is still made
             current_messages, remembered = lio_plan_memory.shape(current[:-1], allowed)
             current = [*current_messages, current[-1]]
         messages = [*current[:-1], *messages]
