@@ -14,7 +14,7 @@
 | `candidates/<城市>.cand.json` | 候选（待审、已决定的都在这里；不是库） |
 | `review/<城市>.review.csv`、`.md` | 给 JT 的审核表 |
 | `SOURCES.md` | 数据来源条款核对结论 |
-| `images/` | 图片清单（#1987） |
+| `placeimages.py`、`images/check_images.py`、`images/manifest.v1.json` | 图片清单：生成、校验（#1987） |
 
 生成物（不要手改）：
 - 服务端副本 `backend/fact/cj_fact/places_<城市>.v1.json`，与源文件**逐字节一致**，读取入口 `cj_fact.places`（`load_city`、`by_id`、`by_category`、`match_name`）。
@@ -71,6 +71,21 @@ CJ_AMAP_WEB_KEY=… python3 -B knowledge/places/import/import_drafts.py --inbox 
 - 审核表：`review/<城市>.review.csv`（Excel 可直接打开，批次 25 条，空的 `decision` 列填 accept / reject / edit，另有 `rank`、`note` 列）和 `.md`（逐条卡片）。表里以 `= + - @` 开头的单元格会加引号前缀，避免草稿里的公式在表格软件里执行。
 - 重跑安全：已有决定的条目保持不变，待审的刷新，从收件箱里消失的待审条目保留。
 - 高德应答缓存在 `<收件箱>/.amap-cache`（仓库之外），只用于避免重复计费，不提交。
+
+## 图片（#1987）
+
+地点图是 AI 生成的**示意插画**（JT 2026-11-27 定），地点页和气泡卡都标「示意图」，不使用第三方图片。大图 1600×1200、缩略图 512×512 的 PNG 太大，不进 git，存放位置由服务端线的图片存储登记决定；进仓库的是 `images/manifest.v1.json`：每张图的文件名、实测尺寸、SHA-256、`license`、`label_zh`/`label_en`、生成提示词、模型、日期。
+
+```bash
+# Codex 交付 codex-inbox/C2（manifest.json + PNG）后：实测尺寸和哈希、拒绝不合规条目、写清单
+python3 -B knowledge/places/images/check_images.py build ../codex-inbox/C2 --today 2026-11-30
+# 校验清单；--files 同时核对图片文件；--release 要求每张图对应库里的地点、每个主档景点都有图
+python3 -B knowledge/places/images/check_images.py check --files ../codex-inbox/C2 --release
+```
+
+- `license` 只能是 `ai-generated`，`label_zh` 必须是「示意图」、`label_en` 是 Illustration，尺寸必须精确，缩略图不能是同一个文件；不合规的条目被**拒绝而不是修**，退回 Codex 重做。
+- 图里不许有文字、Logo、水印、能认出脸的人物，这一点脚本看不出来，由审核表上的人工抽查负责。
+- 清单是 `validate.py` 的一部分，CI 每次校验；App 精简版的 `thumb` 字段取自清单。App 副本一旦生成，`Package.swift` 要声明 `Resources/LioPlaces.v1.json`（有测试守着）。
 
 ## 开发用数据包（未经人审，只给开发用）
 

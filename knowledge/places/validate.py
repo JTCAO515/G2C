@@ -16,6 +16,7 @@ import sys
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import devpack  # noqa: E402
 import generate  # noqa: E402
+import placeimages  # noqa: E402
 import placelib  # noqa: E402
 
 BOOKING_RULES = placelib.ROOT / 'knowledge/attractions/generate_ios.py'
@@ -63,6 +64,8 @@ def validate(layout=generate.LAYOUT, rules=None, thumbs=None):
             if place['id'] in seen:
                 problems.append(f'{place["id"]}: also in {seen[place["id"]]}')
             seen[place['id']] = doc['city']
+    if layout.images_path is not None and layout.images_path.is_file():
+        placeimages.load_manifest(layout.images_path)
     if rules is None:
         rules = _booking_module().load()['rules']
     problems += booking_conflicts(docs, rules)
