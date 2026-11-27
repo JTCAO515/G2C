@@ -417,7 +417,23 @@ def _clause_of(text,start,end):
     return text[left:right]
 
 
-def _duration_quote(text,days):
+_ZH_REQ_HEAD=r'(?:请|麻烦)?\s*(?:(?:帮|给|为)(?:我们|我)\s*)?(?:规划|安排|设计|做)\s*(?:一下|一个|个|一份|一趟|一次)?\s*'
+_EN_REQ_HEAD=(r'(?:(?:can|could|would) you\s+|please\s+)?(?:help (?:me|us) (?:to )?)?(?:plan|planning|organize|create|build|make)\s+'
+              r'(?:a\s+|an\s+|the\s+|my\s+|our\s+)?')
+
+
+def _request_forms(city):
+    """What may stand between the start of the clause and the count: the request words and the destination of THIS plan, nothing
+    else (fourth review round: a count after anything else in the clause is somebody else's stay, a leg, or another city)."""
+    where=re.escape(city.strip())if type(city)is str and city.strip()else None
+    zh_city='(?:'+where+r'\s*)?(?:的\s*)?'if where else''
+    forms=[re.compile(_ZH_REQ_HEAD+zh_city+r'\Z'),
+           re.compile(r'(?:我想|我要|我们想|我们要|想|要)?去\s*'+where+r'\s*玩\s*\Z')if where else None,
+           re.compile(_EN_REQ_HEAD+(r'(?:(?:trip|visit|itinerary)\s+(?:to|in|for)\s+'+where+r'\s*(?:for\s+)?|'+where+r'\s+(?:for\s+)?)?'if where else'')+r'\Z',re.I)]
+    return [form for form in forms if form is not None]
+
+
+def _duration_quote(text,days,city=None):
     """The one exact span of `text` that states `days` as the length of the trip, or None. See the rules above."""
     loose=list(_LOOSE_SPAN.finditer(text))
     if len(loose)!=1:return None
@@ -428,16 +444,16 @@ def _duration_quote(text,days):
     if count!=days:return None
     before,tail=text[:match.start()],text[match.end(group):]
     if _BAD_BEFORE.search(before[-10:])or _BAD_AFTER.match(text[match.end():match.end()+12]):return None
-    plain=text.strip().strip('，,。.！!？? ')==match[0].strip()
-    if not(plain or _ZH_BEFORE.search(before[-6:])or _ZH_AFTER.match(tail)or _EN_BEFORE.search(before[-16:])or _EN_AFTER.match(tail)):
-        return None
-    if not plain:
-        clause=_clause_of(text,match.start(),match.end())
-        # The count must sit in the clause that is itself the plan request ("帮我规划一个北京2天的行程"), not in a later
-        # clause about someone's stay elsewhere, a leg of the trip, or something that is not travel (third review round).
-        if not(PLAN_REQUEST.match(clause)or _ZH_REQUEST.match(clause)or OPEN_PLAN.match(clause)):return None
-        if _CLAUSE_VETO.search(clause):return None
-    return match[0]
+    if text.strip().strip('，,。.！!？? ')==match[0].strip():return match[0]       # the whole message is just the answer 「三天」
+    clause=_clause_of(text,match.start(),match.end())
+    if _CLAUSE_VETO.search(clause):return None
+    head=clause[:clause.index(match[0])]
+    if not any(form.match(head)for form in _request_forms(city)):return None
+    # after the count: a trip noun, or (「去成都玩三天」) nothing more, or English "days in <city>"
+    if _ZH_AFTER.match(tail)or _EN_AFTER.match(tail)or re.match(r'\s*$',clause[clause.index(match[0])+len(match[0]):]):return match[0]
+    where=re.escape(city.strip())if type(city)is str and city.strip()else None
+    if where and re.match(r'(?:\s+|-)days?\s+in\s+'+where+r'\b',tail,re.I):return match[0]
+    return None
 
 
 def _restore_duration_source(value,turns):
@@ -450,7 +466,8 @@ def _restore_duration_source(value,turns):
     index=len(turns)-1       # the traveler's latest message; the model's own index may count Memory slots
     if (type(days)is not int or isinstance(days,bool)or type(refs)is not list or index<0
             or any(type(ref)is dict and ref.get('field')=='duration_days'for ref in refs)):return 0
-    quote=_duration_quote(turns[index].text,days)
+    city=value.get('city')
+    quote=_duration_quote(turns[index].text,days,city.get('query')if type(city)is dict else None)
     if quote is None:return 0
     refs.append(dict(field='duration_days',source_index=index,quote=quote))
     return 1

@@ -96,9 +96,9 @@ class LoggedShape(unittest.TestCase):
 
     def test_the_duration_quote_is_exact_unambiguous_and_only_from_the_latest_message(self):
         from cj_api.lio_flow_intake import _duration_quote
-        self.assertEqual(_duration_quote(self.TEXT, 2), '2天')
-        self.assertEqual(_duration_quote('plan 3 days in Chengdu', 3), '3 days')
-        self.assertEqual(_duration_quote('去成都玩三天', 3), '三天')
+        self.assertEqual(_duration_quote(self.TEXT, 2, '北京'), '2天')
+        self.assertEqual(_duration_quote('plan 3 days in Chengdu', 3, 'Chengdu'), '3 days')
+        self.assertEqual(_duration_quote('去成都玩三天', 3, '成都'), '三天')
         self.assertIsNone(_duration_quote('第一天故宫，第二天颐和园', 2))                 # 第一天 / 第二天 are ordinals, not counts
         self.assertIsNone(_duration_quote('每天走两万步', 2))
         self.assertIsNone(_duration_quote('玩2天，再玩3天', 2))                           # two different counts
@@ -110,9 +110,9 @@ class LoggedShape(unittest.TestCase):
             with self.subTest(dated=dated):
                 self.assertIsNone(_duration_quote(dated, 2) or _duration_quote(dated, 3))
         self.assertIsNone(_duration_quote('2天后出发，玩3天', 3))                          # two count-like spans: not recovered, even if one is a date
-        self.assertEqual(_duration_quote('Plan a 3-day trip to Beijing', 3), '3-day')
-        self.assertIsNone(_duration_quote('3-day trip to Beijing', 3))                    # not a plan request by itself: not recovered
-        self.assertEqual(_duration_quote('规划北京三日游', 3), '三日')
+        self.assertEqual(_duration_quote('Plan a 3-day trip to Beijing', 3, 'Beijing'), '3-day')
+        self.assertIsNone(_duration_quote('3-day trip to Beijing', 3, 'Beijing'))                    # not a plan request by itself: not recovered
+        self.assertEqual(_duration_quote('规划北京三日游', 3, '北京'), '三日')
 
     def test_inputs_found_by_the_red_line_review_are_never_restored_as_a_trip_length(self):
         from cj_api.lio_flow_intake import _duration_quote
@@ -141,6 +141,10 @@ class LoggedShape(unittest.TestCase):
                 ('spend 3 days waiting for my visa, plan Chengdu', 3), ('stay 3 days in quarantine', 3),
                 ('for 3 days I will be away, plan Chengdu', 3), ('规划3天的预算', 3), ('我想住3天的酒店', 3), ('stay 3 days at the hotel', 3),
                 ('玩3天', 3),   # not a plan request on its own
+                # fifth review round: no punctuation to cut the clause, and a destination that is not this plan's
+                ('帮我规划北京行程我在深圳待3天再过去', 3), ('帮我规划北京行程 我先在上海玩3天', 3), ('帮我规划北京行程 我在医院住3天', 3),
+                ('帮我规划成都行程 展会排3天', 3), ('帮我规划北京行程我爸来北京住3天', 3),
+                ('plan a trip to Beijing I will stay 3 days in Shanghai first', 3), ('plan a Beijing trip the kids stay 3 days at camp', 3),
                 # fourth review round: the count sits in a later clause that is not the request itself
                 ('帮我规划北京行程，我在深圳待3天再过去', 3), ('帮我规划北京行程，我在医院住3天', 3), ('帮我规划成都行程，孩子在夏令营待3天', 3),
                 ('帮我规划成都行程，我爸妈来北京住3天', 3), ('帮我规划成都行程，路上要待3天', 3),
@@ -152,15 +156,23 @@ class LoggedShape(unittest.TestCase):
                 # two counts in one message
                 ('玩2天，再玩3天', 2), ('玩2天，再玩3天', 3)):
             with self.subTest(text=text, claimed=claimed):
-                self.assertIsNone(_duration_quote(text, claimed))
-        for text, claimed, quote in (('规划北京三日游', 3, '三日'), ('规划北京3日行程', 3, '3日'), ('规划成都三天两晚', 3, '三天'), ('三天', 3, '三天'),
-                                     ('3 days', 3, '3 days'), ('帮我规划一个不累的成都3天行程', 3, '3天'), ('帮我规划无锡3天的行程', 3, '3天'),
- ('我想去成都玩3天，预算1000', 3, '3天'), ('去成都玩3天但是预算1000', 3, '3天'), ('帮我规划成都三天的行程，不要太累', 3, '三天'),
-                                     ('Plan a 3-day trip', 3, '3-day'),
-                                     ('去成都玩十天', 10, '十天'),
-                                     ('Plan 3 days in Chengdu', 3, '3 days')):
+                self.assertIsNone(_duration_quote(text, claimed, '成都'))
+                self.assertIsNone(_duration_quote(text, claimed, '北京'))
+        for text, claimed, plan_city in (('我想去成都玩3天，帮我规划重庆', 3, '重庆'), ('帮我规划重庆行程，想去成都玩3天', 3, '重庆'),
+                                         ('帮我规划成都行程，去上海玩3天', 3, '成都'), ('去上海玩3天，然后帮我规划北京', 3, '北京')):
+            with self.subTest(text=text, plan_city=plan_city):                 # a 「去X玩N天」 whose X is not this plan's city
+                self.assertIsNone(_duration_quote(text, claimed, plan_city))
+        for text, claimed, quote, city in (
+                ('帮我规划一个北京2天的行程：第一天故宫和景山，第二天颐和园。', 2, '2天', '北京'), ('去成都玩三天', 3, '三天', '成都'),
+                ('我想去成都玩3天，预算1000', 3, '3天', '成都'), ('去成都玩3天但是预算1000', 3, '3天', '成都'),
+                ('帮我规划成都三天的行程，不要太累', 3, '三天', '成都'), ('规划北京三日游', 3, '三日', '北京'),
+                ('规划北京3日行程', 3, '3日', '北京'), ('规划成都三天两晚', 3, '三天', '成都'), ('去成都玩十天', 10, '十天', '成都'),
+                ('帮我规划无锡3天的行程', 3, '3天', '无锡'),
+                ('帮我规划成都行程 3天', 3, None, '成都'),
+                ('Plan 3 days in Chengdu', 3, '3 days', 'Chengdu'), ('Plan a 3-day trip', 3, '3-day', None),
+                ('Plan a trip to Chengdu for 3 days', 3, '3 days', 'Chengdu'), ('三天', 3, '三天', None), ('3 days', 3, '3 days', None)):
             with self.subTest(text=text, claimed=claimed):
-                self.assertEqual(_duration_quote(text, claimed), quote)
+                self.assertEqual(_duration_quote(text, claimed, city), quote)
 
     def test_no_restoration_without_a_traveler_span_or_when_the_model_already_gave_a_source(self):
         text = '规划北京行程，去故宫'
