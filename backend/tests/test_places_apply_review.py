@@ -173,6 +173,8 @@ def test_a_renamed_header_or_a_broken_candidate_file_is_a_clean_failure(tmp_path
     del doc['candidates']
     (out2 / 'beijing.cand.json').write_text(json.dumps(doc), encoding='utf-8')
     assert run(tmp_path, out2, review2) == 1 and 'beijing.cand.json' in capsys.readouterr().err
+    (out2 / 'beijing.cand.json').write_text('{ not json', encoding='utf-8')
+    assert run(tmp_path, out2, review2) == 1 and 'beijing.cand.json is not valid JSON' in capsys.readouterr().err
 
 
 def test_replace_only_re_reviews_an_accepted_candidate_and_an_edit_never_touches_the_library(tmp_path, capsys):
@@ -181,16 +183,22 @@ def test_replace_only_re_reviews_an_accepted_candidate_and_an_edit_never_touches
     fill(review, {'pl_bj_gugong': ('accept', 1, None), 'pl_bj_tiantan': ('reject', '', '不要')})
     assert run(tmp_path, out, review) == 0
     capsys.readouterr()
-    fill(review, {'pl_bj_gugong': ('edit', '', '改一下')})
+    fill(review, {'pl_bj_gugong': ('edit', '', '改一下'), 'pl_bj_tiantan': ('', '', '')})
     assert run(tmp_path, out, review, '--replace') == 1 and 'edit the library file' in capsys.readouterr().err
     # a cut-off run: the library has the entry but the candidate still says pending -> the message says what to do
     doc = json.loads((out / 'beijing.cand.json').read_text(encoding='utf-8'))
     next(c for c in doc['candidates'] if c['id'] == 'pl_bj_gugong')['status'] = 'pending'
     (out / 'beijing.cand.json').write_text(json.dumps(doc), encoding='utf-8')
-    fill(review, {'pl_bj_gugong': ('accept', 1, None)})
-    assert run(tmp_path, out, review) == 1 and 'set this candidate' in capsys.readouterr().err
+    fill(review, {'pl_bj_gugong': ('accept', 9, None), 'pl_bj_tiantan': ('', '', '')})                       # a different answer is a different review: refused
+    assert run(tmp_path, out, review) == 1 and 'already in the library' in capsys.readouterr().err
+    fill(review, {'pl_bj_gugong': ('accept', 1, None), 'pl_bj_tiantan': ('', '', '')})                       # the same answer again just finishes the cut-off run
+    before = (tmp_path / 'lib' / 'beijing.v1.json').read_bytes()
+    assert run(tmp_path, out, review) == 0
+    assert (tmp_path / 'lib' / 'beijing.v1.json').read_bytes() == before and 'replaced' not in capsys.readouterr().out.replace('0 replaced', '')
+    done = json.loads((out / 'beijing.cand.json').read_text(encoding='utf-8'))
+    assert next(c for c in done['candidates'] if c['id'] == 'pl_bj_gugong')['status'] == 'accepted'
+    doc = done
     # --replace on a rejected candidate whose id is in the library is refused too
-    doc = json.loads((out / 'beijing.cand.json').read_text(encoding='utf-8'))
     next(c for c in doc['candidates'] if c['id'] == 'pl_bj_gugong')['status'] = 'rejected'
     (out / 'beijing.cand.json').write_text(json.dumps(doc), encoding='utf-8')
     assert run(tmp_path, out, review, '--replace') == 1 and 'only re-reviews' in capsys.readouterr().err

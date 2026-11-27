@@ -87,10 +87,17 @@ def apply(city, decisions, candidates_doc, library_path, reviewer, today, allow_
             problems.append(f'{ident}: not in the {city} candidate file')
             continue
         in_library = ident in places
+        if decision == 'accept' and in_library and not allow_replace and cand['status'] == 'pending':
+            try:   # a run cut off after the library was written: the same answer again finds the same entry, so it only finishes the job
+                if library_entry(cand, rank, reviewer, today, note) == places[ident]:
+                    accepted[ident] = places[ident]
+                    continue
+            except (placelib.Invalid, KeyError, TypeError):
+                pass
         if decision == 'accept' and in_library and not allow_replace:
             problems.append(f'{ident}: already in the library (reviewed {places[ident]["review"]["reviewed_on"]} by {places[ident]["review"]["reviewer"]}); '
-                            '--replace overwrites it with this review. If an earlier run was cut off after writing the library, '
-                            "do not replace: set this candidate's status to accepted in the candidate file instead")
+                            '--replace overwrites it with this review. (An earlier run cut off after writing the library is finished by running '
+                            'the same command again with the same --reviewer, --on and answers; no --replace needed.)')
             continue
         if decision == 'edit' and in_library:
             problems.append(f'{ident}: it is in the library; edit the library file, not the candidate')
@@ -118,7 +125,7 @@ def apply(city, decisions, candidates_doc, library_path, reviewer, today, allow_
                 problems.append(str(error))
             except (KeyError, TypeError) as error:
                 problems.append(f'{ident}: the candidate record is malformed (missing or wrong {error})')
-    replaced = [ident for ident in accepted if ident in places]
+    replaced = [ident for ident, entry in accepted.items() if ident in places and places[ident] != entry]
     places.update(accepted)
     library = {'version': placelib.VERSION, 'city': city, 'places': sorted(places.values(), key=lambda p: p['id'])}
     if accepted and not problems:  # validate with the real rules, under the real file name
@@ -160,7 +167,10 @@ def main(argv=None):
     library_path = Path(args.library_dir) / f'{args.city}.v1.json'
     try:
         decisions = read_decisions(table)
-        doc = json.loads(cand_path.read_text(encoding='utf-8'))
+        try:
+            doc = json.loads(cand_path.read_text(encoding='utf-8'))
+        except ValueError as error:
+            raise placelib.Invalid(f'{cand_path.name} is not valid JSON ({error})') from None
         library, doc, edits, problems, replaced = apply(args.city, decisions, doc, library_path, args.reviewer, args.on, args.replace)
     except (placelib.Invalid, OSError, ValueError) as error:
         print(f'FAIL: {error}', file=sys.stderr)
