@@ -1934,19 +1934,13 @@ import CryptoKit
                 let second = app.buttons["lio.memory.card.city-walks"]
                 XCTAssertTrue(first.waitForExistence(timeout: 8), app.debugDescription)
                 XCTAssertTrue(second.exists)
+                // #2002: memories are full-width rows under their group headings, never a square grid.
                 XCTAssertEqual(first.frame.width, second.frame.width, accuracy: 1)
-                XCTAssertEqual(first.frame.height, second.frame.height, accuracy: 1)
-                XCTAssertEqual(first.frame.height, first.frame.width, accuracy: 1)
                 for card in app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "lio.memory.card.")).allElementsBoundByIndex {
-                    XCTAssertEqual(card.frame.height, first.frame.height, accuracy: 1)
                     XCTAssertEqual(card.frame.width, first.frame.width, accuracy: 1)
+                    XCTAssertGreaterThanOrEqual(card.frame.height, 44)
                 }
-                if style == "largest" {
-                    XCTAssertGreaterThan(second.frame.minY, first.frame.maxY)
-                } else {
-                    XCTAssertEqual(first.frame.minY, second.frame.minY, accuracy: 2)
-                    XCTAssertGreaterThan(second.frame.minX, first.frame.maxX)
-                }
+                XCTAssertGreaterThan(second.frame.minY, first.frame.minY)
                 try app.performAccessibilityAudit(for: .all) { issue in
                     let detail = XCTAttachment(string: String(describing: issue.auditType) + "\n" +
                                                (issue.element?.debugDescription ?? "No element supplied by audit") + "\n" + app.debugDescription)
