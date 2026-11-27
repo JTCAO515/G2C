@@ -162,6 +162,12 @@ extension LioRoadbook {
 /// #1515: the Roadbook tool is shown only when the build's Info.plist sets `G2CRoadbookEnabled` to the string YES.
 enum LioRoadbookFeature {
     static func enabled(infoValue: Any?) -> Bool { infoValue as? String == "YES" }
+
+    /// #1997: with the trip canvas on, the Roadbook stops being a tool of its own in the Tools tab: popular routes are
+    /// used as a trip from the canvas's own entry, and offline copies and export stay on the trip home.
+    static func shownInTools(roadbookInfo: Any?, canvasInfo: Any?) -> Bool {
+        enabled(infoValue: roadbookInfo) && !LioTripCanvasFeature.enabled(infoValue: canvasInfo)
+    }
 }
 
 extension LioRoadbook {

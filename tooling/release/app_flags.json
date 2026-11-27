@@ -58,6 +58,10 @@
       "plist": "G2CMenuOrderEnabled"
     },
     {
+      "setting": "G2C_PLACE_TOOLS_ENABLED",
+      "plist": "G2CPlaceToolsEnabled"
+    },
+    {
       "setting": "G2C_TRIP_HOME_ENABLED",
       "plist": "G2CTripHomeEnabled"
     },
@@ -96,6 +100,10 @@
     {
       "setting": "G2C_TRIP_CANVAS_ENABLED",
       "plist": "G2CTripCanvasEnabled"
+    },
+    {
+      "setting": "G2C_ANSWER_RICH_ENABLED",
+      "plist": "G2CAnswerRichEnabled"
     },
     {
       "setting": "G2C_MEMORY_CONSENT_ENABLED",

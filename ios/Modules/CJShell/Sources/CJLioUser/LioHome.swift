@@ -81,6 +81,8 @@ public struct LioHome<MenuContent: View>: View {
     /// #1727: shown when a button's tool is not in this build.
     @State private var followupUnavailable = false
     private let answerLayoutOn = LioAnswerLayoutFeature.enabledInBuild
+    /// #1991: places the server named in an answer are tappable words (`G2CAnswerRichEnabled`).
+    private let answerRichOn = LioAnswerRichFeature.enabledInBuild
     @State private var feedbackDetails: FeedbackDetails?
     /// #1748: the account's in-app location choice, when the build asks for it (`G2CLocationConsentEnabled`).
     @State private var locationConsent: LioLocationConsent?
@@ -1307,8 +1309,10 @@ public struct LioHome<MenuContent: View>: View {
                 // #1727: with the build's flag on and the server's `split`, two bubbles cut at the first blank line.
                 let parts = (answerLayoutOn && turn.layout == .split) ? LioAnswerParts(turn.answer) : LioAnswerParts(whole: turn.answer)
                 let tailKey = LioEntranceKey(turn: turn.id, part: .answerTail)
-                let answerText: (String, String, Bool, LioEntranceKey) -> LioStreamingText = { source, identifier, completes, key in
-                    LioStreamingText(source: source, streaming: turn.status == .answering,
+                // #1991: the server's place ranges count the whole answer; each bubble gets its own.
+                let spans = answerRichOn ? parts.places(turn.places) : (head: [], tail: [])
+                let answerText: (String, [LioPlaceSpan], String, Bool, LioEntranceKey) -> LioStreamingText = { source, places, identifier, completes, key in
+                    LioStreamingText(source: source, places: places, streaming: turn.status == .answering,
                                      animate: entering.contains(key), language: language,
                                      presentationActive: !chatFading && !menuOpen && tab == .chat,
                                      identifier: identifier,
@@ -1325,10 +1329,10 @@ public struct LioHome<MenuContent: View>: View {
                         scroll.scrollTo("lio.bottom", anchor: .bottom)
                     })
                 }
-                lioReply { answerText(parts.head, "lio.answer", parts.tail == nil, answerKey) }
+                lioReply { placeHosted(spans.head) { answerText(parts.head, spans.head, "lio.answer", parts.tail == nil, answerKey) } }
                     .lioEntrance(.fade, active: entering.contains(answerKey)) { entering.remove(answerKey) }
                 if let tail = parts.tail {
-                    lioReply(byline: false) { answerText(tail, "lio.answer.2", true, tailKey) }
+                    lioReply(byline: false) { placeHosted(spans.tail) { answerText(tail, spans.tail, "lio.answer.2", true, tailKey) } }
                         .lioEntrance(.fade, active: entering.contains(tailKey)) { entering.remove(tailKey) }
                 }
                 if answerLayoutOn, turn.status == .finished, !(turn.followups.isEmpty && turn.chips.isEmpty) {
@@ -1488,6 +1492,27 @@ public struct LioHome<MenuContent: View>: View {
             guard case .notSent(let step) = feedbackPhases[id] else { return }
             sendFeedback(step, turnID: id, messageID: messageID, retry: true)
         })
+    }
+
+    /// #1991: the bubble's words are tappable places when the build asks for them; otherwise the text as it was.
+    @ViewBuilder
+    private func placeHosted<Content: View>(_ spans: [LioPlaceSpan], @ViewBuilder _ content: () -> Content) -> some View {
+        if answerRichOn {
+            LioPlaceMentionHost(spans: spans, language: language, addToTrip: placeAdder, content: content)
+        } else {
+            content()
+        }
+    }
+
+    /// "Add to trip" on a place card: the trip canvas's "Want to go" list of the current plan, only when the canvas
+    /// is on in this build (`G2CTripCanvasEnabled`) and the phone has a trip folder.
+    private var placeAdder: (@MainActor @Sendable (LioPlace) -> LioPlaceTripAdd)? {
+        guard LioTripCanvasFeature.enabledInBuild, let store = LioTripCanvasStore(tripHome: tripHomeStore) else { return nil }
+        let plans = savedPlans.plans
+        return { place in
+            let today = LioTripDay(date: Date(), timeZone: LioTripChecklist.beijing)
+            return store.addWish(place, plan: LioTripChecklist.currentPlan(profile: nil, plans: plans, today: today))
+        }
     }
 
     /// #1727: a server button opens its tool through the router; a tool this build does not have says so.
