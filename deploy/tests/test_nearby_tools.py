@@ -311,8 +311,24 @@ def test_luggage_storage_is_a_fixed_name_search_on_its_own(ledger):
     assert supplier.calls[1][1]['types'] == '200300' and len(supplier.calls) == 2
 
 
+def test_community_service_is_a_fixed_name_search_on_its_own_with_its_own_cache_entry(ledger):
+    supplier = Supplier()
+    service = NearbyService(supplier, NearbyBudget(ledger))
+    service.search('owner', NearbySearchRequest.model_validate(payload2(['community'])), lambda: None)
+    operation, params = supplier.calls[0]
+    assert operation == 'search' and params['keywords'] == '社区服务中心' and 'types' not in params
+    # Luggage at the same spot is another keyword, never answered from the community entry.
+    service.search('owner', NearbySearchRequest.model_validate(payload2(['luggage'])), lambda: None)
+    assert supplier.calls[1][1]['keywords'] == '行李寄存' and len(supplier.calls) == 2
+    with ledger.connect() as db:
+        counts, _, _ = authorization_usage(db)
+    assert counts['place'] == 2  # Nearby's own count, nothing new
+
+
 @pytest.mark.parametrize('body', [
     payload2(['luggage', 'toilet']),                                      # luggage only on its own
+    payload2(['community', 'atm']), payload2(['community', 'luggage']),   # community only on its own
+    payload(crs='GCJ-02', categories=['community'], radius_m=1000, sort='distance'),  # NEARBY.1 is frozen
     payload2(['exchange']), payload2(['bank']),                           # not offered
     payload(crs='GCJ-02', categories=['atm'], radius_m=1000, sort='distance'),       # NEARBY.1 is frozen
     payload(crs='GCJ-02', categories=['luggage'], radius_m=1000, sort='distance'),

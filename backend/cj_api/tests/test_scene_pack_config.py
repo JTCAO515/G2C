@@ -10,6 +10,9 @@ from cj_api import scene_pack_config as config
 
 ROOT=Path(__file__).resolve().parents[3]
 REGISTRY=ROOT/'ios/Modules/CJShell/Sources/CJLioUser/LioToolRegistry.swift'
+# #1980: hub and merged-card ids that exist only on the Tools tab. The server never names them (a scene pack
+# lists KNOWN_TOOLS only, and answer buttons come from the fixed table), so they are not in KNOWN_TOOLS.
+APP_ONLY_TOOLS=frozenset({'eat-play','convenience','money'})
 
 
 class ScenePackTests(unittest.TestCase):
@@ -59,7 +62,9 @@ class ScenePackTests(unittest.TestCase):
 
     def test_tool_ids_match_the_app_registry(self):
         registry=set(re.findall(r'LioTool\("([a-z-]+)"\)',REGISTRY.read_text()))
-        self.assertEqual(registry,config.KNOWN_TOOLS)
+        self.assertTrue(APP_ONLY_TOOLS<=registry,'an App-only id must stay in the registry or leave this list')
+        self.assertTrue(APP_ONLY_TOOLS.isdisjoint(config.KNOWN_TOOLS))
+        self.assertEqual(registry-APP_ONLY_TOOLS,config.KNOWN_TOOLS)
 
     def test_format_fails_closed(self):
         cases=[

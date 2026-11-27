@@ -240,8 +240,11 @@ def write_outputs(by_city, rejected, notes, today, out_dir, review_dir, batch_si
         table.write_text(render_csv(rows, read_filled(table)), encoding='utf-8-sig')
         (review_dir / f'{city}.review.md').write_text(render_md(city, rows, today), encoding='utf-8')
         written.append((city, len(items), len(rows)))
+    report = out_dir / f'rejected-{today}.json'
     if rejected or notes:
-        (out_dir / f'rejected-{today}.json').write_text(dumps({'rejected': rejected, 'notes': notes}), encoding='utf-8')
+        report.write_text(dumps({'rejected': rejected, 'notes': notes}), encoding='utf-8')
+    elif report.is_file():  # a clean re-run must not leave the earlier run's problems behind
+        report.unlink()
     return written
 
 

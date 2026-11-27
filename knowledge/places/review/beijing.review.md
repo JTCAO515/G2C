@@ -4,20 +4,20 @@
 
 ## 第 1 批
 
+### 国贸商城 · China World Mall  `pl_bj_china_world_mall`
+- shopping/mall · main · 分数 58 · 朝阳区
+- 高德：未查询
+- 简介：逛服装和生活品牌时，可用商场的双语导购屏定位。 / Browse clothes and lifestyle shops using the mall's bilingual directories.
+- 开放时间：—
+- 来源：https://www.beijing.gov.cn/fuwu/bmfw/sy/jrts/202605/t20260515_4651758.html
+- [ ] accept　[ ] reject　[ ] edit：
+
 ### 故宫博物院 · The Palace Museum  `pl_bj_gugong`
 - attraction/museum · main · 分数 57 · 东城区
 - 高德：未查询
 - 简介：沿紫禁城中轴看宫殿与红墙 / Walk the Forbidden City's axis past red walls and palace halls.
 - 开放时间：4月1日–10月31日 08:30–17:00，16:00停止入馆。11月1日–次年3月31日 08:30–16:30，15:30停止入馆。通常周一闭馆，法定节假日除外。
 - 来源：https://english.beijing.gov.cn/travellinginbeijing/mustvisitsites/202306/t20230608_3127526.html
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 国贸商城 · China World Mall  `pl_bj_china_world_mall`
-- shopping/mall · main · 分数 56 · 朝阳区
-- 高德：未查询
-- 简介：逛服装和生活品牌时，可用商场的双语导购屏定位。 / Browse clothes and lifestyle shops using the mall's bilingual directories.
-- 开放时间：—
-- 来源：https://www.beijing.gov.cn/fuwu/bmfw/sy/jrts/202605/t20260515_4651758.html
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 北京首都国际机场 · Beijing Capital International Airport  `pl_bj_pek`
@@ -124,6 +124,231 @@
 - 来源：https://whlyj.beijing.gov.cn/ggfw/ly/202511/t20251119_4287815.html
 - [ ] accept　[ ] reject　[ ] edit：
 
+### 北京海淀雅乐轩酒店 · Aloft Beijing, Haidian  `pl_bj_haidianyalexuan`
+- hotel/hotel · main · 分数 31 · 海淀区
+- 高德：未查询
+- 简介：兰靛厂站接地铁12号线，酒店列有中英文服务。 / An English-listed, Line 12 option in western Beijing.
+- 开放时间：—
+- 来源：https://www.marriott.com/en-us/hotels/bjsal-aloft-beijing-haidian/overview/
+- 提醒：pl_bj_haidianyalexuan: unknown field 'hotel_class' is dropped on import
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 北京首都机场万枫酒店 · Fairfield by Marriott Beijing Capital Airport  `pl_bj_shoudujichangwanfeng`
+- hotel/hotel · main · 分数 31 · 顺义区
+- 高德：未查询
+- 简介：首都机场T2和T3有免费接驳，适合早晚班航班。 / A PEK stopover with a complimentary shuttle for terminals 2 and 3.
+- 开放时间：—
+- 来源：https://www.marriott.com/en-us/hotels/bjspe-fairfield-beijing-capital-airport/overview/
+- 提醒：pl_bj_shoudujichangwanfeng: unknown field 'hotel_class' is dropped on import
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 蓝色港湾 · SOLANA  `pl_bj_solana_liangma`
+- shopping/mall · main · 分数 30 · 朝阳区
+- 高德：未查询
+- 简介：在亮马河边散步后，可去商场买衣服和生活用品。 / Shop for clothes and everyday items after a stroll by the Liangma River.
+- 开放时间：—
+- 来源：https://english.beijing.gov.cn/travellinginbeijing/commercialareas/202603/t20260325_4566094.html
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 张一元茶庄（大栅栏总店） · Zhang Yiyuan Tea Shop, Dashilan Flagship  `pl_bj_zhangyiyuan_dashilan_shop`
+- shopping/time_honored_brand · main · 分数 30 · 西城区
+- 高德：未查询
+- 简介：在大栅栏挑花茶时，可先问小包装和茶叶浓淡。 / Ask about small packs and flavor strength at this Dashilan tea shop.
+- 开放时间：—
+- 来源：https://www.visitbeijing.com.cn/article/4NbmoDGmdRG
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 北京奥体中心万枫酒店 · Fairfield by Marriott Beijing Olympic Sports Center  `pl_bj_aotiwanfeng`
+- hotel/hotel · main · 分数 29 · 朝阳区
+- 高德：未查询
+- 简介：奥体中心地铁站附近，适合把北京北部排在同一天。 / Base yourself near Olympic Sports Center station for northern Beijing.
+- 开放时间：—
+- 来源：https://www.marriott.com/en-us/hotels/bjsfo-fairfield-beijing-olympic-sports-center/overview/
+- 提醒：pl_bj_aotiwanfeng: unknown field 'hotel_class' is dropped on import
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 北京富力万丽酒店 · Renaissance Beijing Capital Hotel  `pl_bj_fuliwanli`
+- hotel/hotel · main · 分数 29 · 朝阳区
+- 高德：未查询
+- 简介：双井可换乘7号线和10号线，适合朝阳地铁游。 / Double up on subway options at Shuangjing, on lines 7 and 10.
+- 开放时间：—
+- 来源：https://www.marriott.com/en-us/hotels/bjsbc-renaissance-beijing-capital-hotel/overview/
+- 提醒：pl_bj_fuliwanli: unknown field 'hotel_class' is dropped on import
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 城市大道红炉披萨烘焙坊 · CityWalk Red Oven Pizza Bakery  `pl_bj_honglupisa_citywalk`
+- food/western · main · 分数 29 · 通州区
+- 高德：未查询
+- 简介：逛环球城市大道时可吃那不勒斯式披萨。 / Try Neapolitan-style pizza without entering the theme park.
+- 开放时间：—
+- 来源：https://www.universalbeijingresort.com/zh_CN/map?content_type=restaurant&type=list
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 北京华尔道夫酒店 · Waldorf Astoria Beijing  `pl_bj_huaerdaofu`
+- hotel/hotel · main · 分数 29 · 东城区
+- 高德：未查询
+- 简介：住金鱼胡同，逛王府井后可在室内泳池歇一歇。 / A Jinyu Hutong stay near the Forbidden City and pedestrian shops.
+- 开放时间：—
+- 来源：https://www.hilton.com.cn/zh-cn/hotels/bjswawa-waldorf-astoria-beijing
+- 提醒：pl_bj_huaerdaofu: unknown field 'hotel_class' is dropped on import
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 北京金隅喜来登大酒店 · Sheraton Grand Beijing Dongcheng Hotel  `pl_bj_jinxiyixilaideng`
+- hotel/hotel · main · 分数 29 · 东城区
+- 高德：未查询
+- 简介：北三环东路的喜来登，门店列有英语和室内泳池。 / English is listed at this north Dongcheng hotel with an indoor pool.
+- 开放时间：—
+- 来源：https://www.marriott.com/en-us/hotels/bjsdo-sheraton-grand-beijing-dongcheng-hotel/overview/
+- 提醒：pl_bj_jinxiyixilaideng: unknown field 'hotel_class' is dropped on import
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 酷巧巧克力商店和美味盛宴厨房 · The Toothsome Chocolate Emporium & Savory Feast Kitchen  `pl_bj_kuqiao_citywalk`
+- food/western · main · 分数 29 · 通州区
+- 高德：未查询
+- 简介：看完电影或逛完街，可以点巧克力奶昔，再配一份咸食。 / Stop for a chocolate milkshake and a savory dish at CityWalk.
+- 开放时间：—
+- 来源：https://www.universalbeijingresort.com/zh_CN/map?content_type=restaurant&type=list
+- [ ] accept　[ ] reject　[ ] edit：
+
+## 第 2 批
+
+### 萌萌牛鱼寿司汉堡餐吧 · The Cowfish Sushi Burger Bar  `pl_bj_mengmengniuyu_citywalk`
+- food/western · main · 分数 29 · 通州区
+- 高德：未查询
+- 简介：一桌可搭配寿司和汉堡，同行口味不同也好选。 / Share sushi and burgers if your group wants different options.
+- 开放时间：—
+- 来源：https://www.universalbeijingresort.com/zh_CN/map?content_type=restaurant&type=list
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 北京前门文华东方酒店 · Mandarin Oriental Qianmen, Beijing  `pl_bj_qianmenwenhuadongfang`
+- hotel/hotel · main · 分数 29 · 东城区
+- 高德：未查询
+- 简介：住进草厂十条的院落客房，从前门胡同开始游览。 / Courtyard rooms set within the lanes of Beijing's old Qianmen area.
+- 开放时间：—
+- 来源：https://www.mandarinoriental.com.cn/zh-cn/beijing/qianmen
+- 提醒：pl_bj_qianmenwenhuadongfang: unknown field 'hotel_class' is dropped on import
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 北京瑞吉酒店 · The St. Regis Beijing  `pl_bj_ruiji`
+- hotel/hotel · main · 分数 29 · 区未知
+- 高德：未查询
+- 简介：建国门外大街的瑞吉，门店列有英文服务。 / A Jianguomen address with English listed and transfers on request.
+- 开放时间：—
+- 来源：https://www.marriott.com/en-us/hotels/bjsxr-the-st-regis-beijing/overview/
+- 提醒：pl_bj_ruiji: unknown field 'hotel_class' is dropped on import
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 北京三里屯工体福朋喜来登酒店 · Four Points by Sheraton Beijing Sanlitun Workers Stadium  `pl_bj_sanlitunfupeng`
+- hotel/hotel · main · 分数 29 · 朝阳区
+- 高德：未查询
+- 简介：工体东路的酒店，白天逛三里屯，晚上可看演出。 / A Gongti East Road stay with English listed as a hotel language.
+- 开放时间：—
+- 来源：https://www.marriott.com/en-us/hotels/bjsps-four-points-beijing-sanlitun-workers-stadium/overview/
+- 提醒：pl_bj_sanlitunfupeng: unknown field 'hotel_class' is dropped on import
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 北京三里屯通盈中心洲际酒店 · InterContinental Beijing Sanlitun  `pl_bj_sanlitunzhouji`
+- hotel/hotel · main · 分数 29 · 朝阳区
+- 高德：未查询
+- 简介：三里屯南路的洲际，逛街后可回店游泳。 / A Sanlitun base for fashion, a late dinner and time in the pool.
+- 开放时间：—
+- 来源：https://www.ihg.com/intercontinental/hotels/cn/zh/beijing/peghe/hoteldetail
+- 提醒：pl_bj_sanlitunzhouji: unknown field 'hotel_class' is dropped on import
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 北京首都机场希尔顿酒店 · Hilton Beijing Capital Airport  `pl_bj_shoudujichangxierdun`
+- hotel/hotel · main · 分数 29 · 顺义区
+- 高德：未查询
+- 简介：首都机场3号航站楼旁，可搭全天航站楼接驳。 / A Terminal 3 airport hotel with a round-the-clock shuttle.
+- 开放时间：—
+- 来源：https://www.hilton.com.cn/zh-cn/hotels/bjscahi-hilton-beijing-capital-airport
+- 提醒：pl_bj_shoudujichangxierdun: unknown field 'hotel_class' is dropped on import
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 北京天坛东门站希尔顿花园酒店 · Hilton Garden Inn Beijing Temple of Heaven East Gate Station  `pl_bj_tiantandongmenxierdun`
+- hotel/hotel · main · 分数 29 · 东城区
+- 高德：未查询
+- 简介：把天坛东门和龙潭湖安排在一起的住宿点。 / A Dongcheng base for the Temple of Heaven and Longtan Lake.
+- 开放时间：—
+- 来源：https://www.hilton.com.cn/zh-cn/hotels/bjsttgi-hilton-garden-inn-beijing-temple-of-heaven-east-gate-station
+- 提醒：pl_bj_tiantandongmenxierdun: unknown field 'hotel_class' is dropped on import
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 北京通州北投希尔顿酒店 · Hilton Beijing Tongzhou  `pl_bj_tongzhoubeitouxierdun`
+- hotel/hotel · main · 分数 29 · 通州区
+- 高德：未查询
+- 简介：通州住一晚，可利用酒店班车去北京环球度假区。 / A Tongzhou stay with a daily shuttle to Universal Beijing Resort.
+- 开放时间：—
+- 来源：https://www.hilton.com.cn/zh-cn/hotels/bjstohi-hilton-beijing-tongzhou
+- 提醒：pl_bj_tongzhoubeitouxierdun: unknown field 'hotel_class' is dropped on import
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 北京金茂万丽酒店 · Renaissance Beijing Wangfujing Hotel  `pl_bj_wangfujingwanli`
+- hotel/hotel · main · 分数 29 · 东城区
+- 高德：未查询
+- 简介：从王府井街北段出门，可走东四或灯市口地铁。 / A Wangfujing base with Dongsi and Dengshikou as subway options.
+- 开放时间：—
+- 来源：https://www.marriott.com/en-us/hotels/bjswf-renaissance-beijing-wangfujing-hotel/overview/
+- 提醒：pl_bj_wangfujingwanli: unknown field 'hotel_class' is dropped on import
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 北京王府井文华东方酒店 · Mandarin Oriental Wangfujing, Beijing  `pl_bj_wangfujingwenhuadongfang`
+- hotel/hotel · main · 分数 29 · 东城区
+- 高德：未查询
+- 简介：位于王府中環楼上，可从酒店露台看故宫一带。 / Stay above WF CENTRAL, with Forbidden City views from MO Bar's terrace.
+- 开放时间：—
+- 来源：https://www.mandarinoriental.com.cn/zh-cn/beijing/wangfujing
+- 提醒：pl_bj_wangfujingwenhuadongfang: unknown field 'hotel_class' is dropped on import
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 城市大道五福美食精酿 · CityWalk WUBEI Craft Food and Beer  `pl_bj_wufu_citywalk`
+- food/local_cuisine · main · 分数 29 · 通州区
+- 高德：未查询
+- 简介：环球城市大道上可以坐下来吃川菜的地方。 / A sit-down Sichuan option on Universal CityWalk.
+- 开放时间：—
+- 来源：https://www.universalbeijingresort.com/zh_CN/map?content_type=restaurant&type=list
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 白魁老号饭庄（交道口店） · Baikuilaohao Restaurant (Jiaodaokou)  `pl_bj_baikuilaohao_jiaodaokou`
+- food/halal · main · 分数 28 · 东城区
+- 高德：未查询
+- 简介：交道口的清真老字号，可以尝烧羊肉。 / Try roast mutton at a long-standing halal restaurant in Jiaodaokou.
+- 开放时间：—
+- 来源：https://english.beijing.gov.cn/specials/musteatmeals/timehonoredbrands/202409/t20240927_3908518.html
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 便宜坊烤鸭（鲜鱼口店） · Bianyifang Roast Duck (Xianyukou)  `pl_bj_bianyifang_xianyukou`
+- food/local_cuisine · main · 分数 28 · 东城区
+- 高德：未查询
+- 简介：想比较北京烤鸭做法，可以在这里尝焖炉烤鸭。 / Try closed-oven duck for a different take on Beijing roast duck.
+- 开放时间：—
+- 来源：https://english.beijing.gov.cn/specials/beijingmagazine/list/202603/P020260330589619504298.pdf
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 东来顺饭庄（北京APM总店） · Donglaishun Restaurant (Beijing APM)  `pl_bj_donglaishun_apm`
+- food/halal · main · 分数 28 · 东城区
+- 高德：未查询
+- 简介：王府井逛街后可去商场里围桌涮羊肉。 / Share a lamb hotpot inside Beijing APM on Wangfujing.
+- 开放时间：—
+- 来源：https://english.beijing.gov.cn/specials/musteatmeals/timehonoredbrands/202409/t20240927_3908518.html
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 都一处烧麦（前门店） · Duyichu Shaomai (Qianmen)  `pl_bj_duyichu_qianmen`
+- food/local_cuisine · main · 分数 28 · 东城区
+- 高德：未查询
+- 简介：前门老店，适合点几款烧麦搭着尝。 / Try different fillings at this Qianmen shaomai shop.
+- 开放时间：—
+- 来源：https://english.beijing.gov.cn/specials/musteatmeals/timehonoredbrands/202409/t20240927_3908518.html
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 护国寺小吃（护国寺街店） · Huguosi Snacks (Huguosi Street)  `pl_bj_huguosi_huguosijie`
+- food/halal · main · 分数 28 · 西城区
+- 高德：未查询
+- 简介：小份点心适合拼着尝，豆汁可以先试一小口。 / Sample small Beijing snacks and take a first sip of douzhi.
+- 开放时间：—
+- 来源：https://www.beijing.gov.cn/gate/big5/www.beijing.gov.cn/renwen/rwzyd/xltj/202602/t20260222_4532496.html
+- [ ] accept　[ ] reject　[ ] edit：
+
 ### 满恒记（平安里西大街店） · Man Heng Ji (Ping'anli)  `pl_bj_manhengji_pinganli`
 - food/halal · main · 分数 28 · 西城区
 - 高德：未查询
@@ -132,55 +357,98 @@
 - 来源：https://english.beijing.gov.cn/consuminginbeijing/onedayinbeijing/abiteofbeijing/updatesofabiteofbeijing/202611/t20261117_4948860.html
 - [ ] accept　[ ] reject　[ ] edit：
 
-### 北京前门文华东方酒店 · Mandarin Oriental Qianmen, Beijing  `pl_bj_qianmenwenhuadongfang`
-- hotel/hotel · main · 分数 28 · 东城区
+### 全聚德（前门店） · Quanjude (Qianmen)  `pl_bj_quanjude_qianmen`
+- food/local_cuisine · main · 分数 28 · 东城区
 - 高德：未查询
-- 简介：住进草厂十条的院落客房，从前门胡同开始游览。 / Courtyard rooms set within the lanes of Beijing's old Qianmen area.
+- 简介：逛前门时顺路体验北京挂炉烤鸭。 / Plan a roast-duck meal while walking along Qianmen Street.
 - 开放时间：—
-- 来源：https://www.mandarinoriental.com.cn/zh-cn/beijing/qianmen
-- 提醒：pl_bj_qianmenwenhuadongfang: unknown field 'hotel_class' is dropped on import
+- 来源：https://www.beijing.gov.cn/renwen/zt/jcxclyjc/ldzn/xltj/202602/t20260214_4516829.html
 - [ ] accept　[ ] reject　[ ] edit：
 
-### 北京三里屯通盈中心洲际酒店 · InterContinental Beijing Sanlitun  `pl_bj_sanlitunzhouji`
-- hotel/hotel · main · 分数 28 · 朝阳区
+### 荣宝斋（琉璃厂店） · Rongbaozhai, Liulichang  `pl_bj_rongbaozhai_liulichang_shop`
+- shopping/time_honored_brand · main · 分数 28 · 西城区
 - 高德：未查询
-- 简介：三里屯南路的洲际，逛街后可回店游泳。 / A Sanlitun base for fashion, a late dinner and time in the pool.
+- 简介：到琉璃厂看木版水印、书画和文房用品，可安排这家老店。 / A historic Liulichang shop for woodblock prints, calligraphy and art supplies.
 - 开放时间：—
-- 来源：https://www.ihg.com/intercontinental/hotels/cn/zh/beijing/peghe/hoteldetail
-- 提醒：pl_bj_sanlitunzhouji: unknown field 'hotel_class' is dropped on import
+- 来源：https://www.visitbeijing.com.cn/article/4RxpGIbAqTO?device=amp
 - [ ] accept　[ ] reject　[ ] edit：
 
-### 北京奥体中心万枫酒店 · Fairfield by Marriott Beijing Olympic Sports Center  `pl_bj_aotiwanfeng`
-- hotel/hotel · main · 分数 26 · 区未知
+### 秀水街市场 · Silk Street Market  `pl_bj_silk_street_market`
+- shopping/market · main · 分数 28 · 朝阳区
 - 高德：未查询
-- 简介：奥体中心地铁站附近，适合把北京北部排在同一天。 / Base yourself near Olympic Sports Center station for northern Beijing.
+- 简介：室内市场，适合找中国丝绸、服饰和小件礼物。 / An indoor market for silk, clothing and small gifts.
 - 开放时间：—
-- 来源：https://www.marriott.com/en-us/hotels/bjsfo-fairfield-beijing-olympic-sports-center/overview/
-- 提醒：pl_bj_aotiwanfeng: unknown field 'hotel_class' is dropped on import
+- 来源：https://www.beijing.gov.cn/fuwu/bmfw/sy/jrts/202605/t20260515_4651758.html
 - [ ] accept　[ ] reject　[ ] edit：
 
-### 白魁老号饭庄（交道口店） · Baikuilaohao Restaurant (Jiaodaokou)  `pl_bj_baikuilaohao_jiaodaokou`
-- food/halal · main · 分数 26 · 东城区
+### 北京SKP · Beijing SKP  `pl_bj_skp_beijing_jianguo`
+- shopping/mall · main · 分数 28 · 朝阳区
 - 高德：未查询
-- 简介：交道口的清真老字号，可以尝烧羊肉。 / Try roast mutton at a long-standing halal restaurant in Jiaodaokou.
+- 简介：想集中看国际时装、美妆和配饰，可留一站给北京SKP。 / A stop for international fashion, beauty and accessories in one building.
 - 开放时间：—
-- 来源：https://english.beijing.gov.cn/specials/musteatmeals/timehonoredbrands/202409/t20240927_3908518.html
+- 来源：https://www.beijing.gov.cn/ywdt/zwzt/gjxxfxcs/gjf/xftyq/tsssml/index.html
 - [ ] accept　[ ] reject　[ ] edit：
 
-### 便宜坊烤鸭（鲜鱼口店） · Bianyifang Roast Duck (Xianyukou)  `pl_bj_bianyifang_xianyukou`
-- food/local_cuisine · main · 分数 26 · 东城区
+### 三里屯太古里 · Taikoo Li Sanlitun  `pl_bj_taikoo_li_sanlitun_shops`
+- shopping/mall · main · 分数 28 · 朝阳区
 - 高德：未查询
-- 简介：想比较北京烤鸭做法，可以在这里尝焖炉烤鸭。 / Try closed-oven duck for a different take on Beijing roast duck.
+- 简介：开敞式店街，适合把时装、设计店和咖啡安排在一起。 / Open-air lanes with fashion, design shops and coffee stops.
+- 开放时间：—
+- 来源：https://www.swireproperties.com/zh-hk/portfolio/current-developments/taikoo-li-sanlitun/
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 天兴居（鲜鱼口街店） · Tianxingju (Xianyukou)  `pl_bj_tianxingju_xianyukou`
+- food/local_cuisine · main · 分数 28 · 东城区
+- 高德：未查询
+- 简介：想尝北京炒肝，可以在鲜鱼口配包子吃。 / Try thick Beijing-style liver stew with buns at Xianyukou.
 - 开放时间：—
 - 来源：https://english.beijing.gov.cn/specials/beijingmagazine/list/202603/P020260330589619504298.pdf
 - [ ] accept　[ ] reject　[ ] edit：
 
-### 东来顺饭庄（北京APM总店） · Donglaishun Restaurant (Beijing APM)  `pl_bj_donglaishun_apm`
-- food/halal · main · 分数 26 · 东城区
+### 西单大悦城 · Xidan Joy City  `pl_bj_xidan_joy_city`
+- shopping/mall · main · 分数 28 · 西城区
 - 高德：未查询
-- 简介：王府井逛街后可去商场里围桌涮羊肉。 / Share a lamb hotpot inside Beijing APM on Wangfujing.
+- 简介：想挑年轻款式的衣服鞋包，可到西单这家商场。 / A Xidan mall for contemporary clothes, shoes and bags.
 - 开放时间：—
-- 来源：https://english.beijing.gov.cn/specials/musteatmeals/timehonoredbrands/202409/t20240927_3908518.html
+- 来源：https://static.cninfo.com.cn/finalpage/2026-08-29/1225525177.PDF
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 宜必思北京天安门广场酒店 · ibis Beijing Tiananmen Square Hotel  `pl_bj_yibisi_dazhalan`
+- hotel/hotel · main · 分数 28 · 西城区
+- 高德：未查询
+- 简介：住在大栅栏街上，从前门开始逛北京老城。 / An old-city base on Dashilan Street, just off the Qianmen pedestrian area.
+- 开放时间：—
+- 来源：https://all.accor.com/hotel/C1S9/index.en.shtml
+- 提醒：pl_bj_yibisi_dazhalan: unknown field 'hotel_class' is dropped on import
+- [ ] accept　[ ] reject　[ ] edit：
+
+## 第 3 批
+
+### 宜必思北京东大桥酒店 · ibis Beijing Dongdaqiao  `pl_bj_yibisi_dongdaqiao`
+- hotel/hotel · main · 分数 28 · 朝阳区
+- 高德：未查询
+- 简介：东大桥附近的简洁客房，晚到可找24小时前台。 / A Dongdaqiao hotel with a 24-hour reception for later arrivals.
+- 开放时间：—
+- 来源：https://all.accor.com/hotel/8009/index.en.shtml
+- 提醒：pl_bj_yibisi_dongdaqiao: unknown field 'hotel_class' is dropped on import
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 宜必思北京鼓楼大街地铁站酒店 · ibis Beijing Guloudajie Metro Station Hotel  `pl_bj_yibisi_guloudajie`
+- hotel/hotel · main · 分数 28 · 东城区
+- 高德：未查询
+- 简介：鼓楼大街可换乘2号线和8号线，方便走访后海。 / Stay beside the Line 2 and Line 8 interchange at Guloudajie.
+- 开放时间：—
+- 来源：https://all.accor.com/hotel/B6C4/index.en.shtml
+- 提醒：pl_bj_yibisi_guloudajie: unknown field 'hotel_class' is dropped on import
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 宜必思北京三里屯团结湖酒店 · ibis Beijing Sanlitun Tuanjie Lake Hotel  `pl_bj_yibisi_tuanjiehu`
+- hotel/hotel · main · 分数 28 · 朝阳区
+- 高德：未查询
+- 简介：团结湖路17号楼，可先在雅高英文页核对房型。 / A simple stay on Tuanjiehu Road on the eastern side of Beijing.
+- 开放时间：—
+- 来源：https://all.accor.com/hotel/B253/index.en.shtml
+- 提醒：pl_bj_yibisi_tuanjiehu: unknown field 'hotel_class' is dropped on import
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 北京东直门JW万豪酒店 · JW Marriott Hotel Beijing Dongzhimen  `pl_bj_dongzhimenwanhao`
@@ -191,57 +459,12 @@
 - 来源：https://www.marriott.com/en-us/hotels/bjsjd-jw-marriott-hotel-beijing-dongzhimen/overview/
 - [ ] accept　[ ] reject　[ ] edit：
 
-### 都一处烧麦（前门店） · Duyichu Shaomai (Qianmen)  `pl_bj_duyichu_qianmen`
-- food/local_cuisine · main · 分数 26 · 东城区
-- 高德：未查询
-- 简介：前门老店，适合点几款烧麦搭着尝。 / Try different fillings at this Qianmen shaomai shop.
-- 开放时间：—
-- 来源：https://english.beijing.gov.cn/specials/musteatmeals/timehonoredbrands/202409/t20240927_3908518.html
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 北京富力万丽酒店 · Renaissance Beijing Capital Hotel  `pl_bj_fuliwanli`
-- hotel/hotel · main · 分数 26 · 区未知
-- 高德：未查询
-- 简介：双井可换乘7号线和10号线，适合朝阳地铁游。 / Double up on subway options at Shuangjing, on lines 7 and 10.
-- 开放时间：—
-- 来源：https://www.marriott.com/en-us/hotels/bjsbc-renaissance-beijing-capital-hotel/overview/
-- 提醒：pl_bj_fuliwanli: unknown field 'hotel_class' is dropped on import
-- [ ] accept　[ ] reject　[ ] edit：
-
-## 第 2 批
-
-### 北京海淀雅乐轩酒店 · Aloft Beijing, Haidian  `pl_bj_haidianyalexuan`
-- hotel/hotel · main · 分数 26 · 区未知
-- 高德：未查询
-- 简介：兰靛厂站接地铁12号线，酒店列有中英文服务。 / An English-listed, Line 12 option in western Beijing.
-- 开放时间：—
-- 来源：https://www.marriott.com/en-us/hotels/bjsal-aloft-beijing-haidian/overview/
-- 提醒：pl_bj_haidianyalexuan: unknown field 'hotel_class' is dropped on import
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 城市大道红炉披萨烘焙坊 · CityWalk Red Oven Pizza Bakery  `pl_bj_honglupisa_citywalk`
-- food/western · main · 分数 26 · 通州区
-- 高德：未查询
-- 简介：逛环球城市大道时可吃那不勒斯式披萨。 / Try Neapolitan-style pizza without entering the theme park.
-- 开放时间：—
-- 来源：https://www.universalbeijingresort.com/zh_CN/map?content_type=restaurant&type=list
-- [ ] accept　[ ] reject　[ ] edit：
-
 ### 红桥市场 · Hongqiao Market  `pl_bj_hongqiao_market_bj`
 - shopping/market · main · 分数 26 · 东城区
 - 高德：未查询
 - 简介：走完天坛后，能顺路逛珍珠饰品和手工艺品。 / Browse pearl jewelry and crafts after a visit to the Temple of Heaven.
 - 开放时间：—
 - 来源：https://www.bjdch.gov.cn/ztzl/wzdcdn/202609/t20260907_4853548.html
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 北京华尔道夫酒店 · Waldorf Astoria Beijing  `pl_bj_huaerdaofu`
-- hotel/hotel · main · 分数 26 · 东城区
-- 高德：未查询
-- 简介：住金鱼胡同，逛王府井后可在室内泳池歇一歇。 / A Jinyu Hutong stay near the Forbidden City and pedestrian shops.
-- 开放时间：—
-- 来源：https://www.hilton.com.cn/zh-cn/hotels/bjswawa-waldorf-astoria-beijing
-- 提醒：pl_bj_huaerdaofu: unknown field 'hotel_class' is dropped on import
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 花家怡园（四合院旗舰店） · Hua's Restaurant (Siheyuan Flagship Store)  `pl_bj_huajiayiyuan_siheyuan`
@@ -252,29 +475,12 @@
 - 来源：https://english.beijing.gov.cn/latest/news/202602/t20260219_4526516.html
 - [ ] accept　[ ] reject　[ ] edit：
 
-### 护国寺小吃（护国寺街店） · Huguosi Snacks (Huguosi Street)  `pl_bj_huguosi_huguosijie`
-- food/halal · main · 分数 26 · 西城区
-- 高德：未查询
-- 简介：小份点心适合拼着尝，豆汁可以先试一小口。 / Sample small Beijing snacks and take a first sip of douzhi.
-- 开放时间：—
-- 来源：https://www.beijing.gov.cn/gate/big5/www.beijing.gov.cn/renwen/rwzyd/xltj/202602/t20260222_4532496.html
-- [ ] accept　[ ] reject　[ ] edit：
-
 ### 京兆尹（雍和宫店） · King's Joy  `pl_bj_jingzhaoyin_yonghegong`
 - food/vegetarian · main · 分数 26 · 东城区
 - 高德：未查询
 - 简介：参观雍和宫后，可以安排一顿以时令植物食材为主的正餐。 / Plan a seasonal vegetarian meal near Yonghegong.
 - 开放时间：—
 - 来源：https://www.beijing.gov.cn/ywdt/gqrd/202611/t20261102_4928933.html
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 北京金隅喜来登大酒店 · Sheraton Grand Beijing Dongcheng Hotel  `pl_bj_jinxiyixilaideng`
-- hotel/hotel · main · 分数 26 · 区未知
-- 高德：未查询
-- 简介：北三环东路的喜来登，门店列有英语和室内泳池。 / English is listed at this north Dongcheng hotel with an indoor pool.
-- 开放时间：—
-- 来源：https://www.marriott.com/en-us/hotels/bjsdo-sheraton-grand-beijing-dongcheng-hotel/overview/
-- 提醒：pl_bj_jinxiyixilaideng: unknown field 'hotel_class' is dropped on import
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 北京康莱德酒店 · Conrad Beijing  `pl_bj_kanglaide`
@@ -285,52 +491,12 @@
 - 来源：https://www.hilton.com.cn/zh-cn/hotels/bjscici-conrad-beijing
 - [ ] accept　[ ] reject　[ ] edit：
 
-### 酷巧巧克力商店和美味盛宴厨房 · The Toothsome Chocolate Emporium & Savory Feast Kitchen  `pl_bj_kuqiao_citywalk`
-- food/western · main · 分数 26 · 通州区
-- 高德：未查询
-- 简介：看完电影或逛完街，可以点巧克力奶昔，再配一份咸食。 / Stop for a chocolate milkshake and a savory dish at CityWalk.
-- 开放时间：—
-- 来源：https://www.universalbeijingresort.com/zh_CN/map?content_type=restaurant&type=list
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 萌萌牛鱼寿司汉堡餐吧 · The Cowfish Sushi Burger Bar  `pl_bj_mengmengniuyu_citywalk`
-- food/western · main · 分数 26 · 通州区
-- 高德：未查询
-- 简介：一桌可搭配寿司和汉堡，同行口味不同也好选。 / Share sushi and burgers if your group wants different options.
-- 开放时间：—
-- 来源：https://www.universalbeijingresort.com/zh_CN/map?content_type=restaurant&type=list
-- [ ] accept　[ ] reject　[ ] edit：
-
 ### 内联升（大栅栏总店） · Neiliansheng, Dashilan Flagship  `pl_bj_neiliansheng_dashilan_shop`
 - shopping/time_honored_brand · main · 分数 26 · 西城区
 - 高德：未查询
 - 简介：前门附近的布鞋老店，可看看千层底和当代鞋款。 / See traditional layered-sole cloth shoes and current styles near Qianmen.
 - 开放时间：—
 - 来源：https://s.visitbeijing.com.cn/gift/39
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 潘家园旧货市场 · Panjiayuan Antique Market  `pl_bj_panjiayuan_flea`
-- shopping/market · main · 分数 26 · 朝阳区
-- 高德：未查询
-- 简介：可逛旧书、手工艺品和二手小物摊。 / Browse used books, crafts and secondhand curios at market stalls.
-- 开放时间：—
-- 来源：https://video.bjchy.gov.cn/vodfiles/992/2015/09/23/cyb/html/2026-09/30/nw.D110000cyb_20260930_10-02.htm?div=-1
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 全聚德（前门店） · Quanjude (Qianmen)  `pl_bj_quanjude_qianmen`
-- food/local_cuisine · main · 分数 26 · 东城区
-- 高德：未查询
-- 简介：逛前门时顺路体验北京挂炉烤鸭。 / Plan a roast-duck meal while walking along Qianmen Street.
-- 开放时间：—
-- 来源：https://www.beijing.gov.cn/renwen/zt/jcxclyjc/ldzn/xltj/202602/t20260214_4516829.html
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 荣宝斋（琉璃厂店） · Rongbaozhai, Liulichang  `pl_bj_rongbaozhai_liulichang_shop`
-- shopping/time_honored_brand · main · 分数 26 · 西城区
-- 高德：未查询
-- 简介：到琉璃厂看木版水印、书画和文房用品，可安排这家老店。 / A historic Liulichang shop for woodblock prints, calligraphy and art supplies.
-- 开放时间：—
-- 来源：https://www.visitbeijing.com.cn/article/4RxpGIbAqTO?device=amp
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 瑞蚨祥（大栅栏总店） · Ruifuxiang, Dashilan Flagship  `pl_bj_ruifuxiang_dashilan_shop`
@@ -341,48 +507,12 @@
 - 来源：https://wb.beijing.gov.cn/home/index/wsjx/202604/t20260420_4595761.html
 - [ ] accept　[ ] reject　[ ] edit：
 
-### 北京瑞吉酒店 · The St. Regis Beijing  `pl_bj_ruiji`
-- hotel/hotel · main · 分数 26 · 区未知
-- 高德：未查询
-- 简介：建国门外大街的瑞吉，门店列有英文服务。 / A Jianguomen address with English listed and transfers on request.
-- 开放时间：—
-- 来源：https://www.marriott.com/en-us/hotels/bjsxr-the-st-regis-beijing/overview/
-- 提醒：pl_bj_ruiji: unknown field 'hotel_class' is dropped on import
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 北京三里屯工体福朋喜来登酒店 · Four Points by Sheraton Beijing Sanlitun Workers Stadium  `pl_bj_sanlitunfupeng`
-- hotel/hotel · main · 分数 26 · 区未知
-- 高德：未查询
-- 简介：工体东路的酒店，白天逛三里屯，晚上可看演出。 / A Gongti East Road stay with English listed as a hotel language.
-- 开放时间：—
-- 来源：https://www.marriott.com/en-us/hotels/bjsps-four-points-beijing-sanlitun-workers-stadium/overview/
-- 提醒：pl_bj_sanlitunfupeng: unknown field 'hotel_class' is dropped on import
-- [ ] accept　[ ] reject　[ ] edit：
-
 ### 三源里菜市场 · Sanyuanli Market  `pl_bj_sanyuanli_market_bj`
 - shopping/market · main · 分数 26 · 朝阳区
 - 高德：未查询
 - 简介：看本地和进口食材同场摆卖，是体验北京买菜的一站。 / See local and imported ingredients side by side at a Beijing food market.
 - 开放时间：—
 - 来源：https://www.bjwmb.gov.cn/wmdt/cyq/10131039.html
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 北京首都机场万枫酒店 · Fairfield by Marriott Beijing Capital Airport  `pl_bj_shoudujichangwanfeng`
-- hotel/hotel · main · 分数 26 · 区未知
-- 高德：未查询
-- 简介：首都机场T2和T3有免费接驳，适合早晚班航班。 / A PEK stopover with a complimentary shuttle for terminals 2 and 3.
-- 开放时间：—
-- 来源：https://www.marriott.com/en-us/hotels/bjspe-fairfield-beijing-capital-airport/overview/
-- 提醒：pl_bj_shoudujichangwanfeng: unknown field 'hotel_class' is dropped on import
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 北京首都机场希尔顿酒店 · Hilton Beijing Capital Airport  `pl_bj_shoudujichangxierdun`
-- hotel/hotel · main · 分数 26 · 顺义区
-- 高德：未查询
-- 简介：首都机场3号航站楼旁，可搭全天航站楼接驳。 / A Terminal 3 airport hotel with a round-the-clock shuttle.
-- 开放时间：—
-- 来源：https://www.hilton.com.cn/zh-cn/hotels/bjscahi-hilton-beijing-capital-airport
-- 提醒：pl_bj_shoudujichangxierdun: unknown field 'hotel_class' is dropped on import
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 四季民福烤鸭店（故宫店） · Siji Minfu (Forbidden City Branch)  `pl_bj_sijiminfu_gugong`
@@ -393,84 +523,6 @@
 - 来源：https://english.beijing.gov.cn/latest/news/202602/t20260219_4526516.html
 - [ ] accept　[ ] reject　[ ] edit：
 
-### 秀水街市场 · Silk Street Market  `pl_bj_silk_street_market`
-- shopping/market · main · 分数 26 · 朝阳区
-- 高德：未查询
-- 简介：室内市场，适合找中国丝绸、服饰和小件礼物。 / An indoor market for silk, clothing and small gifts.
-- 开放时间：—
-- 来源：https://www.beijing.gov.cn/fuwu/bmfw/sy/jrts/202605/t20260515_4651758.html
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 北京SKP · Beijing SKP  `pl_bj_skp_beijing_jianguo`
-- shopping/mall · main · 分数 26 · 朝阳区
-- 高德：未查询
-- 简介：想集中看国际时装、美妆和配饰，可留一站给北京SKP。 / A stop for international fashion, beauty and accessories in one building.
-- 开放时间：—
-- 来源：https://www.beijing.gov.cn/ywdt/zwzt/gjxxfxcs/gjf/xftyq/tsssml/index.html
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 三里屯太古里 · Taikoo Li Sanlitun  `pl_bj_taikoo_li_sanlitun_shops`
-- shopping/mall · main · 分数 26 · 朝阳区
-- 高德：未查询
-- 简介：开敞式店街，适合把时装、设计店和咖啡安排在一起。 / Open-air lanes with fashion, design shops and coffee stops.
-- 开放时间：—
-- 来源：https://www.swireproperties.com/zh-hk/portfolio/current-developments/taikoo-li-sanlitun/
-- [ ] accept　[ ] reject　[ ] edit：
-
-## 第 3 批
-
-### 北京天坛东门站希尔顿花园酒店 · Hilton Garden Inn Beijing Temple of Heaven East Gate Station  `pl_bj_tiantandongmenxierdun`
-- hotel/hotel · main · 分数 26 · 东城区
-- 高德：未查询
-- 简介：把天坛东门和龙潭湖安排在一起的住宿点。 / A Dongcheng base for the Temple of Heaven and Longtan Lake.
-- 开放时间：—
-- 来源：https://www.hilton.com.cn/zh-cn/hotels/bjsttgi-hilton-garden-inn-beijing-temple-of-heaven-east-gate-station
-- 提醒：pl_bj_tiantandongmenxierdun: unknown field 'hotel_class' is dropped on import
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 天兴居（鲜鱼口街店） · Tianxingju (Xianyukou)  `pl_bj_tianxingju_xianyukou`
-- food/local_cuisine · main · 分数 26 · 东城区
-- 高德：未查询
-- 简介：想尝北京炒肝，可以在鲜鱼口配包子吃。 / Try thick Beijing-style liver stew with buns at Xianyukou.
-- 开放时间：—
-- 来源：https://english.beijing.gov.cn/specials/beijingmagazine/list/202603/P020260330589619504298.pdf
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 北京通州北投希尔顿酒店 · Hilton Beijing Tongzhou  `pl_bj_tongzhoubeitouxierdun`
-- hotel/hotel · main · 分数 26 · 通州区
-- 高德：未查询
-- 简介：通州住一晚，可利用酒店班车去北京环球度假区。 / A Tongzhou stay with a daily shuttle to Universal Beijing Resort.
-- 开放时间：—
-- 来源：https://www.hilton.com.cn/zh-cn/hotels/bjstohi-hilton-beijing-tongzhou
-- 提醒：pl_bj_tongzhoubeitouxierdun: unknown field 'hotel_class' is dropped on import
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 北京金茂万丽酒店 · Renaissance Beijing Wangfujing Hotel  `pl_bj_wangfujingwanli`
-- hotel/hotel · main · 分数 26 · 区未知
-- 高德：未查询
-- 简介：从王府井街北段出门，可走东四或灯市口地铁。 / A Wangfujing base with Dongsi and Dengshikou as subway options.
-- 开放时间：—
-- 来源：https://www.marriott.com/en-us/hotels/bjswf-renaissance-beijing-wangfujing-hotel/overview/
-- 提醒：pl_bj_wangfujingwanli: unknown field 'hotel_class' is dropped on import
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 北京王府井文华东方酒店 · Mandarin Oriental Wangfujing, Beijing  `pl_bj_wangfujingwenhuadongfang`
-- hotel/hotel · main · 分数 26 · 东城区
-- 高德：未查询
-- 简介：位于王府中環楼上，可从酒店露台看故宫一带。 / Stay above WF CENTRAL, with Forbidden City views from MO Bar's terrace.
-- 开放时间：—
-- 来源：https://www.mandarinoriental.com.cn/zh-cn/beijing/wangfujing
-- 提醒：pl_bj_wangfujingwenhuadongfang: unknown field 'hotel_class' is dropped on import
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 城市大道五福美食精酿 · CityWalk WUBEI Craft Food and Beer  `pl_bj_wufu_citywalk`
-- food/local_cuisine · main · 分数 26 · 通州区
-- 高德：未查询
-- 简介：环球城市大道上可以坐下来吃川菜的地方。 / A sit-down Sichuan option on Universal CityWalk.
-- 开放时间：—
-- 来源：https://www.universalbeijingresort.com/zh_CN/map?content_type=restaurant&type=list
-- [ ] accept　[ ] reject　[ ] edit：
-
 ### 吴裕泰茶庄（王府井店） · Wuyutai Tea Shop, Wangfujing  `pl_bj_wuyutai_wangfujing_shop`
 - shopping/time_honored_brand · main · 分数 26 · 东城区
 - 高德：未查询
@@ -479,38 +531,13 @@
 - 来源：https://www.bjdch.gov.cn/ywdt/dcyw/202504/t20250410_4061597.html
 - [ ] accept　[ ] reject　[ ] edit：
 
-### 西单大悦城 · Xidan Joy City  `pl_bj_xidan_joy_city`
-- shopping/mall · main · 分数 26 · 西城区
-- 高德：未查询
-- 简介：想挑年轻款式的衣服鞋包，可到西单这家商场。 / A Xidan mall for contemporary clothes, shoes and bags.
-- 开放时间：—
-- 来源：https://static.cninfo.com.cn/finalpage/2026-08-29/1225525177.PDF
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 宜必思北京天安门广场酒店 · ibis Beijing Tiananmen Square Hotel  `pl_bj_yibisi_dazhalan`
-- hotel/hotel · main · 分数 26 · 西城区
-- 高德：未查询
-- 简介：住在大栅栏街上，从前门开始逛北京老城。 / An old-city base on Dashilan Street, just off the Qianmen pedestrian area.
-- 开放时间：—
-- 来源：https://all.accor.com/hotel/C1S9/index.en.shtml
-- 提醒：pl_bj_yibisi_dazhalan: unknown field 'hotel_class' is dropped on import
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 宜必思北京三里屯团结湖酒店 · ibis Beijing Sanlitun Tuanjie Lake Hotel  `pl_bj_yibisi_tuanjiehu`
+### 宜必思北京朝阳大悦城酒店 · ibis Beijing Chaoyang Joy City Hotel  `pl_bj_yibisi_chaoyangdayuecheng`
 - hotel/hotel · main · 分数 26 · 朝阳区
 - 高德：未查询
-- 简介：团结湖路17号楼，可先在雅高英文页核对房型。 / A simple stay on Tuanjiehu Road on the eastern side of Beijing.
+- 简介：朝阳东部的宜必思，独行或同行可按床型选房。 / Double and twin rooms for travelers staying in eastern Chaoyang.
 - 开放时间：—
-- 来源：https://all.accor.com/hotel/B253/index.en.shtml
-- 提醒：pl_bj_yibisi_tuanjiehu: unknown field 'hotel_class' is dropped on import
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 张一元茶庄（大栅栏总店） · Zhang Yiyuan Tea Shop, Dashilan Flagship  `pl_bj_zhangyiyuan_dashilan_shop`
-- shopping/time_honored_brand · main · 分数 26 · 西城区
-- 高德：未查询
-- 简介：在大栅栏挑花茶时，可先问小包装和茶叶浓淡。 / Ask about small packs and flavor strength at this Dashilan tea shop.
-- 开放时间：—
-- 来源：https://www.visitbeijing.com.cn/article/4NbmoDGmdRG
+- 来源：https://all.accor.com/hotel/9725/index.en.shtml
+- 提醒：pl_bj_yibisi_chaoyangdayuecheng: unknown field 'hotel_class' is dropped on import
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 地坛公园 · Ditan Park  `pl_bj_ditan`
@@ -601,6 +628,8 @@
 - 来源：https://whlyj.beijing.gov.cn/ggfw/ly/202511/t20251119_4287815.html
 - [ ] accept　[ ] reject　[ ] edit：
 
+## 第 4 批
+
 ### 前门大街 · Qianmen Street  `pl_bj_qianmen`
 - attraction/street · main · 分数 25 · 东城区
 - 高德：未查询
@@ -625,8 +654,6 @@
 - 来源：https://whlyj.beijing.gov.cn/ggfw/ly/202511/t20251119_4287815.html
 - [ ] accept　[ ] reject　[ ] edit：
 
-## 第 4 批
-
 ### 北京天文馆 · Beijing Planetarium  `pl_bj_tianwenguan`
 - attraction/museum · main · 分数 25 · 西城区
 - 高德：未查询
@@ -641,33 +668,6 @@
 - 简介：在香山沿山路找近郊视野 / Follow wooded slopes up Fragrant Hills.
 - 开放时间：—
 - 来源：https://whlyj.beijing.gov.cn/ggfw/ly/202511/t20251119_4287815.html
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 宜必思北京朝阳大悦城酒店 · ibis Beijing Chaoyang Joy City Hotel  `pl_bj_yibisi_chaoyangdayuecheng`
-- hotel/hotel · main · 分数 25 · 朝阳区
-- 高德：未查询
-- 简介：朝阳东部的宜必思，独行或同行可按床型选房。 / Double and twin rooms for travelers staying in eastern Chaoyang.
-- 开放时间：—
-- 来源：https://all.accor.com/hotel/9725/index.en.shtml
-- 提醒：pl_bj_yibisi_chaoyangdayuecheng: unknown field 'hotel_class' is dropped on import
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 宜必思北京东大桥酒店 · ibis Beijing Dongdaqiao  `pl_bj_yibisi_dongdaqiao`
-- hotel/hotel · main · 分数 25 · 朝阳区
-- 高德：未查询
-- 简介：东大桥附近的简洁客房，晚到可找24小时前台。 / A Dongdaqiao hotel with a 24-hour reception for later arrivals.
-- 开放时间：—
-- 来源：https://all.accor.com/hotel/8009/index.en.shtml
-- 提醒：pl_bj_yibisi_dongdaqiao: unknown field 'hotel_class' is dropped on import
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 宜必思北京鼓楼大街地铁站酒店 · ibis Beijing Guloudajie Metro Station Hotel  `pl_bj_yibisi_guloudajie`
-- hotel/hotel · main · 分数 25 · 东城区
-- 高德：未查询
-- 简介：鼓楼大街可换乘2号线和8号线，方便走访后海。 / Stay beside the Line 2 and Line 8 interchange at Guloudajie.
-- 开放时间：—
-- 来源：https://all.accor.com/hotel/B6C4/index.en.shtml
-- 提醒：pl_bj_yibisi_guloudajie: unknown field 'hotel_class' is dropped on import
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 颐和园 · Summer Palace  `pl_bj_yiheyuan`
@@ -952,14 +952,6 @@
 - 来源：https://english.beijing.gov.cn/latest/news/202602/t20260219_4526516.html
 - [ ] accept　[ ] reject　[ ] edit：
 
-### 蓝色港湾 · SOLANA  `pl_bj_solana_liangma`
-- shopping/mall · main · 分数 21 · 朝阳区
-- 高德：未查询
-- 简介：在亮马河边散步后，可去商场买衣服和生活用品。 / Shop for clothes and everyday items after a stroll by the Liangma River.
-- 开放时间：—
-- 来源：https://english.beijing.gov.cn/travellinginbeijing/commercialareas/202603/t20260325_4566094.html
-- [ ] accept　[ ] reject　[ ] edit：
-
 ### 小吊梨汤（和平里店） · Xiaodiao Litang (Hepingli)  `pl_bj_xiaodiaolitang_hepingli`
 - food/local_cuisine · main · 分数 21 · 东城区
 - 高德：未查询
@@ -1008,6 +1000,14 @@
 - 来源：https://english.beijing.gov.cn/specials/240tour/
 - [ ] accept　[ ] reject　[ ] edit：
 
+### 潘家园旧货市场 · Panjiayuan Antique Market  `pl_bj_panjiayuan_flea`
+- shopping/market · main · 分数 18 · 朝阳区
+- 高德：未查询
+- 简介：可逛旧书、手工艺品和二手小物摊。 / Browse used books, crafts and secondhand curios at market stalls.
+- 开放时间：—
+- 来源：https://video.bjchy.gov.cn/vodfiles/992/2015/09/23/cyb/html/2026-09/30/nw.D110000cyb_20260930_10-02.htm?div=-1
+- [ ] accept　[ ] reject　[ ] edit：
+
 ### 798艺术区 · 798 Art District  `pl_bj_qijiuba`
 - attraction/street · main · 分数 18 · 朝阳区
 - 高德：未查询
@@ -1050,8 +1050,35 @@
 - 来源：https://wwj.beijing.gov.cn/bjww/362771/hxqbaqzckfbwg/dcq/index.html
 - [ ] accept　[ ] reject　[ ] edit：
 
+### 北京宝格丽酒店 · Bvlgari Hotel Beijing  `pl_bj_baogeli`
+- hotel/hotel · backup · 分数 29 · 朝阳区
+- 高德：未查询
+- 简介：亮马河畔，酒店与启皓艺术馆相邻。 / A Liangma River hotel beside the Genesis Art Gallery.
+- 开放时间：—
+- 来源：https://www.bulgarihotels.com/en-US/beijing
+- 提醒：pl_bj_baogeli: unknown field 'hotel_class' is dropped on import
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 北京房山福朋喜来登酒店 · Four Points by Sheraton Beijing Fangshan  `pl_bj_fangshanfupeng`
+- hotel/hotel · backup · 分数 29 · 房山区
+- 高德：未查询
+- 简介：房山长阳的酒店，可用地铁串接北京西南片区。 / A Changyang option in Fangshan with English listed by the hotel.
+- 开放时间：—
+- 来源：https://www.marriott.com/en-us/hotels/bjspf-four-points-beijing-fangshan/overview/
+- 提醒：pl_bj_fangshanfupeng: unknown field 'hotel_class' is dropped on import
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 北京粤财JW万豪酒店 · JW Marriott Hotel Beijing Central  `pl_bj_yuecaiwanhao`
+- hotel/hotel · backup · 分数 29 · 西城区
+- 高德：未查询
+- 简介：宣武门和菜市口都有地铁，适合安排北京西城老城游。 / A Xicheng base with more than one convenient subway route.
+- 开放时间：—
+- 来源：https://www.marriott.com/en-us/hotels/bjsjc-jw-marriott-hotel-beijing-central/overview/
+- 提醒：pl_bj_yuecaiwanhao: unknown field 'hotel_class' is dropped on import
+- [ ] accept　[ ] reject　[ ] edit：
+
 ### 北京八达岭希尔顿逸林酒店 · DoubleTree by Hilton Beijing Badaling  `pl_bj_badalingyilin`
-- hotel/hotel · backup · 分数 26 · 延庆区
+- hotel/hotel · backup · 分数 28 · 延庆区
 - 高德：未查询
 - 简介：住在延庆城区，便于安排八达岭长城和野鸭湖。 / A Yanqing stop for a Great Wall and wetlands itinerary.
 - 开放时间：—
@@ -1059,13 +1086,20 @@
 - 提醒：pl_bj_badalingyilin: unknown field 'hotel_class' is dropped on import
 - [ ] accept　[ ] reject　[ ] edit：
 
-### 北京宝格丽酒店 · Bvlgari Hotel Beijing  `pl_bj_baogeli`
-- hotel/hotel · backup · 分数 26 · 区未知
+### 京味拾光 · Jingwei Shiguang  `pl_bj_jingwei_shiguang_53`
+- shopping/boutique · backup · 分数 28 · 西城区
 - 高德：未查询
-- 简介：亮马河畔，酒店与启皓艺术馆相邻。 / A Liangma River hotel beside the Genesis Art Gallery.
+- 简介：在胡同里的小店找北京主题文创和手信。 / A hutong shop for small Beijing-themed designs and souvenirs.
 - 开放时间：—
-- 来源：https://www.bulgarihotels.com/en-US/beijing
-- 提醒：pl_bj_baogeli: unknown field 'hotel_class' is dropped on import
+- 来源：https://whlyj.beijing.gov.cn/zwgk/xwzx/gzdt/202611/t20261117_4949677.html
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 六必居（粮食店街老店） · Liubiju Pickle Shop, Liangshidian Street  `pl_bj_liubiju_liangshidian`
+- shopping/time_honored_brand · backup · 分数 28 · 西城区
+- 高德：未查询
+- 简介：在大栅栏找老北京酱菜，相邻的店和馆可沿街辨认。 / Shop for Beijing-style pickles near the brand's museum in Dashilan.
+- 开放时间：—
+- 来源：https://www.visitbeijing.com.cn/article/4NbmoDGmdRG
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### BRBR叙利亚餐厅 · BRBR Syrian Restaurant  `pl_bj_brbr_xuliya`
@@ -1084,15 +1118,6 @@
 - 来源：https://www.marriott.com/en-us/hotels/bjscp-beijing-marriott-hotel-changping/overview/
 - [ ] accept　[ ] reject　[ ] edit：
 
-### 北京乐多港万怡酒店 · Courtyard by Marriott Beijing Changping  `pl_bj_changpingwanyi`
-- hotel/hotel · backup · 分数 26 · 区未知
-- 高德：未查询
-- 简介：昌平段可结合居庸关长城和万豪的行程介绍。 / A Changping option for a separate Great Wall outing.
-- 开放时间：—
-- 来源：https://www.marriott.com/en-us/hotels/bjsbp-courtyard-beijing-changping/overview/
-- 提醒：pl_bj_changpingwanyi: unknown field 'hotel_class' is dropped on import
-- [ ] accept　[ ] reject　[ ] edit：
-
 ### 戴月轩（琉璃厂店） · Daiyuexuan, Liulichang  `pl_bj_daiyuexuan_liulichang_shop`
 - shopping/time_honored_brand · backup · 分数 26 · 西城区
 - 高德：未查询
@@ -1109,21 +1134,20 @@
 - 来源：https://www.hilton.com.cn/zh-cn/hotels/bjsbchi-hilton-beijing-daxing
 - [ ] accept　[ ] reject　[ ] edit：
 
-### 北京房山福朋喜来登酒店 · Four Points by Sheraton Beijing Fangshan  `pl_bj_fangshanfupeng`
-- hotel/hotel · backup · 分数 26 · 区未知
+### 麋鹿苑餐厅 · Milu Park Restaurant  `pl_bj_miluyuan_canting`
+- food/local_cuisine · backup · 分数 26 · 大兴区
 - 高德：未查询
-- 简介：房山长阳的酒店，可用地铁串接北京西南片区。 / A Changyang option in Fangshan with English listed by the hotel.
+- 简介：带孩子逛麋鹿苑时，可以就近吃面或三明治。 / Grab noodles or a sandwich near the Milu Park north gate.
 - 开放时间：—
-- 来源：https://www.marriott.com/en-us/hotels/bjspf-four-points-beijing-fangshan/overview/
-- 提醒：pl_bj_fangshanfupeng: unknown field 'hotel_class' is dropped on import
+- 来源：https://kfqgw.beijing.gov.cn/ywdt/gsprcgd/lxyz/202605/t20260508_4641240.html
 - [ ] accept　[ ] reject　[ ] edit：
 
-### 六必居（粮食店街老店） · Liubiju Pickle Shop, Liangshidian Street  `pl_bj_liubiju_liangshidian`
-- shopping/time_honored_brand · backup · 分数 26 · 西城区
+### MOI芬兰餐厅 · Moi Restaurant and Lounge  `pl_bj_moi_canting`
+- food/western · backup · 分数 26 · 东城区
 - 高德：未查询
-- 简介：在大栅栏找老北京酱菜，相邻的店和馆可沿街辨认。 / Shop for Beijing-style pickles near the brand's museum in Dashilan.
+- 简介：可把芬兰风味鱼类和土豆菜安排在同一餐。 / Try a Finnish-style meal with fish and potato dishes.
 - 开放时间：—
-- 来源：https://www.visitbeijing.com.cn/article/4NbmoDGmdRG
+- 来源：https://english.beijing.gov.cn/latest/news/202610/t20261008_4892631.html
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 侨福芳草地 · Parkview Green  `pl_bj_parkview_green_retail`
@@ -1140,15 +1164,6 @@
 - 简介：在王府井街区游览的一处住宿选择。 / A hotel option for time in the Wangfujing neighborhood.
 - 开放时间：—
 - 来源：https://www.hilton.com.cn/zh-cn/hotels/bjswfhi-hilton-beijing-wangfujing
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 北京粤财JW万豪酒店 · JW Marriott Hotel Beijing Central  `pl_bj_yuecaiwanhao`
-- hotel/hotel · backup · 分数 26 · 区未知
-- 高德：未查询
-- 简介：宣武门和菜市口都有地铁，适合安排北京西城老城游。 / A Xicheng base with more than one convenient subway route.
-- 开放时间：—
-- 来源：https://www.marriott.com/en-us/hotels/bjsjc-jw-marriott-hotel-beijing-central/overview/
-- 提醒：pl_bj_yuecaiwanhao: unknown field 'hotel_class' is dropped on import
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### Z-SPACE（协作胡同） · Z-SPACE  `pl_bj_zspace_xiezuo`
@@ -1223,6 +1238,8 @@
 - 来源：https://whlyj.beijing.gov.cn/ggfw/ly/202511/t20251119_4287815.html
 - [ ] accept　[ ] reject　[ ] edit：
 
+## 第 7 批
+
 ### 攀枝花印象 · Pan Zhi Hua Yin Xiang  `pl_bj_panzhihua_yinxiang`
 - food/local_cuisine · backup · 分数 23 · 西城区
 - 高德：未查询
@@ -1238,8 +1255,6 @@
 - 开放时间：—
 - 来源：https://whlyj.beijing.gov.cn/ggfw/ly/202511/t20251119_4287815.html
 - [ ] accept　[ ] reject　[ ] edit：
-
-## 第 7 批
 
 ### 北京花卉交易中心 · Beijing Flower Trading Center  `pl_bj_beijing_flower_trade`
 - shopping/market · backup · 分数 21 · 丰台区
@@ -1257,22 +1272,6 @@
 - 来源：https://english.beijing.gov.cn/travellinginbeijing/routes/202609/t20260923_4878211.html
 - [ ] accept　[ ] reject　[ ] edit：
 
-### 京味拾光 · Jingwei Shiguang  `pl_bj_jingwei_shiguang_53`
-- shopping/boutique · backup · 分数 21 · 西城区
-- 高德：未查询
-- 简介：在胡同里的小店找北京主题文创和手信。 / A hutong shop for small Beijing-themed designs and souvenirs.
-- 开放时间：—
-- 来源：https://whlyj.beijing.gov.cn/zwgk/xwzx/gzdt/202611/t20261117_4949677.html
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 麋鹿苑餐厅 · Milu Park Restaurant  `pl_bj_miluyuan_canting`
-- food/local_cuisine · backup · 分数 21 · 区未知
-- 高德：未查询
-- 简介：带孩子逛麋鹿苑时，可以就近吃面或三明治。 / Grab noodles or a sandwich near the Milu Park north gate.
-- 开放时间：—
-- 来源：https://kfqgw.beijing.gov.cn/ywdt/gsprcgd/lxyz/202605/t20260508_4641240.html
-- [ ] accept　[ ] reject　[ ] edit：
-
 ### CALMA葡萄牙餐厅 · CALMA Portuguese Restaurant  `pl_bj_calma_canting`
 - food/western · backup · 分数 18 · 朝阳区
 - 高德：未查询
@@ -1281,20 +1280,21 @@
 - 来源：https://english.beijing.gov.cn/latest/news/202610/t20261008_4892631.html
 - [ ] accept　[ ] reject　[ ] edit：
 
+### 北京乐多港万怡酒店 · Courtyard by Marriott Beijing Changping  `pl_bj_changpingwanyi`
+- hotel/hotel · backup · 分数 18 · 区未知
+- 高德：未查询
+- 简介：昌平段可结合居庸关长城和万豪的行程介绍。 / A Changping option for a separate Great Wall outing.
+- 开放时间：—
+- 来源：https://www.marriott.com/en-us/hotels/bjsbp-courtyard-beijing-changping/overview/
+- 提醒：pl_bj_changpingwanyi: unknown field 'hotel_class' is dropped on import
+- [ ] accept　[ ] reject　[ ] edit：
+
 ### 北京鲁迅博物馆 · Beijing Lu Xun Museum  `pl_bj_luxun_bowuguan`
 - attraction/museum · backup · 分数 18 · 西城区
 - 高德：未查询
 - 简介：从鲁迅故居读北京的文学生活 / Explore Lu Xun's Beijing years through his former home.
 - 开放时间：—
 - 来源：https://wwj.beijing.gov.cn/bjww/362771/hxqbaqzckfbwg/11037945/index.html
-- [ ] accept　[ ] reject　[ ] edit：
-
-### MOI芬兰餐厅 · Moi Restaurant and Lounge  `pl_bj_moi_canting`
-- food/western · backup · 分数 12 · 区未知
-- 高德：未查询
-- 简介：可把芬兰风味鱼类和土豆菜安排在同一餐。 / Try a Finnish-style meal with fish and potato dishes.
-- 开放时间：—
-- 来源：https://english.beijing.gov.cn/latest/news/202610/t20261008_4892631.html
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### MOJO澳式餐厅 · MOJO  `pl_bj_mojo_canting`
