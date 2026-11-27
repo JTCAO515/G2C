@@ -574,6 +574,8 @@ public struct LioHome<MenuContent: View>: View {
     }
 
     private func planActions(_ plan: LioPlanSummary) -> LioItineraryTimelineView.Actions {
+        // #2010: a plan saved from here keeps the memories its answer was based on (unchanged with the label switch off).
+        let plan = conversation.carryingMemoryUsed(plan)
         var actions = LioItineraryTimelineView.Actions()
         if savedPlans.writable {
             if let places = chatTripPlaces, let reference = chatTripReference(for: plan) {

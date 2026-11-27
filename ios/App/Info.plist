@@ -38,6 +38,7 @@
 <key>G2CAnswerRichEnabled</key><string>$(G2C_ANSWER_RICH_ENABLED)</string>
 <key>G2CMemoryConsentEnabled</key><string>$(G2C_MEMORY_CONSENT_ENABLED)</string>
 <key>G2CMemoryNoteEnabled</key><string>$(G2C_MEMORY_NOTE_ENABLED)</string>
+<key>G2CTripMemoryLabelEnabled</key><string>$(G2C_TRIP_MEMORY_LABEL_ENABLED)</string>
 <key>LSApplicationQueriesSchemes</key><array><string>OneTravel</string></array>
 <key>ITSAppUsesNonExemptEncryption</key><false/>
 <key>UISupportedInterfaceOrientations</key><array>

@@ -339,7 +339,7 @@ public enum LioTimelineWire {
     static let maximumMemoryTitleLength = 40
 
     /// `^[A-Za-z0-9][A-Za-z0-9_.:-]{0,255}$`
-    static func validMemoryItemID(_ value: String) -> Bool {
+    public static func validMemoryItemID(_ value: String) -> Bool {
         let bytes = Array(value.utf8)
         guard (1...256).contains(bytes.count), bytes[0] != 95, bytes[0] != 46, bytes[0] != 58, bytes[0] != 45 else { return false }
         return bytes.allSatisfy {
@@ -348,7 +348,7 @@ public enum LioTimelineWire {
     }
 
     /// One line of 1–40 characters with no control, line-separator or zero-width characters (the contract's pattern).
-    static func validMemoryTitle(_ value: String) -> Bool {
+    public static func validMemoryTitle(_ value: String) -> Bool {
         let scalars = value.unicodeScalars
         guard (1...maximumMemoryTitleLength).contains(scalars.count) else { return false }
         return !scalars.contains { scalar in
@@ -497,7 +497,10 @@ public enum LioTimelineWire {
         // `rich` only rides on a completed row that has an answer; anywhere else it is ignored.
         var rich = (state == .completed && !wire.answer.isEmpty) ? validRich(wire.rich) : nil
         // A plan reply carries no cards (contract: `cards` needs `trip = null`).
-        if trip != nil, let kept = rich { rich = kept.entities.isEmpty ? nil : Rich(entities: kept.entities) }
+        // What it may carry is the places and the memories its plan was based on (`memory` has no `trip = null` rule).
+        if trip != nil, let kept = rich {
+            rich = kept.entities.isEmpty && kept.memoryUsed == nil ? nil : Rich(entities: kept.entities, memoryUsed: kept.memoryUsed)
+        }
         return Message(id: wire.messageID, question: wire.text, answer: wire.answer, state: state,
                        activity: wire.activity, sources: sources, trip: trip, memoryTags: tags,
                        layout: layout, followups: shown.0, chips: shown.1, rich: rich)
