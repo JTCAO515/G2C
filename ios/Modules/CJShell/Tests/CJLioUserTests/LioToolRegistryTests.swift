@@ -26,7 +26,7 @@ struct LioToolRegistryTests {
                                      .currency, .returnHotel, .arrival, .roadbook, .localSupport])
         #expect(Set(LioTool.allCases.map(\.rawValue)).count == LioTool.allCases.count)
         #expect(LioTool.metro.name(.chinese) == "地铁")
-        #expect(LioTool.transport.summary(.english) == "Compare trains, flights and buses")
+        #expect(LioTool.transport.summary(.english) == "Flights, trains, airports and stations")
         #expect(LioTool.hotels.symbol == "bed.double")
     }
 
@@ -38,7 +38,7 @@ struct LioToolRegistryTests {
         // #1740: a trip place opens the taxi with its destination and the booking tool with its sight.
         #expect(LioToolRegistry.entry(for: .taxi)?.parameters == ["destination", "destinationEN", "address", "lat", "lng"])
         #expect(LioToolRegistry.entry(for: .attractionBooking)?.parameters == ["sight"])
-        #expect(LioToolRegistry.entry(for: .transport)?.parameters == ["from", "to"])
+        #expect(LioToolRegistry.entry(for: .transport)?.parameters == ["from", "to", "tab", "flight", "train"])
         #expect(LioToolRegistry.entry(for: .hotels)?.parameters == ["city"])
     }
 

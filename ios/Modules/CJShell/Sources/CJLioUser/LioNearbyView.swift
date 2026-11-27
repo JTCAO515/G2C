@@ -334,7 +334,7 @@ struct LioNearbyView: View {
         case .quotaExceeded: language.text("Nearby has reached its lookup limit for now. Try again later.", "附近的查找次数已达上限，请稍后再试。")
         case .rateLimited: language.text("Too many lookups right now. Try again later.", "查找太频繁，请稍后再试。")
         case .timedOut: language.text("This took too long. Try again.", "查找超时，请重试。")
-        case .unavailable: language.text("Nearby isn’t available right now. Try again.", "附近暂时不可用，请重试。")
+        case .unavailable: LioNearbyPlace.unavailableText(language, community: essential == .community)
         case .consentNeeded: language.text("Use your location to see places around you.", "使用你的位置，才能显示周围的地点。")
         }
     }

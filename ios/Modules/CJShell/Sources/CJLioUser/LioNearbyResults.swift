@@ -62,6 +62,13 @@ struct LioNearbyPlace: Identifiable, Equatable {
         language.text("Convenience", "便利")
     }
 
+    /// What the page says when a search is refused or fails. Community services (#2006) are newer than the server
+    /// in some builds: until it knows the kind it answers 400, which reads as "not in this version yet", never a crash.
+    static func unavailableText(_ language: LioLanguage, community: Bool) -> String {
+        community ? language.text("Not available in this version yet.", "本版本暂不可用。")
+                  : language.text("Nearby isn’t available right now. Try again.", "附近暂时不可用，请重试。")
+    }
+
     /// Essentials (NEARBY.2) appear only when the build enables them (`G2CNearbyEssentialsEnabled`, off by default);
     /// Debug previews can show them with `--lio-nearby-essentials`.
     static var essentialsEnabled: Bool {
