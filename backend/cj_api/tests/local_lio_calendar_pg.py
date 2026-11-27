@@ -109,8 +109,10 @@ def exercise(root,conninfo):
                     wish=dict(kind='intent',source_index=index,detail_refs=[],applies_to=['self'],locked=None,booking_evidence=None,
                               start_date=None,start_time=None,start_timezone=None,start_place=None,end_date=None,end_time=None,
                               end_timezone=None,end_place=None,unknown_fields=['start_date','start_time','end_time','locked'],uncertain_fields={})
-                    value['fixed_items']=[dict(wish,label='人民公园' if locale=='zh' else 'People Park',quote=text),
-                                          dict(wish,label='锦里' if locale=='zh' else 'Jinli',quote=text)]
+                    # the quote is the wish part of the message (no number in it: a number would be a clock, date or amount)
+                    part='去成都玩' if locale=='zh' else 'Plan'
+                    value['fixed_items']=[dict(wish,label='人民公园' if locale=='zh' else 'People Park',quote=part),
+                                          dict(wish,label='锦里' if locale=='zh' else 'Jinli',quote=part)]
             value['version']='LIO-planning-intake.8'
             content=json.dumps(value,ensure_ascii=False)
         elif any(profile in system for profile in PROFILES.values()):

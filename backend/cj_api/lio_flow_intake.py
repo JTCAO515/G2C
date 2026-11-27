@@ -289,8 +289,27 @@ def _normalize_city_phrase(city,turns):
 _WHEN_WHERE=('start_date','start_time','start_timezone','start_place','end_date','end_time','end_timezone','end_place')
 # Anything that says an item is fixed, booked or timed keeps it out of the wish rule (red-line review of #2123: the shared FIXED words are
 # narrow, so 「已经订好票」「booked」 and a clock or date in the quote are added here; a larger set only drops fewer items).
-_FIXED_HINT=re.compile(r'订好|订了|买好|买了|订票|订位|订房|预订|预约|预定|已定|定好|锁定|固定|确定|票|门票|reserv|booked|booking|ticket|confirmed|fixed|locked|'
-                       r'[0-9]{1,2}\s*[:：点时]|[0-9]{1,2}\s*(?:am|pm)\b|[0-9]{4}[-/.][0-9]{1,2}[-/.][0-9]{1,2}|[0-9]{1,2}\s*月\s*[0-9]{1,2}\s*[日号]',re.I)
+_FIXED_HINT=re.compile(r'订好|订了|买好|买了|订票|订位|订房|预订|预约|预定|已定|定好|锁定|固定|(?<!还没)(?<!没)(?<!未)(?<!不)确定|票|门票|'
+                       # #2124: arranged by someone else, a tour, a guide, a chartered car, a team event
+                       r'约好|说好|已安排|已经安排|已经安排好|安排好了|跟团|参团|团队|团建|团体|导游|领队|包车|接送|'
+                       r'reserv|booked|booking|ticket|confirmed|fixed|locked|arranged|tour group|group tour|guided|guide|charter|'
+                       # paid, signed up, a slot, a session, a meeting (red-line review of #2125)
+                       r'付款|付了|已付|交了|定金|订金|押金|paid|deposit|payment|报名|报了名|signed up|登记|名额|\bslot|讲解员|搞定|会议|meeting|'
+                       r'上午场|下午场|晚场|'
+                       # bought, paid, ordered, appointment, weekday and day words (third review round)
+                       r'付过|已支付|支付|买单|下单|订单|已约|约了|预留|订上|订到|买到|到手|核销|入场券|purchas|bought|\border|\bpass\b|appointment|scheduled|all set|'
+                       r'周[一二三四五六日天末]|星期|礼拜|周末|下周|本周|明天|后天|今天|today|tomorrow|weekend|'
+                       # the word-only round (statement 2026-11-28: no number rule, a number would also keep 「2天」 of a whole-sentence quote)
+                       r'下个月|下月|明年|春节|国庆|元旦|中秋|五一|月底|今晚|傍晚|开馆|next month|christmas|new year|end of month|tonight|dawn|opening time|'
+                       r'已经确认|已确认|确认了|落实|敲定|定下来|办好|留了位|留好|留位|掏了钱|secured|settled|registered|enrolled|rsvp|got entry|on the list|invited|受邀|admission|comped|'
+                       r'monday|tuesday|wednesday|thursday|friday|saturday|sunday|january|february|march|april|june|july|august|september|october|november|december|'
+                       # a clock or a date written another way: 「at 9」「nine am」「12/1」「十二月一号」「Dec 1」
+                       r'\bat\s+[0-9]{1,2}\b|\b(?:one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve)\s*(?:am|pm|a\.m\.|p\.m\.)|'
+                       r'[0-9]{1,2}\s+in\s+the\s+(?:morning|afternoon|evening)|[0-9]{1,2}\s*/\s*[0-9]{1,2}\b|'
+                       r'[一二三四五六七八九十]{1,3}\s*月\s*[一二三四五六七八九十]{0,3}\s*[日号]|\b(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s*[0-9]{1,2}\b|'
+                       r'[0-9]{1,2}\s*[:：点时]|[0-9]{1,2}\s*(?:am|pm)\b|[0-9]{4}[-/.][0-9]{1,2}[-/.][0-9]{1,2}|[0-9]{1,2}\s*月\s*[0-9]{1,2}\s*[日号]|'
+                       # clocks spelled out: 「下午两点」「早上八点半」「十点」, noon, o'clock
+                       r'[一二三四五六七八九十两]{1,3}\s*[点时]|\bnoon\b|midnight|o.?clock|中午|正午|午夜',re.I)
 
 
 def _drop_wish_items(items):
