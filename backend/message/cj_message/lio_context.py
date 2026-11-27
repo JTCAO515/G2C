@@ -363,7 +363,10 @@ _SENTENCE_END = re.compile(r'(?<=[。！？!?\n])|(?<=\.)(?=\s)')
 
 
 def _drop_save_button_sentences(text):
-    kept = [part for part in _SENTENCE_END.split(text) if not (_SAVE_BUTTON_ZH.search(part) or _SAVE_BUTTON_EN.search(part))]
+    parts = _SENTENCE_END.split(text)
+    kept = [part for part in parts if not (_SAVE_BUTTON_ZH.search(part) or _SAVE_BUTTON_EN.search(part))]
+    if len(kept) == len(parts):
+        return text   # nothing to drop: the bytes, trailing blanks included, stay exactly as written
     result = ''.join(kept).strip()
     return result if result else text
 

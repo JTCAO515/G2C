@@ -150,6 +150,11 @@ class SaveButtonSentences(unittest.TestCase):
             with self.subTest(text=text):
                 self.assertEqual(display_answer(text, locale), text)
 
+    def test_text_with_nothing_to_drop_is_returned_byte_for_byte(self):
+        # postgres shard 5 (lio_ordinary_unsettled_pg) compares a stored reply that ends in a blank
+        for text, locale in (('Start in one city and leave time to explore. ' * 8, 'en'), ('先去故宫。  \n', 'zh'), (' lead', 'en')):
+            self.assertEqual(display_answer(text, locale), text)
+
     def test_the_fixed_copy_that_mentions_remember_is_untouched(self):
         # CI found the first version cutting "Tap Remember and I'll use it next time I plan." out of the approved
         # capability copy; every fixed text of the module that says Remember or 记住 must come through unchanged.
