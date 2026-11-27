@@ -232,6 +232,65 @@ struct LioTripUndoTests {
         #expect(try await client(UndoExit([.plain(200, receiptJSON(value))])).submitTripUndo(value) == .other, "not JSON")
     }
 
+    // MARK: The contract's own examples (main: lio-answer-rich-examples.1.json), both kinds
+
+    private func contractReceipts() throws -> [(name: String, receipt: Receipt, undo: [String: Any])] {
+        var root = URL(fileURLWithPath: #filePath)
+        for _ in 0..<6 { root.deleteLastPathComponent() }
+        let file = try object(Data(contentsOf: root.appendingPathComponent("contracts/message/lio-answer-rich-examples.1.json")))
+        let valid = try #require(file["valid"] as? [[String: Any]])
+        var found: [(String, Receipt, [String: Any])] = []
+        for example in valid {
+            guard let rich = example["rich"] as? [String: Any], let wire = rich["trip_receipt"] as? [String: Any],
+                  let undo = wire["undo"] as? [String: Any], undo["state"] as? String == "available" else { continue }
+            let json = String(decoding: try JSONSerialization.data(withJSONObject: rich), as: UTF8.self)
+            let page = Data("""
+                {"version":"LIO-timeline.2","conversation_id":"\(conversation)","messages":[
+                {"message_id":"m1","text":"Q","answer":"好的，已经帮你排好了。","status":"completed","sources":[],"rich":\(json)}],"next_before":null}
+                """.utf8)
+            let row = try #require(try LioTimelineWire.decodePage(page, for: conversation, version: .v2).messages.first)
+            found.append((example["name"] as? String ?? "", try #require(row.rich?.tripReceipt, "\(example["name"] ?? "")"), undo))
+        }
+        return found
+    }
+
+    @Test func everyAvailableUndoOfTheContractsExamplesMakesItsRequestWithTheReceiptsOwnTarget() throws {
+        let all = try contractReceipts()
+        #expect(all.count == 6, "the contract has 6 valid examples with an available undo")
+        #expect(all.contains { $0.undo["kind"] as? String == "withdraw_created" }, "and one of them is a withdrawal")
+        for (name, receipt, undo) in all {
+            let request = try #require(LioTripUndoWire.Request(receipt: receipt, conversationID: conversation), "\(name)")
+            let body = try object(request.body)
+            let kind = undo["kind"] as? String ?? "restore"
+            #expect(body["version"] as? String == (kind == "restore" ? "LIO-trip-undo.4" : "LIO-trip-undo.5"), "\(name)")
+            #expect(body["action_id"] as? String == undo["action_id"] as? String, "\(name)")
+            #expect(body["conversation_id"] as? String == conversation, "\(name)")
+            // The target is copied as it is in the receipt: the same fields, the same values.
+            #expect(NSDictionary(dictionary: try #require(body["target"] as? [String: Any]))
+                .isEqual(to: try #require(undo["target"] as? [String: Any])), "\(name)")
+            #expect(Set(body.keys) == ["version", "action_id", "conversation_id", "target"], "\(name)")
+        }
+    }
+
+    @Test func aWithdrawalGoesToTheSameRoutesWithVersion5AndAnswersWithReceipt4() async throws {
+        let all = try contractReceipts()
+        let created = try #require(all.first { $0.undo["kind"] as? String == "withdraw_created" })
+        let request = try #require(LioTripUndoWire.Request(receipt: created.receipt, conversationID: conversation))
+        #expect(request.kind == .withdrawCreated && created.receipt.committedVersion == 1)
+        let exit = UndoExit([.json(200, receiptJSON(request)), .json(200, receiptJSON(request))])
+        let http = try client(exit)
+        #expect(try await http.submitTripUndo(request) == .committed)
+        #expect(try await http.readTripUndoReceipt(request) == .committed)
+        let calls = await exit.calls
+        #expect(calls[0].method == .post && calls[0].path == "/v4/lio/trip-undos" && calls[0].body == request.body)
+        let query = try #require(URLComponents(string: "https://x" + (calls[1].path ?? ""))).queryItems ?? []
+        #expect(calls[1].method == .get && query.contains(URLQueryItem(name: "version", value: "LIO-trip-undo.5")))
+        #expect(query.contains(URLQueryItem(name: "action_id", value: request.actionID)))
+        // A server that answered with receipt 5 would not be the contract's: no answer.
+        let other = UndoExit([.json(200, receiptJSON(request, version: "LIO-trip-undo-receipt.5"))])
+        #expect(try await client(other).submitTripUndo(request) == .other)
+    }
+
     // MARK: What the App makes of it
 
     private func tripClient(_ send: [LioTripUndoWire.Reply?], read: [LioTripUndoWire.Reply?] = []) -> (LioTripUndoClient, Counter) {

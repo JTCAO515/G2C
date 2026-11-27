@@ -41,6 +41,8 @@ public struct LioHome<MenuContent: View>: View {
     private let memoryConsent: LioMemoryConsentClient?
     /// #1994: the Undo of an automatic save; nil where the host has no signed Lio client or the build has it off.
     @State private var autosaveUndo: LioAutosaveUndo?
+    /// #1994: bumped after an undo so the trip list is read again (a withdrawn first save no longer appears in it).
+    @State private var tripListRevision = 0
     /// #1999: whether this build asks before showing memory suggestions (`G2CMemoryConsentEnabled`); off means as before.
     private let memoryConsentOn = LioMemoryConsentFeature.enabledInBuild
     private let savedMemory: AnyView?
@@ -277,6 +279,7 @@ public struct LioHome<MenuContent: View>: View {
             await autosaveUndo.undo(receipt, conversationID: id) {
                 await conversation.refreshTimeline()
                 await tripPlan?.reload(for: latestTripCard)
+                tripListRevision += 1
             }
         }
     }
@@ -597,7 +600,8 @@ public struct LioHome<MenuContent: View>: View {
                          zoomNamespace: tripZoomNamespace, path: $tripPath,
                          plans: savedPlans.plans, openPlan: { planSheet = $0 },
                          removePlan: { savedPlans.remove($0) },
-                         backToTripHome: LioTripHomeFeature.enabledInBuild ? { showsAllTrips = false; tripPath = [] } : nil) { tab = .chat }
+                         backToTripHome: LioTripHomeFeature.enabledInBuild ? { showsAllTrips = false; tripPath = [] } : nil,
+                         listRevision: tripListRevision) { tab = .chat }
         }
     }
 
