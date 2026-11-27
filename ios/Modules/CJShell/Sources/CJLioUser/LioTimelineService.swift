@@ -18,6 +18,8 @@ struct LioTimelineTurn: Sendable {
     let places: [LioPlaceSpan]
     /// #1999: the server says this answer holds a preference and the account has never chosen about memory.
     let memoryPrompt: Bool
+    /// Tool cards under the answer (LIO-answer-rich.1, #1993).
+    let cards: [LioTimelineWire.Card]
 
     var isActive: Bool {
         switch status {
@@ -39,6 +41,7 @@ struct LioTimelineTurn: Sendable {
         places = richEnabled
             ? LioPlaceMentions.resolve(answer: message.answer, entities: message.rich?.entities ?? [], in: repository) : []
         memoryPrompt = richEnabled && message.rich?.memoryPrompt == true
+        cards = richEnabled ? message.rich?.cards ?? [] : []
         memoryTags = message.memoryTags.filter { LioPublicDisplay.permitsText($0.text) }
         sources = Self.projectSources(message.sources.map { ($0.title, $0.link) }, messageID: message.id)
         status = Self.status(message.state, activity: message.activity, answer: message.answer)
@@ -54,6 +57,7 @@ struct LioTimelineTurn: Sendable {
         chips = []
         places = []
         memoryPrompt = false
+        cards = []
         // Native calendar/rich summaries keep their actual type and binding in exploration.trip.
         itinerary = nil
         memoryTags = message.memoryTags.filter { LioPublicDisplay.permitsText($0.text) }

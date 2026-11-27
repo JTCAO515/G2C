@@ -57,6 +57,8 @@ enum LioEvent: Sendable {
     case layout(LioTimelineWire.AnswerLayout, [LioTimelineWire.Followup], [LioTimelineWire.Chip])
     /// Debug preview only (#1991): the places named in the answer.
     case places([LioPlaceSpan])
+    /// Debug preview only (#1993): the tool cards under the answer.
+    case cards([LioTimelineWire.Card])
     case finished
     case failed(LioFailure)
 }
@@ -99,6 +101,8 @@ struct LioTurn: Identifiable {
     var places: [LioPlaceSpan] = []
     /// #1999: the server says the account has never chosen about memory and this answer holds a preference.
     var memoryPrompt = false
+    /// #1993: tool cards under the answer (empty unless the build asked for them).
+    var cards: [LioTimelineWire.Card] = []
     var fromTimeline = false
     var readFailure: LioRequestProblem?
     var id: Data { question.id }
@@ -247,6 +251,8 @@ final class LioConversation {
                 turns[index].chips = chips
             case .places(let places):
                 turns[index].places = places
+            case .cards(let cards):
+                turns[index].cards = cards
             case .finished:
                 turns[index].status = .finished
                 return
@@ -358,6 +364,6 @@ final class LioConversation {
         return LioTurn(question: question, status: row.status, answer: row.answer,
                        sources: row.sources, itinerary: row.itinerary, memoryTags: row.memoryTags,
                        exploration: row.exploration, layout: row.layout, followups: row.followups, chips: row.chips,
-                       places: row.places, memoryPrompt: row.memoryPrompt, fromTimeline: true)
+                       places: row.places, memoryPrompt: row.memoryPrompt, cards: row.cards, fromTimeline: true)
     }
 }

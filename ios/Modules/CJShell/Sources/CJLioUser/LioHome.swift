@@ -1338,6 +1338,11 @@ public struct LioHome<MenuContent: View>: View {
                     lioReply(byline: false) { placeHosted(spans.tail) { answerText(tail, spans.tail, "lio.answer.2", true, tailKey) } }
                         .lioEntrance(.fade, active: entering.contains(tailKey)) { entering.remove(tailKey) }
                 }
+                // #1993: the server's tool cards; a tap opens the card's tool with the card's parameters.
+                if answerRichOn, turn.status == .finished, !turn.cards.isEmpty {
+                    LioAnswerCards(cards: turn.cards, language: language, routable: chatRoutableTools,
+                                   open: { openCard($0) })
+                }
                 if answerLayoutOn, turn.status == .finished, !(turn.followups.isEmpty && turn.chips.isEmpty) {
                     LioAnswerFollowups(actions: turn.followups, chips: turn.chips, open: { openFollowup($0) },
                                        ask: { chip in _ = sendQuestion(chip.label, chipTicket: chip.ticket) })
@@ -1516,6 +1521,24 @@ public struct LioHome<MenuContent: View>: View {
             let today = LioTripDay(date: Date(), timeZone: LioTripChecklist.beijing)
             return store.addWish(place, plan: LioTripChecklist.currentPlan(profile: nil, plans: plans, today: today))
         }
+    }
+
+    /// The tools a card or a button can open from the chat: the router must show the Tools tab, and this build must show
+    /// the tool with the services the chat has (the same rule as the Tools tab's own cards).
+    private var chatRoutableTools: Set<LioTool> {
+        guard router.toolsShown else { return [] }
+        var context = LioToolContext(language: language)
+        context.currencyRelay = currencyRelay
+        context.taxiEntry = taxiEntry
+        context.nearbyService = nearbyService
+        context.hotelFinder = hotelRelay.map { .internalBeta(relay: $0) }
+        context.menuService = menuService
+        return Set(LioToolCatalog.visible(context.availability()))
+    }
+
+    /// #1993: a card opens its tool through the router; if the router will not, the same "not in this version" notice.
+    private func openCard(_ route: LioRoute) {
+        if !router.open(route) { followupUnavailable = true }
     }
 
     /// #1727: a server button opens its tool through the router; a tool this build does not have says so.

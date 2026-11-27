@@ -108,6 +108,11 @@ class LioMemoryExtraction:
         from .lio_memory_consent import ConsentStore, consent_required
         return not consent_required() or ConsentStore(self.database).granted(scope)
 
+    def plan_memory_allowed(self, scope):
+        """False while the consent switch is on and the account is not granted (never chosen, or withdrawn); a read that
+        cannot be done is no. Asked by a planning reply before it hands remembered preferences to the model (#2010)."""
+        return self._consented(scope)
+
     def consent_prompt(self, binding, question):
         """The marker effect for a first-time consent prompt (#1999), or None; see `lio_memory_prompt`."""
         from .lio_memory_consent import ConsentStore
