@@ -36,7 +36,7 @@ struct LioRepositoryPlaceLookup: LioPlaceLookup {
         for place in repository.places where city == nil || place.city == city {
             let names = [place.nameZH, place.nameEN] + place.aliasesZH + place.aliasesEN
             guard names.contains(where: { $0.lowercased() == key }) else { continue }
-            if let other = found, other.id != place.id { return nil }
+            if found != nil { return nil }                       // a second place answers to this name: no guess
             found = place
         }
         guard let place = found else { return nil }
@@ -50,13 +50,13 @@ enum LioPlaceLookups {
     /// so until it lands nothing matches), and in a Debug build that was launched with a development pack
     /// (`--places-dev-pack`, `LioDevPlacesPack`) the pack's unreviewed places too. The hand-written samples are not
     /// used here: their coordinates are approximate and a canvas keeps what it is given.
-    static var standard: any LioPlaceLookup { LioRepositoryPlaceLookup(repository: canvasRepository) }
+    static var standard: any LioPlaceLookup { LioRepositoryPlaceLookup(repository: bundledCanvasRepository) }
 
-    private static let canvasRepository = canvasRepository(library: LioPlaceRepository.resource(LioPlaceRepository.libraryResource))
+    private static let bundledCanvasRepository = makeCanvasRepository(library: LioPlaceRepository.resource(LioPlaceRepository.libraryResource))
 
     /// The places the canvas may look in. The inputs are parameters so a test can point it at a small library and pack.
-    static func canvasRepository(library: Data?, arguments: [String] = ProcessInfo.processInfo.arguments,
-                                 environment: [String: String] = ProcessInfo.processInfo.environment) -> LioPlaceRepository {
+    static func makeCanvasRepository(library: Data?, arguments: [String] = ProcessInfo.processInfo.arguments,
+                                     environment: [String: String] = ProcessInfo.processInfo.environment) -> LioPlaceRepository {
         #if DEBUG
         if LioDevPlacesPack.load(arguments: arguments, environment: environment) != nil {
             return LioPlaceRepository.debugRepository(library: library, samples: nil, arguments: arguments, environment: environment)

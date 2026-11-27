@@ -18,7 +18,7 @@ struct LioPlaceLookupTests {
 
     private func lookup(library: String? = libraryJSON, arguments: [String] = ["app"],
                         environment: [String: String] = [:]) -> LioRepositoryPlaceLookup {
-        LioRepositoryPlaceLookup(repository: LioPlaceLookups.canvasRepository(
+        LioRepositoryPlaceLookup(repository: LioPlaceLookups.makeCanvasRepository(
             library: library.map { Data($0.utf8) }, arguments: arguments, environment: environment))
     }
 
@@ -46,9 +46,20 @@ struct LioPlaceLookupTests {
         #expect(lookup.match(name: "老店", city: "shanghai")?.placeID == "pl_sh_dup_c")
     }
 
+    @Test func aNameOnePlaceHasAndAnotherPlaceHasAsAnAliasIsAMiss() {
+        let library = """
+        {"places": [{"id": "pl_bj_a", "city": "beijing", "category": "attraction", "name_zh": "鼓楼", "name_en": "Drum Tower", "lat": 39.94, "lng": 116.4},
+                    {"id": "pl_bj_b", "city": "beijing", "category": "food", "name_zh": "鼓楼小馆", "name_en": "Gulou Cafe",
+                     "aliases_zh": ["鼓楼"], "lat": 39.95, "lng": 116.41}]}
+        """
+        let lookup = lookup(library: library)
+        #expect(lookup.match(name: "鼓楼", city: "beijing") == nil)
+        #expect(lookup.match(name: "Drum Tower", city: "beijing")?.placeID == "pl_bj_a")
+    }
+
     @Test func withoutALibraryNothingMatchesAndTheSamplesAreNotUsed() {
         #expect(lookup(library: nil).match(name: "故宫", city: nil) == nil)
-        #expect(LioPlaceLookups.canvasRepository(library: nil).places.isEmpty)
+        #expect(LioPlaceLookups.makeCanvasRepository(library: nil, arguments: ["app"], environment: [:]).places.isEmpty)
         #expect(lookup(library: "not json").match(name: "故宫", city: nil) == nil)
     }
 
@@ -92,8 +103,17 @@ struct LioPlaceLookupTests {
         }
     }
 
-    @Test func aBadPackIsIgnored() {
+    @Test func aBadPackIsIgnored() throws {
         #expect(lookup(arguments: ["app", LioDevPlacesPack.argument, "/no/such/file.json"]).match(name: "外滩", city: nil) == nil)
+        for text in ["not json", Self.packJSON.replacingOccurrences(of: "g2c-places-dev.1", with: "g2c-places-dev.99"),
+                     Self.packJSON.replacingOccurrences(of: "\"unreviewed\"", with: "\"approved\"")] {
+            let directory = FileManager.default.temporaryDirectory.appendingPathComponent("places-lookup-" + UUID().uuidString)
+            try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+            defer { try? FileManager.default.removeItem(at: directory) }
+            let url = directory.appendingPathComponent("pack.json")
+            try text.write(to: url, atomically: true, encoding: .utf8)
+            #expect(lookup(arguments: ["app", LioDevPlacesPack.argument, url.path]).match(name: "外滩", city: nil) == nil)
+        }
     }
     #endif
 }
