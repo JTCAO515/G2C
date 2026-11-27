@@ -130,16 +130,22 @@ def main(config, conninfo):
     from fastapi import FastAPI
     from fastapi.testclient import TestClient
 
-    class Boundary:
-        def with_history_context(self, token, operation):
-            if token != 'alice-token':
-                raise RuntimeError('blocked')          # any admission failure that is not a clean refusal
-            return operation(SimpleNamespace(scope=alice))
+    # The real boundary (#2080): the token is checked by the account checker and the history context is opened over the
+    # real message repository, exactly as the mounted app does. Only the token store is a development fixture.
+    import tempfile
+    import dev_auth
+    from cj_api.local_worker_context import checker_for
+    from cj_message.auth_boundary import Boundary
+    auth = Path(tempfile.mkdtemp(prefix='cj2080-')) / 'auth'
+    dev_auth.init(auth, ['m4-synthetic-demo-aaaaaaaaaaaa'])
+    alice_token = dev_auth.token(auth, 'm4-synthetic-demo-aaaaaaaaaaaa', 30)
+    database = LocalDatabase(conninfo)
+    boundary = Boundary(checker_for(auth), lambda p: database.message_repository(scope_for(p.issuer, p.subject)), lambda: 'unused')
 
     app = FastAPI()
-    register_lio_memory_consent_routes(app, Boundary(), store)
+    register_lio_memory_consent_routes(app, boundary, store)
     http = TestClient(app)
-    headers = {'Authorization': 'Bearer alice-token'}
+    headers = {'Authorization': 'Bearer ' + alice_token}
     put_headers = dict(headers, **{'Content-Type': 'application/octet-stream'})
     body = lambda **v: json.dumps(dict(version='LIO-memory-consent.1', state='withdrawn', consent_text_version=TEXT,
                                        request_id='h1', **v)).encode()
@@ -165,7 +171,11 @@ def main(config, conninfo):
     assert http.put('/v1/lio/memory/consent', content=body(), headers=headers).status_code == 415   # not octet-stream, like every Lio send
     assert http.put('/v1/lio/memory/consent', content=body(), headers={'Content-Type': 'application/octet-stream'}).status_code == 401
     assert http.get('/v1/lio/memory/consent').status_code == 401
-    assert http.get('/v1/lio/memory/consent', headers={'Authorization': 'Bearer nobody'}).status_code == 503
+    assert http.get('/v1/lio/memory/consent', headers={'Authorization': 'Bearer nobody'}).status_code == 403      # the real checker refuses a token it did not issue
+    # An admission failure that is not a clean refusal (the history context cannot be opened) stays a 503, never a 200 or a 401.
+    broken = FastAPI()
+    register_lio_memory_consent_routes(broken, SimpleNamespace(with_history_context=lambda token, operation: (_ for _ in ()).throw(RuntimeError('blocked'))), store)
+    assert TestClient(broken).get('/v1/lio/memory/consent', headers=headers).status_code == 503
     assert len(rows(alice)) == 4                                                        # only the one real withdrawal was appended
     print('PASS routes: GET and PUT over the real store, retry idempotent, reused request id 409, strict bodies 400, no token 401')
 
