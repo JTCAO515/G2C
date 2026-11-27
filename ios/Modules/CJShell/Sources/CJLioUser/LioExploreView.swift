@@ -40,19 +40,9 @@ struct LioExploreView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: LioTheme.Spacing.md) {
-                if catalog.isDevelopment { LioDevelopmentDataBanner(language: language) }
-                if libraryIsEmpty {
-                    note(language.text("We’re still collecting places worth recommending. Nothing to show yet.",
-                                       "值得推荐的地点还在收录中，暂时没有可看的。"), id: "lio.explore.library-empty")
-                } else {
-                    filters
-                    content
-                }
-                entries
-            }
-            .padding(LioTheme.Spacing.md)
-            .frame(maxWidth: .infinity, alignment: .leading)
+            VStack(alignment: .leading, spacing: LioTheme.Spacing.md) { pageContent }
+                .padding(LioTheme.Spacing.md)
+                .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(LioTheme.paper)
         .foregroundStyle(LioTheme.ink)
@@ -70,22 +60,46 @@ struct LioExploreView: View {
         .sheet(item: $opened) { entry in
             NavigationStack {
                 LioPlacePage(placeID: entry.id, language: language, repository: catalog.repository,
-                             onAddToTrip: addToTrip.map { add in { place in
-                                 if add(place) { showAdded(place.id) }
-                             } })
+                             onAddToTrip: placePageAction)
             }
         }
         .task { if !libraryIsEmpty { await locate() } }
         .task(id: query) { await search() }
     }
 
+    @ViewBuilder private var pageContent: some View {
+        if catalog.isDevelopment { LioDevelopmentDataBanner(language: language) }
+        if libraryIsEmpty {
+            note(libraryEmptyText, id: "lio.explore.library-empty")
+        } else {
+            filters
+            content
+        }
+        entries
+    }
+
+    private var libraryEmptyText: String {
+        language.text("We’re still collecting places worth recommending. Nothing to show yet.",
+                      "值得推荐的地点还在收录中，暂时没有可看的。")
+    }
+
+    /// "Add to trip" on the place page: the host's action, then the notice here.
+    private var placePageAction: (@MainActor (LioPlace) -> Void)? {
+        guard let add = addToTrip else { return nil }
+        return { place in
+            if add(place) { showAdded(place.id) }
+        }
+    }
+
     // MARK: Filters
+
+    private var kindList: [LioExploreGuide.Kind] { LioExploreGuide.Kind.allCases }
 
     private var filters: some View {
         VStack(alignment: .leading, spacing: 4) {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: LioTheme.Spacing.xs) {
-                    ForEach(LioExploreGuide.Kind.allCases, id: \.self) { kind in
+                    ForEach(kindList, id: \.self) { kind in
                         LioFilterChip(title: kind.title(language), selected: kinds.contains(kind),
                                       identifier: "lio.explore.kind." + kind.identifier) {
                             if kinds.contains(kind) { kinds.remove(kind) } else { kinds.insert(kind) }
