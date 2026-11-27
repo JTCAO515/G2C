@@ -95,4 +95,50 @@ import XCTest
         screenshot.lifetime = .keepAlways
         add(screenshot)
     }
+
+    /// #2004, #2005 entries: with the switch on, the Stay card opens the library's Stay page and the Eat & Play hub's
+    /// nearby row opens Explore; the old pages stay behind the switch being off.
+    @objc func testToolsEntriesOpenStayAndExploreWhenSwitchedOn() throws {
+        continueAfterFailure = false
+        let base = ["--lio-preview", "--lio-tools-preview", "--lio-tools-all-cards", "--lio-nearby-preview",
+                    "-cj.ui.language.v1", "en", "-lio.ui.appearance.v1", "light"]
+        func launch(_ extra: [String]) -> XCUIApplication {
+            let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
+            app.launchArguments = base + extra
+            app.launch()
+            XCTAssertTrue(app.tabBars.buttons["Tools"].waitForExistence(timeout: 8))
+            app.tabBars.buttons["Tools"].tap()
+            return app
+        }
+        let on = launch(["--lio-place-tools-preview"])
+        let stay = on.buttons["lio.tools.hotels"]
+        XCTAssertTrue(stay.waitForExistence(timeout: 6))
+        stay.tap()
+        let page = on.descendants(matching: .any).matching(NSPredicate(
+            format: "identifier == 'lio.stay.library-empty' OR identifier == 'lio.stay.filters.city'")).firstMatch
+        XCTAssertTrue(page.waitForExistence(timeout: 8))
+        XCTAssertFalse(on.textFields["lio.hotels.city"].exists)
+        on.navigationBars.buttons.firstMatch.tap()
+        on.buttons["lio.tools.eat-play"].tap()
+        let nearby = on.buttons["lio.tools.nearby"]
+        XCTAssertTrue(nearby.waitForExistence(timeout: 6))
+        nearby.tap()
+        XCTAssertTrue(on.descendants(matching: .any).matching(NSPredicate(
+            format: "identifier BEGINSWITH 'lio.explore.'")).firstMatch.waitForExistence(timeout: 8))
+        XCTAssertFalse(on.descendants(matching: .any)["lio.nearby.group"].exists)
+        let shot = XCTAttachment(screenshot: on.screenshot())
+        shot.name = "entry-explore-on"
+        shot.lifetime = .keepAlways
+        add(shot)
+        on.terminate()
+
+        let off = launch([])
+        defer { off.terminate() }
+        off.buttons["lio.tools.eat-play"].tap()
+        off.buttons["lio.tools.nearby"].tap()
+        XCTAssertTrue(off.descendants(matching: .any).matching(NSPredicate(
+            format: "identifier BEGINSWITH 'lio.nearby.'")).firstMatch.waitForExistence(timeout: 8))
+        XCTAssertFalse(off.descendants(matching: .any).matching(NSPredicate(
+            format: "identifier BEGINSWITH 'lio.explore.'")).firstMatch.exists)
+    }
 }

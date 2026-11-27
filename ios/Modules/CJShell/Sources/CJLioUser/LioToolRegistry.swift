@@ -236,7 +236,10 @@ enum LioToolRegistry {
                      name: ("Stay", "住"), summary: ("Find hotels by city and dates", "按城市和日期找酒店"),
                      gate: .availability { $0.hotels }, parameters: ["city"]) { context, route in
             #if os(iOS)
-            if let finder = context.hotelSearch {
+            if LioPlaceToolsFeature.enabledInBuild {
+                // #2004: only the hotels we have collected; the old search stays behind the switch being off.
+                LioStayView(language: context.language)
+            } else if let finder = context.hotelSearch {
                 let (profile, today) = context.travelProfile()
                 let search = profile.hotelSearch(routeCity: route["city"], today: today)
                 LioHotelOffersView(language: context.language, finder: finder, city: search.city,
@@ -286,7 +289,10 @@ enum LioToolRegistry {
                      name: ("Nearby", "附近"), summary: ("Food, sights and shops around you", "身边的美食和景点"),
                      gate: .availability { $0.nearby }, placement: .routeOnly) { context, _ in
             #if os(iOS)
-            if let nearbyService = context.nearbyService {
+            if let nearbyService = context.nearbyService, LioPlaceToolsFeature.enabledInBuild {
+                // #2005: nearby places that are also in our place library; booking and menus open from there.
+                LioExploreView(language: context.language, service: nearbyService)
+            } else if let nearbyService = context.nearbyService {
                 // Essentials have their own card (#1980); this one is food, sights and shops.
                 LioNearbyView(language: context.language, service: nearbyService, group: LioNearbyPlace.essentialsEnabled ? .leisure : .all)
             }
@@ -384,7 +390,8 @@ extension LioToolContext {
         available.currency = currencyRelay != nil
         available.nearby = nearbyService != nil
         available.convenience = nearbyService != nil && LioNearbyPlace.essentialsEnabled
-        available.hotels = hotelSearch != nil
+        // The place library's Stay page (#2004) needs no search service, so its card shows when the switch is on.
+        available.hotels = hotelSearch != nil || LioPlaceToolsFeature.enabledInBuild
         available.roadbook = LioRoadbookFeature.enabled(infoValue: info("G2CRoadbookEnabled"))
         available.transport = LioTransportService.fromBuild() != nil
         available.menuOrder = menuService != nil
