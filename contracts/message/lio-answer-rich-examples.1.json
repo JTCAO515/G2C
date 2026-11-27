@@ -427,6 +427,173 @@
    }
   },
   {
+   "name": "first save of a new trip: undo removes it, first automatic save",
+   "answer": "a7",
+   "rich": {
+    "version": "LIO-answer-rich.1",
+    "trip_receipt": {
+     "status": "saved",
+     "action_id": "lio-plan-run-5c1f",
+     "trip_id": "trip-9a1b",
+     "committed_version": 1,
+     "summary": {
+      "days": [
+       {
+        "day": 1,
+        "city": {
+         "id": "beijing",
+         "zh": "北京",
+         "en": "Beijing"
+        },
+        "added": 3,
+        "updated": 0,
+        "removed": 0
+       }
+      ],
+      "wishlist_added": 0,
+      "legs_updated": 0
+     },
+     "undo": {
+      "state": "available",
+      "kind": "remove_created",
+      "action_id": "undo-114b97123ea4b9ac35e69d3f8fd0ea64056a4c28",
+      "until": "2026-11-28T03:04:05.678+00:00",
+      "target": {
+       "trip_id": "trip-9a1b",
+       "expected_version": 1,
+       "original_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+       "content_version": "structured.4"
+      }
+     },
+     "first_autosave": true
+    }
+   }
+  },
+  {
+   "name": "first save of a new trip, already superseded",
+   "answer": "a7",
+   "rich": {
+    "version": "LIO-answer-rich.1",
+    "trip_receipt": {
+     "status": "saved",
+     "action_id": "lio-plan-run-5c1f",
+     "trip_id": "trip-9a1b",
+     "committed_version": 1,
+     "summary": {
+      "days": [
+       {
+        "day": 1,
+        "city": {
+         "id": "beijing",
+         "zh": "北京",
+         "en": "Beijing"
+        },
+        "added": 3,
+        "updated": 0,
+        "removed": 0
+       }
+      ],
+      "wishlist_added": 0,
+      "legs_updated": 0
+     },
+     "undo": {
+      "state": "superseded",
+      "until": "2026-11-28T03:04:05.678+00:00"
+     }
+    }
+   }
+  },
+  {
+   "name": "a later save that is the account's first automatic save",
+   "answer": "a7",
+   "rich": {
+    "version": "LIO-answer-rich.1",
+    "trip_receipt": {
+     "status": "saved",
+     "action_id": "lio-plan-run-5c1f",
+     "trip_id": "trip-9a1b",
+     "committed_version": 7,
+     "summary": {
+      "days": [
+       {
+        "day": 1,
+        "city": {
+         "id": "beijing",
+         "zh": "北京",
+         "en": "Beijing"
+        },
+        "added": 3,
+        "updated": 0,
+        "removed": 0
+       }
+      ],
+      "wishlist_added": 0,
+      "legs_updated": 0
+     },
+     "undo": {
+      "state": "available",
+      "action_id": "undo-114b97123ea4b9ac35e69d3f8fd0ea64056a4c28",
+      "until": "2026-11-28T03:04:05.678+00:00",
+      "target": {
+       "trip_id": "trip-9a1b",
+       "expected_version": 7,
+       "original_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+       "content_version": "structured.4",
+       "restore_version": 6,
+       "restore_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+       "restore_content_version": "structured.4"
+      }
+     },
+     "first_autosave": true
+    }
+   }
+  },
+  {
+   "name": "restore undo with the kind written out",
+   "answer": "a7",
+   "rich": {
+    "version": "LIO-answer-rich.1",
+    "trip_receipt": {
+     "status": "saved",
+     "action_id": "lio-plan-run-5c1f",
+     "trip_id": "trip-9a1b",
+     "committed_version": 7,
+     "summary": {
+      "days": [
+       {
+        "day": 1,
+        "city": {
+         "id": "beijing",
+         "zh": "北京",
+         "en": "Beijing"
+        },
+        "added": 3,
+        "updated": 0,
+        "removed": 0
+       }
+      ],
+      "wishlist_added": 0,
+      "legs_updated": 0
+     },
+     "undo": {
+      "state": "available",
+      "action_id": "undo-114b97123ea4b9ac35e69d3f8fd0ea64056a4c28",
+      "until": "2026-11-28T03:04:05.678+00:00",
+      "target": {
+       "trip_id": "trip-9a1b",
+       "expected_version": 7,
+       "original_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+       "content_version": "structured.4",
+       "restore_version": 6,
+       "restore_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+       "restore_content_version": "structured.4"
+      },
+      "kind": "restore"
+     }
+    }
+   }
+  },
+  {
    "name": "saved, superseded (no target)",
    "answer": "a7",
    "rich": {
@@ -2631,6 +2798,416 @@
        "restore_version": 4,
        "restore_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
        "restore_content_version": "structured.4"
+      }
+     }
+    }
+   }
+  },
+  {
+   "name": "first_autosave false",
+   "answer": "a7",
+   "rich": {
+    "version": "LIO-answer-rich.1",
+    "trip_receipt": {
+     "status": "saved",
+     "action_id": "lio-plan-run-5c1f",
+     "trip_id": "trip-9a1b",
+     "committed_version": 7,
+     "summary": {
+      "days": [
+       {
+        "day": 1,
+        "city": {
+         "id": "beijing",
+         "zh": "北京",
+         "en": "Beijing"
+        },
+        "added": 3,
+        "updated": 0,
+        "removed": 0
+       }
+      ],
+      "wishlist_added": 0,
+      "legs_updated": 0
+     },
+     "undo": {
+      "state": "available",
+      "action_id": "undo-114b97123ea4b9ac35e69d3f8fd0ea64056a4c28",
+      "until": "2026-11-28T03:04:05.678+00:00",
+      "target": {
+       "trip_id": "trip-9a1b",
+       "expected_version": 7,
+       "original_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+       "content_version": "structured.4",
+       "restore_version": 6,
+       "restore_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+       "restore_content_version": "structured.4"
+      }
+     },
+     "first_autosave": false
+    }
+   }
+  },
+  {
+   "name": "first_autosave on a not-saved receipt",
+   "answer": "a7",
+   "rich": {
+    "version": "LIO-answer-rich.1",
+    "trip_receipt": {
+     "status": "not_saved",
+     "action_id": "lio-plan-run-5c1f",
+     "first_autosave": true
+    }
+   }
+  },
+  {
+   "name": "first_autosave on an unknown receipt",
+   "answer": "a7",
+   "rich": {
+    "version": "LIO-answer-rich.1",
+    "trip_receipt": {
+     "status": "unknown",
+     "action_id": "lio-plan-run-5c1f",
+     "first_autosave": true
+    }
+   }
+  },
+  {
+   "name": "committed version 0",
+   "answer": "a7",
+   "rich": {
+    "version": "LIO-answer-rich.1",
+    "trip_receipt": {
+     "status": "saved",
+     "action_id": "lio-plan-run-5c1f",
+     "trip_id": "trip-9a1b",
+     "committed_version": 0,
+     "summary": {
+      "days": [
+       {
+        "day": 1,
+        "city": {
+         "id": "beijing",
+         "zh": "北京",
+         "en": "Beijing"
+        },
+        "added": 3,
+        "updated": 0,
+        "removed": 0
+       }
+      ],
+      "wishlist_added": 0,
+      "legs_updated": 0
+     },
+     "undo": {
+      "state": "available",
+      "action_id": "undo-114b97123ea4b9ac35e69d3f8fd0ea64056a4c28",
+      "until": "2026-11-28T03:04:05.678+00:00",
+      "target": {
+       "trip_id": "trip-9a1b",
+       "expected_version": 7,
+       "original_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+       "content_version": "structured.4",
+       "restore_version": 6,
+       "restore_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+       "restore_content_version": "structured.4"
+      }
+     }
+    }
+   }
+  },
+  {
+   "name": "first save undone by restoring (version 1 has no previous version)",
+   "answer": "a7",
+   "rich": {
+    "version": "LIO-answer-rich.1",
+    "trip_receipt": {
+     "status": "saved",
+     "action_id": "lio-plan-run-5c1f",
+     "trip_id": "trip-9a1b",
+     "committed_version": 1,
+     "summary": {
+      "days": [
+       {
+        "day": 1,
+        "city": {
+         "id": "beijing",
+         "zh": "北京",
+         "en": "Beijing"
+        },
+        "added": 3,
+        "updated": 0,
+        "removed": 0
+       }
+      ],
+      "wishlist_added": 0,
+      "legs_updated": 0
+     },
+     "undo": {
+      "state": "available",
+      "action_id": "undo-114b97123ea4b9ac35e69d3f8fd0ea64056a4c28",
+      "until": "2026-11-28T03:04:05.678+00:00",
+      "target": {
+       "trip_id": "trip-9a1b",
+       "expected_version": 7,
+       "original_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+       "content_version": "structured.4",
+       "restore_version": 6,
+       "restore_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+       "restore_content_version": "structured.4"
+      }
+     }
+    }
+   }
+  },
+  {
+   "name": "remove_created for a later version",
+   "answer": "a7",
+   "rich": {
+    "version": "LIO-answer-rich.1",
+    "trip_receipt": {
+     "status": "saved",
+     "action_id": "lio-plan-run-5c1f",
+     "trip_id": "trip-9a1b",
+     "committed_version": 7,
+     "summary": {
+      "days": [
+       {
+        "day": 1,
+        "city": {
+         "id": "beijing",
+         "zh": "北京",
+         "en": "Beijing"
+        },
+        "added": 3,
+        "updated": 0,
+        "removed": 0
+       }
+      ],
+      "wishlist_added": 0,
+      "legs_updated": 0
+     },
+     "undo": {
+      "state": "available",
+      "kind": "remove_created",
+      "action_id": "undo-114b97123ea4b9ac35e69d3f8fd0ea64056a4c28",
+      "until": "2026-11-28T03:04:05.678+00:00",
+      "target": {
+       "trip_id": "trip-9a1b",
+       "expected_version": 1,
+       "original_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+       "content_version": "structured.4"
+      }
+     }
+    }
+   }
+  },
+  {
+   "name": "remove_created target says version 2",
+   "answer": "a7",
+   "rich": {
+    "version": "LIO-answer-rich.1",
+    "trip_receipt": {
+     "status": "saved",
+     "action_id": "lio-plan-run-5c1f",
+     "trip_id": "trip-9a1b",
+     "committed_version": 2,
+     "summary": {
+      "days": [
+       {
+        "day": 1,
+        "city": {
+         "id": "beijing",
+         "zh": "北京",
+         "en": "Beijing"
+        },
+        "added": 3,
+        "updated": 0,
+        "removed": 0
+       }
+      ],
+      "wishlist_added": 0,
+      "legs_updated": 0
+     },
+     "undo": {
+      "state": "available",
+      "kind": "remove_created",
+      "action_id": "undo-114b97123ea4b9ac35e69d3f8fd0ea64056a4c28",
+      "until": "2026-11-28T03:04:05.678+00:00",
+      "target": {
+       "trip_id": "trip-9a1b",
+       "expected_version": 2,
+       "original_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+       "content_version": "structured.4"
+      }
+     }
+    }
+   }
+  },
+  {
+   "name": "remove_created target with restore fields",
+   "answer": "a7",
+   "rich": {
+    "version": "LIO-answer-rich.1",
+    "trip_receipt": {
+     "status": "saved",
+     "action_id": "lio-plan-run-5c1f",
+     "trip_id": "trip-9a1b",
+     "committed_version": 1,
+     "summary": {
+      "days": [
+       {
+        "day": 1,
+        "city": {
+         "id": "beijing",
+         "zh": "北京",
+         "en": "Beijing"
+        },
+        "added": 3,
+        "updated": 0,
+        "removed": 0
+       }
+      ],
+      "wishlist_added": 0,
+      "legs_updated": 0
+     },
+     "undo": {
+      "state": "available",
+      "kind": "remove_created",
+      "action_id": "undo-114b97123ea4b9ac35e69d3f8fd0ea64056a4c28",
+      "until": "2026-11-28T03:04:05.678+00:00",
+      "target": {
+       "trip_id": "trip-9a1b",
+       "expected_version": 1,
+       "original_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+       "content_version": "structured.4",
+       "restore_version": 0,
+       "restore_hash": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+       "restore_content_version": "structured.4"
+      }
+     }
+    }
+   }
+  },
+  {
+   "name": "remove_created target without the hash",
+   "answer": "a7",
+   "rich": {
+    "version": "LIO-answer-rich.1",
+    "trip_receipt": {
+     "status": "saved",
+     "action_id": "lio-plan-run-5c1f",
+     "trip_id": "trip-9a1b",
+     "committed_version": 1,
+     "summary": {
+      "days": [
+       {
+        "day": 1,
+        "city": {
+         "id": "beijing",
+         "zh": "北京",
+         "en": "Beijing"
+        },
+        "added": 3,
+        "updated": 0,
+        "removed": 0
+       }
+      ],
+      "wishlist_added": 0,
+      "legs_updated": 0
+     },
+     "undo": {
+      "state": "available",
+      "kind": "remove_created",
+      "action_id": "undo-114b97123ea4b9ac35e69d3f8fd0ea64056a4c28",
+      "until": "2026-11-28T03:04:05.678+00:00",
+      "target": {
+       "trip_id": "trip-9a1b",
+       "expected_version": 1,
+       "content_version": "structured.4"
+      }
+     }
+    }
+   }
+  },
+  {
+   "name": "undo kind delete",
+   "answer": "a7",
+   "rich": {
+    "version": "LIO-answer-rich.1",
+    "trip_receipt": {
+     "status": "saved",
+     "action_id": "lio-plan-run-5c1f",
+     "trip_id": "trip-9a1b",
+     "committed_version": 1,
+     "summary": {
+      "days": [
+       {
+        "day": 1,
+        "city": {
+         "id": "beijing",
+         "zh": "北京",
+         "en": "Beijing"
+        },
+        "added": 3,
+        "updated": 0,
+        "removed": 0
+       }
+      ],
+      "wishlist_added": 0,
+      "legs_updated": 0
+     },
+     "undo": {
+      "state": "available",
+      "kind": "delete",
+      "action_id": "undo-114b97123ea4b9ac35e69d3f8fd0ea64056a4c28",
+      "until": "2026-11-28T03:04:05.678+00:00",
+      "target": {
+       "trip_id": "trip-9a1b",
+       "expected_version": 1,
+       "original_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+       "content_version": "structured.4"
+      }
+     }
+    }
+   }
+  },
+  {
+   "name": "remove_created without its kind",
+   "answer": "a7",
+   "rich": {
+    "version": "LIO-answer-rich.1",
+    "trip_receipt": {
+     "status": "saved",
+     "action_id": "lio-plan-run-5c1f",
+     "trip_id": "trip-9a1b",
+     "committed_version": 1,
+     "summary": {
+      "days": [
+       {
+        "day": 1,
+        "city": {
+         "id": "beijing",
+         "zh": "北京",
+         "en": "Beijing"
+        },
+        "added": 3,
+        "updated": 0,
+        "removed": 0
+       }
+      ],
+      "wishlist_added": 0,
+      "legs_updated": 0
+     },
+     "undo": {
+      "state": "available",
+      "action_id": "undo-114b97123ea4b9ac35e69d3f8fd0ea64056a4c28",
+      "until": "2026-11-28T03:04:05.678+00:00",
+      "target": {
+       "trip_id": "trip-9a1b",
+       "expected_version": 1,
+       "original_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+       "content_version": "structured.4"
       }
      }
     }
