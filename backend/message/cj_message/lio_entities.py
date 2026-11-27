@@ -68,6 +68,18 @@ def city_for_adcode(adcode):
     return None
 
 
+_NAME_CITY = {'北京': 'beijing', 'beijing': 'beijing', '上海': 'shanghai', 'shanghai': 'shanghai', '广州': 'guangzhou', 'guangzhou': 'guangzhou',
+              '深圳': 'shenzhen', 'shenzhen': 'shenzhen', '成都': 'chengdu', 'chengdu': 'chengdu', '重庆': 'chongqing', 'chongqing': 'chongqing'}
+
+
+def city_for_name(name):
+    """The library city a traveler's own city word names (「北京」, "Beijing"), or None: only the six library cities, exact word,
+    nothing guessed (#2072: the city confirmed by the conversation's last planning context)."""
+    if type(name) is not str:
+        return None
+    return _NAME_CITY.get(name.strip().casefold())
+
+
 def _fold(text):
     """Case-fold without changing the length, so offsets in the folded copy are offsets in the original."""
     return ''.join(c.casefold() if len(c.casefold()) == 1 else c for c in text)
@@ -246,13 +258,18 @@ def forget_approved_ids():
     _APPROVED['ids'], _APPROVED['until'] = None, 0.0
 
 
-def entity_effect(answer, adcode, docs=None):
+def entity_effect(answer, adcode, docs=None, *, context_city=None):
     """The effect string for a finished answer, or None (switch off, no confirmed library city, nothing linked).
 
+    Candidate cities (contract): the confirmed destination (`adcode`) and the city this conversation's last planning
+    context confirmed (`context_city`, a city word), each only when it is one of the six library cities.
     `docs` lets a test supply library documents; production reads `cj_fact.places`."""
     if not entities_enabled() or type(answer) is not str or not answer.strip():
         return None
-    city = city_for_adcode(adcode)
-    documents = docs if docs is not None else library_docs(city)
+    cities = []
+    for city in (city_for_adcode(adcode), city_for_name(context_city)):
+        if city is not None and city not in cities:
+            cities.append(city)
+    documents = docs if docs is not None else [doc for city in cities for doc in library_docs(city)]
     items = link(answer, documents)
     return effect(answer, items) if items else None

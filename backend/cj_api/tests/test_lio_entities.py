@@ -195,6 +195,38 @@ class ApprovedIds(unittest.TestCase):
             self.assertEqual(len(calls), second)
 
 
+class ContextCity(unittest.TestCase):
+    """#2072: the city this conversation's last planning context confirmed is a candidate city too."""
+
+    def setUp(self):
+        patcher = mock.patch.dict(os.environ, {'CJ_LIO_ENTITIES': 'on'})
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
+    def test_a_city_word_names_only_a_library_city(self):
+        for word, city in (('北京', 'beijing'), (' Beijing ', 'beijing'), ('成都', 'chengdu'), ('重庆', 'chongqing')):
+            self.assertEqual(ent.city_for_name(word), city, word)
+        for word in ('杭州', 'Hangzhou', '北京市', '', None, 7, ['北京']):
+            self.assertIsNone(ent.city_for_name(word), word)
+
+    def test_a_conversation_with_a_confirmed_city_links_without_a_destination_this_turn(self):
+        answer = '先去故宫，再去景山公园。'
+        with mock.patch.object(ent, 'library_docs', lambda city: [DOC] if city == 'beijing' else []):
+            self.assertIsNotNone(ent.entity_effect(answer, None, context_city='北京'))
+            self.assertIsNone(ent.entity_effect(answer, None, context_city='杭州'))           # not a library city
+            self.assertIsNone(ent.entity_effect(answer, None, context_city=None))             # a conversation with no confirmed city
+            self.assertIsNone(ent.entity_effect(answer, None))
+
+    def test_this_turns_destination_and_the_conversation_city_are_both_candidates_without_a_double_read(self):
+        reads = []
+        with mock.patch.object(ent, 'library_docs', lambda city: reads.append(city) or ([DOC] if city == 'beijing' else [])):
+            ent.entity_effect('先去故宫。', '110000', context_city='北京')
+            self.assertEqual(reads, ['beijing'])                                              # the same city twice reads once
+            reads.clear()
+            ent.entity_effect('先去故宫。', '310000', context_city='北京')
+            self.assertEqual(reads, ['shanghai', 'beijing'])
+
+
 class Switches(unittest.TestCase):
     def setUp(self):
         patcher = mock.patch.dict(os.environ)

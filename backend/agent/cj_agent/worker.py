@@ -135,6 +135,7 @@ class RunWorker:
         self.place_sources=place_sources
         self.lio_original = lio_original
         self.lio_city_context = None
+        self.lio_context_city = None      # #2072: the city word of this conversation's last planning context, or None
         self.lio_planning = lio_planning
         self.lio_edit = lio_edit
         self.lio_memory = lio_memory
@@ -622,7 +623,7 @@ class RunWorker:
                 try:
                     from cj_message.lio_entities import entity_effect
                     city = self.lio_city_context
-                    linked = entity_effect(state.text, getattr(city, 'adcode', None))
+                    linked = entity_effect(state.text, getattr(city, 'adcode', None), context_city=self.lio_context_city)
                     if linked is not None:
                         state = self._event(binding, state, 'effect_committed', linked)
                 except _NEVER_SWALLOWED:
