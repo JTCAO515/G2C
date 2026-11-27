@@ -332,7 +332,8 @@ extension LioToolContext {
         available.currency = currencyRelay != nil
         available.nearby = nearbyService != nil
         available.hotels = hotelSearch != nil
-        available.roadbook = LioRoadbookFeature.enabled(infoValue: info("G2CRoadbookEnabled"))
+        available.roadbook = LioRoadbookFeature.shownInTools(roadbookInfo: info("G2CRoadbookEnabled"),
+                                                             canvasInfo: info(LioTripCanvasFeature.infoKey))
         available.transport = LioTransportService.fromBuild() != nil
         available.menuOrder = menuService != nil
         available.returnHotel = LioReturnHotelTools.shownInTools
