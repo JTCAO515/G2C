@@ -10,8 +10,11 @@
 | `placelib.py` | 字段规则（草稿和库两种形态） |
 | `validate.py` | 校验全部城市文件，并比对副本；`--write` 规范化源文件并重写副本 |
 | `generate.py` | 生成服务端副本和 App 精简版；`validate.py` 调用，也可单独运行 |
-| `import/`、`score.py`、`candidates/`、`review/` | 导入、打分、审核表（#1986） |
-| `images/` | 图片清单（#1987） |
+| `import/import_drafts.py`、`import/amap.py`、`score.py` | 导入 Codex 草稿、高德补坐标、打分、审核表（#1986） |
+| `candidates/<城市>.cand.json` | 候选（待审、已决定的都在这里；不是库） |
+| `review/<城市>.review.csv`、`.md` | 给 JT 的审核表 |
+| `SOURCES.md` | 数据来源条款核对结论 |
+| `placeimages.py`、`images/check_images.py`、`images/manifest.v1.json` | 图片清单：生成、校验（#1987） |
 
 生成物（不要手改）：
 - 服务端副本 `backend/fact/cj_fact/places_<城市>.v1.json`，与源文件**逐字节一致**，读取入口 `cj_fact.places`（`load_city`、`by_id`、`by_category`、`match_name`）。
@@ -52,3 +55,34 @@ Codex 产出放在 `codex-inbox/C1`（景点）、`C7`（枢纽）、`C8`（餐�
 1. 条目经审核表确认（#1986 的 `import/` 生成审核表，人审之后才合入）。
 2. 在仓库根目录运行 `python3 -B knowledge/places/validate.py --write`：校验、规范化、重写副本。
 3. 把源文件和全部副本一起提交。改到 App 副本的 PR 受 `coord/main-freeze.md` 的 `ios/**` 约束。
+
+## 导入 Codex 草稿（#1986）
+
+```bash
+# 离线：只校验、打分、出审核表（不查高德）
+python3 -B knowledge/places/import/import_drafts.py --inbox ../codex-inbox --today 2026-11-29
+# 联网：用高德补 GCJ-02 坐标和 amap_id（key 只从环境变量读，不进日志、不进文件）
+CJ_AMAP_WEB_KEY=… python3 -B knowledge/places/import/import_drafts.py --inbox ../codex-inbox --today 2026-11-29 --live
+```
+
+- 读 `C1/*.json`（景点）、`C7/hubs.json`（枢纽）、`C8/*.json`（餐饮、购物、酒店），每个文件是一个条目数组。**校验不过的条目进 `candidates/rejected-<日期>.json`，不导入**；已在库里的 id 跳过；同城同中文名只警告。
+- 高德匹配分四档：`exact`（名称或别名一致）、`close`（互相包含且长度占 60% 以上）、`weak`（只是第一条结果，审核人必须核对）、`none`；POI 没找到再用地址地理编码（`address-only`，没有 amap_id）。结果不在该城范围框内的丢弃，防止匹配到外地同名地点。高德临时错误只标这一条，key 无效或额度用完则整次中止。
+- 打分只用来排审核顺序（主档在前，再按分数），不决定收不收；构成见 `score.py`。**外部评分和排名默认不计分**，要等统筹按 Codex G3 的条款结论决定后才加 `--use-external-signals`。
+- 审核表：`review/<城市>.review.csv`（Excel 可直接打开，批次 25 条，空的 `decision` 列填 accept / reject / edit，另有 `rank`、`note` 列）和 `.md`（逐条卡片）。表里以 `= + - @` 开头的单元格会加引号前缀，避免草稿里的公式在表格软件里执行。
+- 重跑安全：已有决定的条目保持不变，待审的刷新，从收件箱里消失的待审条目保留。
+- 高德应答缓存在 `<收件箱>/.amap-cache`（仓库之外），只用于避免重复计费，不提交。
+
+## 图片（#1987）
+
+地点图是 AI 生成的**示意插画**（JT 2026-11-27 定），地点页和气泡卡都标「示意图」，不使用第三方图片。大图 1600×1200、缩略图 512×512 的 PNG 太大，不进 git，存放位置由服务端线的图片存储登记决定；进仓库的是 `images/manifest.v1.json`：每张图的文件名、实测尺寸、SHA-256、`license`、`label_zh`/`label_en`、生成提示词、模型、日期。
+
+```bash
+# Codex 交付 codex-inbox/C2（manifest.json + PNG）后：实测尺寸和哈希、拒绝不合规条目、写清单
+python3 -B knowledge/places/images/check_images.py build ../codex-inbox/C2 --today 2026-11-30
+# 校验清单；--files 同时核对图片文件；--release 要求每张图对应库里的地点、每个主档景点都有图
+python3 -B knowledge/places/images/check_images.py check --files ../codex-inbox/C2 --release
+```
+
+- `license` 只能是 `ai-generated`，`label_zh` 必须是「示意图」、`label_en` 是 Illustration，尺寸必须精确，缩略图不能是同一个文件；不合规的条目被**拒绝而不是修**，退回 Codex 重做。
+- 图里不许有文字、Logo、水印、能认出脸的人物，这一点脚本看不出来，由审核表上的人工抽查负责。
+- 清单是 `validate.py` 的一部分，CI 每次校验；App 精简版的 `thumb` 字段取自清单。App 副本一旦生成，`Package.swift` 要声明 `Resources/LioPlaces.v1.json`（有测试守着）。

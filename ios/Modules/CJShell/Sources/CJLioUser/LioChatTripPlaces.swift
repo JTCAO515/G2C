@@ -294,9 +294,11 @@ extension LioPlanSummary {
             switch value.mode { case .walking: mode = .walking; case .transit: mode = .transit; case .taxi: mode = .taxi }
             return .init(fromID: source.fromItemID, toID: source.toItemID, estimate: .init(mode: mode, seconds: seconds, metres: metres))
         }
+        var placed = 0
         let days = try document.days.map { day in
             try LioRichItinerary.Day(number: day.index, date: day.date, theme: day.theme, area: day.area,
                 stops: document.items.filter { $0.calendarItem.startDayIndex == day.index }.map { item in
+                    placed += 1
                     let value = item.calendarItem.value
                     return LioRichItinerary.Stop(id: value.id, kind: .init(chatKind: item.kind), text: value.text,
                                                  time: value.start.time.lioValue, place: try .init(chatPlace: item.place),
@@ -304,6 +306,9 @@ extension LioPlanSummary {
                 },
                 legs: document.legs.filter { $0.dayIndex == day.index }.map(leg))
         }
+        // A stop whose day the content does not list (#1976) is not dropped: this copy is refused, and the card's own
+        // summary, which has every stop, is saved instead.
+        guard placed == document.items.count else { throw LioChatTripMappingFailure.invalid }
         let hotels = try document.lodging.recommendations.enumerated().map { index, hotel in
             LioRichItinerary.Hotel(id: "lodging.\(index)", place: try .init(chatPlace: hotel.place), note: hotel.note)
         }

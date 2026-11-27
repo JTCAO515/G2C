@@ -17,13 +17,15 @@ from pathlib import Path
 import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import placeimages  # noqa: E402
 import placelib  # noqa: E402
 
-Layout = namedtuple('Layout', 'places_dir server_dir app_path')
+Layout = namedtuple('Layout', 'places_dir server_dir app_path images_path', defaults=(None,))
 LAYOUT = Layout(
     placelib.PLACES_DIR,
     placelib.ROOT / 'backend/fact/cj_fact',
     placelib.ROOT / 'ios/Modules/CJShell/Sources/CJLioUser/Resources/LioPlaces.v1.json',
+    placelib.PLACES_DIR / 'images/manifest.v1.json',
 )
 APP_KEYS = ('id', 'city', 'category', 'kind', 'tier', 'rank', 'name_zh', 'name_en', 'aliases_zh', 'aliases_en',
             'lat', 'lng', 'amap_id', 'intro_short_zh', 'intro_short_en', 'thumb')
@@ -58,6 +60,8 @@ def render_app(docs, thumbs=None):
 
 def expected(layout=LAYOUT, thumbs=None):
     """{path: bytes} of every generated file, validating each source on the way (raises placelib.Invalid)."""
+    if thumbs is None:  # thumbnail file names come from the image manifest, when there is one
+        thumbs = placeimages.thumbs(layout.images_path) if layout.images_path and layout.images_path.is_file() else {}
     out, docs = {}, []
     for path in placelib.city_files(layout.places_dir):
         raw = path.read_bytes()
