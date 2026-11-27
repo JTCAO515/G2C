@@ -234,9 +234,12 @@ def location(value, where, city):
              f'{where}.gcj02: ({point["lat"]}, {point["lng"]}) is outside the {city} box; the geocoder probably matched another place')
     _require(round(point['lat'], 6) == point['lat'] and round(point['lng'], 6) == point['lng'], f'{where}.gcj02: at most 6 decimals')
     _require(value['method'] in LOCATION_METHODS, f'{where}.method')
-    if value['method'].startswith('amap'):
-        _require(type(value['amap_id']) is str and re.fullmatch(r'[0-9A-Za-z]{6,32}', value['amap_id']) is not None, f'{where}.amap_id: Amap id required for an Amap match')
+    if value['method'] == 'amap-poi-search':
+        _require(type(value['amap_id']) is str and re.fullmatch(r'[0-9A-Za-z]{6,32}', value['amap_id']) is not None, f'{where}.amap_id: Amap id required for a POI match')
         text(value['amap_name'], f'{where}.amap_name')
+    elif value['method'] == 'amap-geocode':
+        _require(value['amap_id'] is None, f'{where}.amap_id: a geocode result has no POI id')
+        text(value['amap_name'], f'{where}.amap_name', nullable=True)
     else:
         _require(value['amap_id'] is None or type(value['amap_id']) is str, f'{where}.amap_id')
         text(value['amap_name'], f'{where}.amap_name', nullable=True)
