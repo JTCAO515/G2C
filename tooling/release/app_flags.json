@@ -58,6 +58,10 @@
       "plist": "G2CMenuOrderEnabled"
     },
     {
+      "setting": "G2C_PLACE_TOOLS_ENABLED",
+      "plist": "G2CPlaceToolsEnabled"
+    },
+    {
       "setting": "G2C_TRIP_HOME_ENABLED",
       "plist": "G2CTripHomeEnabled"
     },
