@@ -264,6 +264,15 @@ def chained(target):
     return target in (53,54,55) or target>=59
 
 
+def clear_autosave_audit(db):
+    """Inside a rolled-back check transaction only: 0061 down refuses while Trip origin/commit rows exist
+    (checked by trip_autosave and the single-step rollback check). Clearing them here lets the older
+    down scripts below it reach their own original-data refusal, which is what these checks assert."""
+    if db.execute("SELECT to_regclass('public.cj_trip_commit_time')").fetchone()[0] is not None:
+        for table in ('cj_trip_commit_time','cj_trip_item_tombstone','cj_trip_item_origin'):
+            db.execute(f'DELETE FROM public.{table}')
+
+
 def after59_migrations(root,migrations):
     """The real chain through 0060 once main has it; until then a synthetic one-table 0060 for this check only."""
     if migrations[-1]['version']>=60:return migrations[:60]
@@ -1155,6 +1164,7 @@ def check_lio(api, database, auth, other, headers, conninfo, memory):
     with psycopg.connect(**conninfo) as db:
         try:
             with db.transaction():
+                clear_autosave_audit(db)
                 migrate.down(db, migrate.load(), 50)
         except psycopg.errors.RaiseException as exc:
             assert 'Lio dialogue originals must be preserved' in str(exc)
@@ -2266,6 +2276,7 @@ def exercise(root,conninfo):
                     (scope_for(ISSUER,SUBJECT),rows[0][0])).fetchone()==(1,)
                 try:
                     with db.transaction():
+                        clear_autosave_audit(db)
                         migrate.down(db,migrate.load(),49)
                 except psycopg.errors.RaiseException as exc:
                     assert 'demo dialogue originals must be preserved' in str(exc)
@@ -2329,6 +2340,7 @@ def exercise(root,conninfo):
                 assert db.execute('SELECT count(*) FROM public.cj_message_receipt WHERE scope=%s AND demo_question_day=%s',(scope,quota_day)).fetchone()==(400,)
                 try:
                     with db.transaction():
+                        clear_autosave_audit(db)
                         migrate.down(db,migrate.load(),51)
                 except psycopg.errors.RaiseException as exc:
                     assert 'Demo quota rollback would invalidate admitted originals' in str(exc)
@@ -2364,8 +2376,9 @@ if __name__=='__main__':
         with pg_suites.cluster('demo',port=55649,role='cj_demo_init',root=root/'pg',socket=root/'s') as conninfo:
             with psycopg.connect(**conninfo,autocommit=True) as connection:
                 migrations=migrate.load();migrate.up(connection,migrations,migrations[-1]['version'])
-            for version in (50,51,52,53,54,55,59,60):
-                chain=after59_migrations(root,migrations) if version>=60 else migrations[:version]
+            # Every single step after the 59 chain on main (0060 #1973, 0061 #1994, ...) is rehearsed from N-1.
+            for version in (50,51,52,53,54,55,59,*range(60,max(60,migrations[-1]['version'])+1)):
+                chain=after59_migrations(root,migrations) if version==60 else migrations[:version]
                 with patch.object(migrate,'load',return_value=chain):
                     with pg_suites.cluster('old-blueprint',port=55651,role='cj_demo_blueprint',
                             root=root/'old-blueprint',socket=root/'old-blueprint-s') as previous:

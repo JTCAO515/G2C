@@ -5,6 +5,7 @@ import json
 
 from cj_feasibility.proposed import evaluate
 from cj_feasibility.validator import Candidate
+from .autosave import require_undo_window
 from .domain import Conflict, Denied, Proposal, ProposalDetail, Trip, identifier, packed
 from .needs_action_store import NeedsActions
 from .needs_edit_store import NeedsEdits
@@ -188,9 +189,11 @@ def undo(repository, request):
 
 
 def _append_undo(repository, request, active, captured, check, *, protect_fixed=None, basis_version='lio-undo.1'):
-    action = pending = None
+    action = pending = current = None
     def final(cur):
         check()
+        if current is not None:
+            require_undo_window(repository, cur, current)
         repository._final_action_eligibility(cur, action, pending)
 
     with repository.transaction(before_commit=final) as cur:
@@ -198,6 +201,8 @@ def _append_undo(repository, request, active, captured, check, *, protect_fixed=
         if receipt is not None:
             return receipt
         current = _current_for_undo(repository, cur, request)
+        # Every undo entry (lio, calendar, rich) reaches here: autosave versions expire after 24 h.
+        require_undo_window(repository, cur, current)
         previous = _revision(repository, cur, current.trip_id, current.version - 1)
         origin = current_origin(cur, repository, previous)
         if (active['needs_scope'], active['needs_id']) != (origin['needs_scope'], origin['needs_id']):

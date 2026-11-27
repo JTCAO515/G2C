@@ -115,7 +115,7 @@ def group_trip():
         import psycopg
         with psycopg.connect(**config, autocommit=True) as c:
             c.execute("CREATE DATABASE cj015_test ENCODING 'UTF8' TEMPLATE template0")
-        apply_sql(config, 'backend/trip/sql/candidate.sql', dbname='cj015_test')
+        apply_sql(config, 'backend/trip/sql/candidate.sql', 'backend/trip/tests/autosave_candidate.sql', dbname='cj015_test')
         nopass = BACKEND / 'trip/private-pg/no-password-file'
         nopass.parent.mkdir(exist_ok=True)
         nopass.touch(mode=0o600)
@@ -835,6 +835,15 @@ def group_lio_memory_consent():
 
 
 GROUPS.update(lio_memory_consent=group_lio_memory_consent)
+
+
+def group_trip_autosave():
+    # #1994 (ADR-0012): item origin, tombstones, Lio write comparison and undo window on restricted PG.
+    return _fresh_runtime_check('trip_autosave',55888,'cj1994_autosave',
+        f'/tmp/cj1994-autosave-{os.getpid()}','backend/trip/tests/autosave_pg.py')
+
+
+GROUPS.update(trip_autosave=group_trip_autosave)
 
 
 def group_service_ops():
