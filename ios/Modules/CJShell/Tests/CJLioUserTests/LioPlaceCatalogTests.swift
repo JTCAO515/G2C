@@ -34,6 +34,24 @@ struct LioPlaceCatalogTests {
         #expect(LioPlaceCatalog.extras(in: Data("nope".utf8)).isEmpty)
     }
 
+    @Test func theAmapIdIsReadFromTheLibraryShapeAndFromTheSlimCopy() throws {
+        var library = hotel("pl_bj_lib", star: 5, band: ">2000")
+        library["location"] = ["gcj02": ["lat": 39.9, "lng": 116.4], "amap_id": "B0LIB"]
+        var slim = hotel("pl_bj_slim", star: 4, band: "500-1000")
+        slim["amap_id"] = " B0SLIM "
+        var both = hotel("pl_bj_both")
+        both["location"] = ["amap_id": "B0LOC"]
+        both["amap_id"] = "B0TOP"
+        var empty = hotel("pl_bj_empty")
+        empty["location"] = ["amap_id": "  "]
+        empty["amap_id"] = NSNull()
+        let extras = LioPlaceCatalog.extras(in: try data([library, slim, both, empty, hotel("pl_bj_none")]))
+        #expect(extras["pl_bj_lib"]?.amapID == "B0LIB" && extras["pl_bj_lib"]?.priceBand == .over2000)
+        #expect(extras["pl_bj_slim"]?.amapID == "B0SLIM" && extras["pl_bj_slim"]?.star == 4)   // slim copy: top level, trimmed
+        #expect(extras["pl_bj_both"]?.amapID == "B0LOC")                                         // the library's own wins
+        #expect(extras["pl_bj_empty"]?.amapID == nil && extras["pl_bj_none"]?.amapID == nil)
+    }
+
     @Test func filtersByCityBandAndStarAndLeavesOutUnknowns() throws {
         let catalog = LioPlaceCatalog(library: try data([
             hotel("pl_bj_a", star: 5, band: ">2000"),

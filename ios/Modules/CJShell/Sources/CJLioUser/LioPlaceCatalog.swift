@@ -76,7 +76,8 @@ struct LioPlaceCatalog: Sendable {
 
     // MARK: Reading the extra fields
 
-    /// Reads `tier`, `rank`, `star`, `price_band`, `accepts_foreigners` and `location.amap_id` for each id. An
+    /// Reads `tier`, `rank`, `star`, `price_band`, `accepts_foreigners` and the Amap id for each id (`location.amap_id`
+    /// of a library entry or the dev pack, top-level `amap_id` of the App's slim copy). An
     /// entry or field that is missing or of another type just has no value; nothing here can make a file unreadable.
     static func extras(in data: Data) -> [String: Extras] {
         let object = try? JSONSerialization.jsonObject(with: data)
@@ -89,13 +90,15 @@ struct LioPlaceCatalog: Sendable {
             guard let id = row["id"] as? String, !id.isEmpty, result[id] == nil else { continue }
             let star = (row["star"] as? Int).flatMap { (1...5).contains($0) ? $0 : nil }
             let location = row["location"] as? [String: Any]
+            let amapID = [location?["amap_id"], row["amap_id"]].lazy
+                .compactMap { ($0 as? String)?.trimmingCharacters(in: .whitespacesAndNewlines) }.first { !$0.isEmpty }
             result[id] = Extras(
                 isMainTier: (row["tier"] as? String) != "backup",
                 rank: (row["rank"] as? Int).flatMap { $0 > 0 ? $0 : nil },
                 star: star,
                 priceBand: (row["price_band"] as? String).flatMap(PriceBand.init(rawValue:)),
                 acceptsForeigners: row["accepts_foreigners"] as? Bool,
-                amapID: (location?["amap_id"] as? String).flatMap { $0.isEmpty ? nil : $0 })
+                amapID: amapID)
         }
         return result
     }
