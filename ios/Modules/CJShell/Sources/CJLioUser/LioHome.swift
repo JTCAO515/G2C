@@ -277,6 +277,8 @@ public struct LioHome<MenuContent: View>: View {
     }
 
     public var body: some View {
+        // The latest session check, not the one from when this screen was made (see `rebind`).
+        let _ = locationConsent?.rebind(isCurrent: toolsSessionIsCurrent)
         let currentConversation = conversation
         let pending = conversation.pending
         let canObserve = scenePhase == .active && pending == nil && !restoringChat && session?.available != false
@@ -520,6 +522,14 @@ public struct LioHome<MenuContent: View>: View {
             } else {
                 actions.saved = savedPlans.isSaved(plan)
                 actions.save = { savedPlans.save(plan) }
+            }
+        }
+        actions.saveFailed = savedPlans.saveFailed(plan)
+        // #1976: once saved, one tap goes to the Trips tab (the trip home, or the list when it is showing).
+        if actions.saved {
+            actions.openTrips = {
+                planSheet = nil
+                tab = .trips
             }
         }
         // Changing a day goes back to the chat as an ordinary message the user finishes and sends. That is only

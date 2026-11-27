@@ -122,6 +122,8 @@ struct LioMetroMapCanvas: View {
     let onSelect: (LioMetroMap.Station) -> Void
 
     @State private var viewport = LioMetroViewport()
+    /// The map opens on the city centre once, when its size is first known (#2008); after that the traveller leads.
+    @State private var placedOpening = false
     /// Live gestures. They reset by themselves when a gesture ends or the system cancels it.
     @GestureState private var pinch: Pinch?
     @GestureState private var dragOffset: CGSize = .zero
@@ -157,6 +159,13 @@ struct LioMetroMapCanvas: View {
                     }
                 }
                 .overlay(alignment: .topTrailing) { zoomControls(size: size) }
+                .onAppear {
+                    guard !placedOpening else { return }
+                    placedOpening = true
+                    if size.width > 0, size.height > 0, let focus = map.centreFocus {
+                        viewport = .opening(on: focus, map: map, view: size)
+                    }
+                }
                 .accessibilityElement(children: .contain)
                 .accessibilityLabel(language.text(
                     "\(map.city.name(in: language)) metro map, \(map.lines.count) lines. Use Find a station to choose a station.",
@@ -232,6 +241,13 @@ struct LioMetroMapCanvas: View {
                 showWholeMap()
             }
             .disabled(viewport == LioMetroViewport())
+            if let focus = map.centreFocus {
+                Divider().frame(width: 28)
+                zoomButton("dot.viewfinder", label: language.text("City centre", "市中心"), id: "lio.metro.map.center") {
+                    showCentre(focus, size: size)
+                }
+                .disabled(viewport == LioMetroViewport.opening(on: focus, map: map, view: size))
+            }
             Divider().frame(width: 28)
             zoomButton("plus.magnifyingglass", label: language.text("Zoom in", "放大"), id: "lio.metro.map.zoom-in") {
                 setZoom(viewport.zoom * 2, size: size)
@@ -264,6 +280,11 @@ struct LioMetroMapCanvas: View {
 
     private func showWholeMap() {
         if reduceMotion { viewport = LioMetroViewport() } else { withAnimation(LioTheme.Motion.change) { viewport = LioMetroViewport() } }
+    }
+
+    private func showCentre(_ focus: LioMetroMap.Focus, size: CGSize) {
+        let next = LioMetroViewport.opening(on: focus, map: map, view: size)
+        if reduceMotion { viewport = next } else { withAnimation(LioTheme.Motion.change) { viewport = next } }
     }
 
     private func setZoom(_ value: CGFloat, size: CGSize) {
@@ -301,6 +322,9 @@ struct LioMetroMapCanvas: View {
                 path.move(to: layout.viewPoint(x: a.x, y: a.y))
                 path.addLine(to: layout.viewPoint(x: b.x, y: b.y))
             }
+            // A fine dark edge keeps pale operator colours (Shanghai 3, Beijing 13) readable on the paper.
+            context.stroke(path, with: .color(colors.casing),
+                           style: StrokeStyle(lineWidth: lineWidth + max(1, lineWidth * 0.34), lineCap: .round, lineJoin: .round))
             context.stroke(path, with: .color(Self.color(line)),
                            style: StrokeStyle(lineWidth: lineWidth, lineCap: .round, lineJoin: .round))
         }
@@ -395,21 +419,27 @@ struct LioMetroPalette {
     let interchangeFill: Color
     let interchangeRing: Color
     let stationFill: Color
+    /// The thin edge drawn under every line.
+    let casing: Color
 
     private static func hex(_ value: Int, _ alpha: Double = 1) -> Color {
         Color(red: Double((value >> 16) & 0xFF) / 255, green: Double((value >> 8) & 0xFF) / 255,
               blue: Double(value & 0xFF) / 255).opacity(alpha)
     }
 
+    // Warm paper with a little water (C5, 2026-11-27): light paper #FBF7EC, water #CEE3E7, names #222C30
+    // (13.3:1 on the paper); dark paper #162124, water #2B4551, names #EDECE5.
     static let light = LioMetroPalette(
-        background: hex(0xF3EEE4), grain: hex(0x6B5A3E, 0.07), vignette: hex(0x6B5A3E, 0.14),
-        water: hex(0xC9DDE6), waterCurrent: hex(0xA9C6D3, 0.8), waterLabel: hex(0x6F96A8),
-        label: hex(0x3B3732), interchangeFill: hex(0xFFFFFF), interchangeRing: hex(0x5B544B), stationFill: hex(0xFFFFFF))
+        background: hex(0xFBF7EC), grain: hex(0x6B5A3E, 0.05), vignette: hex(0x837A68, 0.10),
+        water: hex(0xCEE3E7), waterCurrent: hex(0xA9C9D0, 0.8), waterLabel: hex(0x3F6571),
+        label: hex(0x222C30), interchangeFill: hex(0xFFFFFF), interchangeRing: hex(0x222C30), stationFill: hex(0xFFFFFF),
+        casing: hex(0x222C30, 0.32))
 
     static let dark = LioMetroPalette(
-        background: hex(0x1F1D1A), grain: hex(0xF3EEE4, 0.05), vignette: hex(0x000000, 0.35),
-        water: hex(0x263840), waterCurrent: hex(0x3A5562, 0.9), waterLabel: hex(0x7FA6B8),
-        label: hex(0xEAE4D9), interchangeFill: hex(0xF1ECE3), interchangeRing: hex(0x1F1D1A), stationFill: hex(0x1F1D1A))
+        background: hex(0x162124), grain: hex(0xEDECE5, 0.04), vignette: hex(0x000000, 0.30),
+        water: hex(0x2B4551), waterCurrent: hex(0x3E6070, 0.9), waterLabel: hex(0x9CC3D0),
+        label: hex(0xEDECE5), interchangeFill: hex(0xEDECE5), interchangeRing: hex(0x162124), stationFill: hex(0x162124),
+        casing: hex(0xEDECE5, 0.30))
 }
 
 /// Paper behind the map: a flat colour, a fine fixed grain and a soft vignette. It does not move
@@ -454,12 +484,19 @@ struct LioMetroStationSheet: View {
     @State private var searching = false
     @State private var notice: String?
     @Environment(\.lioMetroNearby) private var nearby
+    @Environment(\.lioMetroLandmarkCard) private var landmarkCard
     @State private var category: LioNearbyPlace.Category = .sights
     @State private var places: [LioMetroNearbyPlace]?
     @State private var nearbyNotice: String?
     @State private var chosen: LioMetroNearbyPlace?
     /// The server has not opened surroundings for this account: the section is left out, not shown as broken.
     @State private var nearbyClosed = false
+
+    /// The linked library place's picture and introduction, when the library supplies one (#2008).
+    private var landmark: AnyView? {
+        guard let landmarkCard, let placeID = LioMetroStationPlaces.bundled.place(city: map.city.id, station: station.id) else { return nil }
+        return landmarkCard(placeID, language)
+    }
 
     var body: some View {
         NavigationStack {
@@ -474,6 +511,16 @@ struct LioMetroStationSheet: View {
                             .font(.title3)
                             .foregroundStyle(LioTheme.inkSecondary)
                             .accessibilityIdentifier("lio.metro.station.name-en")
+                    }
+                    if let landmark {
+                        VStack(alignment: .leading, spacing: LioTheme.Spacing.xs) {
+                            landmark
+                            Text(language.text("Illustration", "示意图"))
+                                .font(.caption)
+                                .foregroundStyle(LioTheme.inkSecondary)
+                                .accessibilityIdentifier("lio.metro.station.landmark-note")
+                        }
+                        .accessibilityIdentifier("lio.metro.station.landmark")
                     }
                     VStack(alignment: .leading, spacing: LioTheme.Spacing.xs) {
                         Text(language.text("Lines", "所属线路")).font(.headline).accessibilityAddTraits(.isHeader)

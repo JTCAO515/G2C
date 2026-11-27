@@ -81,10 +81,13 @@ enum LioTripBookingTiming: Equatable, Sendable {
 struct LioTripTask: Identifiable, Equatable, Sendable {
     enum Kind: Equatable, Sendable {
         case entry(LioTripEntryStatus)
-        case arrivalCard
+        /// The "arrival" step (#1979): the day and flight or train number the traveller gave, nil until given.
+        case arrival(day: LioTripDay?, number: String?)
         case payment
         case internet
         case hotel
+        /// The "getting around town" step (#1979): the metro guide's ride codes and taxis.
+        case local
         case booking(ruleID: String, visit: LioTripDay?, timing: LioTripBookingTiming, reminderSet: Bool)
         case medicalCard
         case landing
@@ -121,6 +124,16 @@ struct LioTripTask: Identifiable, Equatable, Sendable {
 
     var id: String { key }
     var isDone: Bool { done != .open }
+
+    /// Whether the row has its one "Go" button: every task has it except business items with nothing to open (#1765):
+    /// the business cards item, the visa item (its official links are the way) and a tool this build does not show.
+    var hasGo: Bool {
+        if case .business(let business) = kind { return business.action != nil }
+        return true
+    }
+
+    /// The six steps of going to China (#1979), in the order they are shown.
+    static let stepKeys = ["entry", "arrival", "hotel", "payment", "internet", "local"]
 }
 
 /// A place on the plan for one day, as the summary names it.
@@ -184,8 +197,9 @@ struct LioTripChecklistInput: Sendable {
     var reminderScope = LioAttractionReminderScope(account: nil)
     /// Business items (`G2CTripBusinessEnabled`, #1765): the bundled entries and scene pack steps; nil when off.
     var business: LioTripBusinessGuide?
-    /// Tools the router can open in this build (the Tools tab is shown and the tool is visible); business items
-    /// open tools only through it.
+    /// Tools the router can open in this build (the Tools tab is shown and the tool is visible). Business items and
+    /// two of the six steps (the hotel search when Back to Hotel is off, and the metro guide) open tools only
+    /// through it, so they are left out when the router cannot open them.
     var routableTools: Set<LioTool> = []
 }
 
@@ -235,13 +249,8 @@ struct LioTripChecklist: Equatable, Sendable {
         self.lastDay = lastDay
         self.phase = phase
         hasTrip = input.profile != nil || plan != nil
-        guard hasTrip else {
-            tasks = []
-            now = nil
-            schedule = []
-            moreDays = 0
-            return
-        }
+        // #1979: there is no separate start page. Without a trip the six steps are already on the page, and the
+        // first answer starts the trip.
         let tasks = Self.tasks(input, plan: plan, arrival: arrival, today: today)
         self.tasks = tasks
         now = Self.nowCard(input, phase: phase, tasks: tasks, plan: plan, arrival: arrival, today: today,
@@ -304,21 +313,34 @@ struct LioTripChecklist: Equatable, Sendable {
                                 done: checklist.isDone(step) ? .followsArrival : .open, tick: .arrivalStep(step)))
         }
 
+        // The six steps of going to China, in the order they happen (#1979): entry, arrival, stay, money, network,
+        // getting around town. Each needs its tool; a step without one is left out.
         if let entry = input.entry {
             if case .visaFree = entry {
                 result.append(.init(key: "entry", stage: .beforeTrip, kind: .entry(entry), done: .automatic, tick: .statusOnly))
             } else {
                 manual("entry", .beforeTrip, .entry(entry))
             }
-            manual("arrival-card", .beforeTrip, .arrivalCard)
+        }
+        // The arrival step only asks, so it needs no tool: answering it completes it.
+        let arrivalKind = LioTripTask.Kind.arrival(day: input.profile?.arrival, number: input.profile?.arrivalNumber)
+        if input.profile?.arrival != nil {
+            result.append(.init(key: "arrival", stage: .beforeTrip, kind: arrivalKind, done: .automatic, tick: .statusOnly))
+        } else {
+            manual("arrival", .beforeTrip, arrivalKind)
+        }
+        if let saved = input.hotelSaved {
+            result.append(.init(key: "hotel", stage: .beforeTrip, kind: .hotel, done: saved ? .automatic : .open,
+                                tick: .statusOnly))
+        } else if input.routableTools.contains(.hotels) {
+            manual("hotel", .beforeTrip, .hotel)
         }
         manual("payment", .beforeTrip, .payment)
         if let checklist = input.arrivalChecklist {
             following("internet", .beforeTrip, .internet, step: "internet", checklist: checklist)
         }
-        if let saved = input.hotelSaved {
-            result.append(.init(key: "hotel", stage: .beforeTrip, kind: .hotel, done: saved ? .automatic : .open,
-                                tick: .statusOnly))
+        if input.routableTools.contains(.metro) {
+            manual("local", .beforeTrip, .local)
         }
         if input.attractionBooking, let plan {
             result += bookingTasks(plan: plan, arrival: arrival, input: input)

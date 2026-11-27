@@ -4,6 +4,7 @@ import os
 from unittest.mock import patch
 
 from cj_agent.worker import RunWorker
+from cj_message.lio_followups import FollowupHint, SAVE_CHIP
 from cj_message.lio_context import FOLLOWUPS_EFFECT, LAYOUT_EFFECT, LioDestination, LioDestinationUnclear, LioLayout, LioOriginal
 from cj_run.core import Binding, Service
 from cj_run.fixture import MemoryRepository
@@ -156,3 +157,147 @@ def test_a_later_unclear_map_result_cancels_the_destination_whatever_the_order()
     for places in ((PALACE, unclear), (unclear, PALACE), (PALACE, unclear, PALACE), (unclear,)):
         button = taxi_params(run('怎么打车去故宫', '可以打车。', 'split', destinations=places)[1])
         assert (button['label'], button['parameters']) == ('打车', {}), places
+
+
+TICKETS = ['g' * 43, 'h' * 43, 'i' * 43]
+
+
+def test_every_normal_split_answer_offers_chips_from_the_table():
+    # #1978: no payment or taxi topic any more still means two or three chips (a food question here)
+    status, state = run('成都有什么好吃的', '火锅。\n\n再试试串串。', 'split', issue=TICKETS)
+    assert status == 'completed'
+    (_, labels), = run.last_messages.issued
+    assert 2 <= len(labels) <= 3 and 'actions' in payload(state) and payload(state)['actions'] == []
+    assert [chip['label'] for chip in payload(state)['chips']] == labels
+
+
+def test_a_plan_answer_offers_the_save_chip_and_nothing_else_is_a_button():
+    status, state = run('帮我规划北京三天行程', '第一天故宫。\n\n第二天长城。', 'split', issue=TICKETS)
+    (_, labels), = run.last_messages.issued
+    assert SAVE_CHIP[0] in labels and payload(state)['actions'] == []
+    status, state = run('Plan a 3-day trip in Beijing', 'Day 1.\n\nDay 2.', 'split', locale='en', issue=TICKETS)
+    assert SAVE_CHIP[1] in run.last_messages.issued[0][1]
+
+
+class HintTools(Tools):
+    def answer(self, worker, binding, inputs, **kwargs):
+        yield LioLayout('split')
+        yield FollowupHint('dates')
+        yield self.text
+
+
+def test_the_missing_fact_the_answer_asks_about_gets_answer_chips_first():
+    runs = Service(MemoryRepository(), lambda _: True)
+    messages = Messages('我想去北京玩', TICKETS)
+    worker = RunWorker(scope='scope', messages=messages, runs=runs, provider=None, tools=HintTools('split', '好的。\n\n大概哪几天去？'),
+                       drafts=Drafts(), lio_original=lambda binding: LioOriginal('zh', None))
+    outcome, = worker.process()
+    assert outcome.status == 'completed'
+    (_, labels), = messages.issued
+    assert labels[:2] == ['我 12 月 5 日到', '还没定哪天到']
+    # the hint is not text: the answer is exactly what the model wrote
+    assert runs.snapshot(Binding('scope', 'chat', 'g', 'm', 'r', 1)).text == '好的。\n\n大概哪几天去？'
+
+
+def test_the_answer_chips_survive_the_safety_lines_switch():
+    # the safety-lines supplement used to share a variable name with the hint and overwrite it
+    with patch.dict(os.environ, {'CJ_LIO_SAFETY_LINES': '1'}):
+        runs = Service(MemoryRepository(), lambda _: True)
+        messages = Messages('我想去北京玩', TICKETS)
+        worker = RunWorker(scope='scope', messages=messages, runs=runs, provider=None, tools=HintTools('split', '好的。\n\n大概哪几天去？'),
+                           drafts=Drafts(), lio_original=lambda binding: LioOriginal('zh', None))
+        outcome, = worker.process()
+    assert outcome.status == 'completed'
+    (_, labels), = messages.issued
+    assert labels[:2] == ['我 12 月 5 日到', '还没定哪天到']
+
+
+# --- #1989 (D-1): the entity effect --------------------------------------------------------------------------
+
+def _doc():
+    review = dict(status='approved', reviewer='t', reviewed_on='2026-11-27', note=None)
+    return dict(version='g2c-places.1', city='beijing', places=[
+        dict(id='pl_bj_gugong', city='beijing', category='attraction', name_zh='故宫博物院', name_en='The Palace Museum',
+             aliases_zh=['故宫'], aliases_en=[], review=review)])
+
+
+class CityTools(Tools):
+    """The confirmed city is set on the worker that owns the message while the answer is made (as the planning path does)."""
+    def __init__(self, city, text):
+        super().__init__('split', text)
+        self.city = city
+
+    def answer(self, worker, binding, inputs, **kwargs):
+        worker.lio_city_context = self.city
+        yield from super().answer(worker, binding, inputs, **kwargs)
+
+
+def _entity_run(city, switch):
+    runs = Service(MemoryRepository(), lambda _: True)
+    messages = Messages('故宫怎么走', TICKETS)
+    worker = RunWorker(scope='scope', messages=messages, runs=runs, provider=None, tools=CityTools(city, '先去故宫。\n\n再坐地铁。'),
+                       drafts=Drafts(), lio_original=lambda binding: LioOriginal('zh', None))
+    env = {'CJ_LIO_ENTITIES': 'on'} if switch else {}
+    with patch.dict(os.environ, env), patch('cj_message.lio_entities.library_docs', lambda name: [_doc()] if name else []):
+        outcome, = worker.process()
+    assert outcome.status == 'completed'
+    return runs.snapshot(Binding('scope', 'chat', 'g', 'm', 'r', 1))
+
+
+def test_entities_are_written_before_the_followups_for_a_confirmed_library_city():
+    from types import SimpleNamespace
+    state = _entity_run(SimpleNamespace(adcode='110000'), True)
+    assert state.effects[0] == LAYOUT_EFFECT + 'split'
+    assert state.effects[1].startswith('lio_entities:') and state.effects[2].startswith(FOLLOWUPS_EFFECT)
+    assert '"pl_bj_gugong"' in state.effects[1] and '[2,4,' in state.effects[1]
+
+
+def test_no_entity_effect_when_the_switch_is_off_or_there_is_no_library_city():
+    from types import SimpleNamespace
+    assert not any(e.startswith('lio_entities:') for e in _entity_run(SimpleNamespace(adcode='110000'), False).effects)
+    assert not any(e.startswith('lio_entities:') for e in _entity_run(None, True).effects)
+    assert not any(e.startswith('lio_entities:') for e in _entity_run(SimpleNamespace(adcode='330100'), True).effects)
+
+
+def test_a_failing_library_never_fails_the_answer():
+    from types import SimpleNamespace
+    runs = Service(MemoryRepository(), lambda _: True)
+    worker = RunWorker(scope='scope', messages=Messages('故宫怎么走', TICKETS), runs=runs, provider=None,
+                       tools=CityTools(SimpleNamespace(adcode='110000'), '先去故宫。\n\n再坐地铁。'), drafts=Drafts(),
+                       lio_original=lambda binding: LioOriginal('zh', None))
+
+    def broken(name):
+        raise RuntimeError('library unreadable')
+    with patch.dict(os.environ, {'CJ_LIO_ENTITIES': 'on'}), patch('cj_message.lio_entities.library_docs', broken):
+        outcome, = worker.process()
+    assert outcome.status == 'completed'
+
+
+# --- #1990 (D-2): the cards effect ---------------------------------------------------------------------------
+
+def _card_run(question, switch, city=None):
+    from types import SimpleNamespace
+    runs = Service(MemoryRepository(), lambda _: True)
+    messages = Messages(question, TICKETS)
+    worker = RunWorker(scope='scope', messages=messages, runs=runs, provider=None,
+                       tools=CityTools(city or SimpleNamespace(adcode='110000'), '好的。\n\n再看看。'),
+                       drafts=Drafts(), lio_original=lambda binding: LioOriginal('zh', None))
+    with patch.dict(os.environ, {'CJ_LIO_CARDS': 'on'} if switch else {}):
+        outcome, = worker.process()
+    assert outcome.status == 'completed'
+    return runs.snapshot(Binding('scope', 'chat', 'g', 'm', 'r', 1))
+
+
+def test_a_metro_question_gets_a_cards_effect_before_the_followups_only_with_the_switch():
+    state = _card_run('北京地铁怎么坐', True)
+    assert state.effects[0] == LAYOUT_EFFECT + 'split'
+    assert state.effects[1].startswith('lio_cards:') and '"metro-guide"' in state.effects[1]
+    assert state.effects[2].startswith(FOLLOWUPS_EFFECT)
+    assert not any(e.startswith('lio_cards:') for e in _card_run('北京地铁怎么坐', False).effects)
+    assert not any(e.startswith('lio_cards:') for e in _card_run('故宫开门吗', True).effects)
+
+
+def test_a_failing_card_build_never_fails_the_answer():
+    with patch('cj_message.lio_cards.build', side_effect=RuntimeError('boom')):
+        state = _card_run('北京地铁怎么坐', True)
+    assert not any(e.startswith('lio_cards:') for e in state.effects)

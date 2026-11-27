@@ -51,8 +51,9 @@ ENTRY = ('For visa, entry and transit questions give the conclusion only from su
 TRANSIT = 'For current visa-free transit policy use the official entry notice before making policy claims.'
 
 SAVING = ('The app handles saving: describe your suggestion; the trip card confirms a saved plan or change after '
-          'the traveler taps Remember. Never claim that anything is booked, paid or saved. Do not offer to book '
-          'tickets or take payment; help with timing and options instead.')
+          'the traveler asks to save it. Never tell the traveler to tap Remember, or any other button, to save: '
+          'say nothing about how to save unless asked. Never claim that anything is booked, paid or saved. Do not offer '
+          'to book tickets or take payment; help with timing and options instead.')
 
 LANGUAGE = {
     'zh': 'Write the whole answer in Chinese and address the traveler as 你.',

@@ -30,6 +30,10 @@
       "plist": "G2CTransportEnabled"
     },
     {
+      "setting": "G2C_TRANSPORT_HUBS_DRAFT_ENABLED",
+      "plist": "G2CTransportHubsDraftEnabled"
+    },
+    {
       "setting": "G2C_METRO_NEARBY_ENABLED",
       "plist": "G2CMetroNearbyEnabled"
     },
@@ -84,6 +88,10 @@
     {
       "setting": "G2C_CHAT_TRIP_PLACES_ENABLED",
       "plist": "G2CChatTripPlacesEnabled"
+    },
+    {
+      "setting": "G2C_TRIP_CANVAS_ENABLED",
+      "plist": "G2CTripCanvasEnabled"
     }
   ],
   "release": {
@@ -99,6 +107,7 @@
       "G2C_HOTEL_ENABLED",
       "G2C_ROADBOOK_ENABLED",
       "G2C_TRANSPORT_ENABLED",
+      "G2C_TRANSPORT_HUBS_DRAFT_ENABLED",
       "G2C_METRO_NEARBY_ENABLED",
       "G2C_NEARBY_ESSENTIALS_ENABLED",
       "G2C_ARRIVAL_MODE_ENABLED",
@@ -107,7 +116,8 @@
       "G2C_MENU_ORDER_ENABLED",
       "G2C_TRIP_HOME_ENABLED",
       "G2C_AI_DISCLOSURE_ENABLED",
-      "G2C_NEW_SIGN_IN_SCREEN_ENABLED"
+      "G2C_NEW_SIGN_IN_SCREEN_ENABLED",
+      "G2C_ANSWER_LAYOUT_ENABLED"
     ]
   }
 }

@@ -63,6 +63,12 @@ struct LioCurrencyRates: Decodable {
 
     var currencies: [Currency] { Currency.allCases.filter { rates[$0] != nil } }
 
+    /// The unrounded rate for one unit, for the "1 CNY ≈ 0.1563 USD" line.
+    func unitRate(from origin: Currency, to destination: Currency) -> Decimal? {
+        guard let originRate = rates[origin], let destinationRate = rates[destination] else { return nil }
+        return destinationRate / originRate
+    }
+
     func convert(_ amount: Decimal, from origin: Currency, to destination: Currency) -> Decimal? {
         guard !amount.isNaN, amount >= 0,
               let originRate = rates[origin], let destinationRate = rates[destination] else { return nil }

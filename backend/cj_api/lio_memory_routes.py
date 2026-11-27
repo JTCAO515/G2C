@@ -74,11 +74,19 @@ def _tags(projected, mid):
 class LioMemoryCards:
     """Mount only with a trusted C reader that accepts original Lio Travel messages."""
 
-    def __init__(self, collection, read_current):
+    def __init__(self, collection, read_current, consent=None):
         self.collection = collection
         self.read_current = read_current
+        # #1970: the account's consent record, set by the composition root. With CJ_LIO_MEMORY_CONSENT_REQUIRED
+        # on, a store that is missing counts as no consent.
+        self.consent = consent
 
     def project(self, context, token, mid, run_id=None):
+        from .lio_memory_consent import consent_required
+        if consent_required() and (self.consent is None or not self.consent.granted(context.scope)):
+            # No consent, or consent withdrawn: no suggestion is shown, and none can be accepted or
+            # dismissed (`decide` only acts on what this returns).
+            return None
         stored = context.query_lio_message(mid)
         if stored is None or run_id is not None and run_id != stored.receipt.run_id:
             raise Unavailable('original Lio memory message unavailable')

@@ -39,7 +39,7 @@ def fake_fetch(pois=None, geocodes=None, calls=None):
 def inbox(tmp_path, **files):
     for name, entries in files.items():
         folder, _, file = name.partition('__')
-        path = tmp_path / 'inbox' / folder / f'{file}.json'
+        path = tmp_path / 'inbox' / folder / f'{file.replace("_", "-")}.json'  # C8__beijing_hotel -> C8/beijing-hotel.json
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(json.dumps(entries, ensure_ascii=False), encoding='utf-8')
     return tmp_path / 'inbox'
@@ -121,7 +121,7 @@ def test_import_keeps_clean_drafts_and_rejects_bad_ones(tmp_path):
     ok = second()
     dup = copy.deepcopy(C1)
     box = inbox(tmp_path, C1__beijing=[C1, ok, bad_coords, dup], C7__hubs=[C7], C8__beijing_hotel=[C8_HOTEL])
-    by_city, rejected, notes = importer.process(box, TODAY, fake_fetch([poi('故宫博物院')]), library_dir=tmp_path / 'none')
+    by_city, rejected, notes = importer.process(box, TODAY, fake_fetch([poi('故宫博物院')]), library_dir=tmp_path / 'none', keep_signals=True)
     ids = [c['id'] for c in by_city['beijing']]
     assert ids == sorted(['pl_bj_gugong', 'pl_bj_tiantan', 'pl_bj_pek', 'pl_bj_hotel_demo'])
     assert sorted(r['id'] for r in rejected) == ['pl_bj_gugong', 'pl_bj_x']   # the second gugong is a duplicate id
@@ -228,3 +228,98 @@ def test_live_run_needs_the_key_in_the_environment(tmp_path, monkeypatch, capsys
     monkeypatch.delenv('CJ_AMAP_WEB_KEY', raising=False)
     assert importer.main(['--inbox', str(tmp_path), '--today', TODAY, '--live', '--out', str(tmp_path / 'o'), '--review', str(tmp_path / 'r')]) == 2
     assert 'CJ_AMAP_WEB_KEY' in capsys.readouterr().err
+
+
+# ---------------------------------------------------------------- review fixes (#2021)
+
+def test_cells_that_start_with_tab_or_return_are_quoted_too():
+    assert importer._cell('\t=1+1').startswith("'") and importer._cell('\r@x').startswith("'") and importer._cell('plain') == 'plain'
+
+
+def test_a_reimport_keeps_what_the_reviewer_already_typed(tmp_path):
+    box = inbox(tmp_path, C1__beijing=[C1, second()])
+    out, review = tmp_path / 'out', tmp_path / 'review'
+    first, rejected, notes = importer.process(box, TODAY, library_dir=tmp_path / 'none')
+    importer.write_outputs(first, rejected, notes, TODAY, out, review, 25)
+    table = review / 'beijing.review.csv'
+    rows = list(csv.reader(io.StringIO(table.read_text(encoding='utf-8-sig'))))
+    for row in rows[1:]:
+        if row[1] == 'pl_bj_gugong':
+            row[-3:] = ['accept', '1', '已读简介']
+    buffer = io.StringIO()
+    csv.writer(buffer, lineterminator='\n').writerows(rows)
+    table.write_text(buffer.getvalue(), encoding='utf-8-sig')
+    again, rejected, notes = importer.process(box, TODAY, fake_fetch([poi('故宫博物院')]), library_dir=tmp_path / 'none', existing=importer.load_existing(out))
+    importer.write_outputs(again, rejected, notes, TODAY, out, review, 25)
+    answers = importer.read_filled(table)
+    assert answers == {'pl_bj_gugong': ('accept', '1', '已读简介')}
+    assert any(row[1] == 'pl_bj_tiantan' and row[-3:] == ['', '', ''] for row in csv.reader(io.StringIO(table.read_text(encoding='utf-8-sig'))))
+
+
+class _Response:
+    def __init__(self, body):
+        self._body = body
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        return False
+
+    def read(self):
+        return self._body
+
+
+def test_a_refusal_is_not_cached_and_the_key_is_scrubbed_everywhere(tmp_path, monkeypatch):
+    answers = [{'status': '0', 'info': 'DAILY_QUERY_OVER_LIMIT', 'infocode': '10003'}, {'status': '1', 'pois': []}]
+    seen = []
+
+    def fake_urlopen(request, timeout=0):
+        seen.append(request.full_url)
+        return _Response(json.dumps(answers[min(len(seen) - 1, 1)]).encode('utf-8'))
+    monkeypatch.setattr(amap, 'urlopen', fake_urlopen)
+    fetch = amap.make_fetch(SECRET, cache_dir=tmp_path / 'cache', pause=0)
+    assert fetch('/v3/place/text', {'keywords': 'x'})['status'] == '0'
+    assert list((tmp_path / 'cache').glob('*.json')) == []                 # the quota refusal was not remembered
+    assert fetch('/v3/place/text', {'keywords': 'x'})['status'] == '1'     # the same request asks Amap again
+    assert len(list((tmp_path / 'cache').glob('*.json'))) == 1
+    assert SECRET not in ''.join(p.read_text(encoding='utf-8') for p in (tmp_path / 'cache').glob('*.json'))
+
+
+def test_network_errors_and_encoded_keys_never_reach_the_message(tmp_path, monkeypatch):
+    odd_key = 'a b/c+d'
+
+    def boom(request, timeout=0):
+        raise OSError(f'cannot reach {request.full_url}')
+    monkeypatch.setattr(amap, 'urlopen', boom)
+    with pytest.raises(amap.AmapError) as error:
+        amap.make_fetch(odd_key, pause=0)('/v3/place/text', {'keywords': 'x'})
+    assert odd_key not in str(error.value) and 'a%20b%2Fc%2Bd' not in str(error.value)
+
+
+def test_external_signals_are_not_written_into_candidates_unless_asked(tmp_path):
+    """The repository is public and the terms for Tripadvisor-style numbers are not settled: they stay in the inbox."""
+    box = inbox(tmp_path, C1__beijing=[C1])
+    plain = importer.process(box, TODAY, library_dir=tmp_path / 'none')[0]['beijing'][0]
+    assert plain['external_signals'] == [] and 'tripadvisor' not in json.dumps(plain)
+    kept = importer.process(box, TODAY, library_dir=tmp_path / 'none', keep_signals=True)[0]['beijing'][0]
+    assert kept['external_signals'] and kept['external_signals'][0]['source'] == 'tripadvisor'
+    used = importer.process(box, TODAY, library_dir=tmp_path / 'none', use_external=True)[0]['beijing'][0]
+    assert used['external_signals'] and used['score']['external_used']
+
+
+def test_side_files_in_the_draft_folders_are_not_drafts(tmp_path):
+    box = inbox(tmp_path, C1__beijing=[C1], C8__beijing_hotel=[], C8__intro_rewrite_sources=[{'id': 'pl_bj_x', 'urls': ['https://x.example/'], 'checked_on': TODAY}])
+    (box / 'C1' / 'notes.json').write_text('{"not": "a list of places"}', encoding='utf-8')
+    by_city, rejected, _ = importer.process(box, TODAY, library_dir=tmp_path / 'none')
+    assert rejected == [] and [c['id'] for c in by_city['beijing']] == ['pl_bj_gugong']
+
+
+def test_a_clean_rerun_removes_the_old_rejected_report(tmp_path):
+    out, review = tmp_path / 'out', tmp_path / 'review'
+    bad = importer.process(inbox(tmp_path, C1__beijing=[C1, second(lat=3)]), TODAY, library_dir=tmp_path / 'none')
+    importer.write_outputs(*bad, TODAY, out, review, 25)
+    assert (out / f'rejected-{TODAY}.json').is_file()
+    good = importer.process(inbox(tmp_path, C1__beijing=[C1, second()]), TODAY, library_dir=tmp_path / 'none')
+    importer.write_outputs(*good, TODAY, out, review, 25)
+    assert not (out / f'rejected-{TODAY}.json').exists()

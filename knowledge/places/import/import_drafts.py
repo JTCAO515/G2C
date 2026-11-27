@@ -24,6 +24,7 @@ import io
 import json
 import os
 from pathlib import Path
+import re
 import sys
 
 HERE = Path(__file__).resolve().parent
@@ -36,7 +37,10 @@ import score as scoring  # noqa: E402
 VERSION = 'g2c-places-candidates.1'
 DEFAULT_OUT = placelib.PLACES_DIR / 'candidates'
 DEFAULT_REVIEW = placelib.PLACES_DIR / 'review'
-SOURCES = (('C1', '*.json'), ('C7', 'hubs.json'), ('C8', '*.json'))
+# Draft files by folder: C1 `<city>.json`, C7 `hubs.json`, C8 `<city>-food|shopping|hotel.json`. Anything else in
+# those folders (a manifest, Codex's `intro-rewrite-sources.json` side file) is not a list of places.
+SOURCES = (('C1', r'(beijing|shanghai|guangzhou|shenzhen|chengdu|chongqing)\.json'), ('C7', r'hubs\.json'),
+           ('C8', r'(beijing|shanghai|guangzhou|shenzhen|chengdu|chongqing)-(food|shopping|hotel)\.json'))
 SKIP = {'manifest.json'}
 AMAP_LABEL = {'exact': '名称一致', 'close': '名称相近', 'weak': '只是第一条结果，请核对', 'address-only': '只按地址定位',
               'none': '高德没找到', 'not-run': '未查询', 'error': '查询出错'}
@@ -60,8 +64,8 @@ def read_inbox(inbox):
     """([(source name, entry)], [file problems]) for every draft file found."""
     entries, problems = [], []
     for folder, pattern in SOURCES:
-        for path in sorted((Path(inbox) / folder).glob(pattern)):
-            if path.name in SKIP or path.name.startswith('.'):
+        for path in sorted((Path(inbox) / folder).glob('*.json')):
+            if path.name in SKIP or path.name.startswith('.') or re.fullmatch(pattern, path.name) is None:
                 continue
             name = f'{folder}/{path.name}'
             try:
@@ -83,7 +87,7 @@ def load_library_ids(library_dir):
     return ids
 
 
-def process(inbox, today, fetch=None, use_external=False, library_dir=placelib.PLACES_DIR, existing=None):
+def process(inbox, today, fetch=None, use_external=False, library_dir=placelib.PLACES_DIR, existing=None, keep_signals=False):
     """Return ({city: [candidate]}, [rejected], [notes]). `fetch` None means no Amap lookups."""
     existing = existing or {}
     entries, rejected = read_inbox(inbox)
@@ -121,7 +125,7 @@ def process(inbox, today, fetch=None, use_external=False, library_dir=placelib.P
         names.setdefault(key, ident)
         by_city.setdefault(draft['city'], []).append({
             'id': ident, 'source_file': source, 'status': 'pending', 'draft': draft,
-            'external_signals': signals, 'location': location, 'amap': info,
+            'external_signals': signals if (keep_signals or use_external) else [], 'location': location, 'amap': info,
             'score': scoring.score(draft, info['status'], signals, use_external), 'flags': flags,
         })
     for city, items in by_city.items():  # pending entries that disappeared from the inbox stay
@@ -146,7 +150,7 @@ def load_existing(out_dir):
 
 def _cell(value):
     text = '' if value is None else str(value)
-    return "'" + text if text[:1] in ('=', '+', '-', '@') else text  # no spreadsheet formulas from drafts
+    return "'" + text if text[:1] in ('=', '+', '-', '@', '\t', '\r') else text  # no spreadsheet formulas from drafts
 
 
 def review_rows(candidates, batch_size):
@@ -174,13 +178,25 @@ CSV_LABELS = ('批次', 'id', '类别', '细类', '档', '分', '中文名', 'En
               '纬度', '经度', '简介', 'Intro', '开放时间', '来源', '提醒')
 
 
-def render_csv(rows):
-    """Columns for the reviewer to fill in: decision (accept / reject / edit), rank (optional), note."""
+def read_filled(path):
+    """{id: (decision, rank, note)} the reviewer already typed into an existing table (empty cells ignored)."""
+    path = Path(path)
+    if not path.is_file():
+        return {}
+    with open(path, encoding='utf-8-sig', newline='') as handle:
+        return {row['id']: (row.get('decision') or '', row.get('rank') or '', row.get('note') or '')
+                for row in csv.DictReader(handle) if row.get('id') and any((row.get('decision'), row.get('rank'), row.get('note')))}
+
+
+def render_csv(rows, filled=None):
+    """Columns for the reviewer to fill in: decision (accept / reject / edit), rank (optional), note.
+    Answers already typed into the previous table are carried over by id, never wiped by a re-import."""
+    filled = filled or {}
     buffer = io.StringIO()
     writer = csv.writer(buffer, lineterminator='\n')
     writer.writerow([*CSV_LABELS, 'decision', 'rank', 'note'])
     for row in rows:
-        writer.writerow([*(_cell(row[key]) for key in CSV_HEAD), '', '', ''])
+        writer.writerow([*(_cell(row[key]) for key in CSV_HEAD), *filled.get(row['id'], ('', '', ''))])
     return buffer.getvalue()
 
 
@@ -220,11 +236,15 @@ def write_outputs(by_city, rejected, notes, today, out_dir, review_dir, batch_si
         path = out_dir / f'{city}.cand.json'
         path.write_text(dumps({'version': VERSION, 'city': city, 'generated_on': today, 'candidates': items}), encoding='utf-8')
         rows = review_rows(items, batch_size)
-        (review_dir / f'{city}.review.csv').write_text(render_csv(rows), encoding='utf-8-sig')
+        table = review_dir / f'{city}.review.csv'
+        table.write_text(render_csv(rows, read_filled(table)), encoding='utf-8-sig')
         (review_dir / f'{city}.review.md').write_text(render_md(city, rows, today), encoding='utf-8')
         written.append((city, len(items), len(rows)))
+    report = out_dir / f'rejected-{today}.json'
     if rejected or notes:
-        (out_dir / f'rejected-{today}.json').write_text(dumps({'rejected': rejected, 'notes': notes}), encoding='utf-8')
+        report.write_text(dumps({'rejected': rejected, 'notes': notes}), encoding='utf-8')
+    elif report.is_file():  # a clean re-run must not leave the earlier run's problems behind
+        report.unlink()
     return written
 
 
@@ -238,6 +258,8 @@ def main(argv=None):
     parser.add_argument('--live', action='store_true', help='look places up on Amap (needs the key in the environment)')
     parser.add_argument('--key-env', default='CJ_AMAP_WEB_KEY')
     parser.add_argument('--cache', help='directory for Amap answers (default: <inbox>/.amap-cache); never committed')
+    parser.add_argument('--keep-external-signals', action='store_true',
+                        help='keep Tripadvisor-style numbers in the candidate files (default: dropped; the repository is public and their terms are not settled)')
     parser.add_argument('--use-external-signals', action='store_true',
                         help='let Tripadvisor-style ranks count in the score (only after the terms decision)')
     args = parser.parse_args(argv)
@@ -251,7 +273,8 @@ def main(argv=None):
         fetch = amap.make_fetch(key, cache_dir=args.cache or Path(args.inbox) / '.amap-cache')
     existing = load_existing(args.out)
     try:
-        by_city, rejected, notes = process(args.inbox, args.today, fetch, args.use_external_signals, existing=existing)
+        by_city, rejected, notes = process(args.inbox, args.today, fetch, args.use_external_signals, existing=existing,
+                                            keep_signals=args.keep_external_signals)
     except amap.AmapError as error:
         print(f'FAIL: {error}', file=sys.stderr)
         return 1

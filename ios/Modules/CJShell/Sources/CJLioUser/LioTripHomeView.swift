@@ -4,6 +4,8 @@ import SwiftUI
 /// The Trips tab as this trip's home (行程首页 · 办事清单, phase 1), behind `G2CTripHomeEnabled`.
 /// Tasks come from `LioTripChecklist`; "Go" opens the tool that does each one, and coming back re-reads the
 /// tools' state on this phone. Saved trips and earlier plans stay one tap away in "All trips".
+/// #1979: there is no start page. The page opens on "Your China trip" with the six steps in order; a step that
+/// needs an answer (passport, arrival day, hotel level) asks for it when "Go" is tapped.
 struct LioTripHome: View {
     let language: LioLanguage
     /// Plans saved on this device (#1453), newest first.
@@ -24,9 +26,13 @@ struct LioTripHome: View {
     @State private var previewNationality = ""
     /// Set by Debug previews only.
     private let keepsSettingsInMemory: Bool
+    /// #1995: `G2CTripCanvasEnabled`. Off, nothing on this page changes.
+    private let canvasEnabled: Bool
+    private let canvasStore: LioTripCanvasStore?
     private var nationality: Binding<String> { keepsSettingsInMemory ? $previewNationality : $sharedNationality }
     @Environment(\.lioTaxiEntry) private var taxiEntry
     @Environment(\.lioMedicalCard) private var medicalCard
+    @Environment(\.lioHotelFinder) private var hotelFinder
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.dynamicTypeSize) private var typeSize
     @Environment(\.colorScheme) private var colorScheme
@@ -41,20 +47,25 @@ struct LioTripHome: View {
     @State private var confirmsEnd = false
     @State private var shownDone: Set<LioTripStage> = []
     @State private var showsPast = false
+    /// What to do once the sheet that asked a question has closed (#1979).
+    @State private var after: After?
 
-    enum Page: Hashable { case task(String), schedule, arrival, hotel, roadbook }
+    enum Page: Hashable { case task(String), schedule, arrival, hotel, roadbook, canvas }
     private enum Sheet: String, Identifiable {
-        case start, edit, taxi, driver
+        case edit, taxi, driver, passport, arrival, stay
         var id: Self { self }
     }
+    private enum After { case entryPage, hotelSearch }
 
     init(language: LioLanguage, store: LioTripHomeStore?, plans: [LioPlanSummary], plansUnreadable: Bool = false,
          savedPlans: LioSavedPlansModel? = nil, tools: LioTripHomeTools,
          showAllTrips: @escaping () -> Void, openChat: @escaping () -> Void,
          fixedNow: Date? = nil, timeZone: TimeZone = .current, model: LioTripHomeModel? = nil,
-         keepsSettingsInMemory: Bool = false) {
+         keepsSettingsInMemory: Bool = false, canvasEnabled: Bool = LioTripCanvasFeature.enabledInBuild) {
         self.language = language
         self.keepsSettingsInMemory = keepsSettingsInMemory
+        self.canvasEnabled = canvasEnabled
+        canvasStore = canvasEnabled ? LioTripCanvasStore(tripHome: store) : nil
         self.plans = plans
         self.plansUnreadable = plansUnreadable
         self.savedPlans = savedPlans
@@ -73,20 +84,16 @@ struct LioTripHome: View {
                 ScrollView {
                     VStack(alignment: .leading, spacing: LioTheme.Spacing.lg) {
                         if plansUnreadable { newerPlansNotice }
-                        if list.hasTrip {
-                            header(list)
-                            if let now = list.now { nowCard(now, list) }
-                            // JT 2026-11-25: in China, today's plan sits right under "Now".
-                            if list.showsScheduleFirst { schedule(list) }
-                            ForEach(LioTripStage.allCases.filter { $0 >= list.phase.stage }, id: \.self) { stage in
-                                taskGroup(stage, list)
-                            }
-                            if !list.showsScheduleFirst { schedule(list) }
-                            shortcuts
-                            pastStages(list)
-                        } else if !plansUnreadable {
-                            LioTripHomeStart(language: language, openChat: openChat) { sheet = .start }
+                        header(list)
+                        if let now = list.now { nowCard(now, list) }
+                        // JT 2026-11-25: in China, today's plan sits right under "Now".
+                        if list.showsScheduleFirst { schedule(list) }
+                        ForEach(LioTripStage.allCases.filter { $0 >= list.phase.stage }, id: \.self) { stage in
+                            taskGroup(stage, list)
                         }
+                        if !list.showsScheduleFirst { schedule(list) }
+                        shortcuts
+                        pastStages(list)
                         if model.saveFailed {
                             Label(language.text("This change could not be saved on this phone.", "这次改动没能存到手机上。"),
                                   systemImage: "exclamationmark.triangle")
@@ -112,7 +119,7 @@ struct LioTripHome: View {
         .task(id: refresh) { await readTools() }
         .onChange(of: path) { _, pages in if pages.isEmpty { refresh += 1 } }
         .onChange(of: scenePhase) { _, phase in if phase == .active { refresh += 1 } }
-        .sheet(item: $sheet, onDismiss: { refresh += 1 }) { sheet in sheetContent(sheet) }
+        .sheet(item: $sheet, onDismiss: { refresh += 1; continueAfterSheet() }) { sheet in sheetContent(sheet) }
         .fullScreenCover(isPresented: $showsMedicalCard, onDismiss: { refresh += 1 }) {
             if let medicalCard {
                 NavigationStack { LioMedicalCardView(language: language, storage: medicalCard, opensDisplay: false) }
@@ -153,15 +160,16 @@ struct LioTripHome: View {
             scheduledReminders: reminders,
             reminderScope: tools.reminders?.scope ?? LioAttractionReminderScope(account: nil),
             business: tools.business,
-            routableTools: tools.business == nil ? [] : routableTools))
+            routableTools: routableTools))
     }
 
-    /// The tools the router can open here (#1765), as trip places decide it (#1740): the Tools tab must be shown and
-    /// the tool visible in this build.
+    /// The tools the router can open here (#1765, #1979), as trip places decide it (#1740): the Tools tab must be
+    /// shown and the tool visible in this build.
     private var routableTools: Set<LioTool> {
         guard router?.toolsShown == true else { return [] }
         var context = LioToolContext(language: language)
         context.taxiEntry = taxiEntry
+        context.hotelFinder = hotelFinder
         return Set(LioToolCatalog.visible(context.availability()))
     }
 
@@ -181,24 +189,45 @@ struct LioTripHome: View {
     }
 
     private func open(_ task: LioTripTask) {
-        if case .business(let business) = task.kind {
+        switch task.kind {
+        case .business(let business):
             switch business.action {
             case .officialPage(let url): openURL(url)
             case .route(let route): router?.open(route)
             case nil: return
             }
-        } else if case .medicalCard = task.kind, medicalCard != nil {
+        case .medicalCard where medicalCard != nil:
             showsMedicalCard = true
-        } else {
+        // #1979: a step that needs an answer asks for it first, once.
+        case .entry where nationality.wrappedValue.isEmpty:
+            after = .entryPage
+            sheet = .passport
+        case .arrival:
+            sheet = .arrival
+        case .hotel:
+            sheet = .stay
+        case .local:
+            if let route = LioRoute(tool: .metro) { router?.open(route) }
+        default:
             path.append(.task(task.key))
         }
     }
 
-    /// Every task has "Go" except business items with nothing to open (#1765): the business cards item, the visa
-    /// item (its official links are the way) and a tool this build does not show.
-    private func hasGo(_ task: LioTripTask) -> Bool {
-        if case .business(let business) = task.kind { return business.action != nil }
-        return true
+    /// The step's page once its question has been answered; closing the question without answering goes nowhere.
+    private func continueAfterSheet() {
+        guard let next = after else { return }
+        after = nil
+        switch next {
+        case .entryPage:
+            if !nationality.wrappedValue.isEmpty { path.append(.task("entry")) }
+        case .hotelSearch:
+            // The hotel search when this build has it; else Back to Hotel's "my hotel" page, as before.
+            if routableTools.contains(.hotels), let route = LioRoute(tool: .hotels) {
+                router?.open(route)
+            } else if tools.hotelStore != nil {
+                path.append(.task("hotel"))
+            }
+        }
     }
 
     // MARK: - Header
@@ -219,13 +248,16 @@ struct LioTripHome: View {
             Text(LioTripHomeCopy.dates(arrival: list.arrival, lastDay: list.lastDay, language))
                 .font(.subheadline)
                 .foregroundStyle(LioTheme.inkSecondary)
-            Label(LioTripHomeCopy.phase(list.phase, language), systemImage: phaseSymbol(list.phase))
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(LioTheme.ink)
-                .padding(.horizontal, LioTheme.Spacing.sm)
-                .padding(.vertical, LioTheme.Spacing.xs)
-                .background(LioTheme.surfaceSunken, in: Capsule())
-                .accessibilityIdentifier("lio.trip-home.phase")
+            // #1979: with no dates there is nothing to say yet, so no "Before your trip" label.
+            if list.phase != .beforeTrip(daysToGo: nil) {
+                Label(LioTripHomeCopy.phase(list.phase, language), systemImage: phaseSymbol(list.phase))
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(LioTheme.ink)
+                    .padding(.horizontal, LioTheme.Spacing.sm)
+                    .padding(.vertical, LioTheme.Spacing.xs)
+                    .background(LioTheme.surfaceSunken, in: Capsule())
+                    .accessibilityIdentifier("lio.trip-home.phase")
+            }
         }
         .accessibilityElement(children: .combine)
         .accessibilityIdentifier("lio.trip-home.header")
@@ -254,7 +286,7 @@ struct LioTripHome: View {
                 nowText(language.text("\(done) of \(total) ready", "准备进度 \(done)/\(total)"),
                         next.map { language.text("Next: \(LioTripHomeCopy.title($0, language))", "下一件：\(LioTripHomeCopy.title($0, language))") })
                 progress(done, total)
-                if let next, hasGo(next) { primary(LioTripHomeCopy.go(language), "lio.trip-home.now.go") { open(next) } }
+                if let next, next.hasGo { primary(LioTripHomeCopy.go(language), "lio.trip-home.now.go") { open(next) } }
             case .ready:
                 nowText(language.text("All set before you fly", "出发前的事都办好了"),
                         LioTripHomeCopy.phase(list.phase, language))
@@ -268,7 +300,7 @@ struct LioTripHome: View {
                 nowText(language.text("Today: \(done) of \(total) done", "今天要办 \(done)/\(total)"),
                         next.map { language.text("Next: \(LioTripHomeCopy.title($0, language))", "下一件：\(LioTripHomeCopy.title($0, language))") })
                 progress(done, total)
-                if let next, hasGo(next) { primary(LioTripHomeCopy.go(language), "lio.trip-home.now.go") { open(next) } }
+                if let next, next.hasGo { primary(LioTripHomeCopy.go(language), "lio.trip-home.now.go") { open(next) } }
             case .today(let day, let next, let remaining):
                 todayCard(day: day, next: next, remaining: remaining, list: list)
             case .backToHotel(let saved):
@@ -360,17 +392,24 @@ struct LioTripHome: View {
             let open = tasks.filter { !$0.isDone }
             let done = tasks.filter(\.isDone)
             VStack(alignment: .leading, spacing: LioTheme.Spacing.sm) {
-                HStack(alignment: .firstTextBaseline) {
-                    Text(LioTripHomeCopy.stage(stage, language))
-                        .font(LioTheme.display(.title3).weight(.semibold))
-                        .foregroundStyle(LioTheme.ink)
-                        .accessibilityAddTraits(.isHeader)
-                    Spacer(minLength: LioTheme.Spacing.xs)
-                    Text(language.text("\(open.count) to do", "\(open.count) 项待办"))
-                        .font(.footnote).foregroundStyle(LioTheme.inkSecondary)
+                // #1979: the steps of going to China are one ordered list with ticks, with no heading and no count.
+                if stage != .beforeTrip {
+                    HStack(alignment: .firstTextBaseline) {
+                        Text(LioTripHomeCopy.stage(stage, language))
+                            .font(LioTheme.display(.title3).weight(.semibold))
+                            .foregroundStyle(LioTheme.ink)
+                            .accessibilityAddTraits(.isHeader)
+                        Spacer(minLength: LioTheme.Spacing.xs)
+                        Text(language.text("\(open.count) to do", "\(open.count) 项待办"))
+                            .font(.footnote).foregroundStyle(LioTheme.inkSecondary)
+                    }
                 }
-                ForEach(open) { task in taskRow(task) }
-                if !done.isEmpty {
+                if stage == .beforeTrip {
+                    ForEach(tasks) { task in taskRow(task) }
+                } else {
+                    ForEach(open) { task in taskRow(task) }
+                }
+                if stage != .beforeTrip, !done.isEmpty {
                     if shownDone.contains(stage) {
                         ForEach(done) { task in taskRow(task) }
                         foldButton(language.text("Hide done", "收起已完成"), "lio.trip-home.done.\(stage.rawValue)") {
@@ -446,7 +485,7 @@ struct LioTripHome: View {
                 taskText(task)
             }
             if !typeSize.isAccessibilitySize { Spacer(minLength: 0) }
-            if hasGo(task) {
+            if task.hasGo {
                 Button { open(task) } label: {
                     Text(task.isDone ? language.text("View", "查看") : LioTripHomeCopy.go(language))
                         .font(.subheadline.weight(.semibold))
@@ -509,10 +548,13 @@ struct LioTripHome: View {
                 .foregroundStyle(task.isDone ? LioTheme.inkSecondary : LioTheme.ink)
                 .strikethrough(task.isDone, color: LioTheme.inkSecondary)
                 .fixedSize(horizontal: false, vertical: true)
-            Text(LioTripHomeCopy.detail(task, language))
-                .font(.footnote)
-                .foregroundStyle(LioTheme.inkSecondary)
-                .fixedSize(horizontal: false, vertical: true)
+            let detail = LioTripHomeCopy.detail(task, language)
+            if !detail.isEmpty {
+                Text(detail)
+                    .font(.footnote)
+                    .foregroundStyle(LioTheme.inkSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
             if case .booking(let id, _, _, let reminderSet) = task.kind {
                 if reminderSet {
                     Label(LioTripHomeCopy.reminderSet(language), systemImage: "bell.fill")
@@ -625,6 +667,9 @@ struct LioTripHome: View {
 
     private var shortcutItems: [Shortcut] {
         var items: [Shortcut] = []
+        if canvasEnabled {
+            items.append(.init(id: "canvas", symbol: "calendar", title: language.text("Trip canvas", "行程画布"), page: .canvas))
+        }
         if tools.arrival != nil {
             items.append(.init(id: "arrival", symbol: "airplane.arrival", title: language.text("Arrival Mode", "落地模式"), page: .arrival))
         }
@@ -686,6 +731,10 @@ struct LioTripHome: View {
                 ContentUnavailableView(language.text("This is no longer on your list", "这件事已经不在清单上了"),
                                        systemImage: "checklist")
             }
+        case .schedule where canvasEnabled:
+            canvasScreen(checklist(at: now).plan)
+        case .canvas:
+            canvasScreen(checklist(at: now).plan)
         case .schedule:
             if let plan = checklist(at: now).plan {
                 LioItineraryTimelineView(itinerary: plan.itinerary, language: language, startDate: plan.startDate)
@@ -701,12 +750,42 @@ struct LioTripHome: View {
         }
     }
 
+    /// #1995: the trip canvas of this trip's plan (or its own, with no plan), from the timeline's own entries. The map's
+    /// place is left empty here; the map view (#1996) is wired in when it lands.
+    private func canvasScreen(_ plan: LioPlanSummary?) -> some View {
+        LioTripCanvasScreen(language: language, plan: plan, store: canvasStore, openChat: openChat)
+    }
+
     @ViewBuilder private func sheetContent(_ sheet: Sheet) -> some View {
         switch sheet {
-        case .start, .edit:
-            LioTripHomeStartSheet(language: language, initial: sheet == .edit ? model.profile : nil,
-                                  nationality: nationality, offersBusiness: tools.business != nil) { profile in
-                if sheet == .edit { model.update { $0 = profile } } else { model.start(profile) }
+        case .edit:
+            if let profile = model.profile {
+                LioTripHomeStartSheet(language: language, initial: profile, nationality: nationality,
+                                      offersBusiness: tools.business != nil) { profile in
+                    model.update { $0 = profile }
+                }
+            }
+        case .passport:
+            NavigationStack {
+                LioTripNationalityPicker(language: language, selection: nationality,
+                                         question: language.text("Which passport do you travel on?", "用哪国护照？"))
+                    .toolbar {
+                        ToolbarItem(placement: .cancellationAction) {
+                            Button(language.text("Cancel", "取消")) { self.sheet = nil }
+                        }
+                    }
+            }
+        case .arrival:
+            LioTripArrivalAsk(language: language, profile: model.profile) { day, number in
+                model.updateOrStart { profile in
+                    profile.arrival = day
+                    profile.arrivalNumber = number
+                }
+            }
+        case .stay:
+            LioTripStayAsk(language: language, stars: model.profile?.stayStars) { stars in
+                model.updateOrStart { $0.stayStars = stars }
+                after = .hotelSearch
             }
         case .taxi:
             if let taxiEntry, let hotel {

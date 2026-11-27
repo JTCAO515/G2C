@@ -828,6 +828,15 @@ def group_lio_chip():
 GROUPS.update(lio_chip=group_lio_chip)
 
 
+def group_lio_memory_consent():
+    # #1970: the account's append-only memory consent record on restricted PG.
+    return _fresh_runtime_check('lio_memory_consent',55884,'cj1970_consent',
+        f'/tmp/cj1970-consent-{os.getpid()}','backend/cj_api/tests/lio_memory_consent_pg.py')
+
+
+GROUPS.update(lio_memory_consent=group_lio_memory_consent)
+
+
 def group_service_ops():
     # #1771: operations console (App session + staff roster, cj_ops_console role, staff audit) on restricted PG.
     return _fresh_runtime_check('service_ops',55887,'cj1771_ops',
@@ -861,7 +870,7 @@ MINUTES = {
     'message_source': 0.3, 'hk_cloud_rehearsal': 0.3, 'feasibility_runtime': 0.3,
     'background_limits': 0.3, 'runtime_fixture_boundary': 0.2, 'memory_payload': 0.2,
     'local_budget_exit': 0.2, 'domain_runners': 0.2, 'deploy_recovery': 0.2,
-    'background_jobs': 0.2, 'lio_chip': 0.8,
+    'background_jobs': 0.2, 'lio_chip': 0.8, 'lio_memory_consent': 0.4,
 }
 DEFAULT_MINUTES = 0.1
 
