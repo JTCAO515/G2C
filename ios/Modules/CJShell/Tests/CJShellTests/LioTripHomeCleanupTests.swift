@@ -49,6 +49,21 @@ import Testing
         try LioTripHomeCleanup.erase(in: otherAccount)
     }
 
+    /// The copies kept of a damaged canvas file are part of the canvas: they go with the account's trip home.
+    @Test func erasesTheCopiesKeptOfADamagedCanvasFileToo() throws {
+        let root = try temporaryRoot()
+        defer { try? FileManager.default.removeItem(at: root) }
+        let selected = try seedAccount("selected", at: root, bytes: Data([1]))
+        let folder = tripHomeFile(in: selected).deletingLastPathComponent()
+        let copies = LioTripCanvasStore.damagedCopyNames.map { folder.appendingPathComponent($0) }
+        for (index, copy) in copies.enumerated() { try Data([UInt8(10 + index)]).write(to: copy) }
+        let account = try DeviceCleanupDirectory(existingPrivateDirectory: selected)
+        try LioTripHomeCleanup.erase(in: account)
+        try account.requireEmpty()
+        #expect(copies.allSatisfy { !FileManager.default.fileExists(atPath: $0.path) })
+        try LioTripHomeCleanup.erase(in: account)          // and again is a no-op
+    }
+
     /// #1994: the one-time autosave notice's record lives in the trip home's folder and goes with it on account cleanup.
     @Test func erasesTheAutosaveNoticeRecordTogetherWithTheTripHome() throws {
         let root = try temporaryRoot()

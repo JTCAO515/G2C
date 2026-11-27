@@ -50,31 +50,64 @@ enum LioTripCanvasFeature {
 
     /// A missing or damaged file reads as no canvases (the traveller starts again from the saved plan); a file this
     /// build cannot read (a newer app's, or one the phone cannot open now) throws, so nothing is written over it.
-    func load() throws -> [LioTripCanvas] {
+    func load() throws -> [LioTripCanvas] { try read().canvases }
+
+    /// What the file holds, and whether it held anything this build could not use (an unreadable file, a canvas that
+    /// does not decode or is not valid). Saving over such a file first keeps a copy of it (`keepDamagedCopy`).
+    private func read() throws -> (canvases: [LioTripCanvas], damaged: Bool) {
         guard isCurrent() else { throw CancellationError() }
         let data: Data
         do {
             data = try Data(contentsOf: file)
         } catch let error as CocoaError where error.code == .fileReadNoSuchFile {
-            return []
+            return ([], false)
         }
         let decoder = JSONDecoder()
-        guard let header = try? decoder.decode(Header.self, from: data) else { return [] }
+        guard let header = try? decoder.decode(Header.self, from: data) else { return ([], true) }
         guard header.version == Self.currentVersion else { throw UnsupportedVersion(version: header.version) }
-        guard let archive = try? decoder.decode(ArchiveRead.self, from: data) else { return [] }
-        return archive.canvases.compactMap(\.value).filter(\.isValid)
+        guard let archive = try? decoder.decode(ArchiveRead.self, from: data) else { return ([], true) }
+        let decoded = archive.canvases.compactMap(\.value)
+        let usable = decoded.filter(\.isValid)
+        return (usable, usable.count != archive.canvases.count)
+    }
+
+    /// The damaged-file copies kept beside the file, newest first. The names are fixed (a ring of three) so that account
+    /// cleanup can remove exactly these (`LioTripHomeCleanup`) and a long run of bad writes cannot fill the phone.
+    public static let damagedCopyNames = (1...3).map { "trip-canvas.damaged-\($0).json" }
+
+    /// Before a damaged file is replaced by a save, its bytes are kept as `trip-canvas.damaged-1.json` (the older copies
+    /// move one place down and the oldest goes), in the same protected folder, with the same file protection, and
+    /// removed with the account's trip home. So one bad canvas or one bad write never costs the traveller the rest of
+    /// the file for good. Nothing is kept for a file that was fine. If the copy cannot be written the save fails and the
+    /// damaged file stays as it is.
+    private func keepDamagedCopy() throws {
+        let manager = FileManager.default
+        let names = Self.damagedCopyNames
+        let bytes = try Data(contentsOf: file)
+        func url(_ name: String) -> URL { directory.appendingPathComponent(name) }
+        try? manager.removeItem(at: url(names[2]))
+        for index in stride(from: 1, through: 0, by: -1) where manager.fileExists(atPath: url(names[index]).path) {
+            try manager.moveItem(at: url(names[index]), to: url(names[index + 1]))
+        }
+        #if os(iOS)
+        try bytes.write(to: url(names[0]), options: [.atomic, .completeFileProtection])
+        #else
+        try bytes.write(to: url(names[0]), options: .atomic)
+        #endif
     }
 
     func canvas(for tripID: String) throws -> LioTripCanvas? { try load().first { $0.tripID == tripID } }
 
     func save(_ canvas: LioTripCanvas) throws {
-        let others = try load().filter { $0.tripID != canvas.tripID }
-        try write(Array(([canvas] + others).prefix(Self.maximumCount)))
+        let (all, damaged) = try read()
+        if damaged { try keepDamagedCopy() }
+        try write(Array(([canvas] + all.filter { $0.tripID != canvas.tripID }).prefix(Self.maximumCount)))
     }
 
     func remove(_ tripID: String) throws {
-        let all = try load()
+        let (all, damaged) = try read()
         guard all.contains(where: { $0.tripID == tripID }) else { return }
+        if damaged { try keepDamagedCopy() }
         try write(all.filter { $0.tripID != tripID })
     }
 
