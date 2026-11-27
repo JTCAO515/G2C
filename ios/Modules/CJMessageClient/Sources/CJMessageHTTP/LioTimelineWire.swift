@@ -497,7 +497,10 @@ public enum LioTimelineWire {
         // `rich` only rides on a completed row that has an answer; anywhere else it is ignored.
         var rich = (state == .completed && !wire.answer.isEmpty) ? validRich(wire.rich) : nil
         // A plan reply carries no cards (contract: `cards` needs `trip = null`).
-        if trip != nil, let kept = rich { rich = kept.entities.isEmpty ? nil : Rich(entities: kept.entities) }
+        // What it may carry is the places and the memories its plan was based on (`memory` has no `trip = null` rule).
+        if trip != nil, let kept = rich {
+            rich = kept.entities.isEmpty && kept.memoryUsed == nil ? nil : Rich(entities: kept.entities, memoryUsed: kept.memoryUsed)
+        }
         return Message(id: wire.messageID, question: wire.text, answer: wire.answer, state: state,
                        activity: wire.activity, sources: sources, trip: trip, memoryTags: tags,
                        layout: layout, followups: shown.0, chips: shown.1, rich: rich)
