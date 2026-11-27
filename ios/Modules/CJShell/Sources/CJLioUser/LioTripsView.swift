@@ -94,7 +94,7 @@ struct LioItineraryCard<Actions: View>: View {
 }
 
 /// Lays chips out left to right and starts a new line when the next one no longer fits.
-private struct LioChipFlow: Layout {
+struct LioChipFlow: Layout {
     var spacing: CGFloat
 
     func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
@@ -178,6 +178,9 @@ struct LioTripsView: View {
     var removePlan: (LioPlanSummary) -> Void = { _ in }
     /// #1647: with the trip home on, this list is "All trips" and offers a way back; nil keeps the list as it was.
     var backToTripHome: (() -> Void)? = nil
+    /// #1994: bumped when an undo changed what the server lists (a first save that was withdrawn leaves the list), so
+    /// the list is read again through `library.list`.
+    var listRevision = 0
     let openChat: () -> Void
     @State private var saved: [LioTripLibrary.Entry]?
     @State private var listUnavailable = false
@@ -187,6 +190,7 @@ struct LioTripsView: View {
     private struct ListRead: Equatable {
         let attempt: Int
         let session: UUID?
+        let revision: Int
     }
     private struct DetailRead: Hashable {
         let route: LioTripRoute
@@ -314,7 +318,7 @@ struct LioTripsView: View {
                     }
                 }
             }
-            .task(id: ListRead(attempt: listAttempt, session: sessionRevision)) {
+            .task(id: ListRead(attempt: listAttempt, session: sessionRevision, revision: listRevision)) {
                 guard let library else { return }
                 listUnavailable = false
                 saved = nil

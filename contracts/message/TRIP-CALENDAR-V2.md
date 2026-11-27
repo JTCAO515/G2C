@@ -11,7 +11,7 @@ Consumer agreement: #860/6819228034 (L), 6818480818/6819064617 (A), 6818540981 (
 | LIO-trip-reference.1 | Protected original canonical MESSAGE identity/hash plus actual Trip ID/version/content hash and selection. Not authority. |
 | LIO-message.3 / receipt.3 / lookup.3 | Same text/locale/MID/CID/new_conversation envelope, explicit new capability at /v3/lio/messages. |
 | LIO-trip-card.2 | Actual trip_version/content_version/hash plus calendar/days/date_checks. Includes empty rest days. |
-| LIO-timeline.3 / LIO-trip-history.3 | New card projection at /v3/lio/timeline and GET /v3/lio/trip, preserving cursor/undo_target. |
+| LIO-timeline.3 / LIO-trip-history.3 | New card projection at /v3/lio/timeline and GET /v3/lio/trip, preserving cursor/undo_target. `/v3/lio/timeline` also takes `accepts=LIO-answer-rich.1`, whose rows then carry `rich.memory.used` only (`LIO-ANSWER-RICH-V1.md`). |
 | LIO-trip-undo.3 / receipt.3 | Explicit new undo capability at /v3/lio/trip-undos and /v3/lio/trip-undo-receipts; original target/action query semantics retained. |
 | TRIP-date-convert.1 / receipt.1 | Internal source-bound deterministic conversion; no new direct client write route. |
 | LIO-fixed-day-bindings.1 | Protected NEEDS version/hash and original-message-backed start/end day indices. Not a new NEEDS field. |

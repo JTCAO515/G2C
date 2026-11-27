@@ -82,6 +82,36 @@ struct LioCopyTests {
         #expect(flagged(["stations": [station], "source": ["operatorZH": "太原地铁", "englishZH": "原来的拼音"]]) == ["原来的拼音"])
     }
 
+    /// G4's 「去办」 copy (`LioTodoContent.v1.json`, #1979) is shown as written. Six plain phrases in it contain a
+    /// banned string by accident: 托运**行李** (运行), 原号码, 原运营商 and 证件原件 (原), "run through" and "Customs
+    /// needs". Only these exact phrases are set aside, only in that file, and only while the file still has them; the
+    /// next test fails if one is no longer there, so the list cannot go stale and hide a real hit.
+    private static let todoContentFile = "LioTodoContent.v1.json"
+    private static let todoContentPhrases = ["托运行李", "原号码", "原运营商", "原件", "run through", "Customs needs"]
+
+    private func withoutTodoContentPhrases(_ text: String) -> String {
+        Self.todoContentPhrases.reduce(text) { $0.replacingOccurrences(of: $1, with: " ") }
+    }
+
+    @Test func todoContentSetsAsideOnlyItsSixPhrases() throws {
+        let vocabulary = try NSRegularExpression(pattern: banned, options: [.caseInsensitive])
+        func flagged(_ text: String) -> Bool {
+            vocabulary.firstMatch(in: text, range: NSRange(text.startIndex..., in: text)) != nil
+        }
+        let file = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+            .appendingPathComponent("Sources/CJLioUser/Resources/" + Self.todoContentFile)
+        let strings = resourceStrings(try JSONSerialization.jsonObject(with: Data(contentsOf: file)))
+        for phrase in Self.todoContentPhrases {
+            #expect(strings.contains { $0.contains(phrase) }, "\(phrase) is no longer in the file")
+            #expect(flagged(phrase), "\(phrase) is not flagged, so it needs no exemption")
+        }
+        #expect(strings.filter { flagged(withoutTodoContentPhrases($0)) }.isEmpty)
+        // A real hit next to a set-aside phrase is still caught.
+        for sample in ["原件和原操作", "托运行李，查询结果", "run through the backend", "Customs needs the payload"] {
+            #expect(flagged(withoutTodoContentPhrases(sample)), "\(sample)")
+        }
+    }
+
     @Test func userCopyHasZeroBackendTerms() throws {
         let shell = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
@@ -107,7 +137,8 @@ struct LioCopyTests {
                 let object = try JSONSerialization.jsonObject(with: Data(text.utf8))
                 let strings = file.lastPathComponent.hasPrefix("LioMetroMap.") ? metroMapStrings(object) : resourceStrings(object)
                 return strings.filter { value in
-                    vocabulary.firstMatch(in: value, range: NSRange(value.startIndex..., in: value)) != nil
+                    let shown = file.lastPathComponent == Self.todoContentFile ? withoutTodoContentPhrases(value) : value
+                    return vocabulary.firstMatch(in: shown, range: NSRange(shown.startIndex..., in: shown)) != nil
                 }.map { "\(file.lastPathComponent): \($0)" }
             }
             return literals.matches(in: text, range: NSRange(text.startIndex..., in: text)).compactMap { match in

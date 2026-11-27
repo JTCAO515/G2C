@@ -229,13 +229,16 @@ class CityTools(Tools):
 
     def answer(self, worker, binding, inputs, **kwargs):
         worker.lio_city_context = self.city
+        worker.lio_context_city = getattr(self, 'context_city', None)     # as the national intake sets it from the last planning context
         yield from super().answer(worker, binding, inputs, **kwargs)
 
 
-def _entity_run(city, switch):
+def _entity_run(city, switch, context_city=None):
     runs = Service(MemoryRepository(), lambda _: True)
     messages = Messages('故宫怎么走', TICKETS)
-    worker = RunWorker(scope='scope', messages=messages, runs=runs, provider=None, tools=CityTools(city, '先去故宫。\n\n再坐地铁。'),
+    tools = CityTools(city, '先去故宫。\n\n再坐地铁。')
+    tools.context_city = context_city
+    worker = RunWorker(scope='scope', messages=messages, runs=runs, provider=None, tools=tools,
                        drafts=Drafts(), lio_original=lambda binding: LioOriginal('zh', None))
     env = {'CJ_LIO_ENTITIES': 'on'} if switch else {}
     with patch.dict(os.environ, env), patch('cj_message.lio_entities.library_docs', lambda name: [_doc()] if name else []):
@@ -257,6 +260,16 @@ def test_no_entity_effect_when_the_switch_is_off_or_there_is_no_library_city():
     assert not any(e.startswith('lio_entities:') for e in _entity_run(SimpleNamespace(adcode='110000'), False).effects)
     assert not any(e.startswith('lio_entities:') for e in _entity_run(None, True).effects)
     assert not any(e.startswith('lio_entities:') for e in _entity_run(SimpleNamespace(adcode='330100'), True).effects)
+
+
+def test_a_follow_up_in_a_conversation_with_a_confirmed_city_links_places_without_a_destination_this_turn():
+    state = _entity_run(None, True, context_city='北京')          # no city confirmed this turn, Beijing from the last plan
+    assert state.effects[1].startswith('lio_entities:') and '"pl_bj_gugong"' in state.effects[1]
+
+
+def test_a_conversation_without_a_confirmed_city_gets_no_entities_and_no_error():
+    assert not any(e.startswith('lio_entities:') for e in _entity_run(None, True, context_city=None).effects)
+    assert not any(e.startswith('lio_entities:') for e in _entity_run(None, True, context_city='杭州').effects)
 
 
 def test_a_failing_library_never_fails_the_answer():

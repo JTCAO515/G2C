@@ -324,6 +324,22 @@ def test_app_copy_carries_a_hotels_filter_fields_and_every_places_amap_id():
     assert list(stay) == list(generate.APP_KEYS) == list(sight)
 
 
+@pytest.mark.parametrize('host', ['https://www.booking.com/hotel/cn/x.html', 'https://hotels.ctrip.com/h/1.html', 'http://m.tripadvisor.com.hk/x',
+                                  'https://www.agoda.com/x', 'https://www.hotels.com/ho1/', 'https://hotel.elong.com/x', 'https://www.ly.com/x',
+                                  'https://www.airbnb.com/rooms/1', 'https://www.trivago.com/x'])
+def test_a_booking_channel_is_never_a_source_so_its_price_never_gets_in(host):
+    for entry in ({**C8_HOTEL, 'sources': [*C8_HOTEL['sources'], host]}, {**C1, 'category': 'food', 'subcategory': 'local',
+                                                                         'price_per_person_cny': 80, 'sources': [host]}):
+        errors, _ = placelib.check_draft(entry)
+        assert errors and 'third-party' in errors[0]
+
+
+def test_the_operators_own_page_may_carry_a_price_and_a_hotel_class_is_checked():
+    assert placelib.check_draft(C8_HOTEL)[0] == []
+    assert placelib.check_draft({**C8_HOTEL, 'hotel_class': 'luxury'})[0] == []
+    assert placelib.check_draft({**C8_HOTEL, 'hotel_class': 'five-star'})[0]
+
+
 @pytest.mark.parametrize('damage', ['server', 'app', 'source'])
 def test_a_changed_fact_without_regeneration_is_detected(tmp_path, damage):
     lay = layout(tmp_path)
@@ -362,6 +378,114 @@ def test_app_copy_orders_by_city_category_rank():
     places = json.loads(text)['places']
     assert [p['id'] for p in places] == ['pl_bj_a_park', 'pl_bj_gugong', 'pl_bj_unranked']
     assert places[0]['thumb'] == 'pl_bj_a_park_thumb.png'
+
+
+# ---------------------------------------------------------------- the hubs copy for the 大交通 page
+
+def _hub_layout(tmp_path):
+    return generate.Layout(tmp_path / 'places', tmp_path / 'server', tmp_path / 'app' / 'LioPlaces.v1.json', None,
+                           tmp_path / 'app' / 'LioTransportHubs.v1.json')
+
+
+def _rail(**change):
+    return library_entry({**C7, 'id': 'pl_bj_beijingnan', 'name_zh': '北京南站', 'name_en': 'Beijing South Railway Station',
+                          'hub_type': 'rail', 'code': None, 'terminals': None}, **change)
+
+
+def test_the_hubs_copy_has_the_shape_the_transport_page_reads_and_orders_airports_first(tmp_path):
+    lay = _hub_layout(tmp_path)
+    airport = library_entry({**C7, 'terminals': [{'name': 'T3', 'note_zh': '国际航班', 'note_en': 'International flights'}, {'name': 'T2', 'note_zh': None}]}, rank=2)
+    write_city(tmp_path, city_doc(library_entry(C1), _rail(rank=1), airport))
+    generate.write(lay)
+    doc = json.loads(lay.hubs_path.read_text(encoding='utf-8'))
+    assert doc['version'] == 'g2c-transport-hubs.1' and doc['status'] == 'approved'
+    assert [p['id'] for p in doc['places']] == ['pl_bj_pek', 'pl_bj_beijingnan']              # airport before rail whatever the rank
+    pek = doc['places'][0]
+    assert list(pek) == list(generate.HUB_KEYS) and pek['code'] == 'PEK' and pek['hub_type'] == 'airport'
+    assert pek['terminals'] == [{'name': 'T3', 'note_zh': '国际航班', 'note_en': 'International flights'},
+                                {'name': 'T2', 'note_zh': None, 'note_en': None}]
+    assert doc['places'][1]['terminals'] is None and doc['places'][1]['code'] is None
+    assert all('review' not in p and 'location' not in p and 'rank' not in p for p in doc['places'])
+    assert generate.stale(lay) == []
+
+
+def test_no_approved_hub_means_no_hubs_copy_and_the_transport_lines_draft_is_left_alone(tmp_path):
+    lay = _hub_layout(tmp_path)
+    lay.hubs_path.parent.mkdir(parents=True)
+    draft = json.dumps({'version': 'g2c-transport-hubs.1', 'status': 'draft', 'places': []})
+    lay.hubs_path.write_text(draft, encoding='utf-8')
+    write_city(tmp_path, city_doc(library_entry(C1)))                                          # a library with no hub at all
+    generate.write(lay)
+    assert lay.hubs_path.read_text(encoding='utf-8') == draft and generate.stale(lay) == []
+    retired = library_entry(C7, review={'status': 'retired', 'reviewer': 'JT', 'reviewed_on': '2026-11-30', 'note': None})
+    write_city(tmp_path, city_doc(library_entry(C1), retired))                                 # a retired hub does not count
+    generate.write(lay)
+    assert lay.hubs_path.read_text(encoding='utf-8') == draft
+
+
+@pytest.mark.parametrize('content', ['{ not json', '[]', '{"version": "g2c-transport-hubs.1"}', '"approved"'])
+def test_a_file_at_the_hubs_path_that_is_not_a_generated_pack_is_never_removed(tmp_path, content):
+    lay = _hub_layout(tmp_path)
+    lay.hubs_path.parent.mkdir(parents=True)
+    lay.hubs_path.write_text(content, encoding='utf-8')
+    write_city(tmp_path, city_doc(library_entry(C1)))
+    generate.write(lay)                                                                  # the other copies are made, this file is not touched
+    assert lay.hubs_path.read_text(encoding='utf-8') == content and generate.stale(lay) == []
+
+
+def test_the_generated_pack_takes_over_the_draft_and_orders_cities_the_way_the_app_does(tmp_path):
+    lay = _hub_layout(tmp_path)
+    lay.hubs_path.parent.mkdir(parents=True)
+    lay.hubs_path.write_text('{"version": "g2c-transport-hubs.1", "status": "draft", "places": []}', encoding='utf-8')
+    shanghai = library_entry({**C7, 'id': 'pl_sh_pvg', 'city': 'shanghai', 'code': 'PVG', 'name_zh': '浦东', 'name_en': 'Pudong'},
+                             location={**library_entry(C1)['location'], 'gcj02': {'lat': 31.1443, 'lng': 121.8083}})
+    write_city(tmp_path, city_doc(shanghai, city='shanghai'))
+    write_city(tmp_path, city_doc(library_entry(C7)))
+    assert lay.hubs_path in generate.stale(lay)                                     # the draft is now behind the library
+    generate.write(lay)
+    doc = json.loads(lay.hubs_path.read_text(encoding='utf-8'))
+    assert doc['status'] == 'approved' and [p['id'] for p in doc['places']] == ['pl_bj_pek', 'pl_sh_pvg']   # Beijing before Shanghai
+
+
+def test_a_hubs_copy_the_app_would_refuse_for_its_size_is_not_written(tmp_path, monkeypatch):
+    lay = _hub_layout(tmp_path)
+    write_city(tmp_path, city_doc(library_entry(C7)))
+    monkeypatch.setattr(generate, 'HUBS_MAXIMUM_BYTES', 100)
+    with pytest.raises(placelib.Invalid):
+        generate.expected(lay)
+
+
+def test_an_approved_hubs_copy_without_an_approved_hub_behind_it_is_stale_and_removed(tmp_path):
+    lay = _hub_layout(tmp_path)
+    write_city(tmp_path, city_doc(library_entry(C1), library_entry(C7)))
+    generate.write(lay)
+    assert lay.hubs_path.is_file()
+    write_city(tmp_path, city_doc(library_entry(C1)))
+    assert lay.hubs_path in generate.stale(lay)
+    generate.write(lay)
+    assert not lay.hubs_path.exists() and generate.stale(lay) == []
+
+
+def test_a_changed_hubs_copy_is_detected(tmp_path):
+    lay = _hub_layout(tmp_path)
+    write_city(tmp_path, city_doc(library_entry(C7)))
+    generate.write(lay)
+    lay.hubs_path.write_text(lay.hubs_path.read_text(encoding='utf-8').replace('PEK', 'XXX'), encoding='utf-8')
+    assert generate.stale(lay) == [lay.hubs_path]
+
+
+@pytest.mark.parametrize('code', [None, 'pek', 'PE', 'PEKK'])
+def test_an_airport_the_app_would_refuse_is_refused_here_first(tmp_path, code):
+    lay = _hub_layout(tmp_path)
+    write_city(tmp_path, city_doc(library_entry({**C7, 'code': code})))
+    with pytest.raises(placelib.Invalid):
+        generate.expected(lay)
+
+
+def test_terminal_notes_may_carry_an_english_line_and_nothing_else_extra():
+    assert placelib.check_draft({**C7, 'terminals': [{'name': 'T1', 'note_zh': None, 'note_en': 'Domestic'}]})[0] == []
+    assert placelib.check_draft({**C7, 'terminals': [{'name': 'T1', 'note_zh': None}]})[0] == []
+    assert placelib.check_draft({**C7, 'terminals': [{'name': 'T1', 'note_zh': None, 'note_fr': 'x'}]})[0]
 
 
 # ---------------------------------------------------------------- the repository itself

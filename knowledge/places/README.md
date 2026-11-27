@@ -9,7 +9,7 @@
 | `<城市>.v1.json` | **唯一数据源**。城市取 `beijing shanghai guangzhou shenzhen chengdu chongqing`。只放人审通过的条目 |
 | `placelib.py` | 字段规则（草稿和库两种形态） |
 | `validate.py` | 校验全部城市文件，并比对副本；`--write` 规范化源文件并重写副本 |
-| `generate.py` | 生成服务端副本和 App 精简版；`validate.py` 调用，也可单独运行 |
+| `generate.py` | 生成服务端副本、App 精简版和大交通枢纽副本；`validate.py` 调用，也可单独运行 |
 | `import/import_drafts.py`、`import/amap.py`、`score.py` | 导入 Codex 草稿、高德补坐标、打分、审核表（#1986） |
 | `candidates/<城市>.cand.json` | 候选（待审、已决定的都在这里；不是库） |
 | `review/<城市>.review.csv`、`.md` | 给 JT 的审核表 |
@@ -19,6 +19,7 @@
 生成物（不要手改）：
 - 服务端副本 `backend/fact/cj_fact/places_<城市>.v1.json`，与源文件**逐字节一致**，读取入口 `cj_fact.places`（`load_city`、`by_id`、`by_category`、`match_name`）。
 - App 精简版 `ios/Modules/CJShell/Sources/CJLioUser/Resources/LioPlaces.v1.json`：只有 id、城市、类别、`kind`、等级、排名、中英名、别名、GCJ-02 坐标、amap_id、酒店的 `price_band` / `star` / `accepts_foreigners`（其他类别为 null，「住」按它们筛选并与高德结果取交集）、一句话简介、缩略图文件名。App 在问服务端之前就能显示的就这些。
+- 大交通页的枢纽副本 `ios/Modules/CJShell/Sources/CJLioUser/Resources/LioTransportHubs.v1.json`（TL-4，#2007 约定）：库里**审核通过**的机场和火车站，形状是 `{version: "g2c-transport-hubs.1", status: "approved", places: [...]}`，每条 `id, city, hub_type, name_zh, name_en, code, terminals[{name, note_zh, note_en}], to_city_zh/en, foreigner_tips_zh/en, official_url, checked_on`（库里的原值，snake_case）；机场在前、火车站在后，同类按名次。机场没有 3 位大写 `code` 会在生成时就报错（App 会整包拒载）。库里**还没有**审核通过的枢纽时不生成，大交通线手工维护的草稿（`status: draft`）原样留着；一旦有了，生成的文件接管这个路径，之后再出现 `status: approved` 却没有审核通过的枢纽支撑，算过期、`--write` 删除。App 怎么接入（草稿开关换成已审核包、`Package.swift` 资源声明）放 58.2。`terminals` 里的 `note_en` 是可选字段（C7 草稿只有中文说明）。
 - CI：`backend/tests/test_places_pipeline.py` 与 `backend/fact/tests/test_places_copy.py`。数据改了却没重新生成，`python` job 失败。App 副本也在 Python job 里比对（只改 `knowledge/` 的 PR 不跑 Swift job）。
 - 一个城市文件被删除时，它的副本也算过期，`--write` 会一并删掉。
 
@@ -69,7 +70,11 @@ CJ_AMAP_WEB_KEY=… python3 -B knowledge/places/import/import_drafts.py --inbox 
 - 高德匹配分四档：`exact`（名称或别名一致）、`close`（互相包含且长度占 60% 以上）、`weak`（只是第一条结果，审核人必须核对）、`none`；POI 没找到再用地址地理编码（`address-only`，没有 amap_id）。结果不在该城范围框内的丢弃，防止匹配到外地同名地点。高德临时错误只标这一条，key 无效或额度用完则整次中止。
 - 打分只用来排审核顺序（主档在前，再按分数），不决定收不收；构成见 `score.py`。**外部评分和排名默认不计分**，要等统筹按 Codex G3 的条款结论决定后才加 `--use-external-signals`。
 - 审核表：`review/<城市>.review.csv`（Excel 可直接打开，批次 25 条，空的 `decision` 列填 accept / reject / edit，另有 `rank`、`note` 列）和 `.md`（逐条卡片）。表里以 `= + - @` 开头的单元格会加引号前缀，避免草稿里的公式在表格软件里执行。
-- 重跑安全：已有决定的条目保持不变，待审的刷新，从收件箱里消失的待审条目保留。
+- 重跑安全：已有决定的条目保持不变，待审的刷新；**Codex 从文件里撤掉的待审条目会从审核表里去掉**（说明里列出 id），已有决定的撤掉了也保留。
+- `C1/aliases.json`（别名清单）和 `C1/recheck.json`（字段级复核）会叠在景点草稿上：别名并入草稿自己的别名（原有全保留，按 NFKC 与大小写去重），逐条证据存在候选的 `alias_evidence`；复核的新值只有在草稿仍是复核时的旧值、且改完仍能通过校验时才应用，否则只在说明里记一笔；`new: null` 的行表示官方页面没能确认，审核表「提醒」里写「请手工核对」。复核只认白名单字段（`hours_zh`、`hours_source`、`official_url` 和 `ticket.*`），其他字段的行记一条说明后跳过；单个别名过不了草稿规则也只丢它自己。Codex 撤掉的待审条目：有 `review_note`（被标 edit）或审核表里已填答案的保留，源文件读不出时也一律保留。
+- 价格规则（C8，JT 2026-11-27）：**订房、点评渠道的价格一律不进数据**。这些站点（订房和旅行平台）在 `placelib.THIRD_PARTY_HOSTS` 里，出现在 `sources`、`official_url` 等任何来源字段都会被拒，所以带价格的条目只可能引用经营方自己的页面。没有价格档的酒店在审核表里提醒「no price band」，补上之前进不了库。
+- 酒店草稿的 `hotel_class`（economy / midscale / upscale / luxury，Codex 按品牌档次填）现在是库的可选字段，供「住」在价格档缺失时作参考；它不在 App 精简副本里。
+- 示意图：`--images`（默认 `<收件箱>/C2`）里有图的条目，审核表 CSV 多一列「示意图」、md 里标「示意图：有」；加 `--preview-dir <目录>` 会另写 `<城市>.preview.html`，缩略图挨着条目，给审核人本地看。预览页写着本机路径，**放在仓库之外，不提交**。
 - 高德应答缓存在 `<收件箱>/.amap-cache`（仓库之外），只用于避免重复计费，不提交。
 
 ## 图片（#1987）
@@ -109,5 +114,7 @@ python3 -B knowledge/places/validate.py --write     # 重写副本，并与预�
 - `accept` 的条目拿候选里的草稿字段（去掉 `external_signals`）加高德坐标、`rank`、审核记录（审核人、日期、备注）进库；没有坐标（高德没找到）的不能 accept。
 - 整个城市文件先用 `validate.py` 同一套规则试校验，**有一条不过就整城都不写**并列出全部问题（常见的是同城名称重复）。
 - `reject` 留在候选文件里标 `rejected`，不进库；`edit` 保持待审，修完草稿重新导入。
-- 再次 accept 同一个 id 会替换库里的旧条目（改审）。
+- 只有**待审**的候选能被决定；候选已经 accepted / rejected 的再填 decision 会被拦下并说明（改主意：先在候选文件里把它的 `status` 改回 `pending`）。reject 一个已进库的 id 也会被拦：库里的条目要在库文件里下架。
+- 库里已有的 id 再 accept 默认被拦（旧条目带着原审核人、日期、名次）；确实要改审，加 `--replace`（只用于候选已是 accepted 的条目），汇总会逐个列出被替换的 id。上一次运行写完库文件、没来得及改候选状态就被中断时，用同样的 `--reviewer`、`--on` 和答案再跑一遍就行（同一个答案得到同一个条目，只补上候选状态，不需要 `--replace`）。
+- 库文件和候选文件都是先写同目录临时文件再改名，写到一半被杀或磁盘满，旧文件原样还在；表头缺 `id` 或 `decision` 列、候选文件结构坏了，都是一条清楚的失败，不写任何文件。
 - 库里只有人点过 accept 的条目：这是「人审之后才进库」的唯一入口。

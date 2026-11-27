@@ -66,6 +66,16 @@ def literal_itinerary(text):
     days=_number(match['zh_days']or match['en_days'])
     return (city,days)if days>0 and known_city_term(city)else None
 
+def context_city(previous):
+    """The city word of the conversation's last planning context (its `city` fact), or None. Read from what the planning step
+    already holds; anything unreadable is simply no city, never an error (#2072)."""
+    try:
+        city=previous['facts']['city']['value']['query']
+        return city if type(city)is str and 0<len(city)<=64 else None
+    except (TypeError,KeyError,IndexError):
+        return None
+
+
 def _duration_followup_outline(turns,refs,previous,sequence):
     """Recover a bare duration as read-only data after a completed city question."""
     if (previous is None or previous.get('status')!='needs_details'
@@ -311,6 +321,7 @@ class NationalLioPlanning:
         if capital is not None and not CAPITAL_PLANNING_TAIL.search(capital['country']):return None
         today=original.question_day or datetime.now(ZoneInfo('Asia/Shanghai')).date()
         turns,refs,previous=self.context(binding,PlanningTurn(text,today))
+        worker.lio_context_city=context_city(previous)
         if not refs and previous is None and _READONLY_DETAILS.fullmatch(text):
             # Planning has no eligible history here. The ordinary model can
             # still read the traveler's words from the failed turn.

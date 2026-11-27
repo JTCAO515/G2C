@@ -79,6 +79,11 @@ class Linker(unittest.TestCase):
         for answer in ('王府井站很近。', '故宫路很堵。', '天坛区域不错', 'Wangfujing Station is near.', '天坛机场不存在'):
             self.assertEqual(items(answer), [], answer)
 
+    def test_a_gate_or_exit_word_before_station_is_a_station_too(self):
+        for answer in ('天坛东门站很近。', '到天坛西南门站下车', '故宫北门站出来右转'):
+            self.assertEqual(items(answer), [], answer)
+        self.assertEqual(items('天坛东门很美，故宫北门也值得看。'), [(0, 2, 'pl_bj_tiantan'), (7, 9, 'pl_bj_gugong')])   # a gate without 站 is still the place
+
     def test_retired_unapproved_short_and_markdown_names_are_never_linked(self):
         self.assertEqual(items('老地方 Old Place 很好。星*号 Star*Place 井 Jin'), [])
         unreviewed = dict(DOC, places=[place('pl_bj_new', '新地方', 'New Place', status='pending')])
@@ -188,6 +193,38 @@ class ApprovedIds(unittest.TestCase):
             clock[0] += 10 ** 6
             self.assertEqual(ent.approved_ids(), APPROVED)                          # a complete read stays for the process
             self.assertEqual(len(calls), second)
+
+
+class ContextCity(unittest.TestCase):
+    """#2072: the city this conversation's last planning context confirmed is a candidate city too."""
+
+    def setUp(self):
+        patcher = mock.patch.dict(os.environ, {'CJ_LIO_ENTITIES': 'on'})
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
+    def test_a_city_word_names_only_a_library_city(self):
+        for word, city in (('北京', 'beijing'), (' Beijing ', 'beijing'), ('成都', 'chengdu'), ('重庆', 'chongqing')):
+            self.assertEqual(ent.city_for_name(word), city, word)
+        for word in ('杭州', 'Hangzhou', '北京市', '', None, 7, ['北京']):
+            self.assertIsNone(ent.city_for_name(word), word)
+
+    def test_a_conversation_with_a_confirmed_city_links_without_a_destination_this_turn(self):
+        answer = '先去故宫，再去景山公园。'
+        with mock.patch.object(ent, 'library_docs', lambda city: [DOC] if city == 'beijing' else []):
+            self.assertIsNotNone(ent.entity_effect(answer, None, context_city='北京'))
+            self.assertIsNone(ent.entity_effect(answer, None, context_city='杭州'))           # not a library city
+            self.assertIsNone(ent.entity_effect(answer, None, context_city=None))             # a conversation with no confirmed city
+            self.assertIsNone(ent.entity_effect(answer, None))
+
+    def test_this_turns_destination_and_the_conversation_city_are_both_candidates_without_a_double_read(self):
+        reads = []
+        with mock.patch.object(ent, 'library_docs', lambda city: reads.append(city) or ([DOC] if city == 'beijing' else [])):
+            ent.entity_effect('先去故宫。', '110000', context_city='北京')
+            self.assertEqual(reads, ['beijing'])                                              # the same city twice reads once
+            reads.clear()
+            ent.entity_effect('先去故宫。', '310000', context_city='北京')
+            self.assertEqual(reads, ['shanghai', 'beijing'])
 
 
 class Switches(unittest.TestCase):

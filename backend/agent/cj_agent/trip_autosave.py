@@ -4,9 +4,11 @@ Every Lio trip write reaches `worker._step(binding, publish, 'trip_proposal:'…
 Lio publisher as `worker.drafts`. Its call sites wrap that step with :func:`publish`. With the write's
 repository autosave off (the default) this is exactly the step. With it on, the intent
 `{"action_id":…,"status":"unknown"}` is committed as its own RUN event before the step (outside the
-trip lock), then `saved` after it, or `not_saved` when the step refused before any commit. A step that
-ends any other way (commit unknown, budget, cancellation) leaves the intent: the reader then trusts only
-cj_trip_receipt. A receipt write that fails is logged and never fails the answer.
+trip lock), then `saved` after it, or `not_saved` when the step refused before any commit. `saved` is
+written only when the step returned this action's accepted receipt with a committed version; a step that
+returned without writing the Trip gets `not_saved` (#2051 P2-3; the reader still trusts cj_trip_receipt
+over any effect). A step that ends any other way (commit unknown, budget, cancellation) leaves the intent:
+the reader then trusts only cj_trip_receipt. A receipt write that fails is logged and never fails the answer.
 """
 import logging
 
@@ -22,14 +24,14 @@ def _enabled(repository):
 
 def reason(error):
     """The contract reason of a refused write, or None: version conflict, protected points, too large."""
-    from cj_trip.autosave import AutosaveConflict
+    from cj_trip.autosave import AutosaveConflict, WithdrawnConflict
     from cj_trip.domain import Conflict
     seen = set()
     while error is not None and id(error) not in seen:
         seen.add(id(error))
         if isinstance(error, AutosaveConflict):
             return 'too_large' if error.code == 'too_large' else 'protected'
-        if isinstance(error, Conflict) and error.args == ('trip version conflict',):
+        if isinstance(error, WithdrawnConflict) or (isinstance(error, Conflict) and error.args == ('trip version conflict',)):
             return 'conflict'
         error = error.__cause__ or error.__context__
     return None
@@ -52,6 +54,13 @@ def _write(worker, binding, state, action_id, status, reason=None):
             return state
 
 
+def _written(result, action_id):
+    """The step returned this action's accepted, committed Trip receipt (cj_trip.domain.Receipt)."""
+    version = getattr(result, 'committed_version', None)
+    return (getattr(result, 'action_id', None) == action_id and getattr(result, 'kind', None) == 'accept'
+            and type(version) is int and version >= 1)
+
+
 def publish(worker, binding, repository, action_id, step):
     """`step()` returns `(state, result)` like `worker._step`; so does this."""
     if not _enabled(repository):
@@ -65,4 +74,7 @@ def publish(worker, binding, repository, action_id, step):
         # Refused before the commit (the sole commit point raises before any Trip write).
         _write(worker, binding, worker.runs.snapshot(binding), action_id, 'not_saved', reason(error))
         raise
+    if not _written(result, action_id):
+        _audit.info('LIO_TRIP_RECEIPT_NOT_WRITTEN run_id=%s', binding.run_id)
+        return _write(worker, binding, state, action_id, 'not_saved'), result
     return _write(worker, binding, state, action_id, 'saved'), result

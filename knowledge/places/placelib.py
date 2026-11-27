@@ -40,6 +40,7 @@ CATEGORIES = ('attraction', 'food', 'shopping', 'hotel', 'hub')
 ATTRACTION_SUBCATEGORIES = frozenset({'history', 'museum', 'park', 'street', 'landmark', 'experience'})
 HUB_TYPES = frozenset({'airport', 'rail'})
 PRICE_BANDS = frozenset({'<500', '500-1000', '1000-2000', '>2000'})
+HOTEL_CLASSES = frozenset({'economy', 'midscale', 'upscale', 'luxury'})  # the brand tier Codex files a hotel under (C8)
 CONFIDENCE = frozenset({'high', 'medium', 'low'})
 TIERS = frozenset({'main', 'backup'})
 BOOKING = frozenset({'required', 'recommended', 'none'})
@@ -57,6 +58,8 @@ THIRD_PARTY_HOSTS = (
     'expedia.', 'klook.com', 'getyourguide.', 'viator.com', 'lonelyplanet.com', 'fliggy.com', 'qunar.com',
     'qyer.com', 'douban.com', 'yelp.com', 'facebook.com', 'instagram.com', 'youtube.com', 'reddit.com',
     'tiktok.com', 'douyin.com', 'xhslink.com', 'sohu.com', 'sina.com', 'toutiao.com', 'amap.com',
+    # Booking channels: a price read there is never data (C8 rule, JT 2026-11-27), so none of them is a source at all.
+    'hotels.com', 'elong.com', 'tuniu.com', 'ly.com', 'airbnb.', 'kayak.', 'trivago.', 'hotelscombined.', 'makemytrip.com',
 )
 
 # Fields common to every category (draft shape). `external_signals` is draft-only.
@@ -71,7 +74,7 @@ CATEGORY_FIELDS = {
     'food': ('subcategory', 'hours_zh', 'hours_source', *INTRO, 'cuisine_zh', 'price_per_person_cny',
              'english_menu', 'halal', 'vegetarian_friendly', 'reservation_needed'),
     'shopping': ('subcategory', 'hours_zh', 'hours_source', *INTRO),
-    'hotel': ('subcategory', *INTRO, 'star', 'price_band', 'accepts_foreigners', 'foreign_service'),
+    'hotel': ('subcategory', *INTRO, 'star', 'price_band', 'hotel_class', 'accepts_foreigners', 'foreign_service'),
     'hub': ('hub_type', 'code', 'terminals', 'to_city_zh', 'to_city_en', 'foreigner_tips_zh', 'foreigner_tips_en'),
 }
 # A draft must carry at least these (the rest default to null); the library carries everything.
@@ -229,9 +232,12 @@ def terminals(value, where):
         return
     _require(type(value) is list, f'{where}: a list')
     for i, item in enumerate(value):
-        _object(item, ('name', 'note_zh'), f'{where}[{i}]')
+        # `note_en` is optional (C7 drafts have only the Chinese note; the App reads it when it is there)
+        _object(item, ('name', 'note_zh', 'note_en') if type(item) is dict and 'note_en' in item else ('name', 'note_zh'), f'{where}[{i}]')
         text(item['name'], f'{where}[{i}].name')
         text(item['note_zh'], f'{where}[{i}].note_zh', nullable=True)
+        if 'note_en' in item:
+            text(item['note_en'], f'{where}[{i}].note_en', nullable=True)
 
 
 def location(value, where, city):
@@ -324,6 +330,8 @@ def _check_fields(entry, category, where):
             boolean(entry[key], f'{where}.{key}')
     if 'price_band' in entry:
         _require(entry['price_band'] is None or entry['price_band'] in PRICE_BANDS, f'{where}.price_band')
+    if 'hotel_class' in entry:
+        _require(entry['hotel_class'] is None or entry['hotel_class'] in HOTEL_CLASSES, f'{where}.hotel_class: one of {sorted(HOTEL_CLASSES)}')
     if 'hub_type' in entry:
         _require(entry['hub_type'] is None or entry['hub_type'] in HUB_TYPES, f'{where}.hub_type')
     if 'subcategory' in entry and category == 'attraction' and entry['subcategory'] is not None:
