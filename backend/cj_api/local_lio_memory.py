@@ -95,7 +95,16 @@ class LioMemoryExtraction:
         self.candidates = candidates
         self.credential = credential
 
+    def _consented(self, scope):
+        from .lio_memory_consent import ConsentStore, consent_required
+        return not consent_required() or ConsentStore(self.database).granted(scope)
+
     def extract(self, worker, binding):
+        # #1970: no consent record, or a withdrawal, means nothing is prepared, no model is called and
+        # no suggestion is written. Off (the default) this reads nothing.
+        if not self._consented(binding.scope):
+            _record_hold('consent', Unavailable('memory consent not granted'))
+            return None
         token = self.credential()
         coordinates = dict(message_id=binding.message_id, run_id=binding.run_id)
         options = dict(**coordinates, max_payload_bytes=32768)
@@ -146,6 +155,11 @@ class LioMemoryExtraction:
             return None
 
         def publish():
+            # A withdrawal while the suggestion was being prepared: publish nothing.
+            if not self._consented(binding.scope):
+                _record_hold('consent', Unavailable('memory consent withdrawn'))
+                hold('failed')
+                return
             # Completing the answer uses its original Memory snapshot. Candidate
             # writes advance the Memory epoch and therefore happen after that check.
             def check_answer():

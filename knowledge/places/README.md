@@ -10,7 +10,10 @@
 | `placelib.py` | 字段规则（草稿和库两种形态） |
 | `validate.py` | 校验全部城市文件，并比对副本；`--write` 规范化源文件并重写副本 |
 | `generate.py` | 生成服务端副本和 App 精简版；`validate.py` 调用，也可单独运行 |
-| `import/`、`score.py`、`candidates/`、`review/` | 导入、打分、审核表（#1986） |
+| `import/import_drafts.py`、`import/amap.py`、`score.py` | 导入 Codex 草稿、高德补坐标、打分、审核表（#1986） |
+| `candidates/<城市>.cand.json` | 候选（待审、已决定的都在这里；不是库） |
+| `review/<城市>.review.csv`、`.md` | 给 JT 的审核表 |
+| `SOURCES.md` | 数据来源条款核对结论 |
 | `placeimages.py`、`images/check_images.py`、`images/manifest.v1.json` | 图片清单：生成、校验（#1987） |
 
 生成物（不要手改）：
@@ -52,6 +55,22 @@ Codex 产出放在 `codex-inbox/C1`（景点）、`C7`（枢纽）、`C8`（餐�
 1. 条目经审核表确认（#1986 的 `import/` 生成审核表，人审之后才合入）。
 2. 在仓库根目录运行 `python3 -B knowledge/places/validate.py --write`：校验、规范化、重写副本。
 3. 把源文件和全部副本一起提交。改到 App 副本的 PR 受 `coord/main-freeze.md` 的 `ios/**` 约束。
+
+## 导入 Codex 草稿（#1986）
+
+```bash
+# 离线：只校验、打分、出审核表（不查高德）
+python3 -B knowledge/places/import/import_drafts.py --inbox ../codex-inbox --today 2026-11-29
+# 联网：用高德补 GCJ-02 坐标和 amap_id（key 只从环境变量读，不进日志、不进文件）
+CJ_AMAP_WEB_KEY=… python3 -B knowledge/places/import/import_drafts.py --inbox ../codex-inbox --today 2026-11-29 --live
+```
+
+- 读 `C1/*.json`（景点）、`C7/hubs.json`（枢纽）、`C8/*.json`（餐饮、购物、酒店），每个文件是一个条目数组。**校验不过的条目进 `candidates/rejected-<日期>.json`，不导入**；已在库里的 id 跳过；同城同中文名只警告。
+- 高德匹配分四档：`exact`（名称或别名一致）、`close`（互相包含且长度占 60% 以上）、`weak`（只是第一条结果，审核人必须核对）、`none`；POI 没找到再用地址地理编码（`address-only`，没有 amap_id）。结果不在该城范围框内的丢弃，防止匹配到外地同名地点。高德临时错误只标这一条，key 无效或额度用完则整次中止。
+- 打分只用来排审核顺序（主档在前，再按分数），不决定收不收；构成见 `score.py`。**外部评分和排名默认不计分**，要等统筹按 Codex G3 的条款结论决定后才加 `--use-external-signals`。
+- 审核表：`review/<城市>.review.csv`（Excel 可直接打开，批次 25 条，空的 `decision` 列填 accept / reject / edit，另有 `rank`、`note` 列）和 `.md`（逐条卡片）。表里以 `= + - @` 开头的单元格会加引号前缀，避免草稿里的公式在表格软件里执行。
+- 重跑安全：已有决定的条目保持不变，待审的刷新，从收件箱里消失的待审条目保留。
+- 高德应答缓存在 `<收件箱>/.amap-cache`（仓库之外），只用于避免重复计费，不提交。
 
 ## 图片（#1987）
 

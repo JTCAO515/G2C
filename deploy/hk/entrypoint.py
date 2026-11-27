@@ -60,6 +60,11 @@ def _runtime_gate(database, runtime):
             marker=checkpoint.verified(control()/'demo-schema59.json')
             if marker['state']!='COMPLETE'or marker['lineage']!=release['lineage']:
                 raise ValueError('HK service and chip cutover incomplete')
+        # Single-step anchors after the 59 chain (deploy/hk/demo_schema.py FIRST_SINGLE).
+        for target in range(60,checkpoint.versions()[-1]+1):
+            marker=checkpoint.verified(control()/f'demo-schema{target}.json')
+            if marker['state']!='COMPLETE'or marker['lineage']!=release['lineage']:
+                raise ValueError(f'HK schema{target} cutover incomplete')
 
 
 def ready(database, runtime=None):

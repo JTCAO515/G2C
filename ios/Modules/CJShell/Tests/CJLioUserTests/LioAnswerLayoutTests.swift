@@ -23,6 +23,21 @@ struct LioAnswerLayoutTests {
         #expect(!project.contains("G2C_ANSWER_LAYOUT_ENABLED"), "off unless the release script passes it")
     }
 
+    /// #1977 (58.1 P0-3): the TestFlight build turns the flag on (coordinator approved the default change, stop 6).
+    /// The setting itself stays unset in the project, so Debug and CI builds are unchanged; the server's own list
+    /// (`CJ_LIO_ANSWER_LAYOUT`) still decides which accounts get the layout.
+    @Test func flagIsListedAndOnInTheRelease() throws {
+        let root = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+            .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+        let manifestURL = root.appendingPathComponent("tooling/release/app_flags.json")
+        let manifest = try #require(JSONSerialization.jsonObject(with: Data(contentsOf: manifestURL)) as? [String: Any])
+        let flags = try #require(manifest["flags"] as? [[String: String]])
+        #expect(flags.contains(["setting": "G2C_ANSWER_LAYOUT_ENABLED", "plist": "G2CAnswerLayoutEnabled"]))
+        let release = try #require(manifest["release"] as? [String: Any])
+        #expect(try #require(release["on"] as? [String]).contains("G2C_ANSWER_LAYOUT_ENABLED"))
+    }
+
     @Test func anAnswerIsCutAtItsFirstBlankLine() {
         let parts = LioAnswerParts("先找最近的地铁站。\n\n进站后看线路编号。\n\n告诉我你从哪儿出发。")
         #expect(parts.head == "先找最近的地铁站。")
