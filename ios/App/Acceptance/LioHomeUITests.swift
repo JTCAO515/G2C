@@ -52,7 +52,7 @@ import CryptoKit
         for language in ["en", "zh-Hans"] {
             let english = language == "en"
             let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
-            app.launchArguments = ["--lio-preview", "--lio-tools-preview", "--lio-nearby-preview", "--lio-nearby-essentials",
+            app.launchArguments = ["--lio-preview", "--lio-tools-preview", "--lio-tools-all-cards", "--lio-nearby-preview", "--lio-nearby-essentials",
                                    "-cj.ui.language.v1", language,
                                    "-lio.ui.appearance.v1", "light", "-UIPreferredContentSizeCategoryName",
                                    "UICTContentSizeCategoryL"]
