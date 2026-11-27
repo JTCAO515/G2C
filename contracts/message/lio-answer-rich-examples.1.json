@@ -2139,6 +2139,28 @@
    }
   },
   {
+   "name": "currency rate zero",
+   "answer": "a6",
+   "rich": {
+    "version": "LIO-answer-rich.1",
+    "cards": [
+     {
+      "type": "currency",
+      "label": "汇率换算",
+      "open": {
+       "tool": "currency",
+       "parameters": {}
+      },
+      "data": {
+       "quote": "USD",
+       "cny_per_unit": "0.000000",
+       "as_of": "2026-11-26"
+      }
+     }
+    ]
+   }
+  },
+  {
    "name": "currency rate zero-padded",
    "answer": "a6",
    "rich": {

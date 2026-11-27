@@ -130,6 +130,8 @@ def _cards(rows):
             raise ValueError('parameters are longer than 600 bytes')
         if row['type'] == 'taxi' and not _in_china(parameters['lng'], parameters['lat']):
             raise ValueError('taxi destination is outside China')
+        if row['type'] == 'currency' and 'cny_per_unit' in row.get('data', {}) and float(row['data']['cny_per_unit']) <= 0:
+            raise ValueError('a currency rate is above 0')
         if row['type'] == 'transport':
             if parameters['from'] == parameters['to']:
                 raise ValueError('transport needs two different cities')

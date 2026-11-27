@@ -1,6 +1,6 @@
 # LIO-answer-rich.1 — tappable places, tool cards, a save receipt and memory slots in one answer (#1984, F-2)
 
-Additive to `LIO-timeline.2` (`LIO-CONVERSATIONS-V2.md`) and built on `LIO-answer-followups.1` (`LIO-ANSWER-FOLLOWUPS-V1.md`, unchanged). A poll that does not declare this version gets rows byte-for-byte as before. No request body, no send route and no other timeline version changes. Machine-readable shapes: `lio-answer-rich-schema.1.json`; examples (25 valid, 74 invalid) with the answers they point into: `lio-answer-rich-examples.1.json`; offline checker: `check_lio_answer_rich.py`.
+Additive to `LIO-timeline.2` (`LIO-CONVERSATIONS-V2.md`) and built on `LIO-answer-followups.1` (`LIO-ANSWER-FOLLOWUPS-V1.md`, unchanged). A poll that does not declare this version gets rows byte-for-byte as before. No request body, no send route and no other timeline version changes. Machine-readable shapes: `lio-answer-rich-schema.1.json`; examples (25 valid, 75 invalid) with the answers they point into: `lio-answer-rich-examples.1.json`; offline checker: `check_lio_answer_rich.py`.
 
 **Status of the pieces.** This file fixes the wire. Each field is produced by its own ticket behind its own switch (D-1 #1989 entities, D-2 #1990 cards, T-1 #1994 receipt, M-1 #1999 and M-3 #2001 memory). Until a build declares the version, nothing here is sent.
 
@@ -19,7 +19,7 @@ Additive to `LIO-timeline.2` (`LIO-CONVERSATIONS-V2.md`) and built on `LIO-answe
 |---|---|
 | not sent | none, byte-for-byte as today |
 | `LIO-answer-followups.1` | `layout`, `followups`; **never `rich`**; byte-for-byte as today |
-| `LIO-answer-rich.1` | `layout`, `followups` (same values as the line above) and `rich`; declaring rich implies followups.1 |
+| `LIO-answer-rich.1` | `layout`, `followups` (same values as the line above, except the `taxi` rule under `cards`) and `rich`; declaring rich implies followups.1 |
 
 `400` for: an empty value; `accepts` twice (even with the same value); any other value, compared byte for byte with no normalisation (`LIO-answer-rich.2`, `lio-answer-rich.1`, a trailing space, `LIO-answer-rich`, a comma list such as `LIO-answer-followups.1,LIO-answer-rich.1` also as `%2C`); `accepts` on `/v1/lio/timeline` or `/v3/lio/timeline`; `accepts` on any route that does not take it; a misspelt name (`accept=`). It is a read-side declaration only: it is not stored and does not change what the server writes or how it answers; the effects behind `rich` are written whatever App reads them later.
 
@@ -61,7 +61,7 @@ Additive to `LIO-timeline.2` (`LIO-CONVERSATIONS-V2.md`) and built on `LIO-answe
 
 On a row that carries a `taxi` card the `taxi` action of `followups.actions` is left out (and `followups` itself when that empties it): this is the only difference between a rich row and the followups.1 row. No business or medical card exists in this version.
 
-**Stored** as `lio_cards:{"cards":[…],"issued_at":<unix seconds>}`; every read re-runs each card's checks (tool in the table, parameters as stored after the shared check, label from the table, `data` rules) and drops the cards that fail. A currency rate older than 24 hours at read time is shown without `cny_per_unit` and `as_of`.
+**Stored** as `lio_cards:{"cards":[…],"issued_at":<unix seconds>}`; every read re-runs each card's checks (tool in the table, parameters as stored after the shared check, label from the table, `data` rules) and drops the cards that fail. A currency card whose `issued_at` is more than 24 hours old at read time is sent without `cny_per_unit` and `as_of` (the 4-day limit above is the age of the cached rate when the card is written; the 24 hours count from `issued_at`). `cny_per_unit` is above 0: `0` and `0.000000` are not rates.
 
 ### `trip_receipt` — what the automatic save did (ADR-0012)
 
@@ -78,8 +78,8 @@ On a row that carries a `taxi` card the `taxi` action of `followups.actions` is 
 
 - `undo.target` **is** the `UndoTarget` of `LIO-trip-history.4`, all seven fields, referenced from `lio-trip-history-schema.4.json#/$defs/UndoTarget`; `expected_version = committed_version`, `restore_version = committed_version − 1`. It is a snapshot, not an authorisation.
 - `undo.action_id` is made by the server: `"undo-" + first 40 hex of sha256(save action_id)`; two devices tapping undo send the same id, and a replay is safe.
-- **The App undoes with the existing `POST /v4/lio/trip-undos`** (`LIO-trip-undo.4`: `action_id`, `conversation_id`, `target`) and, when the answer is unknown, asks `GET /v4/lio/trip-undo-receipts` with the same three values, never a new id. After `committed: true` it re-reads the timeline and the receipt reads `undone`. It never starts a write itself.
-- `saved` is trusted only when the authoritative receipt table (`cj_trip_receipt`) has the row for `(scope, action_id)`; an effect that says `saved` without a row reads as `unknown`.
+- **The App undoes with the existing `POST /v4/lio/trip-undos`** (`LIO-trip-undo.4`: `version`, `action_id`, `conversation_id`, `target`) and, when the answer is unknown, asks `GET /v4/lio/trip-undo-receipts` with the same three values, never a new id. After `committed: true` it re-reads the timeline and the receipt reads `undone`. It never starts a write itself.
+- `saved` is trusted only when the authoritative receipt table (`cj_trip_receipt`) has the row for `(scope, action_id)`; an effect that says `saved` without a row reads as `unknown`, and an effect that still says `unknown` while the table has the row reads as `saved` (the second effect may not have been written).
 - With `CJ_LIO_TRIP_AUTOSAVE` off no receipt exists at all.
 
 **Stored** in this order, outside the trip lock: `lio_trip_receipt:{"action_id":…,"status":"unknown"}` (the intent) before the commit, then `{"status":"saved"|"not_saved",…}` once the result is known; the last one wins.
@@ -111,7 +111,7 @@ Every read re-validates every effect and drops what fails; nothing is trusted be
 
 ## Decisions taken (recommended by the draft; the coordinator confirms or changes them)
 
-1. **Undo route.** The receipt carries trip-history.4's target and the App uses the v4 undo; T-1 makes that route usable for v2 conversations and puts the 24-hour check in the shared layer. If that cannot be done, `undo.state` is `unavailable` and `CJ_LIO_TRIP_AUTOSAVE` must not be turned on.
+1. **Undo route.** The receipt carries trip-history.4's target and the App uses the v4 undo; T-1 makes that route usable for v2 conversations and puts the 24-hour check in the shared layer. If that cannot be done, `undo.state` is `unavailable` and `CJ_LIO_TRIP_AUTOSAVE` must not be turned on. It also goes on only for accounts whose App build declares rich, so that every save has an undo button.
 2. **Metro stations** are not sent in 58.1 (see the table); `route` waits for a transit tool (P2, TL-5).
 3. **The consent prompt is not "preparation"** in the sense of `LIO-MEMORY-CONSENT-V1.md` (code only, no model, no stored preference, only for `recorded: false`). If that is not accepted, `prompt` is removed and the App asks when the traveler first opens "My memory".
 4. **Currency reads the existing ECB cache**, no supplier call.
