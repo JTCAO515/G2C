@@ -39,6 +39,8 @@ class Repository:
         self.scoped_actions = None
         self.source_initializations = None
         self.rich_undo_sources = None
+        # ADR-0012 automatic save switch, injected by the host: None (default) = off, True = on.
+        self.autosave = None
 
     @contextmanager
     def transaction(self, before_commit=None):
@@ -254,16 +256,25 @@ class Repository:
         if status != 'pending' or p.expires_at <= now: raise Conflict('candidate not eligible')
         if self.confirm is None or self.confirm(self.scope, action, p) is not True:
             raise Denied('trusted review and confirmation unavailable')
-        cur.execute('SELECT version FROM cj_trip_record WHERE scope=%s AND trip_id=%s', (self.scope,p.trip_id))
+        cur.execute('SELECT version,content FROM cj_trip_record WHERE scope=%s AND trip_id=%s', (self.scope,p.trip_id))
         row = cur.fetchone()
+        if row is not None:
+            # ADR-0012 revision 1: a withdrawn Trip is read-only for every writer, checked here once.
+            from .autosave import refuse_withdrawn
+            refuse_withdrawn(self, cur, p.trip_id)
         if (row[0] if row else 0) != p.expected_version: raise Conflict('trip version conflict')
-        version = None
+        version = commit = None
         if action.kind == 'accept':
+            # Origin, tombstones and (switch on) the Lio write comparison: ADR-0012, before any write.
+            from .autosave import record_commit
+            commit = record_commit(self, cur, p, bytes(row[1]) if row else None)
             version = p.expected_version + 1
             cur.execute('INSERT INTO cj_trip_record VALUES (%s,%s,%s,%s) ON CONFLICT(scope,trip_id) DO UPDATE SET version=EXCLUDED.version,content=EXCLUDED.content', (self.scope,p.trip_id,version,p.content))
         receipt = Receipt(action.action_id,action.kind,p.proposal_id,digest,p.trip_id,version)
         cur.execute('UPDATE cj_trip_proposal SET status=%s WHERE scope=%s AND proposal_id=%s', ('accepted' if action.kind == 'accept' else 'rejected',self.scope,p.proposal_id))
         cur.execute('INSERT INTO cj_trip_receipt VALUES (%s,%s,%s,%s,%s,%s,%s,%s)', (self.scope,receipt.action_id,receipt.kind,receipt.proposal_id,receipt.candidate_hash,receipt.trip_id,receipt.committed_version,action.raw()))
+        if commit is not None:
+            commit.write(self, cur, receipt.action_id)
         return receipt, p
 
     def act_scoped(self,request):
@@ -390,6 +401,19 @@ class Repository:
         from .lio_history import edit_receipt
         return edit_receipt(self, binding)
 
+    def autosave_receipt(self, action_id):
+        from .autosave import autosave_receipt
+        with self.transaction() as cur:
+            return autosave_receipt(self, cur, identifier(action_id))
+
+    def withdraw_created(self, request):
+        from .withdrawal import withdraw
+        return withdraw(self, request)
+
+    def withdraw_receipt(self, request, needs_scope, needs_id):
+        from .withdrawal import receipt
+        return receipt(self, request, needs_scope, needs_id)
+
     def undo_lio(self, request):
         from .lio_history import undo
         return undo(self, request)
@@ -424,5 +448,10 @@ class Repository:
                     '(substring(content from 1 for %s)=%s AND substring(content from %s for %s)=%s))')
                 parameters+=(len(_RICH_UNDATED),_RICH_UNDATED,len(_RICH_DATED_BEGIN),_RICH_DATED_BEGIN,
                              len(_RICH_DATED_BEGIN)+len(_DATE_MARKER)+1,len(_RICH_DATED_END),_RICH_DATED_END)
+            # ADR-0012 revision 1: a withdrawn Trip is not listed (detail and history still read it).
+            cur.execute("SELECT to_regclass('public.cj_trip_withdrawal') IS NOT NULL")
+            if cur.fetchone()[0] is True:
+                representation+=(' AND NOT EXISTS(SELECT 1 FROM cj_trip_withdrawal w '
+                                 'WHERE w.scope=cj_trip_record.scope AND w.trip_id=cj_trip_record.trip_id)')
             cur.execute('SELECT trip_id,version,content FROM cj_trip_record WHERE scope=%s AND trip_id COLLATE "C">%s COLLATE "C"'+representation+' ORDER BY trip_id COLLATE "C" LIMIT %s', (*parameters,limit))
             return [Trip(r[0],r[1],self._content(bytes(r[2]))) for r in cur.fetchall()]

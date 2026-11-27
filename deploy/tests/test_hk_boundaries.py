@@ -194,6 +194,32 @@ def test_compressed_policy_enters_only_through_api_owned_secret_file(tmp_path):
         configuration.load_secret_environment('worker',root=tmp_path)
 
 
+def test_lio_switches_are_optional_keys_of_both_api_and_worker_secret_files(tmp_path):
+    """58.1 switches (coord/58.1-flags-on.md): each may be written to api.env or worker.env and enters the
+    process; absent stays the default; an unregistered CJ_LIO_ name is still refused; and none may also arrive
+    through the container environment."""
+    assert configuration.LIO_SWITCHES>={'CJ_LIO_ANSWER_LAYOUT','CJ_LIO_ANSWER_LAYOUT_SUBJECTS_JSON',
+        'CJ_LIO_PLAN_DEGRADED_SAVE','CJ_LIO_TRIP_AUTOSAVE','CJ_LIO_ANSWER_RICH','CJ_LIO_MEMORY_CONSENT_REQUIRED'}
+    for role in ('api','worker'):
+        base=''.join(name+'=fixture-only\n'for name in sorted(configuration.SECRET_FILES[role][role]))
+        path=tmp_path/(role+'.env')
+        path.write_text(base+''.join(name+'=fixture-switch\n'for name in sorted(configuration.LIO_SWITCHES)));path.chmod(0o600)
+        with patch.dict(os.environ,{},clear=True):
+            configuration.load_secret_environment(role,root=tmp_path)
+            assert all(os.environ[name]=='fixture-switch' for name in configuration.LIO_SWITCHES)
+        path.write_text(base);path.chmod(0o600)
+        with patch.dict(os.environ,{},clear=True):
+            configuration.load_secret_environment(role,root=tmp_path)
+            assert not any(name in os.environ for name in configuration.LIO_SWITCHES)
+        path.write_text(base+'CJ_LIO_NOT_REGISTERED=on\n');path.chmod(0o600)
+        with patch.dict(os.environ,{},clear=True),pytest.raises(ValueError,match='explicit_secret_environment_fields'):
+            configuration.load_secret_environment(role,root=tmp_path)
+        path.write_text(base);path.chmod(0o600)
+        with patch.dict(os.environ,{'CJ_LIO_ANSWER_LAYOUT':'one-screen'},clear=True),\
+                pytest.raises(ValueError,match='persistent_container_secret_environment_refused'):
+            configuration.load_secret_environment(role,root=tmp_path)
+
+
 @pytest.mark.parametrize('count',[205,206,256])
 def test_full_profile_policy_fits_secret_bound_without_changing_permissions(tmp_path,count):
     from cj_memory.typed_local import TypedConfiguration

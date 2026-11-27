@@ -22,7 +22,7 @@ def connect():
 @pytest.fixture(autouse=True)
 def empty():
     with connect() as c:
-        c.execute('TRUNCATE cj_trip_receipt,cj_trip_record,cj_trip_proposal,cj_trip_scope')
+        c.execute('TRUNCATE cj_trip_withdrawal,cj_trip_commit_time,cj_trip_item_tombstone,cj_trip_item_origin,cj_trip_receipt,cj_trip_record,cj_trip_proposal,cj_trip_scope')
         c.execute("INSERT INTO cj_trip_scope VALUES ('A'),('B')")
 
 

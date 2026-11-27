@@ -75,7 +75,7 @@ class MemoryAuthorityAccountHook(_AccountHook):
 class TripAuthorityAccountHook(_AccountHook):
     target='business/trip-authoritative'
     scope_table='cj_trip_scope'
-    content_tables=('cj_trip_scoped_action','cj_trip_scoped_result','cj_trip_scoped_basis',
+    content_tables=('cj_trip_withdrawal','cj_trip_commit_time','cj_trip_item_tombstone','cj_trip_item_origin','cj_trip_scoped_action','cj_trip_scoped_result','cj_trip_scoped_basis',
         'cj_trip_needs_edit','cj_trip_needs_plan_context','cj_trip_needs_current','cj_trip_needs_action',
         'cj_trip_needs_basis','cj_trip_manual_intent','cj_trip_manual_basis',
         'cj_trip_receipt','cj_trip_record','cj_trip_proposal','cj_trip_scope')

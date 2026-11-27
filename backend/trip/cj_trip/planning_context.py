@@ -30,6 +30,10 @@ def current_in_tx(cur,repository,needs_scope,needs_id):
         'WHERE c.scope=%s AND c.needs_scope=%s AND c.needs_id=%s',(repository.scope,needs_scope,needs_id))
     row=cur.fetchone()
     if row is None:return None
+    # ADR-0012 revision 1: a withdrawn Trip is no longer this conversation's Trip; the next Lio
+    # plan creates a new one (and rebinds cj_trip_needs_current), as if none were selected.
+    from .autosave import withdrawn
+    if withdrawn(repository,cur,row[0]):return None
     if row[1]!=row[2]:raise Denied('current selected Trip version mismatch')
     trip=Trip(row[0],row[2],repository._content(bytes(row[3])))
     from .needs_lineage import current_origin

@@ -195,6 +195,178 @@ def exercise(root,conninfo):
             value=api.get('/v3/lio/trip'if calendar else'/v2/lio/trip',params={'conversation_id':cid},headers=headers)
             assert value.status_code==200,value.text
             return value.json()
+        from cj_api.lio_trip_autosave import undo_sources
+        from cj_api.lio_trip_receipt import read as read_receipt
+        from cj_message.lio_trip_receipt import EFFECT as RECEIPT_EFFECT,effect as receipt_effect
+        from cj_memory.epoch_projection import CurrentScopeEpochReader
+        from cj_agent.draft import trip_scope_for
+        sys.path.insert(0,str(ROOT/'contracts/message'))
+        import check_lio_answer_rich as rich_check
+        def run_effects(mid):
+            with psycopg.connect(**conninfo) as connection:
+                run_id,=connection.execute('SELECT run_id FROM cj_message_receipt WHERE scope=%s AND message_id=%s',(scope,mid)).fetchone()
+                values=[value for value, in connection.execute("SELECT value FROM cj_run_event WHERE scope=%s AND run_id=%s "
+                    "AND kind='effect_committed' ORDER BY sequence",(scope,run_id)).fetchall()]
+            return run_id,values
+        def autosave_undo(api,headers,cid,original,edit_text,autosave_env):
+            """#1994 acceptance: an autosave receipt of a POST /v2/lio/messages conversation is undone and looked up
+            through POST /v4/lio/trip-undos and GET /v4/lio/trip-undo-receipts, with the 24 hour window."""
+            mid='legacy-en-edit-autosave'
+            with patch.dict(os.environ,autosave_env):
+                send(mid,edit_text,cid,calendar=False)
+            def version(trip_id):
+                with psycopg.connect(**conninfo) as connection:
+                    return connection.execute('SELECT version FROM cj_trip_record WHERE scope=%s AND trip_id=%s',
+                                              (trip_scope_for(scope),trip_id)).fetchone()[0]
+            edited=read(cid,calendar=False)['current']
+            assert edited!=original['current'] and version(edited['trip_id'])==2,edited
+            run_id,effects=run_effects(mid);action='lio-edit-'+run_id
+            assert [e for e in effects if e.startswith(RECEIPT_EFFECT)]==[receipt_effect(action,'unknown'),receipt_effect(action,'saved')]
+            def receipt():
+                value=read_receipt(database,scope,run_id,run_effects(mid)[1],undo_route=True).wire
+                rich_check.check(dict(version='LIO-answer-rich.1',trip_receipt=value))
+                return value
+            saved=receipt();undo=saved['undo']
+            assert (saved['status'],saved['committed_version'],undo['state'])==('saved',2,'available'),saved
+            assert undo['target']['content_version']=='structured.2'
+            body=json.dumps(dict(version='LIO-trip-undo.4',action_id=undo['action_id'],conversation_id=cid,target=undo['target'])).encode()
+            params=dict(action_id=undo['action_id'],conversation_id=cid,target=json.dumps(undo['target']))
+            # Before: the composition Hong Kong runs today has no rich undo holder, so no v4 undo route at all.
+            assert api.post('/v4/lio/trip-undos',headers=headers,content=body).status_code==404
+            assert api.get('/v4/lio/trip-undo-receipts',headers=headers,params=params).status_code==404
+            assert undo_sources(database,memory.collection) is None
+            with patch.dict(os.environ,autosave_env):
+                sources=undo_sources(database,memory.collection)
+            undo_app=create_local_app(conninfo_path=None,auth_dir=auth,database=database,run_context=context,account_admission=True,
+                confirmation_signer=signer,demo_dialogue_subjects=subjects,lio_dialogue_subjects=subjects,lio_calendar_subjects=subjects,
+                lio_exploration_subjects=subjects,lio_profile_epoch_reader=CurrentScopeEpochReader.for_api(database,memory.collection),
+                lio_rich_undo_sources=sources)
+            def backdate(hours):
+                with psycopg.connect(**conninfo) as connection:
+                    connection.execute('SET session_replication_role=replica')  # test-only forgery of the commit time
+                    connection.execute('UPDATE cj_trip_commit_time SET committed_at=clock_timestamp()-make_interval(hours=>%s) '
+                                       'WHERE scope=%s AND action_id=%s',(hours,trip_scope_for(scope),action))
+            with TestClient(undo_app) as undo_api:
+                backdate(25)
+                assert receipt()['undo']=={'state':'expired','until':receipt()['undo']['until']}
+                late=undo_api.post('/v4/lio/trip-undos',headers=headers,content=body)
+                assert late.status_code==403,late.text
+                assert undo_api.get('/v4/lio/trip-undo-receipts',headers=headers,params=params).json()['committed'] is False
+                assert read(cid,calendar=False)['current']==edited
+                backdate(1)
+                count=len(wire)
+                done=undo_api.post('/v4/lio/trip-undos',headers=headers,content=body)
+                assert done.status_code==200 and done.json()=={'version':'LIO-trip-undo-receipt.4','conversation_id':cid,
+                    'action_id':undo['action_id'],'committed':True},done.text
+                again=undo_api.post('/v4/lio/trip-undos',headers=headers,content=body)
+                assert again.status_code==200 and again.json()==done.json()
+                looked=undo_api.get('/v4/lio/trip-undo-receipts',headers=headers,params=params)
+                assert looked.status_code==200 and looked.json()==done.json()
+                assert len(wire)==count
+            restored=read(cid,calendar=False)['current']
+            assert restored==original['current'] and version(restored['trip_id'])==3,restored
+            assert receipt()['undo']['state']=='undone'
+            print('PASS #1994 LIO-message.2 autosave: intent+saved receipt, v4 undo 404 before; with the switch the v4 route '
+                  'refuses after 24 h, undoes once (replay and receipt lookup equal), zero model calls; receipt reads undone',flush=True)
+        def undo_application(autosave_env):
+            with patch.dict(os.environ,autosave_env):
+                sources=undo_sources(database,memory.collection)
+            return create_local_app(conninfo_path=None,auth_dir=auth,database=database,run_context=context,account_admission=True,
+                confirmation_signer=signer,demo_dialogue_subjects=subjects,lio_dialogue_subjects=subjects,lio_calendar_subjects=subjects,
+                lio_exploration_subjects=subjects,lio_profile_epoch_reader=CurrentScopeEpochReader.for_api(database,memory.collection),
+                lio_rich_undo_sources=sources)
+        def autosave_withdraw(api,headers,legacy_text,autosave_env):
+            """#1994 part 3 (ADR-0012 revision 1): the autosave that created a Trip is undone with LIO-trip-undo.5,
+            which withdraws it; the Trip leaves the conversation and the next Lio plan there creates a new Trip."""
+            mid='legacy-en-withdraw-base'
+            with patch.dict(os.environ,autosave_env):
+                wcid,_=send(mid,legacy_text,calendar=False)
+            created=read(wcid,calendar=False)['current'];trip_id=created['trip_id']
+            run_id,_=run_effects(mid)
+            def receipt():
+                value=read_receipt(database,scope,run_id,run_effects(mid)[1],undo_route=True).wire
+                rich_check.check(dict(version='LIO-answer-rich.1',trip_receipt=value))
+                return value
+            saved=receipt();undo=saved['undo']
+            assert (saved['committed_version'],undo['state'],undo['kind'],'first_autosave' in saved)==(1,'available','withdraw_created',False),saved
+            body=json.dumps(dict(version='LIO-trip-undo.5',action_id=undo['action_id'],conversation_id=wcid,target=undo['target'])).encode()
+            params=dict(version='LIO-trip-undo.5',action_id=undo['action_id'],conversation_id=wcid,target=json.dumps(undo['target']))
+            def record():
+                with psycopg.connect(**conninfo) as connection:
+                    head=connection.execute('SELECT version,content FROM cj_trip_record WHERE scope=%s AND trip_id=%s',
+                                            (trip_scope_for(scope),trip_id)).fetchone()
+                    mark=connection.execute('SELECT withdrawn_version,undo_action_id FROM cj_trip_withdrawal WHERE scope=%s AND trip_id=%s',
+                                            (trip_scope_for(scope),trip_id)).fetchone()
+                return head[0],bytes(head[1]),mark
+            version,first_bytes,mark=record();assert (version,mark)==(1,None)
+            outside=dict(autosave_env,CJ_LIO_ANSWER_LAYOUT_SUBJECTS_JSON=json.dumps(['m4-synthetic-demo-ffffffffffff']))
+            with TestClient(undo_application(autosave_env)) as undo_api:
+                with patch.dict(os.environ,outside):   # #2051 P2-1: switch on, account off the list
+                    assert undo_api.post('/v4/lio/trip-undos',headers=headers,content=body).status_code==403
+                    assert undo_api.get('/v4/lio/trip-undo-receipts',headers=headers,params=params).status_code==403
+                restore_query={k:v for k,v in params.items() if k!='version'}
+                assert undo_api.get('/v4/lio/trip-undo-receipts',headers=headers,params=restore_query).status_code==400
+                assert undo_api.get('/v4/lio/trip-undo-receipts',headers=headers,
+                                    params=dict(params,version='LIO-trip-undo.4')).status_code==400
+                as_restore=json.dumps(dict(version='LIO-trip-undo.4',action_id=undo['action_id'],conversation_id=wcid,target=undo['target'])).encode()
+                assert undo_api.post('/v4/lio/trip-undos',headers=headers,content=as_restore).status_code==400
+                with patch.dict(os.environ,autosave_env):
+                    assert undo_api.get('/v4/lio/trip-undo-receipts',headers=headers,params=params).json()['committed'] is False
+                    count=len(wire)
+                    done=undo_api.post('/v4/lio/trip-undos',headers=headers,content=body)
+                    assert done.status_code==200 and done.json()=={'version':'LIO-trip-undo-receipt.4','conversation_id':wcid,
+                        'action_id':undo['action_id'],'committed':True},done.text
+                    again=undo_api.post('/v4/lio/trip-undos',headers=headers,content=body)
+                    assert again.status_code==200 and again.json()==done.json()
+                    looked=undo_api.get('/v4/lio/trip-undo-receipts',headers=headers,params=params)
+                    assert looked.status_code==200 and looked.json()==done.json()
+                    assert len(wire)==count
+            version,second_bytes,mark=record()
+            assert (version,second_bytes,mark)==(2,first_bytes,(2,undo['action_id']))
+            assert read(wcid,calendar=False)['current'] is None
+            assert receipt()['undo']=={'state':'undone','until':undo['until']}
+            with psycopg.connect(**conninfo) as connection:
+                origins=connection.execute('SELECT trip_version,count(*) FILTER (WHERE origin=%s),count(*) FROM cj_trip_item_origin '
+                    'WHERE scope=%s AND trip_id=%s GROUP BY trip_version ORDER BY trip_version',('lio',trip_scope_for(scope),trip_id)).fetchall()
+            assert len(origins)==2 and origins[0][1:]==origins[1][1:] and origins[0][1]==origins[0][2],origins
+            print('PASS #1994 part 3 withdraw_created: LIO-trip-undo.5 refused off the list (403), .4 shapes 400; withdraws once '
+                  '(version 2 = version 1 bytes, mark, origins kept), replay and receipt lookup equal, zero model calls; '
+                  'conversation shows no Trip; receipt reads undone',flush=True)
+            # The next Lio plan in the same conversation creates a new Trip; the withdrawn one stays read-only.
+            again_mid='legacy-en-withdraw-again'
+            with patch.dict(os.environ,autosave_env):
+                send(again_mid,legacy_text,wcid,calendar=False)
+            fresh=read(wcid,calendar=False)['current']
+            assert fresh is not None and fresh['trip_id']!=trip_id,fresh
+            assert record()[0]==2
+            again_run,_=run_effects(again_mid)
+            again_receipt=read_receipt(database,scope,again_run,run_effects(again_mid)[1],undo_route=True).wire
+            assert (again_receipt['trip_id'],again_receipt['committed_version'],again_receipt['undo']['kind'])==(fresh['trip_id'],1,'withdraw_created')
+            print('PASS #1994 part 3: after the withdrawal the next Lio plan in the conversation creates a new Trip '
+                  '(the withdrawn Trip stays at version 2)',flush=True)
+        def calendar_undo_v4(api,headers,cid,autosave_env):
+            """#2051 P2-2: a structured.3 Trip of a LIO-message.3 calendar conversation is undone through the v4 route
+            (LIO-trip-undo.4 -> the existing calendar undo). structured.1 is refused by every undo entry and its receipt
+            reads unavailable (unit test); structured.2 is the legacy conversation above."""
+            head=read(cid)['current'];trip_id,version=head['trip_id'],head['trip_version']
+            def content(v):
+                with psycopg.connect(**conninfo) as connection:
+                    return bytes(connection.execute('SELECT p.content FROM cj_trip_receipt r JOIN cj_trip_proposal p USING(scope,proposal_id) '
+                        "WHERE r.scope=%s AND r.trip_id=%s AND r.committed_version=%s AND r.kind='accept'",
+                        (trip_scope_for(scope),trip_id,v)).fetchone()[0])
+            current,previous=content(version),content(version-1)
+            assert json.loads(current)['content_version']==json.loads(previous)['content_version']=='structured.3'
+            target=dict(trip_id=trip_id,expected_version=version,original_hash=sha256(current).hexdigest(),content_version='structured.3',
+                        restore_version=version-1,restore_hash=sha256(previous).hexdigest(),restore_content_version='structured.3')
+            body=json.dumps(dict(version='LIO-trip-undo.4',action_id='calendar-v4-undo',conversation_id=cid,target=target)).encode()
+            with TestClient(undo_application(autosave_env)) as undo_api,patch.dict(os.environ,autosave_env):
+                count=len(wire)
+                done=undo_api.post('/v4/lio/trip-undos',headers=headers,content=body)
+                assert done.status_code==200 and done.json()['committed'] is True,done.text
+                assert len(wire)==count
+            after=read(cid)['current']
+            assert after['trip_version']==version+1 and content(version+1)==previous,after
+            print('PASS #2051 P2-2 structured.3 calendar Trip undone through POST /v4/lio/trip-undos (LIO-trip-undo.4)',flush=True)
         for language in ('zh','en'):
             locale=language
             def send(mid,text,cid=None,*,expected_status='completed',calendar=True):
@@ -296,16 +468,37 @@ def exercise(root,conninfo):
             fixture_start='2026-12-01'
             legacy_text=('规划成都三天，节奏轻松，2026-12-01出发'if locale=='zh'else
                          'Plan three days in Chengdu at a relaxed pace, starting 2026-12-01.')
-            legacy_cid,_=send('legacy-'+locale+'-rejected-base',legacy_text,calendar=False)
+            # #1994: the English legacy (LIO-message.2) conversation runs with CJ_LIO_TRIP_AUTOSAVE on.
+            autosave_env=dict(CJ_LIO_TRIP_AUTOSAVE='on',CJ_LIO_ANSWER_LAYOUT='one-screen',
+                              CJ_LIO_ANSWER_LAYOUT_SUBJECTS_JSON=json.dumps([SUBJECT]))if locale=='en'else{}
+            with patch.dict(os.environ,autosave_env):
+                legacy_cid,_=send('legacy-'+locale+'-rejected-base',legacy_text,calendar=False)
             original_trip=read(legacy_cid,calendar=False)
             assert original_trip['current'] is not None
             edit_text=('把第二天下午「人民公园」（14:00-15:00）换成「成都博物馆」'if locale=='zh'else
                 'Replace "People Park（人民公园）" on the afternoon of day 2 (14:00-15:00) with "Chengdu Museum".')
             edit_mid='legacy-'+locale+'-edit-rejected'
             with patch.object(LioSourceWindowPublisher,'publish_edit_for_message',
-                              side_effect=DraftRejected('fixture rejects original proposal'))as publisher:
+                              side_effect=DraftRejected('fixture rejects original proposal'))as publisher, \
+                    patch.dict(os.environ,autosave_env):
                 send(edit_mid,edit_text,legacy_cid,calendar=False)
             assert publisher.call_count==1
+            if autosave_env:
+                for mid,kind,outcome in (('legacy-en-rejected-base','plan','saved'),(edit_mid,'edit','not_saved')):
+                    run_id,effects=run_effects(mid)
+                    action='lio-'+kind+'-'+run_id
+                    assert [e for e in effects if e.startswith(RECEIPT_EFFECT)]==[
+                        receipt_effect(action,'unknown'),receipt_effect(action,outcome)],effects
+                    observed=read_receipt(database,scope,run_id,effects,undo_route=True)
+                    if outcome=='saved':
+                        # The save that created the Trip is undone by withdrawing it (LIO-trip-undo.5); it is also
+                        # this account's first automatic save.
+                        rich_check.check(dict(version='LIO-answer-rich.1',trip_receipt=observed.wire))
+                        assert (observed.wire['committed_version'],observed.wire['undo']['state'],observed.wire['undo']['kind'],
+                                observed.wire.get('first_autosave'))==(1,'available','withdraw_created',True),observed.wire
+                    else:
+                        # A refused edit reads not_saved.
+                        assert observed.wire==dict(status='not_saved',action_id=action)
             response=api.get('/v2/lio/timeline',params={'conversation_id':legacy_cid},headers=headers)
             assert response.status_code==200,response.status_code
             rejected=response.json()['messages'][-1]
@@ -317,6 +510,10 @@ def exercise(root,conninfo):
                     "WHERE m.scope=%s AND m.message_id=%s AND e.kind='draft_outcome'",(scope,edit_mid)).fetchall()==[('validation_failed',)]
             assert read(legacy_cid,calendar=False)==original_trip
             print('PASS native2 '+locale+' rejected edit keeps the original Trip and displays its next step',flush=True)
+            if autosave_env:
+                autosave_undo(api,headers,legacy_cid,original_trip,edit_text,autosave_env)
+                autosave_withdraw(api,headers,legacy_text,autosave_env)
+                calendar_undo_v4(api,headers,cid,autosave_env)
             fixture_days=3;fixture_pace=None;fixture_start=None
         # The native v3 host must keep C's original confirmation verifier;
         # having reached an authenticated model draft cannot grant a save.
