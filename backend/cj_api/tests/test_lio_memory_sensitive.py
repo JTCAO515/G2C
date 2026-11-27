@@ -71,6 +71,22 @@ class Sensitive(unittest.TestCase):
             with self.subTest(text=text):
                 self.assertTrue(sensitive(text))
 
+    def test_the_older_slots_take_only_their_own_statements(self):
+        # #2038 (decided 2026-11-28, privacy first): diet.spicy and quiet.entrance need a supported statement of the slot too.
+        # Body-condition talk that is not on the sensitive list must still not be written into them.
+        def writes(slot, text):
+            return allows_pilot_preference_write(SimpleNamespace(slot=slot, kind='preference', text=text))
+        for slot, text in (('diet.spicy', '我不吃辣'), ('diet.spicy', 'I like mild food'), ('diet.spicy', '请记住，我不吃辣。'),
+                           ('quiet.entrance', 'I prefer using quieter entrances at attractions.'), ('quiet.entrance', '走安静的入口进景点')):
+            with self.subTest(slot=slot, text=text):
+                self.assertTrue(writes(slot, text))
+        for slot, text in (('diet.spicy', 'my stomach hurts a lot'), ('diet.spicy', '我最近肚子不舒服'), ('diet.spicy', 'I sleep badly'),
+                           ('quiet.entrance', 'my knees feel weak lately'), ('quiet.entrance', '我睡不好觉'),
+                           ('quiet.entrance', 'Use a different quiet entrance.'), ('diet.spicy', '我不吃辣，因为我有胃病'),
+                           ('travel.pace', 'my stomach hurts a lot')):
+            with self.subTest(slot=slot, text=text):
+                self.assertFalse(writes(slot, text))
+
     def test_non_text_is_treated_as_sensitive(self):
         for value in (None, 7, b'x', ['a']):
             self.assertTrue(sensitive(value))

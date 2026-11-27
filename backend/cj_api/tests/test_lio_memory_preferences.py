@@ -163,7 +163,11 @@ class LioMemoryPreferenceTest(unittest.TestCase):
         with self.assertRaises(Unavailable):
             pilot.policy('demo').evaluate(sensitive, b'')
         self.assertTrue(pilot.policy('demo').evaluate(command('travel.pace', 'I prefer a slow pace.'), b''))
-        self.assertTrue(pilot.policy('demo').evaluate(command('quiet.entrance', 'Use a different quiet entrance.'), b''))
+        # #2038 (decided 2026-11-28): the two older slots take a write only when the text is a supported statement of that
+        # slot, like the new ones. "Use a different quiet entrance." names the slot but is not one of its forms: not written.
+        self.assertTrue(pilot.policy('demo').evaluate(command('quiet.entrance', 'I prefer using quieter entrances at attractions.'), b''))
+        with self.assertRaises(Unavailable):
+            pilot.policy('demo').evaluate(command('quiet.entrance', 'Use a different quiet entrance.'), b'')
         self.assertIs(pilot.collection.profiles['other'], profile)
 
     def test_exact_pilot_preferences_use_the_original_quote(self):

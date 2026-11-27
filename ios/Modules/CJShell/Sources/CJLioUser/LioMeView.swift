@@ -21,6 +21,9 @@ struct LioMeView<Menu: View>: View {
     let memory: AnyView?
     let menu: Menu
     @State private var showingMemory = false
+    /// #2010: the memory item a trip canvas's label asked for; the memory page shows it when it is still saved.
+    @State private var memoryItem: String?
+    @Environment(LioRouter.self) private var router: LioRouter?
     @Environment(\.lioLocationConsent) private var locationConsent
     @Environment(\.lioConsent) private var consent
 
@@ -113,7 +116,13 @@ struct LioMeView<Menu: View>: View {
             .toolbarBackground(LioTheme.paper, for: .navigationBar)
         }
         .tint(LioTheme.vermilion)
-        .sheet(isPresented: $showingMemory) { memorySheet }
+        .sheet(isPresented: $showingMemory, onDismiss: { memoryItem = nil }) { memorySheet }
+        .onChange(of: router?.memoryRequest, initial: true) { _, request in
+            guard let request, let router else { return }
+            memoryItem = request.itemID
+            showingMemory = true
+            router.memoryRequest = nil
+        }
     }
 
     /// The memory page keeps its own NavigationStack and puts Done in its own navigation bar (via
@@ -121,6 +130,7 @@ struct LioMeView<Menu: View>: View {
     @ViewBuilder private var memorySheet: some View {
         if let memory {
             memory.environment(\.lioCloseMemory) { showingMemory = false }
+                .environment(\.lioOpenMemoryItem, memoryItem)
         } else {
             NavigationStack {
                 unavailable
