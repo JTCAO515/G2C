@@ -386,6 +386,51 @@ import Testing
         #expect(try store.load().map(\.tripID) == ["trip-1"])
     }
 
+    @Test func aDamagedFileIsCopiedBeforeASaveReplacesItAndAGoodOneIsNot() throws {
+        let directory = folder()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let store = LioTripCanvasStore(directory: directory, isCurrent: { true })
+        let file = directory.appendingPathComponent(LioTripCanvasStore.fileName)
+        func names() throws -> [String] { try FileManager.default.contentsOfDirectory(atPath: directory.path).sorted() }
+        try store.save(canvas())
+        try store.save(canvas(Self.plan(id: "trip-2")))
+        #expect(try names() == [LioTripCanvasStore.fileName])                          // a good file leaves no copy
+        let good = try Data(contentsOf: file)
+        // One canvas that does not decode, beside two good ones: saving a third keeps the original bytes aside.
+        var text = try #require(String(data: good, encoding: .utf8))
+        text = text.replacingOccurrences(of: "\"canvases\":[", with: "\"canvases\":[{\"tripID\":7},")
+        let oneBad = Data(text.utf8)
+        try oneBad.write(to: file)
+        try store.save(canvas(Self.plan(id: "trip-3")))
+        #expect(try names() == ["trip-canvas.damaged-1.json", LioTripCanvasStore.fileName])
+        #expect(try Data(contentsOf: directory.appendingPathComponent("trip-canvas.damaged-1.json")) == oneBad)
+        #expect(try store.load().map(\.tripID) == ["trip-3", "trip-2", "trip-1"])        // the file itself is whole again
+        try store.save(canvas(Self.plan(id: "trip-4")))
+        #expect(try names().count == 2)                                                  // and now saves leave nothing more
+        // An unreadable file: kept too, and a remove of a canvas that is not there neither writes nor copies.
+        try Data("not json".utf8).write(to: file)
+        try store.remove("nothing-here")
+        #expect(try names().count == 2)
+        try store.save(canvas())
+        #expect(try Data(contentsOf: directory.appendingPathComponent("trip-canvas.damaged-2.json")) == Data("not json".utf8))
+        #expect(try store.load().map(\.tripID) == ["trip-1"])
+    }
+
+    @Test func onlyTheNewestFewDamagedCopiesAreKept() throws {
+        let directory = folder()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let store = LioTripCanvasStore(directory: directory, isCurrent: { true })
+        let file = directory.appendingPathComponent(LioTripCanvasStore.fileName)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        for round in 1...5 {
+            try Data("bad \(round)".utf8).write(to: file)
+            try store.save(canvas())
+        }
+        let copies = try FileManager.default.contentsOfDirectory(atPath: directory.path).filter { $0.hasPrefix("trip-canvas.damaged-") }.sorted()
+        #expect(copies == ["trip-canvas.damaged-3.json", "trip-canvas.damaged-4.json", "trip-canvas.damaged-5.json"])
+        #expect(try Data(contentsOf: directory.appendingPathComponent("trip-canvas.damaged-5.json")) == Data("bad 5".utf8))
+    }
+
     @Test func aNewerAppsFileIsNeverWrittenOver() throws {
         let directory = folder()
         defer { try? FileManager.default.removeItem(at: directory) }

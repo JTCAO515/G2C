@@ -50,31 +50,60 @@ enum LioTripCanvasFeature {
 
     /// A missing or damaged file reads as no canvases (the traveller starts again from the saved plan); a file this
     /// build cannot read (a newer app's, or one the phone cannot open now) throws, so nothing is written over it.
-    func load() throws -> [LioTripCanvas] {
+    func load() throws -> [LioTripCanvas] { try read().canvases }
+
+    /// What the file holds, and whether it held anything this build could not use (an unreadable file, a canvas that
+    /// does not decode or is not valid). Saving over such a file first keeps a copy of it (`keepDamagedCopy`).
+    private func read() throws -> (canvases: [LioTripCanvas], damaged: Bool) {
         guard isCurrent() else { throw CancellationError() }
         let data: Data
         do {
             data = try Data(contentsOf: file)
         } catch let error as CocoaError where error.code == .fileReadNoSuchFile {
-            return []
+            return ([], false)
         }
         let decoder = JSONDecoder()
-        guard let header = try? decoder.decode(Header.self, from: data) else { return [] }
+        guard let header = try? decoder.decode(Header.self, from: data) else { return ([], true) }
         guard header.version == Self.currentVersion else { throw UnsupportedVersion(version: header.version) }
-        guard let archive = try? decoder.decode(ArchiveRead.self, from: data) else { return [] }
-        return archive.canvases.compactMap(\.value).filter(\.isValid)
+        guard let archive = try? decoder.decode(ArchiveRead.self, from: data) else { return ([], true) }
+        let decoded = archive.canvases.compactMap(\.value)
+        let usable = decoded.filter(\.isValid)
+        return (usable, usable.count != archive.canvases.count)
+    }
+
+    /// The most damaged-file copies kept beside the file; the oldest go first.
+    static let maximumDamagedCopies = 3
+
+    /// Before a damaged file is replaced by a save, its bytes are copied to `trip-canvas.damaged-<n>.json` in the
+    /// same protected folder (removed with it by account cleanup), so one bad canvas or one bad write never costs the
+    /// traveller the rest of the file for good. Nothing is kept for a file that was fine.
+    private func keepDamagedCopy() throws {
+        let manager = FileManager.default
+        let prefix = "trip-canvas.damaged-", suffix = ".json"
+        let existing = ((try? manager.contentsOfDirectory(atPath: directory.path)) ?? []).compactMap { name -> Int? in
+            guard name.hasPrefix(prefix), name.hasSuffix(suffix) else { return nil }
+            return Int(name.dropFirst(prefix.count).dropLast(suffix.count))
+        }.sorted()
+        let next = (existing.last ?? 0) + 1
+        let copy = directory.appendingPathComponent("\(prefix)\(next)\(suffix)")
+        try manager.copyItem(at: file, to: copy)
+        for old in existing.dropLast(Self.maximumDamagedCopies - 1) {
+            try? manager.removeItem(at: directory.appendingPathComponent("\(prefix)\(old)\(suffix)"))
+        }
     }
 
     func canvas(for tripID: String) throws -> LioTripCanvas? { try load().first { $0.tripID == tripID } }
 
     func save(_ canvas: LioTripCanvas) throws {
-        let others = try load().filter { $0.tripID != canvas.tripID }
-        try write(Array(([canvas] + others).prefix(Self.maximumCount)))
+        let (all, damaged) = try read()
+        if damaged { try keepDamagedCopy() }
+        try write(Array(([canvas] + all.filter { $0.tripID != canvas.tripID }).prefix(Self.maximumCount)))
     }
 
     func remove(_ tripID: String) throws {
-        let all = try load()
+        let (all, damaged) = try read()
         guard all.contains(where: { $0.tripID == tripID }) else { return }
+        if damaged { try keepDamagedCopy() }
         try write(all.filter { $0.tripID != tripID })
     }
 
