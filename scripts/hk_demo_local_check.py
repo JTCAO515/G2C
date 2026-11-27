@@ -264,12 +264,25 @@ def chained(target):
     return target in (53,54,55) or target>=59
 
 
+AUTOSAVE_DOWN_REFUSED=[]
+
+
 def clear_autosave_audit(db):
-    """Inside a rolled-back check transaction only: 0061 down refuses while Trip origin/commit rows exist
-    (checked by trip_autosave and the single-step rollback check). Clearing them here lets the older
-    down scripts below it reach their own original-data refusal, which is what these checks assert."""
+    """Inside a rolled-back check transaction only: 0061 down refuses while Trip origin/commit rows exist.
+    When such rows are present this first proves that refusal on the real migration (coordinator
+    2026-11-27: clearing must not hide the new protection), then clears them so the older down scripts
+    below it reach their own original-data refusal, which is what these checks assert."""
     if db.execute("SELECT to_regclass('public.cj_trip_commit_time')").fetchone()[0] is not None:
-        for table in ('cj_trip_commit_time','cj_trip_item_tombstone','cj_trip_item_origin'):
+        tables=('cj_trip_commit_time','cj_trip_item_tombstone','cj_trip_item_origin')
+        if any(db.execute(f'SELECT count(*) FROM public.{table}').fetchone()[0] for table in tables):
+            try:
+                with db.transaction():migrate.down(db,migrate.load(),60)
+            except psycopg.errors.RaiseException as exc:
+                assert 'trip_autosave down refused: retained private data' in str(exc)
+            else:raise AssertionError('0061 down dropped retained Trip origin or commit records')
+            assert migrate.applied(db)[-1]>=61
+            AUTOSAVE_DOWN_REFUSED.append(True)
+        for table in tables:
             db.execute(f'DELETE FROM public.{table}')
 
 
@@ -2386,3 +2399,6 @@ if __name__=='__main__':
                             migrate.up(connection,chain,version)
                         verify_upgrade(root/f'upgrade-{version}',previous,version)
             exercise(root,conninfo)
+            if migrations[-1]['version']>=61:
+                assert AUTOSAVE_DOWN_REFUSED,'no rehearsal held Trip autosave rows when proving the 0061 down refusal'
+                print('PASS 0061 down refused while Trip origin or commit records exist')

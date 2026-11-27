@@ -14,7 +14,7 @@ CREATE TABLE public.cj_trip_item_tombstone (
  scope text NOT NULL,
  trip_id text NOT NULL,
  item_id text NOT NULL CHECK(item_id ~ '^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$'),
- amap_id text CHECK(amap_id IS NULL OR (octet_length(amap_id) BETWEEN 1 AND 128 AND amap_id !~ '[[:cntrl:]]')),
+ amap_id text CHECK(amap_id IS NULL OR (octet_length(amap_id) BETWEEN 1 AND 200 AND amap_id !~ '[[:cntrl:]]')),
  trip_version bigint NOT NULL CHECK(trip_version>0),
  PRIMARY KEY(scope,trip_id,trip_version,item_id),
  FOREIGN KEY(scope,trip_id) REFERENCES public.cj_trip_record(scope,trip_id)

@@ -142,8 +142,14 @@ def check_lio_write(previous_items, previous_origins, tombstones, new_items, *, 
     added = [item for item in new_items if item['id'] not in before]
     removed_ids = {item_id for item_id, _ in tombstones}
     removed_places = {place for _, place in tombstones if place is not None}
-    for item in added:
-        if item['id'] in removed_ids or (amap_id(item) is not None and amap_id(item) in removed_places):
+    if any(item['id'] in removed_ids for item in added):
+        raise AutosaveConflict('tombstone_readded')
+    # Every point whose Gaode place is new to it (an added point, or a Lio point moved to another place)
+    # is checked: re-pointing an existing Lio item at a removed place would bring that place back (#2041 P1).
+    previous_places = {item['id']: amap_id(item) for item in previous_items}
+    for item in new_items:
+        place = amap_id(item)
+        if place is not None and place in removed_places and previous_places.get(item['id']) != place:
             raise AutosaveConflict('tombstone_readded')
     old_days = {day.get('day_index') for day in previous_days if type(day) is dict}
     new_day_count = sum(1 for day in new_days if type(day) is dict and day.get('day_index') not in old_days)

@@ -92,6 +92,11 @@ def test_lio_cannot_add_back_a_point_the_person_removed():
     refused('tombstone_readded', previous, origins, marks, [item('a'), item('fresh-id', amap='poi-9')])
     # Without a Gaode id only the item id is blocked, never a name match.
     check_lio_write(previous, origins, marks, [item('a'), item('fresh-id', 'gone'), item('other', amap='poi-1')])
+    # Re-pointing an existing Lio point at a removed Gaode place brings that place back too (#2041 P1).
+    refused('tombstone_readded', previous, origins, marks, [item('a', amap='poi-9')])
+    # A Lio point that already sat at that place before the removal keeps it.
+    kept = [item('a', amap='poi-9')]
+    check_lio_write(kept, origins, marks, [item('a', amap='poi-9'), item('new')])
 
 
 def test_one_lio_write_is_bounded_in_new_points_and_new_days():

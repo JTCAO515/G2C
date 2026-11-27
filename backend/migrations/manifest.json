@@ -487,7 +487,7 @@
       "version": 61,
       "name": "trip_autosave",
       "file": "backend/migrations/0061_trip_autosave.sql",
-      "sha256": "0376497afc5348da795aa4b4b347cf5c6dbebc7cd4d9a9db83b321a3f85e4008",
+      "sha256": "757cf989b0d8e0179e14249f29ac7b722702b1989dac738256161a58de942078",
       "down": "backend/migrations/down/0061_trip_autosave.down.sql",
       "down_sha256": "29cdb1713ac129658c5839495fcd2dd8d5666cdbb1d367171c352345958391ea"
     }
