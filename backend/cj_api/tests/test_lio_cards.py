@@ -57,6 +57,7 @@ class Build(unittest.TestCase):
     def test_a_currency_card_carries_a_quote_only_when_exactly_one_is_named(self):
         self.assertEqual(cards.build('美元汇率多少', 'zh')[0]['data'], dict(quote='USD'))
         self.assertEqual(cards.build('how do I convert yen?', 'en')[0]['data'], dict(quote='JPY'))
+        self.assertEqual(cards.build('Where can I exchange yen?', 'en')[0]['data'], dict(quote='JPY'))   # found by the Q-1 evaluation
         self.assertNotIn('data', cards.build('在哪里换钱', 'zh')[0])
         self.assertNotIn('data', cards.build('美元和欧元的汇率', 'zh')[0])               # two quotes: none
         self.assertNotIn('data', cards.build('exchange rate for a dollarstore', 'en')[0])  # not a word
