@@ -750,10 +750,19 @@ struct LioTripHome: View {
         }
     }
 
-    /// #1995: the trip canvas of this trip's plan (or its own, with no plan), from the timeline's own entries. The map's
-    /// place is left empty here; the map view (#1996) is wired in when it lands.
+    /// #1995: the trip canvas of this trip's plan (or its own, with no plan), from the timeline's own entries. Its "Map"
+    /// page is the trip map (#1996): MapKit as a background only, the day colours and numbers from the canvas.
     private func canvasScreen(_ plan: LioPlanSummary?) -> some View {
-        LioTripCanvasScreen(language: language, plan: plan, store: canvasStore, openChat: openChat)
+        LioTripCanvasScreen(language: language, plan: plan, store: canvasStore, openChat: openChat, map: canvasMap)
+    }
+
+    /// The map layer is MapKit, which only the iOS build has; the host (macOS) test build keeps the placeholder.
+    private var canvasMap: ((LioTripCanvas) -> AnyView)? {
+        #if os(iOS)
+        return { [language] canvas in AnyView(LioTripCanvasMapView(canvas: canvas, language: language)) }
+        #else
+        return nil
+        #endif
     }
 
     @ViewBuilder private func sheetContent(_ sheet: Sheet) -> some View {
