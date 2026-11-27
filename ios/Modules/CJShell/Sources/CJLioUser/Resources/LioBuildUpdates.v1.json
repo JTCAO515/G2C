@@ -1,7 +1,114 @@
 {
   "schema": 1,
-  "currentBuild": 58,
+  "currentBuild": 59,
   "releases": [
+    {
+      "build": 59,
+      "previousBuild": 58,
+      "sections": [
+        {
+          "id": "changes",
+          "title": {
+            "en": "New and improved",
+            "zh": "本版新增和修改"
+          },
+          "items": {
+            "zh": [
+              "58.1：这一版是 58 之后的第一个小版本，主要是把工具、行程、记忆整理了一遍，并为回答里的可点内容做好准备。",
+              "「工具」从 15 个减到 9 个：出示卡、翻译、打车、地铁、大交通、住、吃喝玩、附近便利、钱。「吃喝玩」里是附近、景点预约、点餐；「钱」里是支付开通指南和汇率换算；「附近必需品」改名「附近便利」，新增社区服务。回酒店、落地模式的入口挪到「这趟旅行」，路书并入「这趟旅行」，本地求助在右上角 SOS 里。",
+              "大交通重做：分「航班车次」「机场车站」「城际对比」三段。机场和火车站的信息是草稿，请对着官方信息核对，不要当作最终信息。",
+              "「这趟旅行」换成画布：按天排日程，可以拖动，还有「想去」收集箱；路书并入画布，模板可「用作我的行程」。",
+              "「去办」每一步多了「详情」：要点、提示、官方链接，以及可以直接问 Lio 的提示问题。",
+              "「我的」→「我的记忆」改版：空的时候会告诉你说什么 Lio 会记住（附示例句），已记住的内容按类别分组，显示来源和日期。",
+              "回答下面的地点、工具卡和追问：App 已内置，要等服务端对内测账号开启后才会出现，本版先不用测。",
+              "稳定性：修复了 iOS 27 上 App 启动时可能崩溃的问题。"
+            ],
+            "en": [
+              "58.1: the first small release after build 58. It tidies Tools, trips and memory, and gets answers ready for tappable content.",
+              "Tools go from 15 to 9: Show Cards, Translation, Taxi, Metro, Transport, Stay, Eat & Play, Nearby Essentials and Money. Eat & Play holds Nearby, Sight Bookings and the Menu Helper; Money holds the Payment Guide and the Currency Converter; \"Nearby Essentials\" is renamed and adds community services. Back to Hotel and Arrival Mode now open from Trips, Roadbook is part of Trips, and Local Support is in the SOS button at the top right.",
+              "Transport is rebuilt with three parts: flights and trains, airports and stations, and a comparison. The airport and station information is a draft; check it against official sources and do not treat it as final.",
+              "Trips is now a canvas: your days in order, drag to rearrange, and a Wish list. Roadbook is part of the canvas, and templates can be used as your trip.",
+              "Each step in the pre-trip checklist has Details: key points, tips, official links and questions you can ask Lio with a tap.",
+              "Me > My memory is redesigned: when it is empty it tells you what Lio can remember (with example sentences); saved items are grouped by kind and show their source and date.",
+              "Places, tool cards and follow-up questions under answers are built into the app. They appear only after the server turns them on for test accounts, so there is nothing to test yet.",
+              "Stability: fixed a crash that could happen when the app starts on iOS 27."
+            ]
+          }
+        },
+        {
+          "id": "comparison",
+          "title": {
+            "en": "Changes since the previous build",
+            "zh": "与上一版的区别"
+          },
+          "items": {
+            "zh": [
+              "构建 59（58.1）接续构建 58：工具页整理、「这趟旅行」画布、「去办」详情、「我的记忆」改版，并内置了尚未对内测开放的回答新功能。"
+            ],
+            "en": [
+              "Build 59 (58.1) follows build 58: a tidier Tools tab, the Trips canvas, checklist Details, a redesigned My memory, and new answer features that are built in but not yet open to test accounts."
+            ]
+          }
+        },
+        {
+          "id": "testing",
+          "title": {
+            "en": "Suggested checks",
+            "zh": "建议怎么测"
+          },
+          "items": {
+            "zh": [
+              "工具：打开「工具」，确认是 9 张卡；点「吃喝玩」「钱」，确认里面各有自己的几项；确认没有「回酒店」「落地模式」「路书」「本地协助」卡。",
+              "这趟旅行：保存或新建一个行程，看日程能否按天显示、拖动，能否加进「想去」；打开「去办」，展开每一步的「详情」。",
+              "我的记忆：打开「我的」→「我的记忆」，看空状态和示例句；对 Lio 说「记住我不吃辣」，看会不会出现记住的提示（要看服务端有没有识别到，可能没有）。 大交通：看三段能否切换；输入航班号显示暂时查不到属于预期。",
+              "遇到问题，请在内部测试群发截图、问题记录和发生时间。"
+            ],
+            "en": [
+              "Tools: open Tools and check there are 9 cards; open Eat & Play and Money and check each has its own items; check there is no Back to Hotel, Arrival Mode, Roadbook or Local Support card.",
+              "Trips: save or create a trip and check the days show in order, can be dragged, and a place can be added to the Wish list; open the checklist and expand Details on each step.",
+              "My memory: open Me > My memory and check the empty state and example sentences; tell Lio \"remember I don't eat spicy food\" and see whether a remember prompt appears (it depends on the server picking it up, and may not appear). Transport: check the three parts switch; a flight number that cannot be found right now is expected.",
+              "Share a screenshot, the issue record and the time in the internal testing group."
+            ]
+          }
+        },
+        {
+          "id": "known",
+          "title": {
+            "en": "Known issues and checks to avoid",
+            "zh": "已知问题和暂不测试内容"
+          },
+          "items": {
+            "zh": [
+              "航班号的服务暂时关着，输入航班号会提示暂时查不到，属于预期。",
+              "回答下面的地点、工具卡、追问按钮、记忆询问、自动保存到行程及其撤销、第一次保存提示：App 已内置，服务端还没对内测账号开启，本版看不到。",
+              "「住」和「吃喝玩」的收录库地点页还没有数据，所以本版这两张卡里只有之前就有的功能。",
+              "机场和火车站信息是草稿；成都的地铁官方链接暂时没有。"
+            ],
+            "en": [
+              "The flight number service is switched off for now; entering a flight number says it cannot be found, which is expected.",
+              "Places, tool cards, follow-up buttons, the memory prompt, auto-saving chats to trips with undo, and the first-save notice are built in but the server has not turned them on for test accounts, so you will not see them in this build.",
+              "The place library behind Stay and Eat & Play has no data yet, so those two cards only offer what they offered before.",
+              "Airport and station information is a draft; Chengdu has no official metro link for now."
+            ]
+          }
+        },
+        {
+          "id": "service",
+          "title": {
+            "en": "Online service changes",
+            "zh": "在线服务变化"
+          },
+          "items": {
+            "zh": [
+              "本版没有新增必须联网才能用的功能；邀请码登录和已有的联网功能不变。服务端已升级，回答下面的新功能会在服务端对内测账号开启后出现。"
+            ],
+            "en": [
+              "This build adds no feature that requires internet access to work; invitation code sign-in and the existing online features are unchanged. The server was upgraded; the new answer features appear once it turns them on for test accounts."
+            ]
+          }
+        }
+      ]
+    },
     {
       "build": 58,
       "previousBuild": 57,
@@ -106,107 +213,6 @@
             ],
             "en": [
               "This build adds no new feature that requires internet access; invitation code sign-in and the existing online features are unchanged."
-            ]
-          }
-        }
-      ]
-    },
-    {
-      "build": 57,
-      "previousBuild": 56,
-      "sections": [
-        {
-          "id": "changes",
-          "title": {
-            "en": "New and improved",
-            "zh": "本版新增和修改"
-          },
-          "items": {
-            "zh": [
-              "「工具」新增 7 个：回酒店（排第一，打车回酒店、给司机看、出示卡）、落地模式（落地首日清单）、景点预约（15 个景点的预约规则和放票提醒）、点餐（拍菜单看懂每道菜，按忌口和过敏标出，生成中文点单卡）、酒店、城际交通（火车、航班、大巴）、路书（按天离线手册，可导出 PDF）。",
-              "附近新增「必需品」：ATM、药房、厕所、行李寄存。地铁图点车站可看周边。",
-              "聊天里请 Lio 规划行程，可按天查看并保存。",
-              "「行程」改为「这趟旅行」首页：出发前的准备清单、到达后的当天日程；以前的行程在右上角「所有行程」。",
-              "订票、订酒店都跳到官方渠道、12306、Trip.com 或 Klook，App 内不下单、不付款。"
-            ],
-            "en": [
-              "Seven new tools: Back to Hotel (first; taxi back, show the driver, show cards), Arrival Mode (first-day checklist), Sight Bookings (rules and reminders for 15 sights), Menu Helper (photograph a menu, flags for your diet and allergies, an order card in Chinese), Hotels, Intercity Travel (trains, flights, buses) and Roadbook (offline day-by-day book with PDF export).",
-              "Nearby adds Essentials: ATMs, pharmacies, toilets, luggage storage. Tap a metro station to see what is around it.",
-              "Ask Lio in Chat to plan a trip, then view it by day and save it.",
-              "Trips opens on This trip: a checklist before you go, today's schedule once there. Earlier trips are under All trips.",
-              "Bookings open the official site, 12306, Trip.com or Klook; nothing is bought in the app."
-            ]
-          }
-        },
-        {
-          "id": "comparison",
-          "title": {
-            "en": "Changes since the previous build",
-            "zh": "与上一版的区别"
-          },
-          "items": {
-            "zh": [
-              "构建 57 接续构建 56。以前的行程列表移到「所有行程」。"
-            ],
-            "en": [
-              "Build 57 follows build 56. The old trip list is now under All trips."
-            ]
-          }
-        },
-        {
-          "id": "testing",
-          "title": {
-            "en": "Suggested checks",
-            "zh": "建议怎么测"
-          },
-          "items": {
-            "zh": [
-              "行程：点「先只做准备」，关掉「还没定日期」选到达日期，再选护照国籍看入境结论；点「去办」进工具再返回。",
-              "回酒店：在「酒店」点「设为我的酒店」，再试打车回酒店、给司机看和全屏出示卡。点餐：拍中文菜单，勾忌口，选菜，打开点单卡（约 10–40 秒，每天最多 10 张）。",
-              "景点预约：故宫选 7 天内的日期，点「提醒我」并允许通知。城际交通：查上海→北京，点「去 12306 订票」或「去 Trip.com 订票」。路书：打开「北京三日经典路线」，试打车、景点详情、离线保存和导出 PDF。附近：逐类查「必需品」。地铁：广州「体育西路」看周边。",
-              "这是这些功能第一次真机联调，遇到问题请在内部测试群发截图、问题记录和发生时间。"
-            ],
-            "en": [
-              "Trips: tap Just get ready, turn off Dates not decided yet, set an arrival date and passport for the entry result, open a tool with Go and come back.",
-              "Back to Hotel: tap Set as my hotel in Hotels, then try Take a taxi back, Show the driver and a full-screen card. Menu Helper: photograph a Chinese menu, tick diet or allergy items, pick dishes, open the order card (10-40 s; 10 menus a day).",
-              "Sight Bookings: Palace Museum, a day within 7 days, Remind me. Intercity Travel: Shanghai to Beijing, tap Book on 12306 or Trip.com. Roadbook: Three classic days in Beijing; try a taxi, Place details, Keep offline, Export PDF. Nearby: each Essentials type. Metro: Guangzhou Tiyu Xilu.",
-              "First time on real devices: share a screenshot, the issue record and the time in the testing group."
-            ]
-          }
-        },
-        {
-          "id": "known",
-          "title": {
-            "en": "Known issues and checks to avoid",
-            "zh": "已知问题和暂不测试内容"
-          },
-          "items": {
-            "zh": [
-              "规划行程可能保存失败，请截图反馈。注销账号后，景点预约的提醒仍会弹出，下一版修；可先逐条「取消提醒」。本地协助暂不发送求助消息。",
-              "八达岭 12-16 起、其他景点和入境规则 12-25 起只显示官方链接；行程跨过 12-31 或之后入境的，入境结论现在就只显示官方链接。",
-              "火车只列部分车次，完整时刻请到 12306。酒店价格为参考价，日期、人数和是否接待外国人请在 Trip.com 确认。",
-              "点餐只显示菜单上印清楚的价格；过敏标记按常见做法推断，请向服务员确认。路书补充信息每天最多 60 个地点、5 本路书。会员方案仍是预览，不扣费。"
-            ],
-            "en": [
-              "Trip plans may fail to save; please send a screenshot. Sight reminders still fire after account deletion; to be fixed in the next build. Cancel them first if needed. Local Support does not send help requests yet.",
-              "Badaling from Dec 16, other sights and entry rules from Dec 25 show only official links; for trips past Dec 31 or arriving later, entry already does.",
-              "Trains list some departures; see 12306. Hotel prices are reference only; confirm dates, guests and whether foreigners are accepted on Trip.com.",
-              "Menu prices show only when clearly printed; allergy flags are typical recipes, so ask staff. Roadbook details: 60 places and 5 books a day. Plans remain a preview."
-            ]
-          }
-        },
-        {
-          "id": "service",
-          "title": {
-            "en": "Online service changes",
-            "zh": "在线服务变化"
-          },
-          "items": {
-            "zh": [
-              "酒店、城际交通、路书补充、点餐、车站周边和必需品需要联网，只对已开通的内测账号开放。地点、酒店和火车来自高德，航班来自飞常准；点餐用阿里云百炼的 qwen-vl-ocr 和 qwen3.8-flash，服务端不保存菜单照片。没有推广链接。"
-            ],
-            "en": [
-              "Hotels, Intercity Travel, roadbook details, Menu Helper, station surroundings and Essentials need internet and an enabled tester account. Places, hotels and trains from AMap, flights from VariFlight; Menu Helper uses Alibaba Cloud Model Studio (qwen-vl-ocr, qwen3.8-flash); our server keeps no menu photos. No promotion links."
             ]
           }
         }
