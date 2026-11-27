@@ -96,12 +96,23 @@ class ReadOnlyQuestion(unittest.TestCase):
     def test_any_executable_value_or_constraint_keeps_the_original_strict_parser(self):
         original=response();text='规划北京行程'
         for change in (
-            dict(duration_days=3),dict(start_date='2026-12-01'),dict(party_size=2),
+            dict(duration_days=3),
             dict(fixed_items=[{'item_id':'untrusted'}]),dict(extra_fields={'budget_total':'1000'}),
             dict(extra_unknown_fields=['arrival.time']),dict(unresolved=['unknown']),
             dict(long_term_requests=['save something']),
         ):
             with self.subTest(change=change),self.assertRaises(InvalidInput):parsed(dict(original,**change),text)
+
+    def test_an_optional_value_whose_only_source_is_an_empty_placeholder_is_dropped_not_trusted(self):
+        # Since the Hong Kong run of 2026-11-28 (P0): a date or party size that arrives with only an empty locator is not
+        # evidence and is not used; it becomes unknown. It no longer rejects the whole intake. A required fact still does.
+        original=response();text='规划北京行程'
+        for change in (dict(start_date='2026-12-01'),dict(party_size=2)):
+            with self.subTest(change=change):
+                question,fields,facts=parsed(dict(original,**change),text)
+                self.assertIsInstance(question,ReadOnlyPlanningQuestion)
+                self.assertEqual(set(facts),{'city'})
+                self.assertNotIn(next(iter(change)),facts)
 
     def test_nonfresh_holds_foreign_sources_and_other_questions_do_not_enter_control_channel(self):
         text='规划北京行程';original=response()
@@ -139,7 +150,13 @@ class ReadOnlyQuestion(unittest.TestCase):
         self.assertNotIsInstance(result,ReadOnlyPlanningQuestion)
         self.assertEqual((result.city['query'],result.duration_days,result.start_date['value']),('北京',4,'2026-11-17'))
         self.assertEqual(result.extraction['fields']['party_size'],dict(state='known',value=1))
+        # A stray empty duplicate locator is no evidence either way (P0, 2026-11-28): it is dropped, and the real source decides.
         wire['field_sources'].append(dict(field='party_size',source_index=1,quote=''))
+        again,_,_=parse_flow(json.dumps(wire),(PlanningTurn(first,date(2026,11,13)),PlanningTurn(reply,date(2026,11,13))),
+            (dict(message_id='question-original'),),'answer-original',dict(facts=facts),schema=OptionalIntake)
+        self.assertEqual(again.extraction['fields']['party_size'],dict(state='known',value=1))
+        # A fabricated value still has no evidence: its only source being a non-empty quote that is not in the traveler's message is refused.
+        wire['field_sources'][-1]=dict(field='party_size',source_index=1,quote='nobody said this')
         with self.assertRaises(InvalidInput):
             parse_flow(json.dumps(wire),(PlanningTurn(first,date(2026,11,13)),PlanningTurn(reply,date(2026,11,13))),
                 (dict(message_id='question-original'),),'answer-original',dict(facts=facts),schema=OptionalIntake)

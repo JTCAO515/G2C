@@ -179,7 +179,29 @@ class PlanningFlow(unittest.TestCase):
                 self.assertEqual(context(events)['status'],'plan_preview')
                 for day in range(1,4):self.assertIn('第'+str(day)+'天'if locale=='zh'else'Day '+str(day),answer(events))
 
-    def test_r06_rejected_duration_intake_preserves_the_original_city_in_read_only_reply(self):
+    def test_empty_locators_on_optional_unknowns_no_longer_reject_the_plan(self):
+        # P0, 2026-11-28 (Hong Kong v3): the supplier attaches empty locators to optional unknowns. They are no evidence and
+        # are dropped; the plan with its valid city and duration goes on (it used to fall back to an unsaved outline).
+        for locale, first, last, city, daily in (('zh', '去成都', '三天', '成都', '第3天'), ('en', 'Go to Chengdu', 'Three days', 'Chengdu', 'Day 3')):
+            with self.subTest(locale=locale):
+                first_wire=flow(first,city=first,days=None,intent='plan',questions=('duration_days',))
+                first_wire.update(planning_request_index=0,needs_tools=False)
+                previous=context(run(first_wire,first,locale=locale)[1])
+                for reference in previous['facts']['city']['sources']:reference['message_id']='prior-0'
+                wire=flow(last,city=city,index=1,intent='plan',questions=())
+                wire.update(unknown_fields=['start_date','party_size'],needs_tools=False,reply='Got it!')
+                wire['city'].update(source_index=0,quote=first,normalized_name='成都')
+                wire['field_sources']=[dict(field='start_date',quote='',source_index=0),
+                    dict(field='party_size',quote='',source_index=0),
+                    dict(field='duration_days',quote=last,source_index=1)]
+                published,events,lookups,result=run(wire,last,turns=(original(first),original(last)),previous=previous,locale=locale)
+                self.assertEqual(context(events)['status'],'plan_preview')
+                self.assertEqual([lookup[2]['query'] for lookup in lookups],[city])
+                self.assertIn(daily,answer(events))
+                self.assertEqual(context(events)['authority'],'plan')            # the fallback outline keeps authority 'none' and no facts
+                self.assertIn('duration_days',context(events)['facts'])
+
+    def test_r06_rejected_duration_intake_with_a_wrong_locator_preserves_the_original_city_in_read_only_reply(self):
         for locale, first, last, city, daily, fallback in (
                 ('zh', '去成都', '三天', '成都', '第3天', '未保存建议'),
                 ('en', 'Go to Chengdu', 'Three days', 'Chengdu', 'Day 3', 'Unsaved suggestion')):
@@ -193,9 +215,9 @@ class PlanningFlow(unittest.TestCase):
                 wire.update(unknown_fields=['start_date','party_size'],needs_tools=False,
                             reply='Got it! A relaxed three-day trip to Chengdu.')
                 wire['city'].update(source_index=0,quote=first,normalized_name='成都')
-                # r06: the supplier attached empty locators to two optional unknowns.
-                wire['field_sources']=[dict(field='start_date',quote='',source_index=0),
-                    dict(field='party_size',quote='',source_index=0),
+                # r06: the supplier attached locators that are not in the message to two optional unknowns (still refused).
+                wire['field_sources']=[dict(field='start_date',quote='not said',source_index=0),
+                    dict(field='party_size',quote='not said either',source_index=0),
                     dict(field='duration_days',quote=last,source_index=1)]
                 published,events,lookups,result=run(wire,last,turns=(original(first),original(last)),
                                                      previous=previous,locale=locale)
