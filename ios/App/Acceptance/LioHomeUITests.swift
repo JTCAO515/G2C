@@ -8,7 +8,7 @@ import CryptoKit
         for language in ["en", "zh-Hans"] {
             for appearance in ["light", "dark"] {
                 let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
-                app.launchArguments = ["--lio-preview", "--lio-tools-preview", "-cj.ui.language.v1", language,
+                app.launchArguments = ["--lio-preview", "--lio-tools-preview", "--lio-tools-all-cards", "-cj.ui.language.v1", language,
                                        "-lio.ui.appearance.v1", appearance, "-UIPreferredContentSizeCategoryName",
                                        "UICTContentSizeCategoryL"]
                 app.launch()
@@ -89,7 +89,7 @@ import CryptoKit
         for language in ["en", "zh-Hans"] {
             let english = language == "en"
             let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
-            app.launchArguments = ["--lio-preview", "--lio-tools-preview", "--lio-nearby-preview", "--lio-nearby-essentials",
+            app.launchArguments = ["--lio-preview", "--lio-tools-preview", "--lio-tools-all-cards", "--lio-nearby-preview", "--lio-nearby-essentials",
                                    "-cj.ui.language.v1", language,
                                    "-lio.ui.appearance.v1", "light", "-UIPreferredContentSizeCategoryName",
                                    "UICTContentSizeCategoryL"]
@@ -468,7 +468,7 @@ import CryptoKit
                 // step, at every size, runs the full audit.
                 let toolsPageTypes: XCUIAccessibilityAuditType = size.hasSuffix("XXXL")
                     ? XCUIAccessibilityAuditType.all.subtracting(.contrast) : .all
-                app.launchArguments = ["--lio-preview", "--lio-tools-preview", "-cj.ui.language.v1", language,
+                app.launchArguments = ["--lio-preview", "--lio-tools-preview", "--lio-tools-all-cards", "-cj.ui.language.v1", language,
                                        "-lio.ui.appearance.v1", appearance, "-UIPreferredContentSizeCategoryName", size]
                 app.launch()
                 defer { app.terminate() }
