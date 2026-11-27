@@ -10,6 +10,8 @@ struct LioItineraryTimelineView: View {
         /// Nil hides the button; `saved` shows the saved state instead.
         var save: (@MainActor () -> Void)?
         var saved = false
+        /// #1723 PR-2: the save is reading the trip's places; the button waits.
+        var saving = false
         var adjustDay: (@MainActor (Int) -> Void)?
         var askLio: (@MainActor () -> Void)?
         /// Called after a place's button opened a tool (#1740), for example to close the sheet this page is in.
@@ -63,8 +65,12 @@ struct LioItineraryTimelineView: View {
                         .frame(minHeight: 44)
                         .accessibilityIdentifier("lio.plan.saved")
                 } else if let save = actions.save {
-                    Button { save() } label: { Label(language.text("Save to Trips", "保存到行程"), systemImage: "bookmark") }
+                    Button { save() } label: {
+                        Label(actions.saving ? language.text("Saving…", "正在保存…") : language.text("Save to Trips", "保存到行程"),
+                              systemImage: "bookmark")
+                    }
                         .buttonStyle(LioPrimaryButtonStyle())
+                        .disabled(actions.saving)
                         .accessibilityIdentifier("lio.plan.save")
                 }
                 ShareLink(item: itinerary.shareText(language)) {
