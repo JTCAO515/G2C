@@ -9,7 +9,7 @@ from jt.synthetic import generate_dataset
 from jt.workbench.app import SESSION_COOKIE, create_app
 from jt.workbench.auth import Auth
 from jt.workbench.cases import CaseWorkspace
-from jt.workbench.security import PasswordHash, totp_at_step
+from jt.workbench.security import PasswordHash
 from jt.workbench.store import Account, AuditResult, MemoryStore, Role
 
 
@@ -25,10 +25,9 @@ def setup_workspace(store: MemoryStore | None = None):
     actors = {"first-operator": Role.OPERATOR, "other-operator": Role.OPERATOR,
               "demo-reviewer": Role.REVIEWER, "demo-admin": Role.ADMIN}
     tokens = {}
-    for index, (username, role) in enumerate(actors.items(), 1):
-        seed = bytes([index]) * 20
-        store.save_account(Account(username, role, password, seed))
-        tokens[username] = auth.login(username, PASSWORD, totp_at_step(seed, NOW // 30))
+    for username, role in actors.items():
+        store.save_account(Account(username, role, password))
+        tokens[username] = auth.login(username, PASSWORD)
 
     signal = next(s for s in generate_dataset().signals if s.signal_type == "itinerary_disruption")
     workspace = CaseWorkspace.from_signals((signal,))

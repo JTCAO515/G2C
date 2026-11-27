@@ -23,7 +23,11 @@ class AuditAction(StrEnum):
     ACCOUNT_CREATED = "account_created"
     ACCOUNT_DISABLED = "account_disabled"
     ACCOUNT_UNLOCKED = "account_unlocked"
+    ACCOUNT_ENABLED = "account_enabled"
+    ACCOUNT_DELETED = "account_deleted"
+    PASSWORD_RESET = "password_reset"
     ROLE_CHANGED = "role_changed"
+    # Historical rows only: the second factor was removed on 2026-11-27 (#1886).
     TOTP_BOUND = "totp_bound"
     TOTP_REBIND_AUTHORIZED = "totp_rebind_authorized"
     VIEW = "view"
@@ -39,19 +43,10 @@ class AuditResult(StrEnum):
 
 
 @dataclass(frozen=True)
-class SetupGrant:
-    digest: bytes = field(repr=False)
-    expires_at: float
-
-
-@dataclass(frozen=True)
 class Account:
     username: str
     role: Role
     password: PasswordHash | None = field(default=None, repr=False)
-    totp_seed: bytes | None = field(default=None, repr=False)
-    last_totp_step: int = -1
-    setup: SetupGrant | None = field(default=None, repr=False)
     enabled: bool = True
 
 

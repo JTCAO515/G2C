@@ -1,4 +1,4 @@
-"""Prompt for a synthetic bootstrap administrator and serve only on loopback TLS."""
+"""Prompt for a local bootstrap administrator and serve only on loopback TLS."""
 
 import argparse
 import sys
@@ -33,38 +33,42 @@ def main() -> None:
         try:
             queue.check_ready()
             queue.seed(generate_dataset().signals)
-            with queue.locked():
-                needs_admin = not queue.accounts()
         except (psycopg.Error, RuntimeError):
             parser.error("工作台数据库未就绪或权限不符合要求。")
         auth = Auth(queue, clock=queue.clock, monotonic=queue.clock)
     else:
         auth = Auth(MemoryStore())
-        needs_admin = True
-    if needs_admin:
+    if not auth.has_admin():
         bootstrap_admin(auth, parser)
-    print(f"登录：https://127.0.0.1:{args.port}/login （使用验证器下一组验证码）", flush=True)
+    print(f"登录：https://127.0.0.1:{args.port}/login", flush=True)
     uvicorn.run(create_app(auth, port=args.port, queue=queue), host="127.0.0.1", port=args.port,
                 ssl_certfile=str(args.cert), ssl_keyfile=str(args.key), proxy_headers=False, access_log=False)
 
 
-def bootstrap_admin(auth: Auth, parser: argparse.ArgumentParser) -> None:
+def bootstrap_admin(auth: Auth, parser: argparse.ArgumentParser, username: str | None = None) -> None:
+    """Create the first administrator. The password is read without echo and is never printed or logged."""
     if not sys.stdin.isatty():
-        parser.error("请在交互式终端中创建本地管理员。")
-    username = input("管理员账号：").strip()
+        parser.error("请在交互式终端中创建管理员。")
+    if username is None:
+        username = input("管理员账号：").strip()
     with warnings.catch_warnings():
         warnings.simplefilter("error", GetPassWarning)
         try:
-            password = getpass("管理员密码：")
-            seed = getpass("验证器的 Base32 密钥：")
-            code = getpass("绑定用的当前动态验证码：")
+            password = getpass("管理员密码（至少 12 位）：")
+            confirm = getpass("再次输入密码：")
         except GetPassWarning:
             parser.error("终端无法隐藏输入。")
+    if password != confirm:
+        parser.error("两次输入的密码不一致。")
     try:
-        auth.bootstrap_admin(username, password, seed, code)
-    except (InvalidAccount, AccessDenied):
-        parser.error("无法创建管理员。请核对账号、密码及验证器设置。")
-    del password, seed, code
+        auth.bootstrap_admin(username, password)
+    except AccessDenied:
+        parser.error("工作台已有管理员，拒绝执行。")
+    except InvalidAccount:
+        parser.error("无法创建管理员。请核对账号（3 至 32 位小写字母、数字、下划线、连字符）和密码长度（至少 12 位）。")
+    finally:
+        del password, confirm
+    print(f"管理员 {username} 已创建。", flush=True)
 
 
 if __name__ == "__main__":
