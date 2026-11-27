@@ -1,6 +1,6 @@
 # guangzhou 收录审核（2026-11-27）
 
-共 154 条待审，按批次排列，每批可一天审完。决定写在 CSV 的 decision 列：accept、reject 或 edit（edit 在 note 里写要改什么）。
+共 157 条待审，按批次排列，每批可一天审完。决定写在 CSV 的 decision 列：accept、reject 或 edit（edit 在 note 里写要改什么）。
 
 ## 第 1 批
 
@@ -84,6 +84,33 @@
 - 来源：https://wglj.gz.gov.cn/ztmb/gzhyn/ajjq/jqml/content/post_11062518.html
 - [ ] accept　[ ] reject　[ ] edit：
 
+### 如家·neo（广州北京路步行街公园前地铁站店） · Home Inn neo — Beijing Road / Gongyuanqian  `pl_gz_rujia_neo_gongyuanqian`
+- hotel/hotel · main · 分数 36 · 越秀区
+- 高德：未查询
+- 简介：公园前站A口，适合步行逛北京路。 / Use Gongyuanqian Exit A for this Old Guangzhou base.
+- 开放时间：—
+- 来源：https://www.bthhotels.com/hotel/020026
+- 提醒：pl_gz_rujia_neo_gongyuanqian: unknown field 'hotel_class' is dropped on import
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 如家·neo（广州塔客村地铁站店） · Home Inn neo — Canton Tower / Kecun  `pl_gz_rujia_neo_kecun`
+- hotel/hotel · main · 分数 36 · 海珠区
+- 高德：未查询
+- 简介：海珠的外宾友好住处，设自助洗衣和烘干。 / A Haizhu base with self-service laundry for a longer Guangzhou visit.
+- 开放时间：—
+- 来源：https://www.bthhotels.com/hotel/020010
+- 提醒：pl_gz_rujia_neo_kecun: unknown field 'hotel_class' is dropped on import
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 如家·neo（广州白鹅潭艺术中心永庆坊店） · Home Inn neo — Bai'etan Arts Center / Yongqing Fang  `pl_gz_rujia_neo_yongqingfang`
+- hotel/hotel · main · 分数 36 · 荔湾区
+- 高德：未查询
+- 简介：靠近荔湾湖公园，可从如意坊站B口到店。 / Stay near Liwan Lake Park and explore Guangzhou's old west side.
+- 开放时间：—
+- 来源：https://www.bthhotels.com/hotel/020051
+- 提醒：pl_gz_rujia_neo_yongqingfang: unknown field 'hotel_class' is dropped on import
+- [ ] accept　[ ] reject　[ ] edit：
+
 ### 陈家祠 · Chen Clan Ancestral Hall  `pl_gz_chenjiaci`
 - attraction/history · main · 分数 34 · 荔湾区
 - 高德：未查询
@@ -116,6 +143,175 @@
 - 来源：https://wglj.gz.gov.cn/ztmb/gzhyn/ajjq/jqml/content/post_11108636.html
 - [ ] accept　[ ] reject　[ ] edit：
 
+### 广州白鹅潭福朋喜来登酒店 · Four Points by Sheraton Guangzhou Bai’e Tan  `pl_gz_baietanfupeng`
+- hotel/hotel · main · 分数 31 · 荔湾区
+- 高德：未查询
+- 简介：荔湾芳村的福朋，花地湾可乘地铁1号线。 / A Fangcun option with Huadiwan station listed on Metro Line 1.
+- 开放时间：—
+- 来源：https://www.marriott.com/en-us/hotels/canbu-four-points-guangzhou-baie-tan/overview/
+- 提醒：pl_gz_baietanfupeng: unknown field 'hotel_class' is dropped on import
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 广州白云国际会议中心越秀万豪酒店 · Guangzhou Marriott Hotel Baiyun  `pl_gz_baiyunwanhao`
+- hotel/hotel · main · 分数 31 · 白云区
+- 高德：未查询
+- 简介：在白云文化广场安排地铁出行，酒店支持英文沟通。 / A Baiyun Culture Square stop with English listed by the hotel.
+- 开放时间：—
+- 来源：https://www.marriott.com/en-us/hotels/canbm-guangzhou-marriott-hotel-baiyun/overview/
+- 提醒：pl_gz_baiyunwanhao: unknown field 'hotel_class' is dropped on import
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 广州白云国际会议中心越秀源宿酒店 · Element Guangzhou Baiyun  `pl_gz_baiyunyuan`
+- hotel/hotel · main · 分数 31 · 白云区
+- 高德：未查询
+- 简介：白云文化广场站可作到店参照，官网也列白云站。 / A Baiyun base with metro and railway options listed by Marriott.
+- 开放时间：—
+- 来源：https://www.marriott.com/en-us/hotels/canbe-element-guangzhou-baiyun/overview/
+- 提醒：pl_gz_baiyunyuan: unknown field 'hotel_class' is dropped on import
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 广州大学城雅乐轩酒店 · Aloft Guangzhou University Park  `pl_gz_daxuechengyuelexuan`
+- hotel/hotel · main · 分数 31 · 区未知
+- 高德：未查询
+- 简介：小谷围岛上的住宿，可经大学城南站出行。 / An island stay near Higher Education Mega Center South station.
+- 开放时间：—
+- 来源：https://www.marriott.com/en-us/hotels/canul-aloft-guangzhou-university-park/overview/
+- 提醒：pl_gz_daxuechengyuelexuan: unknown field 'hotel_class' is dropped on import
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 广州瑰丽酒店 · Rosewood Guangzhou  `pl_gz_guili`
+- hotel/hotel · main · 分数 31 · 天河区
+- 高德：未查询
+- 简介：珠江东路6号，可选看珠江方向的房型。 / A high-floor Zhujiang East Road stay with Pearl River room options.
+- 开放时间：—
+- 来源：https://www.rosewoodhotels.com/en/guangzhou
+- 提醒：pl_gz_guili: unknown field 'hotel_class' is dropped on import
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 广州海心沙英迪格酒店 · Hotel Indigo Guangzhou Haixinsha  `pl_gz_haixinshaindigo`
+- hotel/hotel · main · 分数 31 · 天河区
+- 高德：未查询
+- 简介：从海心沙APM站到店，去珠江边散步方便。 / An island stay for the Pearl River waterfront and Haixinsha APM station.
+- 开放时间：—
+- 来源：https://www.ihg.com/hotelindigo/hotels/cn/zh/guangzhou/caneh/hoteldetail
+- 提醒：pl_gz_haixinshaindigo: unknown field 'hotel_class' is dropped on import
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 广州康莱德酒店 · Conrad Guangzhou  `pl_gz_kanglaide`
+- hotel/hotel · main · 分数 31 · 天河区
+- 高德：未查询
+- 简介：珠江新城兴民路的康莱德，部分房型看江或广州塔。 / A Zhujiang New Town stay with river-view and Canton Tower room options.
+- 开放时间：—
+- 来源：https://www.hilton.com.cn/zh-cn/hotels/canxwci-conrad-guangzhou
+- 提醒：pl_gz_kanglaide: unknown field 'hotel_class' is dropped on import
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 广州四季酒店 · Four Seasons Hotel Guangzhou  `pl_gz_siji`
+- hotel/hotel · main · 分数 31 · 天河区
+- 高德：未查询
+- 简介：国际金融中心高层的酒店，可从珠江新城站地下到达。 / Stay high in Guangzhou IFC, connected underground to Zhujiang New Town station.
+- 开放时间：—
+- 来源：https://www.fourseasons.com/zh/guangzhou/offers/room_rate/
+- 提醒：pl_gz_siji: unknown field 'hotel_class' is dropped on import
+- [ ] accept　[ ] reject　[ ] edit：
+
+## 第 2 批
+
+### 广州正佳广场万豪酒店 · Guangzhou Marriott Hotel Tianhe  `pl_gz_tianhewanhao`
+- hotel/hotel · main · 分数 31 · 天河区
+- 高德：未查询
+- 简介：天河路228号，体育中心站可接地铁1号线。 / A shopping-focused Tianhe stay with Line 1 directions on the hotel page.
+- 开放时间：—
+- 来源：https://www.marriott.com/en-us/hotels/canti-guangzhou-marriott-hotel-tianhe/overview/
+- 提醒：pl_gz_tianhewanhao: unknown field 'hotel_class' is dropped on import
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 广州文华东方酒店 · Mandarin Oriental, Guangzhou  `pl_gz_wenhuadongfang`
+- hotel/hotel · main · 分数 31 · 天河区
+- 高德：未查询
+- 简介：天河路389号，可把城市购物放在酒店附近。 / A Tianhe Road stay for travelers who want time in the shopping district.
+- 开放时间：—
+- 来源：https://www.mandarinoriental.com/zh-cn/guangzhou/tianhe
+- 提醒：pl_gz_wenhuadongfang: unknown field 'hotel_class' is dropped on import
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 广州太古汇 · Taikoo Hui Guangzhou  `pl_gz_gztkh_shops`
+- shopping/mall · main · 分数 30 · 天河区
+- 高德：未查询
+- 简介：在石牌桥一带集中逛时装、美妆与设计生活门店。 / Browse fashion, beauty and design shops near Shipaiqiao.
+- 开放时间：—
+- 来源：https://www.taikoohui.com/zh-cn/
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 天环广场 · Parc Central  `pl_gz_parc_central_gz`
+- shopping/mall · main · 分数 30 · 天河区
+- 高德：未查询
+- 简介：可沿开放式步道看日常服饰、数码店和餐饮。 / Open walkways connect fashion, electronics and dining at Parc Central.
+- 开放时间：—
+- 来源：https://www.parccentral.com.cn/zh-CN/aboutUs
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 广州机场空港希尔顿花园酒店 · Hilton Garden Inn Guangzhou Airport Aerotropolis  `pl_gz_konggangxierdunhuayuan`
+- hotel/hotel · main · 分数 29 · 花都区
+- 高德：未查询
+- 简介：坐飞机早到晚走，可先查白云机场接驳。 / A Huadu airport-area hotel that lists an airport shuttle.
+- 开放时间：—
+- 来源：https://www.hilton.com.cn/zh-cn/hotels/canapgi-hilton-garden-inn-guangzhou-airport-aerotropolis
+- 提醒：pl_gz_konggangxierdunhuayuan: unknown field 'hotel_class' is dropped on import
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 广州富力丽思卡尔顿酒店 · The Ritz-Carlton, Guangzhou  `pl_gz_lisi`
+- hotel/hotel · main · 分数 29 · 天河区
+- 高德：未查询
+- 简介：可经广州大剧院APM站到店，酒店列出英文服务。 / A Zhujiang New Town hotel with English listed and two metro options.
+- 开放时间：—
+- 来源：https://www.ritzcarlton.com/en/hotels/canrz-the-ritz-carlton-guangzhou/overview/
+- 提醒：pl_gz_lisi: unknown field 'hotel_class' is dropped on import
+- [ ] accept　[ ] reject　[ ] edit：
+
+### Patina欧式餐厅及露台 · Patina Brasserie & Terrace  `pl_gz_patina_zhujiangdong`
+- food/western · main · 分数 29 · 天河区
+- 高德：未查询
+- 简介：逛完高楼景观区，可吃一餐欧式海鲜或简餐。 / An option for European seafood and brasserie dishes.
+- 开放时间：—
+- 来源：https://www.rosewoodhotels.com/en/guangzhou/dining/patina-european-brasserie
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 广州天河公园万枫酒店 · Fairfield by Marriott Guangzhou Tianhe Park  `pl_gz_tianhegongyuanwanfeng`
+- hotel/hotel · main · 分数 29 · 区未知
+- 高德：未查询
+- 简介：天河公园片区的万枫，回店可使用全天健身房。 / A Tianhe Park area stay with a gym that stays open around the clock.
+- 开放时间：—
+- 来源：https://www.marriott.com/en-us/hotels/canfi-fairfield-guangzhou-tianhe-park/overview/
+- 提醒：pl_gz_tianhegongyuanwanfeng: unknown field 'hotel_class' is dropped on import
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 广州天河希尔顿酒店 · Hilton Guangzhou Tianhe  `pl_gz_tianhexierdun`
+- hotel/hotel · main · 分数 29 · 天河区
+- 高德：未查询
+- 简介：从广州东站抵达，可先核对酒店免费接驳。 / A Tianhe hotel with a free shuttle to Guangzhou East Railway Station.
+- 开放时间：—
+- 来源：https://www.hilton.com.cn/zh-cn/hotels/cangthi-hilton-guangzhou-tianhe
+- 提醒：pl_gz_tianhexierdun: unknown field 'hotel_class' is dropped on import
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 意珍餐厅（珠江西路） · Caffe Mondo  `pl_gz_yizhen_zhujiangxi`
+- food/western · main · 分数 29 · 天河区
+- 高德：未查询
+- 简介：想安排有江景的意式正餐，可考虑这一家。 / A high-floor Italian restaurant for a meal with river views.
+- 开放时间：—
+- 来源：https://www.fourseasons.com/guangzhou/dining/restaurants/caffe_mondo/
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 广州粤海喜来登酒店 · Sheraton Guangzhou Hotel  `pl_gz_yuehaixilaideng`
+- hotel/hotel · main · 分数 29 · 天河区
+- 高德：未查询
+- 简介：天河路上的喜来登，就近用体育西路站逛街。 / Tiyu Xilu and Tianhe shopping are close to this Sheraton.
+- 开放时间：—
+- 来源：https://www.marriott.com/en-us/hotels/cansi-sheraton-guangzhou-hotel/overview/
+- 提醒：pl_gz_yuehaixilaideng: unknown field 'hotel_class' is dropped on import
+- [ ] accept　[ ] reject　[ ] edit：
+
 ### 长隆野生动物世界 · Chimelong Safari Park  `pl_gz_changlong_dongwu`
 - attraction/experience · main · 分数 28 · 番禺区
 - 高德：未查询
@@ -140,6 +336,14 @@
 - 来源：https://www.dafosi.com/sys-nd/6236.html
 - [ ] accept　[ ] reject　[ ] edit：
 
+### 正佳广场 · Grandview Mall  `pl_gz_grandview_retail_gz`
+- shopping/mall · main · 分数 28 · 天河区
+- 高德：未查询
+- 简介：适合把买衣服、餐饮和室内亲子活动安排在一起。 / Combine clothes shopping, a meal and indoor family activities.
+- 开放时间：—
+- 来源：https://wglj.gz.gov.cn/ztmb/gzhyn/ajjq/4a/content/post_8929272.html
+- [ ] accept　[ ] reject　[ ] edit：
+
 ### 广州大剧院 · Guangzhou Opera House  `pl_gz_guangzhou_dajuyuan`
 - attraction/landmark · main · 分数 28 · 区未知
 - 高德：未查询
@@ -148,22 +352,28 @@
 - 来源：https://www.gzdjy.org/
 - [ ] accept　[ ] reject　[ ] edit：
 
-### 广州瑰丽酒店 · Rosewood Guangzhou  `pl_gz_guili`
-- hotel/hotel · main · 分数 28 · 天河区
+### Il Ponte意大利餐厅（林和西横路） · Il Ponte  `pl_gz_ilponte_linhe`
+- food/western · main · 分数 28 · 天河区
 - 高德：未查询
-- 简介：珠江东路6号，可选看珠江方向的房型。 / A high-floor Zhujiang East Road stay with Pearl River room options.
+- 简介：广州东站一带想吃意餐时，可以按英文店名找。 / An Italian option in the Guangzhou East Railway Station area.
 - 开放时间：—
-- 来源：https://www.rosewoodhotels.com/en/guangzhou
-- 提醒：pl_gz_guili: unknown field 'hotel_class' is dropped on import
+- 来源：https://www.hilton.com/en/hotels/cangthi-hilton-guangzhou-tianhe/dining/?arrivalDate=2026-09-30&departureDate=2026-10-01&displayCurrency=CNY&flexibleDates=false&numAdults=1&numChildren=0&numRooms=1&room1AdultAges=&room1ChildAges=
 - [ ] accept　[ ] reject　[ ] edit：
 
-### 广州海心沙英迪格酒店 · Hotel Indigo Guangzhou Haixinsha  `pl_gz_haixinshaindigo`
-- hotel/hotel · main · 分数 28 · 天河区
+### 广州聚龙湾太古里 · Taikoo Li Julong Wan Guangzhou  `pl_gz_julong_taikoo_li`
+- shopping/mall · main · 分数 28 · 荔湾区
 - 高德：未查询
-- 简介：从海心沙APM站到店，去珠江边散步方便。 / An island stay for the Pearl River waterfront and Haixinsha APM station.
+- 简介：在白鹅潭江边逛已开业的一期零售店街。 / Browse the open phase-one shops along the Bai'etan waterfront.
 - 开放时间：—
-- 来源：https://www.ihg.com/hotelindigo/hotels/cn/zh/guangzhou/caneh/hoteldetail
-- 提醒：pl_gz_haixinshaindigo: unknown field 'hotel_class' is dropped on import
+- 来源：https://www.swireproperties.com/zh-cn/portfolio/current-developments/taikoo-li-julong-wan-guangzhou/
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 广州酒家利口福（广州东站地铁店） · Likoufu, Guangzhou East Railway Station Metro  `pl_gz_likoufu_east_metro`
+- shopping/time_honored_brand · main · 分数 28 · 天河区
+- 高德：未查询
+- 简介：坐地铁经过广州东站时，可顺手找广式点心和手信。 / Look for Cantonese snacks and gifts at Guangzhou East Railway Station Metro.
+- 开放时间：—
+- 来源：https://gzw.gz.gov.cn/qy/qydt/content/post_9093200.html
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 陶陶居酒家（第十甫路总店） · Taotao Ju (Dishifu Road)  `pl_gz_taotaoju_dishifu`
@@ -174,43 +384,39 @@
 - 来源：https://cguan.cancilleria.gob.ar/userfiles/guia_de_guangzhou.pdf
 - [ ] accept　[ ] reject　[ ] edit：
 
-### 广州文华东方酒店 · Mandarin Oriental, Guangzhou  `pl_gz_wenhuadongfang`
-- hotel/hotel · main · 分数 28 · 天河区
+### 天河城购物中心 · TEEMALL  `pl_gz_teemall_tianhe`
+- shopping/mall · main · 分数 28 · 天河区
 - 高德：未查询
-- 简介：天河路389号，可把城市购物放在酒店附近。 / A Tianhe Road stay for travelers who want time in the shopping district.
+- 简介：体育西路一带可在同一座商场购物、休息与吃饭。 / A Tianhe mall for shopping, a break and a meal near Tiyu Xilu.
 - 开放时间：—
-- 来源：https://www.mandarinoriental.com/zh-cn/guangzhou/tianhe
-- 提醒：pl_gz_wenhuadongfang: unknown field 'hotel_class' is dropped on import
+- 来源：https://www.teemall.com.cn/gzthcgwzx/txfw/jtzn/index.html
 - [ ] accept　[ ] reject　[ ] edit：
 
-### 广州白鹅潭福朋喜来登酒店 · Four Points by Sheraton Guangzhou Bai’e Tan  `pl_gz_baietanfupeng`
-- hotel/hotel · main · 分数 26 · 区未知
+### 宜必思广州琶洲国际会展中心酒店 · ibis Guangzhou International Exhibition Center Hotel  `pl_gz_yibisi_pazhou`
+- hotel/hotel · main · 分数 28 · 海珠区
 - 高德：未查询
-- 简介：荔湾芳村的福朋，花地湾可乘地铁1号线。 / A Fangcun option with Huadiwan station listed on Metro Line 1.
+- 简介：海珠新海街的经济型酒店，配有自助洗衣。 / A Haizhu stay with self-service laundry for a multi-day trip.
 - 开放时间：—
-- 来源：https://www.marriott.com/en-us/hotels/canbu-four-points-guangzhou-baie-tan/overview/
-- 提醒：pl_gz_baietanfupeng: unknown field 'hotel_class' is dropped on import
+- 来源：https://all.accor.com/hotel/B3E5/index.en.shtml
+- 提醒：pl_gz_yibisi_pazhou: unknown field 'hotel_class' is dropped on import
 - [ ] accept　[ ] reject　[ ] edit：
 
-### 广州白云国际会议中心越秀万豪酒店 · Guangzhou Marriott Hotel Baiyun  `pl_gz_baiyunwanhao`
-- hotel/hotel · main · 分数 26 · 区未知
+### 宜必思广州越秀公园地铁站酒店 · ibis Guangzhou Yuexiu Park Metro Station Hotel  `pl_gz_yibisi_yuexiugongyuan`
+- hotel/hotel · main · 分数 28 · 越秀区
 - 高德：未查询
-- 简介：在白云文化广场安排地铁出行，酒店支持英文沟通。 / A Baiyun Culture Square stop with English listed by the hotel.
+- 简介：流花路的简洁客房，适合安排越秀公园和流花湖。 / A Liuhua Road option for Yuexiu Park and the old city.
 - 开放时间：—
-- 来源：https://www.marriott.com/en-us/hotels/canbm-guangzhou-marriott-hotel-baiyun/overview/
-- 提醒：pl_gz_baiyunwanhao: unknown field 'hotel_class' is dropped on import
+- 来源：https://all.accor.com/hotel/B0Z6/index.en.shtml
+- 提醒：pl_gz_yibisi_yuexiugongyuan: unknown field 'hotel_class' is dropped on import
 - [ ] accept　[ ] reject　[ ] edit：
 
-### 广州白云国际会议中心越秀源宿酒店 · Element Guangzhou Baiyun  `pl_gz_baiyunyuan`
-- hotel/hotel · main · 分数 26 · 区未知
+### 悦轩（华夏路） · Dining Room at Park Hyatt Guangzhou  `pl_gz_yuexuan_huaxia`
+- food/western · main · 分数 28 · 天河区
 - 高德：未查询
-- 简介：白云文化广场站可作到店参照，官网也列白云站。 / A Baiyun base with metro and railway options listed by Marriott.
+- 简介：珠江新城的意式餐厅，菜单可用英文查阅。 / An Italian dining room in Zhujiang New Town with an English menu.
 - 开放时间：—
-- 来源：https://www.marriott.com/en-us/hotels/canbe-element-guangzhou-baiyun/overview/
-- 提醒：pl_gz_baiyunyuan: unknown field 'hotel_class' is dropped on import
+- 来源：https://www.hyatt.com/park-hyatt/zh-CN/guaph-park-hyatt-guangzhou/dining/dining-room
 - [ ] accept　[ ] reject　[ ] edit：
-
-## 第 2 批
 
 ### 大佛寺素食自助餐厅 · Dafo Temple Vegetarian Buffet  `pl_gz_dafosi_zizhu`
 - food/vegetarian · main · 分数 26 · 越秀区
@@ -220,6 +426,8 @@
 - 来源：https://www.dafosi.com/sys-nd/6236.html
 - [ ] accept　[ ] reject　[ ] edit：
 
+## 第 3 批
+
 ### 大同酒家（淘金店） · Datong Restaurant (Taojin)  `pl_gz_datong_taojin`
 - food/local_cuisine · main · 分数 26 · 越秀区
 - 高德：未查询
@@ -228,37 +436,12 @@
 - 来源：https://wglj.gz.gov.cn/xxgk/gzdt/tzgsgg/content/post_11014603.html
 - [ ] accept　[ ] reject　[ ] edit：
 
-### 广州大学城雅乐轩酒店 · Aloft Guangzhou University Park  `pl_gz_daxuechengyuelexuan`
-- hotel/hotel · main · 分数 26 · 区未知
-- 高德：未查询
-- 简介：小谷围岛上的住宿，可经大学城南站出行。 / An island stay near Higher Education Mega Center South station.
-- 开放时间：—
-- 来源：https://www.marriott.com/en-us/hotels/canul-aloft-guangzhou-university-park/overview/
-- 提醒：pl_gz_daxuechengyuelexuan: unknown field 'hotel_class' is dropped on import
-- [ ] accept　[ ] reject　[ ] edit：
-
 ### 芳村茶叶城 · Fangcun Tea City  `pl_gz_fangcun_tea_city`
 - shopping/market · main · 分数 26 · 荔湾区
 - 高德：未查询
 - 简介：在芳村的茶叶柜台多看几种茶，购买前可先问是否可试饮。 / Compare teas at Fangcun stalls and ask whether tastings are available.
 - 开放时间：—
 - 来源：https://www.lw.gov.cn/ywb/yshj/zysc/content/mpost_9589598.html
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 正佳广场 · Grandview Mall  `pl_gz_grandview_retail_gz`
-- shopping/mall · main · 分数 26 · 天河区
-- 高德：未查询
-- 简介：适合把买衣服、餐饮和室内亲子活动安排在一起。 / Combine clothes shopping, a meal and indoor family activities.
-- 开放时间：—
-- 来源：https://wglj.gz.gov.cn/ztmb/gzhyn/ajjq/4a/content/post_8929272.html
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 广州太古汇 · Taikoo Hui Guangzhou  `pl_gz_gztkh_shops`
-- shopping/mall · main · 分数 26 · 天河区
-- 高德：未查询
-- 简介：在石牌桥一带集中逛时装、美妆与设计生活门店。 / Browse fashion, beauty and design shops near Shipaiqiao.
-- 开放时间：—
-- 来源：https://www.taikoohui.com/zh-cn/
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 皇上皇腊味店（下九路） · Huangshanghuang, Xiajiu Road  `pl_gz_huangshanghuang_xiajiu_shop`
@@ -277,46 +460,12 @@
 - 来源：https://sw.gz.gov.cn/tpxw/content/post_11009649.html
 - [ ] accept　[ ] reject　[ ] edit：
 
-### 广州聚龙湾太古里 · Taikoo Li Julong Wan Guangzhou  `pl_gz_julong_taikoo_li`
-- shopping/mall · main · 分数 26 · 荔湾区
-- 高德：未查询
-- 简介：在白鹅潭江边逛已开业的一期零售店街。 / Browse the open phase-one shops along the Bai'etan waterfront.
-- 开放时间：—
-- 来源：https://www.swireproperties.com/zh-cn/portfolio/current-developments/taikoo-li-julong-wan-guangzhou/
-- [ ] accept　[ ] reject　[ ] edit：
-
 ### 广州K11购物艺术中心 · Guangzhou K11 Art Mall  `pl_gz_k11_retail_gz`
 - shopping/mall · main · 分数 26 · 天河区
 - 高德：未查询
 - 简介：在珠江新城体验同一座商场里的零售店与艺术空间。 / Explore shops and art spaces together in Zhujiang New Town.
 - 开放时间：—
 - 来源：https://sw.gz.gov.cn/swzx/swyw/content/post_10468673.html
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 广州康莱德酒店 · Conrad Guangzhou  `pl_gz_kanglaide`
-- hotel/hotel · main · 分数 26 · 天河区
-- 高德：未查询
-- 简介：珠江新城兴民路的康莱德，部分房型看江或广州塔。 / A Zhujiang New Town stay with river-view and Canton Tower room options.
-- 开放时间：—
-- 来源：https://www.hilton.com.cn/zh-cn/hotels/canxwci-conrad-guangzhou
-- 提醒：pl_gz_kanglaide: unknown field 'hotel_class' is dropped on import
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 广州机场空港希尔顿花园酒店 · Hilton Garden Inn Guangzhou Airport Aerotropolis  `pl_gz_konggangxierdunhuayuan`
-- hotel/hotel · main · 分数 26 · 区未知
-- 高德：未查询
-- 简介：坐飞机早到晚走，可先查白云机场接驳。 / A Huadu airport-area hotel that lists an airport shuttle.
-- 开放时间：—
-- 来源：https://www.hilton.com.cn/zh-cn/hotels/canapgi-hilton-garden-inn-guangzhou-airport-aerotropolis
-- 提醒：pl_gz_konggangxierdunhuayuan: unknown field 'hotel_class' is dropped on import
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 广州酒家利口福（广州东站地铁店） · Likoufu, Guangzhou East Railway Station Metro  `pl_gz_likoufu_east_metro`
-- shopping/time_honored_brand · main · 分数 26 · 天河区
-- 高德：未查询
-- 简介：坐地铁经过广州东站时，可顺手找广式点心和手信。 / Look for Cantonese snacks and gifts at Guangzhou East Railway Station Metro.
-- 开放时间：—
-- 来源：https://gzw.gz.gov.cn/qy/qydt/content/post_9093200.html
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 岭南花卉市场 · Lingnan Flower Market  `pl_gz_lingnan_flower_market`
@@ -327,15 +476,6 @@
 - 来源：https://www.lw.gov.cn/ztzl/rdjyhzxtabl/content/post_10880549.html
 - [ ] accept　[ ] reject　[ ] edit：
 
-### 广州富力丽思卡尔顿酒店 · The Ritz-Carlton, Guangzhou  `pl_gz_lisi`
-- hotel/hotel · main · 分数 26 · 区未知
-- 高德：未查询
-- 简介：可经广州大剧院APM站到店，酒店列出英文服务。 / A Zhujiang New Town hotel with English listed and two metro options.
-- 开放时间：—
-- 来源：https://www.ritzcarlton.com/en/hotels/canrz-the-ritz-carlton-guangzhou/overview/
-- 提醒：pl_gz_lisi: unknown field 'hotel_class' is dropped on import
-- [ ] accept　[ ] reject　[ ] edit：
-
 ### 李占记钟表（中山四路店） · Lizhanji Watches, Zhongshan 4th Road  `pl_gz_lizhanzhong_watch`
 - shopping/time_honored_brand · main · 分数 26 · 越秀区
 - 高德：未查询
@@ -344,117 +484,12 @@
 - 来源：https://vankor-switzerland.com/Content/553780.html
 - [ ] accept　[ ] reject　[ ] edit：
 
-### 天环广场 · Parc Central  `pl_gz_parc_central_gz`
-- shopping/mall · main · 分数 26 · 天河区
-- 高德：未查询
-- 简介：可沿开放式步道看日常服饰、数码店和餐饮。 / Open walkways connect fashion, electronics and dining at Parc Central.
-- 开放时间：—
-- 来源：https://www.parccentral.com.cn/zh-CN/aboutUs
-- [ ] accept　[ ] reject　[ ] edit：
-
-### Patina欧式餐厅及露台 · Patina Brasserie & Terrace  `pl_gz_patina_zhujiangdong`
-- food/western · main · 分数 26 · 天河区
-- 高德：未查询
-- 简介：逛完高楼景观区，可吃一餐欧式海鲜或简餐。 / An option for European seafood and brasserie dishes.
-- 开放时间：—
-- 来源：https://www.rosewoodhotels.com/en/guangzhou/dining/patina-european-brasserie
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 广州四季酒店 · Four Seasons Hotel Guangzhou  `pl_gz_siji`
-- hotel/hotel · main · 分数 26 · 天河区
-- 高德：未查询
-- 简介：国际金融中心高层的酒店，可从珠江新城站地下到达。 / Stay high in Guangzhou IFC, connected underground to Zhujiang New Town station.
-- 开放时间：—
-- 来源：https://www.fourseasons.com/zh/guangzhou/offers/room_rate/
-- 提醒：pl_gz_siji: unknown field 'hotel_class' is dropped on import
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 天河城购物中心 · TEEMALL  `pl_gz_teemall_tianhe`
-- shopping/mall · main · 分数 26 · 天河区
-- 高德：未查询
-- 简介：体育西路一带可在同一座商场购物、休息与吃饭。 / A Tianhe mall for shopping, a break and a meal near Tiyu Xilu.
-- 开放时间：—
-- 来源：https://www.teemall.com.cn/gzthcgwzx/txfw/jtzn/index.html
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 广州天河公园万枫酒店 · Fairfield by Marriott Guangzhou Tianhe Park  `pl_gz_tianhegongyuanwanfeng`
-- hotel/hotel · main · 分数 26 · 区未知
-- 高德：未查询
-- 简介：天河公园片区的万枫，回店可使用全天健身房。 / A Tianhe Park area stay with a gym that stays open around the clock.
-- 开放时间：—
-- 来源：https://www.marriott.com/en-us/hotels/canfi-fairfield-guangzhou-tianhe-park/overview/
-- 提醒：pl_gz_tianhegongyuanwanfeng: unknown field 'hotel_class' is dropped on import
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 广州正佳广场万豪酒店 · Guangzhou Marriott Hotel Tianhe  `pl_gz_tianhewanhao`
-- hotel/hotel · main · 分数 26 · 区未知
-- 高德：未查询
-- 简介：天河路228号，体育中心站可接地铁1号线。 / A shopping-focused Tianhe stay with Line 1 directions on the hotel page.
-- 开放时间：—
-- 来源：https://www.marriott.com/en-us/hotels/canti-guangzhou-marriott-hotel-tianhe/overview/
-- 提醒：pl_gz_tianhewanhao: unknown field 'hotel_class' is dropped on import
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 广州天河希尔顿酒店 · Hilton Guangzhou Tianhe  `pl_gz_tianhexierdun`
-- hotel/hotel · main · 分数 26 · 天河区
-- 高德：未查询
-- 简介：从广州东站抵达，可先核对酒店免费接驳。 / A Tianhe hotel with a free shuttle to Guangzhou East Railway Station.
-- 开放时间：—
-- 来源：https://www.hilton.com.cn/zh-cn/hotels/cangthi-hilton-guangzhou-tianhe
-- 提醒：pl_gz_tianhexierdun: unknown field 'hotel_class' is dropped on import
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 宜必思广州琶洲国际会展中心酒店 · ibis Guangzhou International Exhibition Center Hotel  `pl_gz_yibisi_pazhou`
-- hotel/hotel · main · 分数 26 · 海珠区
-- 高德：未查询
-- 简介：海珠新海街的经济型酒店，配有自助洗衣。 / A Haizhu stay with self-service laundry for a multi-day trip.
-- 开放时间：—
-- 来源：https://all.accor.com/hotel/B3E5/index.en.shtml
-- 提醒：pl_gz_yibisi_pazhou: unknown field 'hotel_class' is dropped on import
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 宜必思广州越秀公园地铁站酒店 · ibis Guangzhou Yuexiu Park Metro Station Hotel  `pl_gz_yibisi_yuexiugongyuan`
-- hotel/hotel · main · 分数 26 · 越秀区
-- 高德：未查询
-- 简介：流花路的简洁客房，适合安排越秀公园和流花湖。 / A Liuhua Road option for Yuexiu Park and the old city.
-- 开放时间：—
-- 来源：https://all.accor.com/hotel/B0Z6/index.en.shtml
-- 提醒：pl_gz_yibisi_yuexiugongyuan: unknown field 'hotel_class' is dropped on import
-- [ ] accept　[ ] reject　[ ] edit：
-
-## 第 3 批
-
-### 意珍餐厅（珠江西路） · Caffe Mondo  `pl_gz_yizhen_zhujiangxi`
-- food/western · main · 分数 26 · 天河区
-- 高德：未查询
-- 简介：想安排有江景的意式正餐，可考虑这一家。 / A high-floor Italian restaurant for a meal with river views.
-- 开放时间：—
-- 来源：https://www.fourseasons.com/guangzhou/dining/restaurants/caffe_mondo/
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 广州粤海喜来登酒店 · Sheraton Guangzhou Hotel  `pl_gz_yuehaixilaideng`
-- hotel/hotel · main · 分数 26 · 区未知
-- 高德：未查询
-- 简介：天河路上的喜来登，就近用体育西路站逛街。 / Tiyu Xilu and Tianhe shopping are close to this Sheraton.
-- 开放时间：—
-- 来源：https://www.marriott.com/en-us/hotels/cansi-sheraton-guangzhou-hotel/overview/
-- 提醒：pl_gz_yuehaixilaideng: unknown field 'hotel_class' is dropped on import
-- [ ] accept　[ ] reject　[ ] edit：
-
 ### 广州越秀宾馆，希尔顿格芮精选酒店 · Yuexiu Hotel Guangzhou, Curio Collection by Hilton  `pl_gz_yuexiubinguan`
 - hotel/hotel · main · 分数 26 · 越秀区
 - 高德：未查询
 - 简介：在越秀一带安排市区游览。 / A hotel in Yuexiu for exploring central Guangzhou.
 - 开放时间：—
 - 来源：https://www.hilton.com.cn/zh-cn/hotels/canqqqq-yuexiu-hotel-guangzhou-curio-collection-by-hilton
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 悦轩（华夏路） · Dining Room at Park Hyatt Guangzhou  `pl_gz_yuexuan_huaxia`
-- food/western · main · 分数 26 · 天河区
-- 高德：未查询
-- 简介：珠江新城的意式餐厅，菜单可用英文查阅。 / An Italian dining room in Zhujiang New Town with an English menu.
-- 开放时间：—
-- 来源：https://www.hyatt.com/park-hyatt/zh-CN/guaph-park-hyatt-guangzhou/dining/dining-room
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 致美斋老铺 · Zhimeizhai Original Shop  `pl_gz_zhimeizhai_old_shop`
@@ -585,14 +620,6 @@
 - 来源：https://wglj.gz.gov.cn/ztmb/gzhyn/ajjq/jqml/content/post_11062518.html
 - [ ] accept　[ ] reject　[ ] edit：
 
-### 铂斯土耳其餐厅（兴盛路） · Bosphorus Turkish Restaurant (Xingsheng Road)  `pl_gz_bosi_xingsheng`
-- food/international_brand · main · 分数 23 · 天河区
-- 高德：未查询
-- 简介：想换一餐口味，可以选珠江新城这家土耳其餐厅。 / Try Turkish food at this Zhujiang New Town restaurant.
-- 开放时间：—
-- 来源：https://cguan.cancilleria.gob.ar/userfiles/guia_de_guangzhou.pdf
-- [ ] accept　[ ] reject　[ ] edit：
-
 ### 广州酒家·粤宴西关 · Guangzhou Restaurant (Yueyan Xiguan)  `pl_gz_guangzhoujiujia_yueyanxiguan`
 - food/local_cuisine · main · 分数 23 · 荔湾区
 - 高德：未查询
@@ -600,6 +627,8 @@
 - 开放时间：—
 - 来源：https://cguan.cancilleria.gob.ar/userfiles/guia_de_guangzhou.pdf
 - [ ] accept　[ ] reject　[ ] edit：
+
+## 第 4 批
 
 ### Mercato莫卡多（广州K11店） · Mercato (Guangzhou K11)  `pl_gz_mercato_kshiyi`
 - food/western · main · 分数 23 · 天河区
@@ -624,8 +653,6 @@
 - 开放时间：—
 - 来源：https://www.eguangzhou.gov.cn/gzlatest/content/post_42599.html
 - [ ] accept　[ ] reject　[ ] edit：
-
-## 第 4 批
 
 ### apM时代国际服装城 · apM International Fashion City  `pl_gz_apm_fashion_liwan`
 - shopping/market · main · 分数 21 · 荔湾区
@@ -705,14 +732,6 @@
 - 简介：在广州东站片区找一处能逛生活零售、顺便用餐的商场。 / A place to browse lifestyle shops and eat near Guangzhou East Railway Station.
 - 开放时间：—
 - 来源：https://sw.gz.gov.cn/swzx/swyw/content/post_11021406.html
-- [ ] accept　[ ] reject　[ ] edit：
-
-### Il Ponte意大利餐厅（林和西横路） · Il Ponte  `pl_gz_ilponte_linhe`
-- food/western · main · 分数 21 · 天河区
-- 高德：未查询
-- 简介：广州东站一带想吃意餐时，可以按英文店名找。 / An Italian option in the Guangzhou East Railway Station area.
-- 开放时间：—
-- 来源：https://www.hilton.com/en/hotels/cangthi-hilton-guangzhou-tianhe/dining/?arrivalDate=2026-09-30&departureDate=2026-10-01&displayCurrency=CNY&flexibleDates=false&numAdults=1&numChildren=0&numRooms=1&room1AdultAges=&room1ChildAges=
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 九爷鸡（文明路一带） · Jiuye Chicken  `pl_gz_jiuye_wenming`
@@ -811,6 +830,8 @@
 - 来源：https://www.eguangzhou.gov.cn/gzlatest/content/post_42599.html
 - [ ] accept　[ ] reject　[ ] edit：
 
+## 第 5 批
+
 ### 汤氏美食·台山水步黄鳝饭 · Tang's Cuisine (Taishan Eel Rice)  `pl_gz_tangshi_longjin`
 - food/local_cuisine · main · 分数 21 · 荔湾区
 - 高德：未查询
@@ -826,8 +847,6 @@
 - 开放时间：—
 - 来源：https://www.eguangzhou.gov.cn/gzlatest/content/post_42599.html
 - [ ] accept　[ ] reject　[ ] edit：
-
-## 第 5 批
 
 ### 向群饭店（龙津路一带） · Xiangqun Restaurant  `pl_gz_xiangqun_longjin`
 - food/local_cuisine · main · 分数 21 · 荔湾区
@@ -917,6 +936,14 @@
 - 来源：https://www.lw.gov.cn/ywb/fw/ly/whss/content/mpost_9105819.html
 - [ ] accept　[ ] reject　[ ] edit：
 
+### 铂斯土耳其餐厅（兴盛路） · Bosphorus Turkish Restaurant (Xingsheng Road)  `pl_gz_bosi_xingsheng`
+- food/international_brand · main · 分数 15 · 天河区
+- 高德：未查询
+- 简介：想换一餐口味，可以选珠江新城这家土耳其餐厅。 / Try Turkish food at this Zhujiang New Town restaurant.
+- 开放时间：—
+- 来源：https://cguan.cancilleria.gob.ar/userfiles/guia_de_guangzhou.pdf
+- [ ] accept　[ ] reject　[ ] edit：
+
 ### 黄埔古港景区 · Huangpu Ancient Port Scenic Area  `pl_gz_huangpu_gugang`
 - attraction/history · main · 分数 12 · 海珠区
 - 高德：未查询
@@ -997,8 +1024,45 @@
 - 来源：https://wglj.gz.gov.cn/ztmb/gzhyn/ajjq/jqml/content/post_11062518.html
 - [ ] accept　[ ] reject　[ ] edit：
 
+### 广州奥园喜来登酒店 · Sheraton Guangzhou Panyu  `pl_gz_panyuxilaideng`
+- hotel/hotel · backup · 分数 31 · 番禺区
+- 高德：未查询
+- 简介：南村万博站可搭7号线和18号线，方便游番禺。 / A Panyu option with two metro lines at Nancun Wanbo.
+- 开放时间：—
+- 来源：https://www.marriott.com/en-us/hotels/cansp-sheraton-guangzhou-panyu/overview/
+- 提醒：pl_gz_panyuxilaideng: unknown field 'hotel_class' is dropped on import
+- [ ] accept　[ ] reject　[ ] edit：
+
+## 第 6 批
+
+### 广交会万怡酒店 · Courtyard by Marriott Guangzhou Pazhou  `pl_gz_pazhouwanyi`
+- hotel/hotel · backup · 分数 31 · 海珠区
+- 高德：未查询
+- 简介：从琶洲站到店，可把海珠东部安排在同一天。 / A Pazhou base for a trip focused on eastern Haizhu.
+- 开放时间：—
+- 来源：https://www.marriott.com/en-us/hotels/canyp-courtyard-guangzhou-pazhou/overview/
+- 提醒：pl_gz_pazhouwanyi: unknown field 'hotel_class' is dropped on import
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 方所（广州太古汇店） · Fangsuo, Taikoo Hui Guangzhou  `pl_gz_f1925_taikoo`
+- shopping/boutique · backup · 分数 30 · 天河区
+- 高德：未查询
+- 简介：想找中文书、设计用品和小件礼物，可在太古汇留一站。 / Browse Chinese books, design goods and small gifts inside Taikoo Hui.
+- 开放时间：—
+- 来源：https://www.taikoohui.com/zh-cn/shopping/mu35/
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 广州海航威斯汀酒店 · The Westin Guangzhou  `pl_gz_tianheweisiting`
+- hotel/hotel · backup · 分数 29 · 天河区
+- 高德：未查询
+- 简介：天河的威斯汀设有多语礼宾，市区走累可回店游泳。 / Multilingual concierge service and indoor and outdoor pools in Tianhe.
+- 开放时间：—
+- 来源：https://www.marriott.com/en-us/hotels/cangw-the-westin-guangzhou/overview/
+- 提醒：pl_gz_tianheweisiting: unknown field 'hotel_class' is dropped on import
+- [ ] accept　[ ] reject　[ ] edit：
+
 ### 广州卓美亚酒店 · Jumeirah Guangzhou  `pl_gz_zhuomeiya`
-- hotel/hotel · backup · 分数 28 · 天河区
+- hotel/hotel · backup · 分数 29 · 天河区
 - 高德：未查询
 - 简介：珠江东路的客房，可按门店说明挑广州塔景套房。 / A Zhujiang East Road hotel with Canton Tower views from select suites.
 - 开放时间：—
@@ -1006,12 +1070,21 @@
 - 提醒：pl_gz_zhuomeiya: unknown field 'hotel_class' is dropped on import
 - [ ] accept　[ ] reject　[ ] edit：
 
-### 方所（广州太古汇店） · Fangsuo, Taikoo Hui Guangzhou  `pl_gz_f1925_taikoo`
-- shopping/boutique · backup · 分数 26 · 天河区
+### 荔湾礼物文创旗舰店（永庆坊） · Liwan Gifts Flagship, Yongqing Fang  `pl_gz_liwan_gifts_yongqing`
+- shopping/boutique · backup · 分数 28 · 荔湾区
 - 高德：未查询
-- 简介：想找中文书、设计用品和小件礼物，可在太古汇留一站。 / Browse Chinese books, design goods and small gifts inside Taikoo Hui.
+- 简介：在粤剧博物馆片区挑广彩小件、冰箱贴和旅行纪念品。 / Shop for Cantonese ceramics and small souvenirs near the Cantonese Opera Museum.
 - 开放时间：—
-- 来源：https://www.taikoohui.com/zh-cn/shopping/mu35/
+- 来源：https://www.lw.gov.cn/zzzs/bmdt/content/post_10103400.html
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 广州天河中云希尔顿花园酒店 · Hilton Garden Inn Guangzhou Tianhe  `pl_gz_tianhezhongyunxierdun`
+- hotel/hotel · backup · 分数 28 · 天河区
+- 高德：未查询
+- 简介：天河北部的希尔顿花园，可结合动物园行程。 / A north Tianhe option for a trip that includes Guangzhou Zoo.
+- 开放时间：—
+- 来源：https://www.hilton.com.cn/zh-cn/hotels/cangzgi-hilton-garden-inn-guangzhou-tianhe
+- 提醒：pl_gz_tianhezhongyunxierdun: unknown field 'hotel_class' is dropped on import
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 广州大厦，希尔顿启缤精选 · Canton Hotel Guangzhou, Tapestry Collection by Hilton  `pl_gz_guangzhoudasha`
@@ -1030,8 +1103,6 @@
 - 来源：https://www.marriott.com/en-us/hotels/canhp-four-points-guangzhou-huangpu/overview/
 - [ ] accept　[ ] reject　[ ] edit：
 
-## 第 6 批
-
 ### 皇上皇（北京路地标店） · Huangshanghuang, Beijing Road Landmark Store  `pl_gz_huangshanghuang_beijinglu_shop`
 - shopping/time_honored_brand · backup · 分数 26 · 越秀区
 - 高德：未查询
@@ -1040,56 +1111,12 @@
 - 来源：https://www.gzhsh.com/PinPai/info.aspx?itemid=151
 - [ ] accept　[ ] reject　[ ] edit：
 
-### 荔湾礼物文创旗舰店（永庆坊） · Liwan Gifts Flagship, Yongqing Fang  `pl_gz_liwan_gifts_yongqing`
-- shopping/boutique · backup · 分数 26 · 荔湾区
-- 高德：未查询
-- 简介：在粤剧博物馆片区挑广彩小件、冰箱贴和旅行纪念品。 / Shop for Cantonese ceramics and small souvenirs near the Cantonese Opera Museum.
-- 开放时间：—
-- 来源：https://www.lw.gov.cn/zzzs/bmdt/content/post_10103400.html
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 广州奥园喜来登酒店 · Sheraton Guangzhou Panyu  `pl_gz_panyuxilaideng`
-- hotel/hotel · backup · 分数 26 · 区未知
-- 高德：未查询
-- 简介：南村万博站可搭7号线和18号线，方便游番禺。 / A Panyu option with two metro lines at Nancun Wanbo.
-- 开放时间：—
-- 来源：https://www.marriott.com/en-us/hotels/cansp-sheraton-guangzhou-panyu/overview/
-- 提醒：pl_gz_panyuxilaideng: unknown field 'hotel_class' is dropped on import
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 广交会万怡酒店 · Courtyard by Marriott Guangzhou Pazhou  `pl_gz_pazhouwanyi`
-- hotel/hotel · backup · 分数 26 · 区未知
-- 高德：未查询
-- 简介：从琶洲站到店，可把海珠东部安排在同一天。 / A Pazhou base for a trip focused on eastern Haizhu.
-- 开放时间：—
-- 来源：https://www.marriott.com/en-us/hotels/canyp-courtyard-guangzhou-pazhou/overview/
-- 提醒：pl_gz_pazhouwanyi: unknown field 'hotel_class' is dropped on import
-- [ ] accept　[ ] reject　[ ] edit：
-
 ### 广州天河凤凰希尔顿花园酒店 · Hilton Garden Inn Guangzhou Tianhe Fenghuang  `pl_gz_tianhefenghuangxierdun`
 - hotel/hotel · backup · 分数 26 · 天河区
 - 高德：未查询
 - 简介：在天河凤凰一带停留可考虑这里。 / A hotel in the Tianhe Fenghuang area.
 - 开放时间：—
 - 来源：https://www.hilton.com.cn/zh-cn/hotels/canesgi-hilton-garden-inn-guangzhou-tianhe-fenghuang
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 广州海航威斯汀酒店 · The Westin Guangzhou  `pl_gz_tianheweisiting`
-- hotel/hotel · backup · 分数 26 · 区未知
-- 高德：未查询
-- 简介：天河的威斯汀设有多语礼宾，市区走累可回店游泳。 / Multilingual concierge service and indoor and outdoor pools in Tianhe.
-- 开放时间：—
-- 来源：https://www.marriott.com/en-us/hotels/cangw-the-westin-guangzhou/overview/
-- 提醒：pl_gz_tianheweisiting: unknown field 'hotel_class' is dropped on import
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 广州天河中云希尔顿花园酒店 · Hilton Garden Inn Guangzhou Tianhe  `pl_gz_tianhezhongyunxierdun`
-- hotel/hotel · backup · 分数 26 · 天河区
-- 高德：未查询
-- 简介：天河北部的希尔顿花园，可结合动物园行程。 / A north Tianhe option for a trip that includes Guangzhou Zoo.
-- 开放时间：—
-- 来源：https://www.hilton.com.cn/zh-cn/hotels/cangzgi-hilton-garden-inn-guangzhou-tianhe
-- 提醒：pl_gz_tianhezhongyunxierdun: unknown field 'hotel_class' is dropped on import
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 广州W酒店 · W Guangzhou  `pl_gz_wjiudian`
@@ -1212,6 +1239,8 @@
 - 来源：https://wglj.gz.gov.cn/xxgk/gzdt/tzgsgg/content/post_11014603.html
 - [ ] accept　[ ] reject　[ ] edit：
 
+## 第 7 批
+
 ### 三生有信（恩宁路） · Sansheng Youxin, Enning Road  `pl_gz_sansheng_letter`
 - shopping/boutique · backup · 分数 21 · 荔湾区
 - 高德：未查询
@@ -1235,8 +1264,6 @@
 - 开放时间：—
 - 来源：https://www.eguangzhou.gov.cn/gzlatest/content/post_42599.html
 - [ ] accept　[ ] reject　[ ] edit：
-
-## 第 7 批
 
 ### 谊园文具批发市场 · Yiyuan Stationery Market  `pl_gz_yiyuan_stationery_market`
 - shopping/market · backup · 分数 21 · 荔湾区

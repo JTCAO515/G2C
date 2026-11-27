@@ -24,7 +24,8 @@ from .taxi_tools import WireModel
 
 VERSION = 'NEARBY.1'
 # NEARBY.2 (contracts/api/NEARBY.2.md, M4 entry 12 item 1, JT 2026-11-25): the same search with the
-# "essentials" — ATMs, pharmacies, public toilets and luggage storage found by name. NEARBY.1 is frozen.
+# "essentials" — ATMs, pharmacies, public toilets, luggage storage and community service centres found by
+# name (community: #2006, coordinator 2026-11-27 under JT pre-authorization). NEARBY.1 is frozen.
 SEARCH = '/v1/tools/nearby/search'
 REVERSE = '/v1/tools/nearby/reverse'
 HOST = 'restapi.amap.com'
@@ -33,8 +34,10 @@ CATEGORY_CODES = {'food': '050000', 'coffee': '050500', 'sights': '110000', 'sho
                   # Gaode POI code table V1.06: 自动提款机, 药房, 公共厕所. Gaode has no foreign-card data.
                   'atm': '160300', 'pharmacy': '090601', 'toilet': '200300'}
 NEARBY1_CATEGORIES = frozenset({'food', 'coffee', 'sights', 'shopping'})
-# Gaode has no luggage storage category: a fixed keyword, asked for on its own so a search stays one call.
+# Gaode has no luggage storage or community service category: a fixed keyword each, asked for on its own
+# so a search stays one call.
 LUGGAGE_KEYWORDS = '行李寄存'
+KEYWORD_CATEGORIES = {'luggage': LUGGAGE_KEYWORDS, 'community': '社区服务中心'}
 CACHE_SECONDS = 60
 CACHE_CAPACITY = 32
 _LOGGER = logging.getLogger(__name__)
@@ -63,7 +66,7 @@ class NearbyLocationRequest(WireModel):
 
 class NearbySearchRequest(NearbyLocationRequest):
     version: Literal['NEARBY.1', 'NEARBY.2']
-    categories: Annotated[list[Literal['food', 'coffee', 'sights', 'shopping', 'atm', 'pharmacy', 'toilet', 'luggage']],
+    categories: Annotated[list[Literal['food', 'coffee', 'sights', 'shopping', 'atm', 'pharmacy', 'toilet', 'luggage', 'community']],
                           Field(min_length=1, max_length=4)]
     radius_m: Literal[500, 1000, 3000]
     sort: Literal['relevance', 'distance']
@@ -79,8 +82,8 @@ class NearbySearchRequest(NearbyLocationRequest):
     def known_to_the_version(self):
         if self.version == 'NEARBY.1' and not set(self.categories) <= NEARBY1_CATEGORIES:
             raise ValueError('NEARBY.1 has only the original four categories')
-        if 'luggage' in self.categories and len(self.categories) > 1:
-            raise ValueError('luggage storage is searched on its own')
+        if set(self.categories) & KEYWORD_CATEGORIES.keys() and len(self.categories) > 1:
+            raise ValueError('a name search category is searched on its own')
         return self
 
 
@@ -220,8 +223,8 @@ class NearbyService:
     def search(self, scope, request, authorize):
         authorize()
         coords = _coarse(request.center.lng, request.center.lat)
-        if request.categories == ['luggage']:
-            what = dict(keywords=LUGGAGE_KEYWORDS)
+        if len(request.categories) == 1 and request.categories[0] in KEYWORD_CATEGORIES:
+            what = dict(keywords=KEYWORD_CATEGORIES[request.categories[0]])
         else:
             what = dict(types='|'.join(CATEGORY_CODES[category] for category in sorted(request.categories)))
         key = (request.version, request.center.coordinate_system, coords, tuple(sorted(what.items())),
