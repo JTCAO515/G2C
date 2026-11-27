@@ -114,6 +114,10 @@
       "plist": "G2CMemoryNoteEnabled"
     },
     {
+      "setting": "G2C_AUTOSAVE_NOTICE_ENABLED",
+      "plist": "G2CAutosaveNoticeEnabled"
+    },
+    {
       "setting": "G2C_TRIP_MEMORY_LABEL_ENABLED",
       "plist": "G2CTripMemoryLabelEnabled"
     }
