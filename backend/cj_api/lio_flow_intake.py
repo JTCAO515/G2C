@@ -312,6 +312,23 @@ _FIXED_HINT=re.compile(r'订好|订了|买好|买了|订票|订位|订房|预订
                        r'[一二三四五六七八九十两]{1,3}\s*[点时]|\bnoon\b|midnight|o.?clock|中午|正午|午夜',re.I)
 
 
+def fixed_items_structure(items):
+    """Structure only, never the traveler's words: one short token per fixed item (kind, locked, booking, how many date/clock/zone
+    and place fields are set, how many later details, length of its quote and label, whether a fixed word matched, how many
+    unknown and uncertain fields). For the Hong Kong v2 retest of 2026-11-28, whose intake output is not kept."""
+    rows=[]
+    for item in items:
+        if type(item)is not dict:rows.append('?');continue
+        text=str(item.get('quote'))+' '+str(item.get('label'))
+        rows.append('%s|lock=%s|book=%s|when=%d|where=%d|detail=%d|q=%d|l=%d|mark=%d|hint=%d|unk=%d|unc=%d'%(
+            item.get('kind'),{True:'T',False:'F',None:'N'}.get(item.get('locked'),'?'),str(item.get('booking_status'))[:1],
+            sum(item.get(key)is not None for key in _WHEN_WHERE if not key.endswith('place')),
+            sum(item.get(key)is not None for key in('start_place','end_place')),len(item.get('detail_refs')or()),
+            len(str(item.get('quote'))),len(str(item.get('label'))),int(_FIXED_MARK.search(text)is not None),
+            int(_FIXED_HINT.search(text)is not None),len(item.get('unknown_fields')or()),len(item.get('uncertain_fields')or{})))
+    return rows
+
+
 def _drop_wish_items(items):
     """A sightseeing wish is not a fixed arrangement. Hong Kong run 869c104a (v2, 2026-11-28): 「第一天故宫和景山，第二天颐和园」 came
     back as `intent` items and the plan stopped to ask for their participants, dates and clocks. An item is dropped, as if it had
@@ -576,6 +593,10 @@ def parse_flow(raw,turns,refs,message_id,previous,*,schema=FlowIntake,memory_off
                 and 'start_date' not in data['uncertain_fields']
                 and any(ref['field']=='start_date'for ref in data['field_sources'])):
             unknown[:]=[field for field in unknown if field!='start_date']
+        if data['fixed_items']:
+            import logging
+            logging.getLogger('cj_usage.audit').info('LIO_INTAKE_FIXED_ITEMS message_id=%s count=%s items=%s',message_id,
+                len(data['fixed_items']),';'.join(fixed_items_structure(data['fixed_items'])))
         wishes=_drop_wish_items(data['fixed_items'])
         if wishes:
             import logging

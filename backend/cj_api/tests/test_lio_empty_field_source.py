@@ -335,6 +335,36 @@ class WishItems(unittest.TestCase):
         self.assertEqual([item['kind'] for item in mixed], ['hotel'])
 
 
+class FixedItemsDiagnostics(unittest.TestCase):
+    """Hong Kong v2 retest of 2026-11-28 kept no intake output, so the next retest needs the structure of the fixed items in the log:
+    kinds, flags and counts, never the traveler's words."""
+    TEXT = NullQuote.TEXT
+
+    def test_the_structure_line_has_no_words_of_the_traveler(self):
+        from cj_api.lio_flow_intake import fixed_items_structure
+        rows = fixed_items_structure([wish('故宫和景山', '第一天故宫和景山'), wish('故宫', '故宫已经订好', kind='appointment', locked=True, booking_status='booked'), 'odd'])
+        self.assertEqual(rows[0], 'intent|lock=N|book=N|when=0|where=0|detail=0|q=8|l=5|mark=0|hint=0|unk=4|unc=0')
+        self.assertTrue(rows[1].startswith('appointment|lock=T|book=b|') and '|hint=1|' in rows[1])
+        self.assertEqual(rows[2], '?')
+        for row in rows:
+            for word in ('故宫', '景山', '第一天', '订好'):
+                self.assertNotIn(word, row)
+
+    def test_parse_flow_logs_the_structure_of_the_fixed_items_it_was_given(self):
+        value = NullQuote().logged()
+        value['fixed_items'] = [wish('故宫和景山', '第一天故宫和景山'), wish('颐和园', '第二天颐和园')]
+        with self.assertLogs('cj_usage.audit', level='INFO') as logs:
+            parse_flow(json.dumps(value), (original(self.TEXT),), (), 'current', None, schema=OptionalIntake)
+        lines = [line for line in logs.output if 'LIO_INTAKE_FIXED_ITEMS' in line]
+        self.assertEqual(len(lines), 1)
+        self.assertIn('count=2', lines[0])
+        self.assertIn('intent|lock=N|book=N|when=0|where=0', lines[0])
+        for word in ('故宫', '颐和园', '第一天', '第二天'):
+            self.assertNotIn(word, lines[0])
+        # the wish drop of #2123 still logs its own count after it
+        self.assertTrue(any('LIO_INTAKE_WISH_ITEMS_DROPPED' in line and 'count=2' in line for line in logs.output))
+
+
 class EndToEnd(unittest.TestCase):
     def test_the_whole_plan_goes_through_like_the_same_plan_without_the_empty_source(self):
         # Through the real intake runner: the empty quote changes nothing about what is planned or stored.
