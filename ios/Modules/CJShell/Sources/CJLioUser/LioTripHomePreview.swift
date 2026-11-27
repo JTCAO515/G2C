@@ -89,10 +89,10 @@ extension LioTripHomePreview {
         let ticked: [String]
         switch scene {
         case .none: ticked = []
-        case .before: ticked = ["arrival-card"]
-        case .arrival: ticked = ["arrival-card", "payment", "medical-card", "booking.beijing.palace-museum.2026-12-09"]
+        case .before: ticked = ["payment"]
+        case .arrival: ticked = ["entry", "payment", "medical-card", "booking.beijing.palace-museum.2026-12-09"]
         case .china, .evening, .ended:
-            ticked = ["arrival-card", "payment", "medical-card", "check-in", "booking.beijing.palace-museum.2026-12-09",
+            ticked = ["entry", "payment", "medical-card", "check-in", "booking.beijing.palace-museum.2026-12-09",
                       "booking.beijing.mutianyu.2026-12-10"]
         }
         return .init(profile: profile, ticks: LioTripTicks(done: Dictionary(uniqueKeysWithValues: ticked.map { ($0, at("2026-11-26 09:00")) })))
