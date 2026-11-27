@@ -71,3 +71,18 @@ CJ_AMAP_WEB_KEY=… python3 -B knowledge/places/import/import_drafts.py --inbox 
 - 审核表：`review/<城市>.review.csv`（Excel 可直接打开，批次 25 条，空的 `decision` 列填 accept / reject / edit，另有 `rank`、`note` 列）和 `.md`（逐条卡片）。表里以 `= + - @` 开头的单元格会加引号前缀，避免草稿里的公式在表格软件里执行。
 - 重跑安全：已有决定的条目保持不变，待审的刷新，从收件箱里消失的待审条目保留。
 - 高德应答缓存在 `<收件箱>/.amap-cache`（仓库之外），只用于避免重复计费，不提交。
+
+## 审核结果入库（#1988）
+
+JT（或指定的人）在 `review/<城市>.review.csv` 的 `decision` 列填 `accept`、`reject` 或 `edit`（edit 必须在 `note` 写要改什么），可在 `rank` 列写同类别内的名次。然后：
+
+```bash
+python3 -B knowledge/places/import/apply_review.py beijing --reviewer JT --on 2026-11-30
+python3 -B knowledge/places/validate.py --write     # 重写副本，并与预约规则表交叉核对
+```
+
+- `accept` 的条目拿候选里的草稿字段（去掉 `external_signals`）加高德坐标、`rank`、审核记录（审核人、日期、备注）进库；没有坐标（高德没找到）的不能 accept。
+- 整个城市文件先用 `validate.py` 同一套规则试校验，**有一条不过就整城都不写**并列出全部问题（常见的是同城名称重复）。
+- `reject` 留在候选文件里标 `rejected`，不进库；`edit` 保持待审，修完草稿重新导入。
+- 再次 accept 同一个 id 会替换库里的旧条目（改审）。
+- 库里只有人点过 accept 的条目：这是「人审之后才进库」的唯一入口。
