@@ -262,13 +262,15 @@ public enum LioTimelineWire {
         public let followups: [Followup]
         /// Tap-to-ask questions under the answer (at most 3); a chip without a ticket is shown but not offered for a tap.
         public let chips: [Chip]
+        /// LIO-answer-rich.1 (#1991), only on a completed row of a v2 read that declared it; nil otherwise.
+        public let rich: Rich?
 
         public init(id: String, question: String, answer: String, state: State, activity: Activity?, sources: [Source],
                     trip: SavedTrip?, memoryTags: [LioMemoryWire.Tag], layout: AnswerLayout? = nil,
-                    followups: [Followup] = [], chips: [Chip] = []) {
+                    followups: [Followup] = [], chips: [Chip] = [], rich: Rich? = nil) {
             self.id = id; self.question = question; self.answer = answer; self.state = state; self.activity = activity
             self.sources = sources; self.trip = trip; self.memoryTags = memoryTags; self.layout = layout
-            self.followups = followups; self.chips = chips
+            self.followups = followups; self.chips = chips; self.rich = rich
         }
     }
 
@@ -293,6 +295,29 @@ public enum LioTimelineWire {
     }
 
     public static let answerFollowupsVersion = "LIO-answer-followups.1"
+    public static let answerRichVersion = "LIO-answer-rich.1"
+
+    /// The parts of `LIO-answer-rich.1` this App reads. Each part is decoded and checked on its own and a part that
+    /// fails is left out; a broken `rich` never fails the page.
+    public struct Rich: Sendable, Equatable {
+        /// Places named in the answer, in order of position. Only the shape is checked here (the range's size, the id's
+        /// form); whether a range fits the answer text is checked where the text is (`LioPlaceMentions`).
+        public let entities: [Entity]
+
+        public init(entities: [Entity] = []) { self.entities = entities }
+    }
+
+    /// One place in the answer text: the half-open range `[start, end)` counted in Unicode scalar values over the
+    /// row's complete `answer`, and the place's id in the places library.
+    public struct Entity: Sendable, Equatable {
+        public let start: Int
+        public let end: Int
+        public let placeID: String
+        public init(start: Int, end: Int, placeID: String) { self.start = start; self.end = end; self.placeID = placeID }
+    }
+
+    static let maximumEntities = 20
+    static let maximumEntityEnd = 200_000
 
     public struct Page: Sendable, Equatable {
         public let conversationID: String?
@@ -363,9 +388,34 @@ public enum LioTimelineWire {
         let layout = wire.layout.flatMap(AnswerLayout.init(rawValue:))
         // A layout the App does not know is read as no layout: the row is still shown as before.
         let shown = (state == .completed && layout == .split) ? validFollowups(wire.followups) : ([], [])
+        // `rich` only rides on a completed row that has an answer; anywhere else it is ignored.
+        let rich = (state == .completed && !wire.answer.isEmpty) ? validRich(wire.rich) : nil
         return Message(id: wire.messageID, question: wire.text, answer: wire.answer, state: state,
                        activity: wire.activity, sources: sources, trip: trip, memoryTags: tags,
-                       layout: layout, followups: shown.0, chips: shown.1)
+                       layout: layout, followups: shown.0, chips: shown.1, rich: rich)
+    }
+
+    /// An entity that fails its rule is dropped on its own; a list over its limit is dropped whole; another version
+    /// of `rich` is ignored; nothing left means no `rich`.
+    private static func validRich(_ wire: Snapshot.Row.RichWire?) -> Rich? {
+        guard let wire, wire.version == answerRichVersion, let items = wire.entities, items.count <= maximumEntities else { return nil }
+        let entities = items.compactMap { item -> Entity? in
+            guard let item = item.value, item.type == "place", item.start >= 0, item.end <= maximumEntityEnd,
+                  (2...32).contains(item.end - item.start), validPlaceID(item.placeID) else { return nil }
+            return Entity(start: item.start, end: item.end, placeID: item.placeID)
+        }
+        return entities.isEmpty ? nil : Rich(entities: entities)
+    }
+
+    /// `^pl_[a-z]{2}_[a-z0-9]+(_[a-z0-9]+)*$`, at most 64 characters.
+    public static func validPlaceID(_ value: String) -> Bool {
+        guard value.utf8.count <= 64 else { return false }
+        let parts = value.utf8.split(separator: UInt8(ascii: "_"), omittingEmptySubsequences: false)
+        guard parts.count >= 3, parts[0].elementsEqual("pl".utf8), parts[1].count == 2,
+              parts[1].allSatisfy({ (97...122).contains($0) }) else { return false }
+        return parts.dropFirst(2).allSatisfy { part in
+            !part.isEmpty && part.allSatisfy { (97...122).contains($0) || (48...57).contains($0) }
+        }
     }
 
     /// Buttons that do not pass the checks are dropped as a set: a damaged list never puts a partial or
@@ -465,6 +515,29 @@ public enum LioTimelineWire {
             struct Memory: Decodable { let tags: [LioMemoryWire.Tag] }
             let layout: String?
             let followups: Followups?
+            let rich: RichWire?
+            /// One entity as sent; `Lossy` keeps a bad one from hiding the rest.
+            struct RichWire: Decodable {
+                let version: String
+                let entities: [LossyEntity]?
+                struct EntityWire: Decodable {
+                    let type: String
+                    let start: Int
+                    let end: Int
+                    let placeID: String
+                    enum CodingKeys: String, CodingKey { case type, start, end, placeID = "place_id" }
+                }
+                struct LossyEntity: Decodable {
+                    let value: EntityWire?
+                    init(from decoder: Decoder) throws { value = try? EntityWire(from: decoder) }
+                }
+                init(from decoder: Decoder) throws {
+                    let c = try decoder.container(keyedBy: CodingKeys.self)
+                    version = try c.decode(String.self, forKey: .version)
+                    entities = (try? c.decodeIfPresent([LossyEntity].self, forKey: .entities)) ?? nil
+                }
+                enum CodingKeys: String, CodingKey { case version, entities }
+            }
             struct Followups: Decodable {
                 let version: String
                 struct Action: Decodable {
@@ -479,7 +552,7 @@ public enum LioTimelineWire {
                 let actions: [Action]?
                 let chips: [ChipRow]?
             }
-            enum CodingKeys: String, CodingKey { case messageID = "message_id", text, answer, status, failure, activity, sources, trip, memory, layout, followups }
+            enum CodingKeys: String, CodingKey { case messageID = "message_id", text, answer, status, failure, activity, sources, trip, memory, layout, followups, rich }
             init(from decoder: Decoder) throws {
                 let c = try decoder.container(keyedBy: CodingKeys.self)
                 messageID = try c.decode(String.self, forKey: .messageID); text = try c.decode(String.self, forKey: .text)
@@ -492,6 +565,8 @@ public enum LioTimelineWire {
                 layout = try c.decodeIfPresent(String.self, forKey: .layout)
                 // The buttons are optional garnish: a malformed list reads as none and never fails the page.
                 followups = (try? c.decodeIfPresent(Followups.self, forKey: .followups)) ?? nil
+                // `rich` is the same kind of garnish: a broken one reads as none.
+                rich = (try? c.decodeIfPresent(RichWire.self, forKey: .rich)) ?? nil
             }
         }
         let version: String
@@ -502,4 +577,16 @@ public enum LioTimelineWire {
             case version, conversationID = "conversation_id", messages, nextBefore = "next_before"
         }
     }
+}
+
+/// Whether to declare `LIO-answer-rich.1` on the next read (#1991). A server image that does not know it answers 400
+/// to the declaration; the App then reads with followups.1 and does not try rich again for `pause` seconds. Nothing
+/// is stored: a restart tries rich at once.
+struct LioAnswerRichDeclaration: Equatable, Sendable {
+    static let pause: TimeInterval = 15 * 60
+    private(set) var pausedUntil: Date?
+
+    func allows(at now: Date) -> Bool { pausedUntil.map { now >= $0 } ?? true }
+
+    mutating func refused(at now: Date) { pausedUntil = now.addingTimeInterval(Self.pause) }
 }

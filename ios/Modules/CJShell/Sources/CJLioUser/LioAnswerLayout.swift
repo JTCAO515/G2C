@@ -26,9 +26,16 @@ enum LioAnswerLayoutFeature {
 struct LioAnswerParts: Equatable {
     let head: String
     let tail: String?
+    /// How many Unicode scalar values the head has, and where in the whole answer the tail starts (also in scalars).
+    /// The server's place ranges (LIO-answer-rich.1) count scalars over the whole answer; these give each bubble its own.
+    let headScalars: Int
+    let tailStart: Int?
 
     /// One bubble, the answer exactly as received (the path with the flag off or without a `split` layout).
-    init(whole source: String) { head = source; tail = nil }
+    init(whole source: String) {
+        head = source; tail = nil
+        headScalars = source.unicodeScalars.count; tailStart = nil
+    }
 
     /// Cuts at the first `\n\n`. Newlines around the cut belong to neither bubble. While the first newline of the cut is
     /// the last character received the head already leaves it out, so the head only ever grows as the answer streams.
@@ -36,11 +43,24 @@ struct LioAnswerParts: Equatable {
         guard let cut = source.range(of: "\n\n") else {
             head = source.hasSuffix("\n") ? String(source.dropLast()) : source
             tail = nil
+            headScalars = head.unicodeScalars.count; tailStart = nil
             return
         }
         head = String(source[..<cut.lowerBound])
         let rest = source[cut.upperBound...].drop(while: { $0 == "\n" })
         tail = rest.isEmpty ? nil : String(rest)
+        headScalars = head.unicodeScalars.count
+        tailStart = rest.isEmpty ? nil : source.unicodeScalars.distance(from: source.startIndex, to: rest.startIndex)
+    }
+
+    /// The part of `spans` (ranges over the whole answer) that lies in the head, and the part in the tail with
+    /// its ranges moved to the tail's own start. A span that is in neither (it would cross the cut) is left out.
+    func places(_ spans: [LioPlaceSpan]) -> (head: [LioPlaceSpan], tail: [LioPlaceSpan]) {
+        let inHead = spans.filter { $0.end <= headScalars }
+        guard let tailStart else { return (inHead, []) }
+        let inTail = spans.filter { $0.start >= tailStart }
+            .map { LioPlaceSpan(start: $0.start - tailStart, end: $0.end - tailStart, placeID: $0.placeID) }
+        return (inHead, inTail)
     }
 }
 

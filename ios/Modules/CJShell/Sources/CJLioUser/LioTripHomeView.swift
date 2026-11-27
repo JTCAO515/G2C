@@ -50,7 +50,7 @@ struct LioTripHome: View {
     /// What to do once the sheet that asked a question has closed (#1979).
     @State private var after: After?
 
-    enum Page: Hashable { case task(String), schedule, arrival, hotel, roadbook, canvas }
+    enum Page: Hashable { case task(String), schedule, arrival, hotel, roadbook, canvas, templateCanvas(String) }
     private enum Sheet: String, Identifiable {
         case edit, taxi, driver, passport, arrival, stay
         var id: Self { self }
@@ -743,11 +743,25 @@ struct LioTripHome: View {
             if let arrival = tools.arrival { arrival.checklistPage(model.profile) }
         case .hotel:
             LioReturnHotelView(language: language, store: tools.hotelStore, detailsStore: tools.detailsStore, taxiEntry: taxiEntry)
+        case .templateCanvas(let tripID):
+            if let plan = (savedPlans?.plans ?? plans).first(where: { $0.tripID == tripID }) {
+                canvasScreen(plan)
+            } else {
+                ContentUnavailableView(language.text("This is no longer on your list", "这件事已经不在清单上了"),
+                                       systemImage: "calendar")
+            }
         case .roadbook:
             LioRoadbookLibraryView(language: language, store: tools.roadbookStore,
                                    candidates: plans.map { LioRoadbook(savedPlan: $0) },
-                                   savedPlans: savedPlans)
+                                   savedPlans: savedPlans, canvasUse: templateCanvasUse)
         }
+    }
+
+    /// #1997: with the canvas switch on, a popular route used as my trip becomes a canvas and opens in place of this
+    /// Roadbook page. Off, nil: the Roadbook pages behave as before.
+    private var templateCanvasUse: LioTemplateCanvasUse? {
+        guard canvasEnabled, let canvasStore else { return nil }
+        return LioTemplateCanvasUse(store: canvasStore) { tripID in path = [.templateCanvas(tripID)] }
     }
 
     /// #1995: the trip canvas of this trip's plan (or its own, with no plan), from the timeline's own entries. The map's

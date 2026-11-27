@@ -400,7 +400,8 @@ extension LioToolContext {
         available.convenience = nearbyService != nil && LioNearbyPlace.essentialsEnabled
         // The place library's Stay page (#2004) needs no search service, so its card shows when the switch is on.
         available.hotels = hotelSearch != nil || LioPlaceToolsFeature.enabledInBuild
-        available.roadbook = LioRoadbookFeature.enabled(infoValue: info("G2CRoadbookEnabled"))
+        available.roadbook = LioRoadbookFeature.shownInTools(roadbookInfo: info("G2CRoadbookEnabled"),
+                                                             canvasInfo: info(LioTripCanvasFeature.infoKey))
         available.transport = LioTransportService.fromBuild() != nil
         available.menuOrder = menuService != nil
         available.returnHotel = LioReturnHotelTools.shownInTools

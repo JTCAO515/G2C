@@ -35,6 +35,7 @@
 <key>G2CConsentEnabled</key><string>$(G2C_CONSENT_ENABLED)</string>
 <key>G2CChatTripPlacesEnabled</key><string>$(G2C_CHAT_TRIP_PLACES_ENABLED)</string>
 <key>G2CTripCanvasEnabled</key><string>$(G2C_TRIP_CANVAS_ENABLED)</string>
+<key>G2CAnswerRichEnabled</key><string>$(G2C_ANSWER_RICH_ENABLED)</string>
 <key>LSApplicationQueriesSchemes</key><array><string>OneTravel</string></array>
 <key>ITSAppUsesNonExemptEncryption</key><false/>
 <key>UISupportedInterfaceOrientations</key><array>

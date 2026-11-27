@@ -100,6 +100,10 @@
     {
       "setting": "G2C_TRIP_CANVAS_ENABLED",
       "plist": "G2CTripCanvasEnabled"
+    },
+    {
+      "setting": "G2C_ANSWER_RICH_ENABLED",
+      "plist": "G2CAnswerRichEnabled"
     }
   ],
   "release": {
