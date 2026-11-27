@@ -54,6 +54,9 @@ struct LioDevPlacesPack: Equatable, Sendable {
     static let environmentKey = "G2C_PLACES_DEV_PACK"
 
     let places: [LioDevPlace]
+    /// The file as read, so the place page's own reader (`LioPlace`, which every other source decodes through)
+    /// can decode the entries the same way it decodes the library; this type only validates the pack.
+    let data: Data
 
     private struct Document: Decodable { let version: String; let places: [LioDevPlace] }
 
@@ -67,7 +70,7 @@ struct LioDevPlacesPack: Equatable, Sendable {
         guard let path, !path.isEmpty, let data = try? Data(contentsOf: URL(fileURLWithPath: path)),
               let document = try? JSONDecoder().decode(Document.self, from: data), document.version == version,
               document.places.allSatisfy({ $0.review.status == "unreviewed" }) else { return nil }
-        return LioDevPlacesPack(places: document.places)
+        return LioDevPlacesPack(places: document.places, data: data)
     }
 
     func place(id: String) -> LioDevPlace? { places.first { $0.id == id } }
