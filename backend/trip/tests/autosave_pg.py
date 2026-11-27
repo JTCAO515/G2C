@@ -186,13 +186,15 @@ def main(config, conninfo):
         a, b = items.index(by_id(items, 'item-1')), items.index(by_id(items, 'item-5'))
         items[a], items[b] = items[b], items[a]
     refused('user_order_changed', lambda: commit(LIO_PLAN, base_user(swap)))
-    refused('tombstone_readded', lambda: commit(LIO_PLAN, base_user(add('item-2', like='item-1', text='back'))))
+    # item-2 was a matched point: its place is what is blocked, under its old id or any other (#2041 P3).
+    refused('tombstone_readded', lambda: commit(LIO_PLAN, base_user(
+        lambda items: items.append(dict(deepcopy(BASE['items'][1]), text='back')))))
     refused('tombstone_readded', lambda: commit(LIO_PLAN, base_user(add('item-4', text='back again'))))
     refused('tombstone_readded', lambda: commit(LIO_PLAN, base_user(
         lambda items: items.append(dict(deepcopy(BASE['items'][1]), id='fresh-same-place')))))
     refused('too_large', lambda: commit(LIO_PLAN, base_user(*(add(f'bulk-{n}') for n in range(31)))))
     assert state() == before
-    print('PASS Lio refused: change/remove/reorder user points, tombstone id or Gaode id, >30 new points; no partial write')
+    print('PASS Lio refused: change/remove/reorder user points, placeless tombstone id or Gaode id, >30 new points; no partial write')
 
     allowed = commit(LIO_PLAN, base_user(retext('item-6', 'Lio changed its 6'), drop('item-7'), add('item-10')))
     assert allowed.committed_version == 5 and committed(allowed.action_id) == (True,)
@@ -308,7 +310,17 @@ def main(config, conninfo):
     assert undone.committed_version == 9 and committed('undo-lio-c') == (False,) and origins(9) == origins(7)
     not_restore = Proposal('undo-q', 'trip-auto', 9, LIO_UNDO, int(time.time()) + 3600, packed(document(retext('item-8', 'x'))))
     act(not_restore, repo.publish(not_restore), 'undo-other')
-    assert origins(10)['item-8'] == 'user'   # an "undo" that is not the previous bytes counts as a person's write
+    assert origins(10)['item-8'] == 'user'   # a point matching neither version counts as a person's write
+    # #2041 P2: an undo that keeps a fixed point of the undone version (protect_fixed) is still an undo:
+    # the dropped Lio point leaves no tombstone and the kept point keeps its Lio origin.
+    kept = chain(retext('item-8', 'x'), add('lio-fixed', text='fixed by Lio'))
+    lio = commit(LIO_PLAN, document(chain(kept, add('lio-extra', text='Lio extra'))))
+    assert lio.committed_version == 11 and origins(11)['lio-fixed'] == origins(11)['lio-extra'] == 'lio'
+    marks = rows('cj_trip_item_tombstone')
+    keep_fixed = Proposal('undo-r', 'trip-auto', 11, LIO_UNDO, int(time.time()) + 3600, packed(document(kept)))
+    assert act(keep_fixed, repo.publish(keep_fixed), 'undo-keep-fixed').committed_version == 12
+    assert origins(12) == origins(10) | {'lio-fixed': 'lio'} and rows('cj_trip_item_tombstone') == marks
+    commit(LIO_PLAN, document(chain(kept, add('lio-extra', text='Lio extra'))))   # may add it back
     print('PASS undo window: 23 h allowed, 25 h refused, non-autosave unlimited, newer version refused; undo restores origins')
 
     # --- points from before 0061 count as user ----------------------------------------------------
