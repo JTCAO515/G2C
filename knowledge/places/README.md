@@ -70,7 +70,7 @@ CJ_AMAP_WEB_KEY=… python3 -B knowledge/places/import/import_drafts.py --inbox 
 - 打分只用来排审核顺序（主档在前，再按分数），不决定收不收；构成见 `score.py`。**外部评分和排名默认不计分**，要等统筹按 Codex G3 的条款结论决定后才加 `--use-external-signals`。
 - 审核表：`review/<城市>.review.csv`（Excel 可直接打开，批次 25 条，空的 `decision` 列填 accept / reject / edit，另有 `rank`、`note` 列）和 `.md`（逐条卡片）。表里以 `= + - @` 开头的单元格会加引号前缀，避免草稿里的公式在表格软件里执行。
 - 重跑安全：已有决定的条目保持不变，待审的刷新；**Codex 从文件里撤掉的待审条目会从审核表里去掉**（说明里列出 id），已有决定的撤掉了也保留。
-- `C1/aliases.json`（别名清单）和 `C1/recheck.json`（字段级复核）会叠在景点草稿上：别名并入草稿自己的别名（原有全保留，按 NFKC 与大小写去重），逐条证据存在候选的 `alias_evidence`；复核的新值只有在草稿仍是复核时的旧值、且改完仍能通过校验时才应用，否则只在说明里记一笔；`new: null` 的行表示官方页面没能确认，审核表「提醒」里写「请手工核对」。
+- `C1/aliases.json`（别名清单）和 `C1/recheck.json`（字段级复核）会叠在景点草稿上：别名并入草稿自己的别名（原有全保留，按 NFKC 与大小写去重），逐条证据存在候选的 `alias_evidence`；复核的新值只有在草稿仍是复核时的旧值、且改完仍能通过校验时才应用，否则只在说明里记一笔；`new: null` 的行表示官方页面没能确认，审核表「提醒」里写「请手工核对」。复核只认白名单字段（`hours_zh`、`hours_source`、`official_url` 和 `ticket.*`），其他字段的行记一条说明后跳过；单个别名过不了草稿规则也只丢它自己。Codex 撤掉的待审条目：有 `review_note`（被标 edit）或审核表里已填答案的保留，源文件读不出时也一律保留。
 - 价格规则（C8，JT 2026-11-27）：**订房、点评渠道的价格一律不进数据**。这些站点（订房和旅行平台）在 `placelib.THIRD_PARTY_HOSTS` 里，出现在 `sources`、`official_url` 等任何来源字段都会被拒，所以带价格的条目只可能引用经营方自己的页面。没有价格档的酒店在审核表里提醒「no price band」，补上之前进不了库。
 - 酒店草稿的 `hotel_class`（economy / midscale / upscale / luxury，Codex 按品牌档次填）现在是库的可选字段，供「住」在价格档缺失时作参考；它不在 App 精简副本里。
 - 示意图：`--images`（默认 `<收件箱>/C2`）里有图的条目，审核表 CSV 多一列「示意图」、md 里标「示意图：有」；加 `--preview-dir <目录>` 会另写 `<城市>.preview.html`，缩略图挨着条目，给审核人本地看。预览页写着本机路径，**放在仓库之外，不提交**。
