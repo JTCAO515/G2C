@@ -394,6 +394,8 @@ def check_library_entry(entry, city, where='entry'):
     _check_identity(entry, where)
     _require(entry['city'] == city, f'{where}.city: {entry["city"]} in the {city} file')
     _check_fields(entry, category, where)
+    if category == 'hub':
+        _require(entry['hub_type'] == 'rail' or entry['code'] is not None, f'{where}: an airport needs its code')
     for key in LIBRARY_NONNULL[category]:
         _require(entry[key] is not None, f'{where}.{key}: required in the library')
     _require(entry['aliases_zh'] is not None and entry['aliases_en'] is not None, f'{where}: aliases_* must be lists (empty when none)')

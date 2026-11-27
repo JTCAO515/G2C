@@ -165,6 +165,20 @@ def test_http_is_accepted_for_reference_sources_but_not_for_user_facing_links():
     assert placelib.check_draft({**C1, 'sources': ['ftp://example.org/x']})[0]
 
 
+def test_http_does_not_get_a_third_party_site_past_the_blacklist():
+    for bad in ('http://www.tripadvisor.com/x', 'http://www.ctrip.com./x', 'http://www.booking.com/h'):
+        assert placelib.check_draft({**C1, 'sources': [bad]})[0], bad
+        assert placelib.check_draft({**C1, 'foreigner_signals': {**C1['foreigner_signals'], 'evidence': [bad]}})[0], bad
+
+
+def test_library_hub_rules_match_the_draft_rules(tmp_path):
+    airport, station = library_entry(C7), library_entry(C7, id='pl_bj_beijingnan', hub_type='rail', code=None,
+                                                         name_zh='北京南站', name_en='Beijing South', aliases_zh=[], aliases_en=[], rank=2)
+    assert placelib.load_city(write_city(tmp_path, city_doc(airport, station)))
+    with pytest.raises(placelib.Invalid):
+        placelib.load_city(write_city(tmp_path, city_doc(library_entry(C7, code=None))))      # an airport without its code
+
+
 def test_hotel_foreign_service_is_the_structured_object_codex_delivers():
     assert placelib.check_draft({**C8_HOTEL, 'foreign_service': {'english_front_desk': None, 'foreign_guest_share': None,
                                 'foreign_guest_experience': None, 'international_brand': 'Marriott Bonvoy',
