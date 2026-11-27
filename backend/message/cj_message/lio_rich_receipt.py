@@ -67,13 +67,13 @@ def _undo(undo, action_id, version):
     kind = undo.get('kind', 'restore')
     expected = 'undo-' + sha256(action_id.encode('utf-8')).hexdigest()[:40]
     target = undo.get('target')
-    if (kind not in ('restore', 'remove_created') or undo.get('action_id') != expected or type(target) is not dict
+    if (kind not in ('restore', 'withdraw_created') or undo.get('action_id') != expected or type(target) is not dict
             or 'until' not in undo or not _id(target.get('trip_id')) or target.get('expected_version') != version):
         return None
     if type(target.get('original_hash')) is not str or _HASH.fullmatch(target['original_hash']) is None \
             or target.get('content_version') not in _CONTENT:
         return None
-    if kind == 'remove_created':
+    if kind == 'withdraw_created':
         if version != 1 or set(target) != set(_CREATED_TARGET):
             return None
     else:

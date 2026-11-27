@@ -14,7 +14,7 @@ EXAMPLES = json.loads((Path(__file__).resolve().parents[3] / 'contracts/message/
 RECEIPTS = [(e['name'], e['rich']['trip_receipt']) for e in EXAMPLES['valid'] if 'trip_receipt' in e['rich']]
 BAD_RECEIPTS = [(e['name'], e['rich']['trip_receipt']) for e in EXAMPLES['invalid'] if 'trip_receipt' in e['rich']]
 SAVED = dict(next(r for n, r in RECEIPTS if n == 'saved, undo available'))
-FIRST = dict(next(r for n, r in RECEIPTS if n.startswith('first save of a new trip: undo removes it')))
+FIRST = dict(next(r for n, r in RECEIPTS if n.startswith('first save of a new trip: undo withdraws it')))
 
 
 class Wire(unittest.TestCase):
@@ -76,7 +76,7 @@ class Row(unittest.TestCase):
     def test_a_first_save_receipt_rides_the_row(self):
         rich = self.row('completed', '好的', receipt=FIRST)['rich']
         self.assertEqual(rich['trip_receipt']['committed_version'], 1)
-        self.assertEqual(rich['trip_receipt']['undo']['kind'], 'remove_created')
+        self.assertEqual(rich['trip_receipt']['undo']['kind'], 'withdraw_created')
         self.assertIs(rich['trip_receipt']['first_autosave'], True)
 
     def test_no_receipt_for_a_poll_that_did_not_declare_rich_or_while_the_switch_is_off(self):
