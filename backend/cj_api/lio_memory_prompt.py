@@ -13,7 +13,7 @@ import re
 from .lio_memory_preferences import sensitive
 
 PROMPT_EFFECT = 'lio_memory_prompt:consent'
-_ZH_SELF = re.compile(r'我(?:平时|通常|一般|一直|比较|更|总是|很|特别)?(?:喜欢|偏爱|偏好|习惯|爱吃|爱|不喜欢|不爱|不吃|讨厌|想要|需要|只吃|常常|经常)')
+_ZH_SELF = re.compile(r'我(?:平时|通常|一般|一直|比较|更|总是|很|特别)?(?:喜欢|偏爱|偏好|习惯|爱吃|不喜欢|不爱|不吃|讨厌|只吃)')
 _ZH_CUE = re.compile(r'预算|每晚[0-9]|每天[0-9]+[元块]|慢节奏|快节奏|轻松(?:一点|点)?|节奏(?:慢|快)|(?:带|和)(?:着)?(?:孩子|小孩|宝宝|朋友|家人|爸妈|父母|老婆|老公|对象)|一个人(?:去|旅行|玩)|只会(?:说)?(?:英语|英文|中文|日语)|不会(?:说)?中文')
 _EN_SELF = re.compile(r"\bI(?:'m| am)? (?:usually |always |really |mostly |generally )?(?:like|love|prefer|enjoy|hate|avoid|don't like|do not like|don't eat|do not eat|only eat)\b", re.I)
 _EN_CUE = re.compile(r"\bmy budget\b|\bbudget (?:of|is|around)\b|\bslow(?:er)? pace\b|\brelaxed (?:pace|trip)\b|\bI(?:'m| am) travel(?:l)?ing (?:with|alone|solo)\b|\btravel(?:l)?ing with (?:my|a|two|three|kids|children|friends)\b|\bI only speak\b|\bI don't speak (?:any )?chinese\b", re.I)

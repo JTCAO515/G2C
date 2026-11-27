@@ -129,7 +129,7 @@ def _message(item, state, *, expired=False, trip=None, memory=None, identity=Tru
             # that committed before the answer failed still needs its undo (contract).
             finished = status == 'completed' and bool(answer)
             rich = _rich(answer, entities if finished else None, cards if finished and trip is None else None, receipt,
-                         prompt=finished and prompt and prompt_open is not None and prompt_open())
+                         prompt=prompt_open if finished and prompt else None)
             if rich is not None:
                 row['rich'] = rich
                 # The one difference from the followups.1 row: a taxi card replaces the taxi button.
@@ -145,7 +145,7 @@ def _message(item, state, *, expired=False, trip=None, memory=None, identity=Tru
     return row
 
 
-def _rich(answer, entities, cards=None, receipt=None, prompt=False):
+def _rich(answer, entities, cards=None, receipt=None, prompt=None):
     """`rich` for a row of a poll that declared LIO-answer-rich.1, or None. Every part fails alone and quietly:
     a bad or missing part is left out, `rich` never fails the page. Parts are added here as their tickets land
     (entities D-1 #1989; cards D-2 #1990; receipt T-1 #1994; memory M-1/M-3)."""
@@ -161,7 +161,7 @@ def _rich(answer, entities, cards=None, receipt=None, prompt=False):
             rows = lio_cards.wire(cards)
             if rows:
                 value['cards'] = rows
-        if prompt:
+        if prompt is not None and prompt():   # only after the rich switch said yes: no extra read while it is off
             value['memory'] = dict(prompt='consent')
         if receipt is not None:
             checked = lio_rich_receipt.wire(receipt)
@@ -182,10 +182,14 @@ def _rich(answer, entities, cards=None, receipt=None, prompt=False):
 def _prompt_open(memory_cards, context):
     """A check, run only for a row that carries the prompt marker, that the account still has no consent record and
     the consent switch is on: the prompt is a hint to ask once, never consent, and it is not sent to an account that chose."""
+    memo = []
+
     def check():
-        from .lio_memory_consent import consent_required
-        from .lio_memory_prompt import never_chosen
-        return consent_required() and never_chosen(getattr(memory_cards, 'consent', None), context.scope)
+        if not memo:   # one read for the whole page
+            from .lio_memory_consent import consent_required
+            from .lio_memory_prompt import never_chosen
+            memo.append(consent_required() and never_chosen(getattr(memory_cards, 'consent', None), context.scope))
+        return memo[0]
     return check
 
 

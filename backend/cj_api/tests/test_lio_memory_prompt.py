@@ -13,6 +13,9 @@ STATEMENTS = ('我不喜欢辣的，帮我推荐北京的晚饭', '我平时喜�
               '我一个人去成都玩', '我只会说英语，怎么点菜', 'I prefer slow trips, plan 3 days in Beijing', "I usually like quiet hotels",
               'My budget is around 800 yuan a day', "I'm travelling with my kids", 'I only speak English, how do I order?', "I don't like crowds, any tips?")
 PLAIN = ('故宫怎么走', '北京天气怎么样', '地铁几点停运', 'How do I get from the airport to the city center?', 'Is the Great Wall open today?', '你好', '')
+REVIEW_FALSE_POSITIVES = ('我有孕在身，想要慢节奏', '我腿不好，想要轻松一点', '我经常头疼', '我身体不好想要慢节奏', '我有心脏问题，节奏慢一点',
+                          '我不吃早饭，因为在做化疗', '我需要无障碍通道', '带着孩子去，他有自闭症', '我喜欢念经', "I don't eat meat on Fridays",
+                          '我需要打车', '我需要厕所', '我想要一杯咖啡', '我经常出差', '我爱你')
 SENSITIVE = ('我对花生过敏，不吃辣', '我是穆斯林，我喜欢清真食物', 'I am allergic to peanuts and I prefer quiet places', 'I keep kosher, I like museums',
              '我有糖尿病，预算每晚1000', '我坐轮椅，喜欢慢节奏')
 
@@ -40,6 +43,11 @@ class Cues(unittest.TestCase):
 
     def test_health_and_religion_never_match(self):
         for text in SENSITIVE:
+            with self.subTest(text=text):
+                self.assertFalse(prompt.matches(text))
+
+    def test_the_review_false_positives_do_not_match(self):
+        for text in REVIEW_FALSE_POSITIVES:
             with self.subTest(text=text):
                 self.assertFalse(prompt.matches(text))
 
@@ -111,6 +119,11 @@ class Row(unittest.TestCase):
         self.assertNotIn('rich', self.row('rich', False, prompt.PROMPT_EFFECT))            # chose meanwhile
         self.assertNotIn('rich', self.row('rich', None, prompt.PROMPT_EFFECT))
         self.assertNotIn('rich', self.row('rich', True))                                    # no marker
+        with mock.patch.dict(os.environ, {'CJ_LIO_ANSWER_RICH': 'off'}):                    # rich off: the check is not even run
+            calls = []
+            row = _message(item(), state('好的。\n\n再看看。', SPLIT, prompt.PROMPT_EFFECT), declared='rich', prompt_open=lambda: calls.append(1) or True)
+            self.assertNotIn('rich', row)
+            self.assertEqual(calls, [])
 
     def test_never_for_a_poll_that_did_not_declare_rich(self):
         for declared in (False, True):
@@ -128,3 +141,18 @@ class Row(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class PageCheck(unittest.TestCase):
+    def test_the_consent_table_is_read_once_per_page(self):
+        from cj_api.lio_dialogue_routes import _prompt_open
+        reads = []
+
+        class Store:
+            def current(self, scope):
+                reads.append(scope)
+                return dict(recorded=False)
+        with mock.patch.dict(os.environ, {'CJ_LIO_MEMORY_CONSENT_REQUIRED': '1'}):
+            check = _prompt_open(SimpleNamespace(consent=Store()), SimpleNamespace(scope='s'))
+            self.assertTrue(check() and check() and check())
+        self.assertEqual(reads, ['s'])
