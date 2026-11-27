@@ -103,6 +103,8 @@ struct LioTurn: Identifiable {
     var memoryPrompt = false
     /// #1993: tool cards under the answer (empty unless the build asked for them).
     var cards: [LioTimelineWire.Card] = []
+    /// #2010: the saved memories this plan was based on (empty unless the build asked for rich answers).
+    var memoryUsed: LioTimelineWire.MemoryUsed?
     var fromTimeline = false
     var readFailure: LioRequestProblem?
     var id: Data { question.id }
@@ -128,6 +130,20 @@ final class LioConversation {
             guard let trip = turn.itinerary, seen.insert(trip.id).inserted else { return nil }
             return trip
         }.reversed())
+    }
+    /// #2010: the plan, with the memories its answer was based on when this chat's row for that trip said so. A plan
+    /// the chat has no row for (opened from Trips), or a row without memories, keeps what the plan already had; with the
+    /// label switch off the plan is returned as it is, so nothing new is ever stored.
+    func carryingMemoryUsed(_ plan: LioPlanSummary, enabled: Bool = LioTripMemoryLabelFeature.enabledInBuild) -> LioPlanSummary {
+        guard enabled else { return plan }
+        let used = turns.last { turn in
+            guard turn.memoryUsed != nil else { return false }
+            return turn.itinerary?.id == plan.tripID || turn.exploration?.trip.map { LioPlanSummary($0).tripID } == plan.tripID
+        }?.memoryUsed
+        guard let used else { return plan }
+        var carried = plan
+        carried.memoryUsed = used
+        return carried
     }
     private(set) var pending: LioQuestion?
     private(set) var nextBefore: String?
@@ -364,6 +380,7 @@ final class LioConversation {
         return LioTurn(question: question, status: row.status, answer: row.answer,
                        sources: row.sources, itinerary: row.itinerary, memoryTags: row.memoryTags,
                        exploration: row.exploration, layout: row.layout, followups: row.followups, chips: row.chips,
-                       places: row.places, memoryPrompt: row.memoryPrompt, cards: row.cards, fromTimeline: true)
+                       places: row.places, memoryPrompt: row.memoryPrompt, cards: row.cards,
+                       memoryUsed: row.memoryUsed, fromTimeline: true)
     }
 }

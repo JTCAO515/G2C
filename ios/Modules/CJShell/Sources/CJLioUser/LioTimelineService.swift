@@ -20,6 +20,8 @@ struct LioTimelineTurn: Sendable {
     let memoryPrompt: Bool
     /// Tool cards under the answer (LIO-answer-rich.1, #1993).
     let cards: [LioTimelineWire.Card]
+    /// #2010: the saved memories the server says this plan was based on. Passive data: nothing shows it by itself.
+    let memoryUsed: LioTimelineWire.MemoryUsed?
 
     var isActive: Bool {
         switch status {
@@ -42,6 +44,7 @@ struct LioTimelineTurn: Sendable {
             ? LioPlaceMentions.resolve(answer: message.answer, entities: message.rich?.entities ?? [], in: repository) : []
         memoryPrompt = richEnabled && message.rich?.memoryPrompt == true
         cards = richEnabled ? message.rich?.cards ?? [] : []
+        memoryUsed = richEnabled ? Self.displayable(message.rich?.memoryUsed) : nil
         memoryTags = message.memoryTags.filter { LioPublicDisplay.permitsText($0.text) }
         sources = Self.projectSources(message.sources.map { ($0.title, $0.link) }, messageID: message.id)
         status = Self.status(message.state, activity: message.activity, answer: message.answer)
@@ -58,11 +61,19 @@ struct LioTimelineTurn: Sendable {
         places = []
         memoryPrompt = false
         cards = []
+        memoryUsed = nil
         // Native calendar/rich summaries keep their actual type and binding in exploration.trip.
         itinerary = nil
         memoryTags = message.memoryTags.filter { LioPublicDisplay.permitsText($0.text) }
         sources = Self.projectSources(message.sources.map { ($0.title, $0.link) }, messageID: message.id)
         status = Self.status(message.state, activity: message.activity, answer: message.answer)
+    }
+
+    /// A title the App may show, as with the memory tags: one that fails the public-display check is dropped alone.
+    private static func displayable(_ used: LioTimelineWire.MemoryUsed?) -> LioTimelineWire.MemoryUsed? {
+        guard let used else { return nil }
+        return LioTimelineWire.MemoryUsed.validated(used.items.map { LioPublicDisplay.permitsText($0.title) ? $0 : nil },
+                                                    total: used.total)
     }
 
     private static func projectSources(_ values: [(String, URL?)], messageID: String) -> [LioSource] {
@@ -99,7 +110,7 @@ struct LioTimelinePage: Sendable {
     let conversationID: String?
     static let empty = Self(turns: [], nextBefore: nil, conversationID: nil)
 
-    private init(turns: [LioTimelineTurn], nextBefore: String?, conversationID: String?) {
+    init(turns: [LioTimelineTurn], nextBefore: String?, conversationID: String?) {
         self.conversationID = conversationID
         self.turns = turns
         self.nextBefore = nextBefore

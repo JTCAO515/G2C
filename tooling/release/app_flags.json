@@ -108,6 +108,10 @@
     {
       "setting": "G2C_MEMORY_CONSENT_ENABLED",
       "plist": "G2CMemoryConsentEnabled"
+    },
+    {
+      "setting": "G2C_TRIP_MEMORY_LABEL_ENABLED",
+      "plist": "G2CTripMemoryLabelEnabled"
     }
   ],
   "release": {

@@ -309,12 +309,58 @@ public enum LioTimelineWire {
         /// answer holds a preference, so the App may ask once. It is not consent; the choice is written with
         /// `PUT /v1/lio/memory/consent`.
         public let memoryPrompt: Bool
+        /// `memory.used` (#2010, M-5): the saved memories the server gave Lio for this plan. Display only; nil when the
+        /// row has none or what it sent fails the contract's rules.
+        public let memoryUsed: MemoryUsed?
 
-        public init(entities: [Entity] = [], cards: [Card] = [], memoryPrompt: Bool = false) {
+        public init(entities: [Entity] = [], cards: [Card] = [], memoryPrompt: Bool = false, memoryUsed: MemoryUsed? = nil) {
             self.entities = entities
             self.cards = cards
             self.memoryPrompt = memoryPrompt
+            self.memoryUsed = memoryUsed
         }
+    }
+
+    /// `rich.memory.used` and `used_total` of LIO-answer-rich.1 (#2010): up to 3 memory items the answer was based on,
+    /// and how many were used in all. The ids are the memory items' own; the titles are the server's words at the time
+    /// of the read and are for display only.
+    public struct MemoryUsed: Sendable, Equatable {
+        public struct Item: Sendable, Equatable {
+            public let itemID: String
+            public let title: String
+            public init(itemID: String, title: String) { self.itemID = itemID; self.title = title }
+        }
+        public static let maximumItems = 3
+        public static let maximumTitle = 40
+        public static let maximumTotal = 99
+
+        public let items: [Item]
+        /// At least `items.count`, at most 99.
+        public let total: Int
+
+        private init(items: [Item], total: Int) { self.items = items; self.total = total }
+
+        /// The contract's rules. The list is dropped whole when it is empty or longer than 3, or when `total` is outside
+        /// 1...99 or below the number the server listed (a slot that is not even an item counts as listed). One item that
+        /// fails its rule (an id of the wrong form, a title over 40 characters or on more than one line, an id already
+        /// listed) is dropped alone; nothing left means nil.
+        public static func validated(_ listed: [Item?], total: Int) -> MemoryUsed? {
+            guard (1...maximumItems).contains(listed.count), (1...maximumTotal).contains(total), total >= listed.count else { return nil }
+            var seen = Set<String>()
+            let kept = listed.compactMap { $0 }.filter { validItemID($0.itemID) && validTitle($0.title) && seen.insert($0.itemID).inserted }
+            return kept.isEmpty ? nil : MemoryUsed(items: kept, total: total)
+        }
+
+        /// `^[A-Za-z0-9][A-Za-z0-9_.:-]{0,255}$`.
+        public static func validItemID(_ value: String) -> Bool {
+            let bytes = Array(value.utf8)
+            guard (1...256).contains(bytes.count) else { return false }
+            func alphanumeric(_ byte: UInt8) -> Bool { (48...57).contains(byte) || (65...90).contains(byte) || (97...122).contains(byte) }
+            return alphanumeric(bytes[0]) && bytes.dropFirst().allSatisfy { alphanumeric($0) || [46, 45, 58, 95].contains($0) }
+        }
+
+        /// 1 to 40 characters on one line: no control, format or line-separator character, no space at either end.
+        public static func validTitle(_ value: String) -> Bool { LioTimelineWire.validText(value, limit: maximumTitle) }
     }
 
     /// A city as a card names it (`{id, zh, en}`), for display only.
@@ -455,7 +501,10 @@ public enum LioTimelineWire {
         // `rich` only rides on a completed row that has an answer; anywhere else it is ignored.
         var rich = (state == .completed && !wire.answer.isEmpty) ? validRich(wire.rich) : nil
         // A plan reply carries no cards (contract: `cards` needs `trip = null`).
-        if trip != nil, let kept = rich { rich = kept.entities.isEmpty ? nil : Rich(entities: kept.entities) }
+        // What it may carry is the places and, from #2010, the memories its plan was based on.
+        if trip != nil, let kept = rich {
+            rich = kept.entities.isEmpty && kept.memoryUsed == nil ? nil : Rich(entities: kept.entities, memoryUsed: kept.memoryUsed)
+        }
         return Message(id: wire.messageID, question: wire.text, answer: wire.answer, state: state,
                        activity: wire.activity, sources: sources, trip: trip, memoryTags: tags,
                        layout: layout, followups: shown.0, chips: shown.1, rich: rich)
@@ -480,7 +529,17 @@ public enum LioTimelineWire {
             cards.sort { (Card.Kind.allCases.firstIndex(of: $0.kind) ?? 0) < (Card.Kind.allCases.firstIndex(of: $1.kind) ?? 0) }
         }
         let prompt = wire.memory?.prompt == "consent"
-        return entities.isEmpty && cards.isEmpty && !prompt ? nil : Rich(entities: entities, cards: cards, memoryPrompt: prompt)
+        let used = wire.memory.flatMap(validMemoryUsed)
+        return entities.isEmpty && cards.isEmpty && !prompt && used == nil
+            ? nil : Rich(entities: entities, cards: cards, memoryPrompt: prompt, memoryUsed: used)
+    }
+
+    /// `memory.used` with `used_total` (#2010): both or neither; the rules are `MemoryUsed.validated`'s.
+    private static func validMemoryUsed(_ wire: Snapshot.Row.RichWire.MemoryWire) -> MemoryUsed? {
+        guard let listed = wire.used, let total = wire.usedTotal else { return nil }
+        return MemoryUsed.validated(listed.map { slot in
+            slot.value.map { MemoryUsed.Item(itemID: $0.itemID, title: $0.title) }
+        }, total: total)
     }
 
     /// The contract's card rules, as far as the App can see them: a known type; the type's own tool and a label from
@@ -623,7 +682,7 @@ public enum LioTimelineWire {
 
     /// Non-empty after trimming, within the limit, and without control, separator, zero-width or bidirectional
     /// format characters (the contract's rule for values and labels).
-    private static func validText(_ value: String, limit: Int) -> Bool {
+    fileprivate static func validText(_ value: String, limit: Int) -> Bool {
         let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
         guard trimmed == value, !value.isEmpty, value.count <= limit, value.utf8.count <= limit * 4 else { return false }
         return value.unicodeScalars.allSatisfy { scalar in
@@ -688,9 +747,29 @@ public enum LioTimelineWire {
             struct RichWire: Decodable {
                 let version: String
                 let entities: [LossyEntity]?
-                /// `memory.prompt` only (#1999); the rest of `memory` is for M-3.
+                /// `memory.prompt` (#1999) and `memory.used` with `used_total` (#2010). Each is read on its own.
                 let memory: MemoryWire?
-                struct MemoryWire: Decodable { let prompt: String? }
+                struct MemoryWire: Decodable {
+                    let prompt: String?
+                    let used: [LossyUsed]?
+                    let usedTotal: Int?
+                    struct UsedWire: Decodable {
+                        let itemID: String
+                        let title: String
+                        enum CodingKeys: String, CodingKey { case itemID = "item_id", title }
+                    }
+                    struct LossyUsed: Decodable {
+                        let value: UsedWire?
+                        init(from decoder: Decoder) throws { value = try? UsedWire(from: decoder) }
+                    }
+                    init(from decoder: Decoder) throws {
+                        let c = try decoder.container(keyedBy: CodingKeys.self)
+                        prompt = (try? c.decodeIfPresent(String.self, forKey: .prompt)) ?? nil
+                        used = (try? c.decodeIfPresent([LossyUsed].self, forKey: .used)) ?? nil
+                        usedTotal = (try? c.decodeIfPresent(Int.self, forKey: .usedTotal)) ?? nil
+                    }
+                    enum CodingKeys: String, CodingKey { case prompt, used, usedTotal = "used_total" }
+                }
                 let cards: [LossyCard]?
                 struct LossyCard: Decodable {
                     let value: CardWire?
