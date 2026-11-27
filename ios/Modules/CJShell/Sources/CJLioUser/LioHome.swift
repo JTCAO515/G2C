@@ -527,6 +527,14 @@ public struct LioHome<MenuContent: View>: View {
                 actions.save = { savedPlans.save(plan) }
             }
         }
+        actions.saveFailed = savedPlans.saveFailed(plan)
+        // #1976: once saved, one tap goes to the Trips tab (the trip home, or the list when it is showing).
+        if actions.saved {
+            actions.openTrips = {
+                planSheet = nil
+                tab = .trips
+            }
+        }
         // Changing a day goes back to the chat as an ordinary message the user finishes and sends. That is only
         // offered in the chat that made the plan; a plan opened from Trips in another chat can be saved and shared.
         guard conversation.turns.contains(where: { turn in

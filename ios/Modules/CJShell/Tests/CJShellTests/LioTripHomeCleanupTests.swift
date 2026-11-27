@@ -27,6 +27,28 @@ import Testing
         #expect(try Data(contentsOf: tripHomeFile(in: adjacent)) == Data([2]))
     }
 
+    /// #1995: the trip canvas lives in the trip home's folder and goes with it, with no other file left behind.
+    @Test func erasesTheTripCanvasTogetherWithTheTripHome() throws {
+        let root = try temporaryRoot()
+        defer { try? FileManager.default.removeItem(at: root) }
+        let selected = try seedAccount("selected", at: root, bytes: Data([1]))
+        let canvas = tripHomeFile(in: selected).deletingLastPathComponent().appendingPathComponent(LioTripCanvasStore.fileName)
+        try Data([4]).write(to: canvas)
+        let account = try DeviceCleanupDirectory(existingPrivateDirectory: selected)
+        try LioTripHomeCleanup.erase(in: account)
+        try account.requireEmpty()
+        #expect(!FileManager.default.fileExists(atPath: canvas.path))
+        // With only a canvas (the trip home never started) it is removed too, and again is a no-op.
+        let other = try seedAccount("other", at: root, bytes: Data([1]))
+        let otherHome = tripHomeFile(in: other)
+        try FileManager.default.removeItem(at: otherHome)
+        try Data([5]).write(to: otherHome.deletingLastPathComponent().appendingPathComponent(LioTripCanvasStore.fileName))
+        let otherAccount = try DeviceCleanupDirectory(existingPrivateDirectory: other)
+        try LioTripHomeCleanup.erase(in: otherAccount)
+        try otherAccount.requireEmpty()
+        try LioTripHomeCleanup.erase(in: otherAccount)
+    }
+
     @Test func unknownRecordsKeepCleanupIncompleteAndArePreserved() throws {
         let root = try temporaryRoot()
         defer { try? FileManager.default.removeItem(at: root) }

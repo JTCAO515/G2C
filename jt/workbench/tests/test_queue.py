@@ -13,7 +13,7 @@ from jt.synthetic import generate_dataset
 from jt.workbench.app import SESSION_COOKIE, create_app
 from jt.workbench.auth import SESSION_IDLE, Auth
 from jt.workbench.queue import MemoryQueue, SignalConflict, response_deadline
-from jt.workbench.security import PasswordHash, totp_at_step
+from jt.workbench.security import PasswordHash
 from jt.workbench.store import Account, AuditAction, AuditResult, MemoryStore, Role
 
 
@@ -87,9 +87,7 @@ class LocalWorkbench:
     def browser(self, role: Role | None = None) -> TestClient:
         browser = TestClient(self.app, base_url=ORIGIN, follow_redirects=False)
         if role is not None:
-            seed = self.store.account(role.value).totp_seed
-            code = totp_at_step(seed, self.clock.now // 30)
-            token = self.auth.login(role.value, "synthetic workbench credential", code)
+            token = self.auth.login(role.value, "synthetic workbench credential")
             assert token is not None
             browser.cookies.set(SESSION_COOKIE, token)
         return browser
@@ -108,8 +106,8 @@ def local():
     clock, store = Clock(), MemoryStore()
     auth = Auth(store, clock=clock, monotonic=clock)
     password = PasswordHash.make("synthetic workbench credential")
-    for index, role in enumerate(Role):
-        store.save_account(Account(role.value, role, password, bytes([index + 1]) * 20))
+    for role in Role:
+        store.save_account(Account(role.value, role, password))
     app = create_app(auth, port=8443, queue=queue)
     reference = next(item.reference for item in queue.snapshot() if item.signal.signal_id == record.signal_id)
     return LocalWorkbench(app, queue, store, auth, clock, reference)

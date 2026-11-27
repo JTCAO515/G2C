@@ -26,9 +26,12 @@ ACTION_LABELS = {
     AuditAction.ACCOUNT_CREATED: "创建账号",
     AuditAction.ACCOUNT_DISABLED: "停用账号",
     AuditAction.ACCOUNT_UNLOCKED: "解除锁定",
+    AuditAction.ACCOUNT_ENABLED: "启用账号",
+    AuditAction.ACCOUNT_DELETED: "删除账号",
+    AuditAction.PASSWORD_RESET: "重设密码",
     AuditAction.ROLE_CHANGED: "分配角色",
-    AuditAction.TOTP_BOUND: "绑定验证器",
-    AuditAction.TOTP_REBIND_AUTHORIZED: "授权重绑",
+    AuditAction.TOTP_BOUND: "绑定验证器（历史）",
+    AuditAction.TOTP_REBIND_AUTHORIZED: "授权重绑（历史）",
     AuditAction.VIEW: "查看",
     AuditAction.ANNOTATE: "标注",
     AuditAction.EXPORT: "导出评测",
@@ -62,7 +65,7 @@ def page(
         if session.role == Role.OPERATOR:
             sections += '<a href="/cases">案件</a><a href="/operations">运营台</a>'
         if session.role == Role.ADMIN:
-            sections = '<a href="/admin/accounts">账号管理</a><a href="/admin/audit">审计日志</a>'
+            sections = '<a href="/admin/accounts">用户管理</a><a href="/admin/audit">审计日志</a>'
         nav = (
             f'<nav aria-label="工作台导航"><a href="/">首页</a>{sections}</nav>'
             f'<form method="post" action="/logout">{csrf_field(session.csrf)}'
@@ -85,16 +88,14 @@ def login_page(csrf: str, *, failed: bool = False) -> HTMLResponse:
     return page("工作人员登录", f'''
         <section class="panel login-panel" aria-labelledby="headline">
           <h1 id="headline">工作人员登录</h1>
-          <p class="muted">使用工作台账号和验证器中的动态验证码登录。</p>
+          <p class="muted">使用工作台账号和密码登录。</p>
           {error}
           <form method="post" action="/login">
             {csrf_field(csrf)}
             <label>账号<input name="username" autocomplete="username" maxlength="32" required autofocus></label>
             <label>密码<input type="password" name="password" autocomplete="current-password" maxlength="128" required></label>
-            <label>动态验证码<input name="code" autocomplete="one-time-code" inputmode="numeric" pattern="[0-9]{{6}}" maxlength="6" required></label>
             <button type="submit">登录</button>
           </form>
-          <p class="setup-link"><a href="/setup">首次设置或重绑验证器</a></p>
         </section>
     ''', login=True, status=401 if failed else 200)
 
@@ -108,98 +109,87 @@ def home_page(session: Session) -> HTMLResponse:
     ''', session=session)
 
 
-def setup_page(csrf: str, *, failed: bool = False) -> HTMLResponse:
-    error = '<p class="error" role="alert">设置未通过，请核对信息或联系管理员重新授权。</p>' if failed else ''
-    return page("设置账号", f'''
-        <section class="panel login-panel" aria-labelledby="headline">
-          <h1 id="headline">设置账号</h1>
-          <p class="muted">用管理员交给你的设置码，录入你自己的验证器信息。</p>
-          {error}
-          <form method="post" action="/setup" autocomplete="off">
-            {csrf_field(csrf)}
-            <label>账号<input name="username" autocomplete="username" maxlength="32" required></label>
-            <label>设置码<input type="password" name="setup_code" maxlength="43" required></label>
-            <label>密码<input type="password" name="password" minlength="12" maxlength="128" required><small>首次设置请填写新密码，重绑请使用现有密码。</small></label>
-            <label>验证器密钥<input type="password" name="seed" maxlength="40" required><small>填入你已添加到验证器的 32 位 Base32 密钥。</small></label>
-            <label>当前动态验证码<input name="code" inputmode="numeric" pattern="[0-9]{{6}}" maxlength="6" required></label>
-            <button type="submit">保存验证器</button>
-          </form>
-          <p class="setup-link"><a href="/login">返回登录</a></p>
-        </section>
-    ''', login=True, status=401 if failed else 200)
-
-
-def setup_done_page() -> HTMLResponse:
-    return page("设置完成", '''
-        <section class="panel login-panel">
-          <h1>设置完成</h1>
-          <p>请使用验证器中的下一组验证码登录。</p>
-          <p><a href="/login">前往登录</a></p>
-        </section>
-    ''', login=True)
-
-
 def select_options(labels, selected: str = "") -> str:
     return ''.join(f'<option value="{value}"{" selected" if value == selected else ""}>{label}</option>'
                    for value, label in labels.items())
 
 
+def password_fields(label: str = "密码") -> str:
+    return (f'<label>{label}<input type="password" name="password" autocomplete="new-password" minlength="12" '
+            'maxlength="128" required><small>至少 12 位。</small></label>'
+            '<label>再次输入密码<input type="password" name="confirm" autocomplete="new-password" minlength="12" '
+            'maxlength="128" required></label>')
+
+
 def account_controls(session: Session, account: AccountStatus) -> str:
-    if session.username == account.username or not account.enabled:
-        return '—'
     username = escape(account.username)
-    role = select_options(ROLE_LABELS, account.role)
-    unlock = '<button name="action" value="unlock">解除锁定</button>' if account.locked else ''
-    return f'''
-        <button class="secondary" popovertarget="staff-{username}">管理</button>
-        <section class="panel dialog" id="staff-{username}" popover aria-label="管理 {username}">
-          <h2>管理 <code>{username}</code></h2>
+    own = session.username == account.username
+    if not account.enabled and not account.has_password:
+        return '—'
+    reset = f'''
+          <form method="post" action="/admin/accounts/password" autocomplete="off">
+            {csrf_field(session.csrf)}
+            <input type="hidden" name="username" value="{username}">
+            {password_fields("新密码")}
+            <div class="buttons"><button type="submit">重设密码</button></div>
+          </form>''' if account.enabled else ''
+    manage = ''
+    if not own:
+        role = select_options(ROLE_LABELS, account.role)
+        if account.enabled:
+            unlock = '<button name="action" value="unlock">解除锁定</button>' if account.locked else ''
+            buttons = (f'<label>角色<select name="role">{role}</select></label><div class="buttons">'
+                       f'<button name="action" value="change_role">保存角色</button>{unlock}'
+                       '<button class="danger" name="action" value="disable">停用账号</button></div>')
+        else:
+            buttons = ('<input type="hidden" name="role" value="reviewer"><div class="buttons">'
+                       '<button name="action" value="enable">启用账号</button>'
+                       '<button class="danger" name="action" value="delete">删除账号（清除密码，不可恢复）</button></div>')
+        manage = f'''
           <form method="post" action="/admin/accounts">
             {csrf_field(session.csrf)}
             <input type="hidden" name="username" value="{username}">
-            <label>角色<select name="role">{role}</select></label>
-            <div class="buttons">
-              <button name="action" value="change_role">保存角色</button>
-              {unlock}
-              <button name="action" value="rebind">授权重绑</button>
-              <button class="danger" name="action" value="disable">停用账号</button>
-            </div>
-          </form>
+            {buttons}
+          </form>'''
+    return f'''
+        <button class="secondary" popovertarget="staff-{username}">管理</button>
+        <section class="panel dialog" id="staff-{username}" popover aria-label="管理 {username}">
+          <h2>管理 <code>{username}</code></h2>{manage}{reset}
         </section>
     '''
 
 
+def account_status(account: AccountStatus) -> str:
+    if not account.enabled:
+        return '已停用' if account.has_password else '已删除'
+    return '已锁定' if account.locked else '正常' if account.has_password else '待设密码'
+
+
 def accounts_page(
-    session: Session, accounts: tuple[AccountStatus, ...], *,
-    setup_code: str | None = None, saved: bool = False, rejected: bool = False,
+    session: Session, accounts: tuple[AccountStatus, ...], *, saved: bool = False, rejected: bool = False,
 ) -> HTMLResponse:
     notice = ''
-    if setup_code is not None:
-        notice = (f'<section class="notice" role="status"><p>请将一次性设置码仅交给该员工。15 分钟内有效，离开此页后无法再次查看。</p>'
-                  f'<p><code>{escape(setup_code)}</code></p></section>')
-    elif saved:
+    if saved:
         notice = '<p class="notice" role="status">账号状态已更新。</p>'
     elif rejected:
-        notice = '<p class="error" role="alert">无法更新账号，请核对账号、角色或当前状态。</p>'
-    rows = []
-    for account in accounts:
-        status = ('已停用' if not account.enabled else '已锁定' if account.locked
-                  else '待绑定' if account.setup_pending else '正常')
-        rows.append(f'<tr><td><code>{escape(account.username)}</code></td><td>{ROLE_LABELS[account.role]}</td>'
-                    f'<td>{status}</td><td>{account_controls(session, account)}</td></tr>')
-    return page("账号管理", f'''
+        notice = '<p class="error" role="alert">无法更新账号，请核对账号、角色、当前状态，密码至少 12 位且两次输入一致。</p>'
+    rows = [f'<tr><td><code>{escape(account.username)}</code></td><td>{ROLE_LABELS[account.role]}</td>'
+            f'<td>{account_status(account)}</td><td>{account_controls(session, account)}</td></tr>'
+            for account in accounts]
+    return page("用户管理", f'''
         <div class="page-heading">
-          <h1>账号管理</h1>
-          <button popovertarget="new-staff">创建账号</button>
+          <h1>用户管理</h1>
+          <button popovertarget="new-staff">添加账号</button>
         </div>
         {notice}
-        <section class="panel dialog" id="new-staff" popover aria-label="创建工作人员账号">
-          <h2>创建工作人员账号</h2>
-          <form method="post" action="/admin/accounts" autocomplete="off">
+        <section class="panel dialog" id="new-staff" popover aria-label="添加工作人员账号">
+          <h2>添加工作人员账号</h2>
+          <form method="post" action="/admin/accounts/create" autocomplete="off">
             {csrf_field(session.csrf)}
             <label>账号<input name="username" pattern="[a-z][a-z0-9_\\-]{{2,31}}" maxlength="32" required><small>3 至 32 位，小写字母开头，可用小写字母、数字、下划线和连字符。</small></label>
             <label>角色<select name="role" required>{select_options(ROLE_LABELS)}</select></label>
-            <button name="action" value="create">生成设置码</button>
+            {password_fields()}
+            <button type="submit">添加账号</button>
           </form>
         </section>
         <section class="panel table-panel" aria-label="工作人员账号">
@@ -208,7 +198,7 @@ def accounts_page(
             <tbody>{''.join(rows)}</tbody>
           </table>
         </section>
-    ''', session=session, status=400 if rejected else 201 if setup_code is not None else 200)
+    ''', session=session, status=400 if rejected else 200)
 
 
 def audit_page(session: Session, events: tuple[AuditEvent, ...], filters: dict[str, str]) -> HTMLResponse:
