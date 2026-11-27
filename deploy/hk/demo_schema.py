@@ -155,7 +155,21 @@ def rollback59_rows(db):
     return counts
 
 
+# The HK operator session (supabase_test_database.discard_session) runs with search_path
+# pg_catalog, public, pg_temp. 0056-0058 create unqualified objects, which that path puts in pg_catalog
+# and PostgreSQL refuses (first59 apply, 2026-11-27). Every Demo schema step therefore applies its
+# migrations with public first, for the open transaction only; the role and server settings stay.
+MIGRATION_SEARCH_PATH='public, pg_catalog, pg_temp'
+
+
+def _migration_session(db):
+    db.execute('SET LOCAL search_path TO '+MIGRATION_SEARCH_PATH)
+    if db.execute('SHOW search_path').fetchone()[0]!=MIGRATION_SEARCH_PATH:
+        raise ValueError('Demo migration search_path unavailable')
+
+
 def _migrate_quota_schema(db):
+    _migration_session(db)
     migrate.up(db,migrate.load(),52)
     db.execute('INSERT INTO public.cj_demo_quota_upgrade VALUES (true)')
 
@@ -245,6 +259,7 @@ def upgrade(control,backups,*,target=49,schema_root=None):
         if target==52:
             _migrate_quota_schema(db)
         else:
+            _migration_session(db)
             migrate.up(db,migrate.load(),target)
             if target>=59:_ops_console_nologin(db,apply=target==59)
     manifest=checkpoint.export(destination,control,schema_root=schema_root)
@@ -354,6 +369,7 @@ def _resume_origin_schema(control,backups,*,target,schema_root):
         if applied==_previous(target):
             if not original_release or destination.exists() or _original_latest(control)!=intent['original_latest']:
                 raise ValueError('original rolled-back wire-origin state unavailable')
+            _migration_session(db)
             migrate.up(db,migrate.load(),target)
             if target>=59:_ops_console_nologin(db,apply=target==59)
         elif applied!=expected:

@@ -36,6 +36,8 @@ enum LioStreamingMarkdown {
 /// Paces the existing, admitted Markdown output. Network and message state stay in the parent.
 struct LioStreamingText: View {
     let source: String
+    /// Words of `source` the server named as places (#1991): drawn as tappable words.
+    let places: [LioPlaceSpan]
     let streaming: Bool
     let language: LioLanguage
     let presentationActive: Bool
@@ -49,6 +51,7 @@ struct LioStreamingText: View {
     @State private var firstVisible = false
     @State private var completed = false
     @State private var parsedSource: String?
+    @State private var parsedPlaces: [LioPlaceSpan] = []
     @State private var parsedCompleted = false
     @State private var rendered: AttributedString?
     @State private var rejected = false
@@ -66,10 +69,12 @@ struct LioStreamingText: View {
         let at: ContinuousClock.Instant
     }
 
-    init(source: String, streaming: Bool, animate: Bool, language: LioLanguage, presentationActive: Bool = true,
+    init(source: String, places: [LioPlaceSpan] = [], streaming: Bool, animate: Bool, language: LioLanguage,
+         presentationActive: Bool = true,
          identifier: String = "lio.answer", onFirstVisible: @escaping () -> Void = {},
          onComplete: @escaping () -> Void = {}, onLayout: @escaping () -> Void = {}) {
         self.source = source
+        self.places = places
         self.streaming = streaming
         self.language = language
         self.presentationActive = presentationActive
@@ -86,7 +91,7 @@ struct LioStreamingText: View {
         return !source.utf8.elementsEqual(parsedSource.utf8)
     }
     private var ticking: Bool {
-        visible && (sourceChanged || buffer.hasPending || !births.isEmpty || (!streaming && !completed))
+        visible && (sourceChanged || places != parsedPlaces || buffer.hasPending || !births.isEmpty || (!streaming && !completed))
     }
 
     // `completed` is established by report() only while this presentation is
@@ -138,6 +143,7 @@ struct LioStreamingText: View {
         }
         .onDisappear { onScreen = false; lastTick = nil; births = [] }
         .onChange(of: source) { _, _ in reconcile(force: !streaming || !animate) }
+        .onChange(of: places) { _, _ in reconcile(force: true) }
         .onChange(of: streaming) { _, streaming in if !streaming { reconcile(force: true) } }
         .onChange(of: scenePhase) { _, _ in resumeIfVisible() }
         .onChange(of: presentationActive) { _, _ in resumeIfVisible() }
@@ -172,13 +178,14 @@ struct LioStreamingText: View {
     }
 
     private func reconcile(force: Bool) {
-        guard sourceChanged || (!streaming && !parsedCompleted) else { return }
+        guard sourceChanged || places != parsedPlaces || (!streaming && !parsedCompleted) else { return }
         let now = ContinuousClock.now
         if !force, let lastParse, now - lastParse < LioTheme.Motion.markdownStep { return }
         lastParse = now
         parsedSource = source
+        parsedPlaces = places
         parsedCompleted = !streaming
-        let value = LioReplyMarkdown.render(source)
+        let value = LioReplyMarkdown.render(source, places: places)
         if streaming, let value, LioStreamingMarkdown.containsLiteralDelimiters(value) { return }
         rejected = value == nil
         rendered = value

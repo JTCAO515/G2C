@@ -1,0 +1,5 @@
+{
+ "schema": "lio.metro.places.v1",
+ "note": "Links a metro station to a place in the curated places library (knowledge/places, #1985). Empty until the library's images land (#1987, #1988); each link is {city, station, place}: the map file's city id, the station id inside it, and the library place id (pl_<city>_<name>).",
+ "links": []
+}

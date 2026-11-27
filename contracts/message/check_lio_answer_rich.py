@@ -145,12 +145,19 @@ def _receipt(row):
         undo = row['undo']
         if undo['state'] == 'available':
             target = undo['target']
+            kind = undo.get('kind', 'restore')
             if undo['action_id'] != undo_action_id(row['action_id']):
                 raise ValueError('undo action id is derived from the save action id')
             if (target['trip_id'], target['expected_version']) != (row['trip_id'], row['committed_version']):
                 raise ValueError('undo target must be the committed version')
-            if target['restore_version'] != row['committed_version'] - 1:
-                raise ValueError('undo restores the immediately preceding version')
+            if kind == 'withdraw_created':
+                if row['committed_version'] != 1:
+                    raise ValueError('only the save that created the trip is undone by removing it')
+            else:
+                if row['committed_version'] < 2:
+                    raise ValueError('the first version of a trip has nothing to restore')
+                if target['restore_version'] != row['committed_version'] - 1:
+                    raise ValueError('undo restores the immediately preceding version')
         for day in row.get('summary', {}).get('days', []):
             if day['added'] + day['updated'] + day['removed'] == 0:
                 raise ValueError('a day in the summary changed something')

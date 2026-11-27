@@ -92,12 +92,197 @@
 - 来源：https://english.shanghai.gov.cn/en-Latest-WhatsNew/20250707/2d867b704a814c1f8f162a5599eeb7c0.html
 - [ ] accept　[ ] reject　[ ] edit：
 
+### 上海艾迪逊酒店 · The Shanghai EDITION  `pl_sh_aidixun`
+- hotel/hotel · main · 分数 31 · 区未知
+- 高德：未查询
+- 简介：南京东路地铁站附近，适合安排外滩傍晚散步。 / A hotel near East Nanjing Road station for the pedestrian street and Bund.
+- 开放时间：—
+- 来源：https://www.marriott.com/en-us/hotels/shaeb-the-shanghai-edition/overview/
+- 提醒：pl_sh_aidixun: unknown field 'hotel_class' is dropped on import
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 上海虹桥万豪万枫酒店 · Fairfield by Marriott Shanghai Hongqiao  `pl_sh_hongqiaowanfeng`
+- hotel/hotel · main · 分数 31 · 闵行区
+- 高德：未查询
+- 简介：闵行青杉路的万枫，去地铁可看10号线紫藤路。 / A Minhang stay with Line 10 at Ziteng Road listed for access.
+- 开放时间：—
+- 来源：https://www.marriott.com/en-us/hotels/shahf-fairfield-shanghai-hongqiao/overview/
+- 提醒：pl_sh_hongqiaowanfeng: unknown field 'hotel_class' is dropped on import
+- [ ] accept　[ ] reject　[ ] edit：
+
 ### 兰心餐厅（进贤路） · Lyceum Restaurant (Jinxian Road)  `pl_sh_lanxin_jinxian`
-- food/local_cuisine · main · 分数 29 · 黄浦区
+- food/local_cuisine · main · 分数 31 · 黄浦区
 - 高德：未查询
 - 简介：想尝本帮家常菜，可以点红烧肉，春天有机会吃到腌笃鲜。 / Try home-style braised pork and look for bamboo shoot soup in spring.
 - 开放时间：11:00–14:00，17:00–21:00
 - 来源：https://english.shanghai.gov.cn/en-GlobalTasteinShanghai2026-LocalFlavors/20260509/3cb184e834064f4cbb1af26cfc34dc1e.html
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 上海明天广场JW万豪酒店 · JW Marriott Hotel Shanghai at Tomorrow Square  `pl_sh_mingtianwanhao`
+- hotel/hotel · main · 分数 31 · 黄浦区
+- 高德：未查询
+- 简介：从人民广场出发，可在南京西路回酒店歇脚。 / A People's Square stay on West Nanjing Road with an indoor pool.
+- 开放时间：—
+- 来源：https://www.marriott.com/en-us/hotels/shajw-jw-marriott-hotel-shanghai-at-tomorrow-square/overview/
+- 提醒：pl_sh_mingtianwanhao: unknown field 'hotel_class' is dropped on import
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 上海普陀Moxy酒店 · Moxy Shanghai Putuo  `pl_sh_putuomoxy`
+- hotel/hotel · main · 分数 31 · 普陀区
+- 高德：未查询
+- 简介：澳门路上的普陀门店，去上海站可先查酒店交通页。 / A Putuo hotel on Aomen Road, with English on the language list.
+- 开放时间：—
+- 来源：https://www.marriott.com/en-us/hotels/shaxx-moxy-shanghai-putuo/overview/
+- 提醒：pl_sh_putuomoxy: unknown field 'hotel_class' is dropped on import
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 上海浦西万怡酒店 · Courtyard by Marriott Shanghai Central  `pl_sh_puxiwanyi`
+- hotel/hotel · main · 分数 31 · 区未知
+- 高德：未查询
+- 简介：靠上海站及汉中路换乘，适合火车到上海的游客。 / A rail-friendly base between Shanghai Railway Station and Hanzhong Road.
+- 开放时间：—
+- 来源：https://www.marriott.com/en-us/hotels/shapx-courtyard-shanghai-central/overview/
+- 提醒：pl_sh_puxiwanyi: unknown field 'hotel_class' is dropped on import
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 上海豫园万丽酒店 · Renaissance Shanghai Yu Garden Hotel  `pl_sh_yuyuanwanli`
+- hotel/hotel · main · 分数 31 · 黄浦区
+- 高德：未查询
+- 简介：豫园站附近，适合把豫园和老城厢安排在同一天。 / A Yu Garden stay with Line 10 and an indoor pool.
+- 开放时间：—
+- 来源：https://www.marriott.com/en-us/hotels/shasy-renaissance-shanghai-yu-garden-hotel/overview/
+- 提醒：pl_sh_yuyuanwanli: unknown field 'hotel_class' is dropped on import
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 上海龙之梦万丽酒店 · Renaissance Shanghai Zhongshan Park Hotel  `pl_sh_zhongshangongyuanwanli`
+- hotel/hotel · main · 分数 31 · 长宁区
+- 高德：未查询
+- 简介：在中山公园站上方，2、3、4号线都可利用。 / Stay above Zhongshan Park station for direct access to three metro lines.
+- 开放时间：—
+- 来源：https://www.marriott.com/en-us/hotels/shabz-renaissance-shanghai-zhongshan-park-hotel/overview/
+- 提醒：pl_sh_zhongshangongyuanwanli: unknown field 'hotel_class' is dropped on import
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 港汇恒隆广场 · Grand Gateway 66  `pl_sh_grand_gateway_retail`
+- shopping/mall · main · 分数 30 · 徐汇区
+- 高德：未查询
+- 简介：徐家汇一站式看时装、化妆品和生活用品。 / A Xujiahui stop for fashion, beauty products and everyday shopping.
+- 开放时间：—
+- 来源：https://www.hanglung.com/zh-cn/properties/mainland-properties/shanghai/grand-gateway-66/
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 兴业太古汇 · HKRI Taikoo Hui  `pl_sh_hkri_taikoo_hui`
+- shopping/mall · main · 分数 30 · 静安区
+- 高德：未查询
+- 简介：逛南京西路时，可在这里集中看时装与生活品牌。 / Fashion and lifestyle stores in one stop on West Nanjing Road.
+- 开放时间：—
+- 来源：https://www.shanghai.gov.cn/nw17239/20260806/d59b6ca73d874620abaf66e537e405f0.html
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 上海国金中心商场 · Shanghai ifc mall  `pl_sh_shanghai_ifc_retail`
+- shopping/mall · main · 分数 30 · 浦东新区
+- 高德：未查询
+- 简介：游览陆家嘴时，可顺路看国际服装和配饰。 / Browse international fashion and accessories while visiting Lujiazui.
+- 开放时间：—
+- 来源：https://www.shkp.com/zh-CN/our-business/mainland-and-other-properties/shanghai-ifc
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 正大广场 · Super Brand Mall  `pl_sh_super_brand_mall_pd`
+- shopping/mall · main · 分数 30 · 浦东新区
+- 高德：未查询
+- 简介：从陆家嘴江岸步行可达，集合日常零售和家庭休闲。 / Shops and family activities within walking distance of the Lujiazui riverfront.
+- 开放时间：—
+- 来源：https://www.shanghai.gov.cn/nw17239/20260813/283e5f83f3654b088130e465229f991b.html
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 前滩太古里 · Taikoo Li Qiantan  `pl_sh_taikoo_li_qiantan_shops`
+- shopping/mall · main · 分数 30 · 浦东新区
+- 高德：未查询
+- 简介：逛前滩时，可从室内商铺走到开敞的店街。 / Move between indoor shops and open-air lanes in Qiantan.
+- 开放时间：—
+- 来源：https://www.shanghai.gov.cn/nw17239/20260813/283e5f83f3654b088130e465229f991b.html
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 上海宝格丽酒店 · Bvlgari Hotel Shanghai  `pl_sh_baogeli`
+- hotel/hotel · main · 分数 29 · 静安区
+- 高德：未查询
+- 简介：苏州河边的宝格丽，适合喜欢河岸和城市旧建筑的游客。 / A Suzhou Creek waterfront stay within a district of parks and art spaces.
+- 开放时间：—
+- 来源：https://www.bulgarihotels.com/en-US/shanghai
+- 提醒：pl_sh_baogeli: unknown field 'hotel_class' is dropped on import
+- [ ] accept　[ ] reject　[ ] edit：
+
+## 第 2 批
+
+### 上海虹桥国际机场希尔顿酒店 · Hilton Shanghai Hongqiao International Airport  `pl_sh_hongqiaojichangxierdun`
+- hotel/hotel · main · 分数 29 · 长宁区
+- 高德：未查询
+- 简介：连接虹桥机场1号航站楼，适合早班航班。 / Connected to Hongqiao Airport Terminal 1 for a flight-focused stay.
+- 开放时间：—
+- 来源：https://www.hilton.com.cn/zh-cn/hotels/shaaphi-hilton-shanghai-hongqiao-international-airport
+- 提醒：pl_sh_hongqiaojichangxierdun: unknown field 'hotel_class' is dropped on import
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 上海静安万枫酒店 · Fairfield by Marriott Shanghai Jingan  `pl_sh_jinganwanfeng`
+- hotel/hotel · main · 分数 29 · 静安区
+- 高德：未查询
+- 简介：住大宁一带，地铁1号线延长路站可用。 / Near Daning and Yanchang Road station, north of central Shanghai.
+- 开放时间：—
+- 来源：https://www.marriott.com/en-us/hotels/shafi-fairfield-shanghai-jingan/overview/
+- 提醒：pl_sh_jinganwanfeng: unknown field 'hotel_class' is dropped on import
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 上海浦东丽思卡尔顿酒店 · The Ritz-Carlton Shanghai, Pudong  `pl_sh_pudonglisi`
+- hotel/hotel · main · 分数 29 · 浦东新区
+- 高德：未查询
+- 简介：陆家嘴站附近，酒店列出英语、韩语等服务语言。 / A Lujiazui choice with several guest languages listed by the hotel.
+- 开放时间：—
+- 来源：https://www.ritzcarlton.com/en/hotels/shasz-the-ritz-carlton-shanghai-pudong/overview/
+- 提醒：pl_sh_pudonglisi: unknown field 'hotel_class' is dropped on import
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 上海浦东茂业万豪万枫酒店 · Fairfield by Marriott Shanghai Pudong South  `pl_sh_pudongmaoyewanfeng`
+- hotel/hotel · main · 分数 29 · 浦东新区
+- 高德：未查询
+- 简介：北蔡的万枫，官网列出13号线和18号线可选。 / A Beicai base with two different metro approaches in Pudong.
+- 开放时间：—
+- 来源：https://www.marriott.com/en-us/hotels/shapi-fairfield-shanghai-pudong-south/overview/
+- 提醒：pl_sh_pudongmaoyewanfeng: unknown field 'hotel_class' is dropped on import
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 唐老鸭欢享小厨 · Donald's Dine 'n Delights  `pl_sh_tanglaoya_disini`
+- food/western · main · 分数 29 · 浦东新区
+- 高德：未查询
+- 简介：不用安排整天入园，也能在小镇吃披萨和甜点。 / Stop for pizza or dessert in Disneytown.
+- 开放时间：—
+- 来源：https://www.shanghaidisneyresort.com/experience/restaurant/donalds-dine-n-delights/
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 上海外滩中心威斯汀大饭店 · The Westin Bund Center, Shanghai  `pl_sh_waitanweisiting`
+- hotel/hotel · main · 分数 29 · 区未知
+- 高德：未查询
+- 简介：河南中路的威斯汀，适合留一天步行逛外滩。 / A Huangpu address for pairing the Bund with central Shanghai outings.
+- 开放时间：—
+- 来源：https://www.marriott.com/en-us/hotels/shawi-the-westin-bund-center-shanghai/overview/
+- 提醒：pl_sh_waitanweisiting: unknown field 'hotel_class' is dropped on import
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 上海徐汇Moxy酒店 · Moxy Shanghai Xuhui  `pl_sh_xuhuimoxy`
+- hotel/hotel · main · 分数 29 · 徐汇区
+- 高德：未查询
+- 简介：漕宝路一带的徐汇客房，酒店列出中英文服务。 / A Tianlin base for southern Xuhui, with English listed by the hotel.
+- 开放时间：—
+- 来源：https://www.marriott.com/en-us/hotels/shaos-moxy-shanghai-xuhui/overview/
+- 提醒：pl_sh_xuhuimoxy: unknown field 'hotel_class' is dropped on import
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 上海徐家汇万豪万枫酒店 · Fairfield by Marriott Shanghai Xuhui Center  `pl_sh_xuhuiwanfeng`
+- hotel/hotel · main · 分数 29 · 徐汇区
+- 高德：未查询
+- 简介：肇嘉浜路门店，可往徐家汇逛商场和街区。 / A Zhaojiabang Road hotel for the Xujiahui area.
+- 开放时间：—
+- 来源：https://www.marriott.com/en-us/hotels/shaxf-fairfield-shanghai-xuhui-center/overview/
+- 提醒：pl_sh_xuhuiwanfeng: unknown field 'hotel_class' is dropped on import
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 上海迪士尼乐园 · Shanghai Disneyland  `pl_sh_dishinileyuan`
@@ -108,6 +293,67 @@
 - 来源：https://www.shanghaidisneyresort.com/en/
 - [ ] accept　[ ] reject　[ ] edit：
 
+### 上海东锦江希尔顿逸林酒店 · DoubleTree by Hilton Hotel Shanghai - Pudong  `pl_sh_dongjinjiangyilin`
+- hotel/hotel · main · 分数 28 · 浦东新区
+- 高德：未查询
+- 简介：杨高南路酒店，可经蓝村路站游浦东。 / A Pudong hotel with Lancun Road station listed nearby.
+- 开放时间：—
+- 来源：https://www.hilton.com.cn/zh-cn/hotels/shaspdi-doubletree-by-hilton-hotel-shanghai--pudong
+- 提醒：pl_sh_dongjinjiangyilin: unknown field 'hotel_class' is dropped on import
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 潘国仙耳光馄饨 · Pan Guoxian Erguang Wonton  `pl_sh_panguoxian_erguang`
+- food/local_cuisine · main · 分数 28 · 黄浦区
+- 高德：未查询
+- 简介：除了菜肉馄饨，可用小吃搭配成便饭。 / Try pork and greens wontons for a casual meal.
+- 开放时间：—
+- 来源：https://english.shanghai.gov.cn/en-GlobalTasteinShanghai2026-LocalFlavors/20260605/81483538821d4e7ebfb82b5c8267c946.html
+- [ ] accept　[ ] reject　[ ] edit：
+
+### Tapa Tapa（西岸梦中心店） · Tapa Tapa (West Bund)  `pl_sh_tapatapa_xian`
+- food/western · main · 分数 28 · 徐汇区
+- 高德：未查询
+- 简介：几人同行可分点西班牙小盘菜或海鲜饭。 / Share Spanish small plates or seafood rice on the West Bund.
+- 开放时间：—
+- 来源：https://english.shanghai.gov.cn/en-TrendyStores/20260228/e0a382ffc0ec40fbab69d435d49fbca4.html
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 上海外滩华尔道夫酒店 · Waldorf Astoria Shanghai on the Bund  `pl_sh_waitanhuaerdaofu`
+- hotel/hotel · main · 分数 28 · 黄浦区
+- 高德：未查询
+- 简介：外滩历史建筑里的酒店，可接着走黄浦江岸。 / Stay beside the Bund in a property linked to the historic Shanghai Club.
+- 开放时间：—
+- 来源：https://www.hilton.com.cn/zh-cn/hotels/shawawa-waldorf-astoria-shanghai-on-the-bund
+- 提醒：pl_sh_waitanhuaerdaofu: unknown field 'hotel_class' is dropped on import
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 宜必思上海虹桥火车站酒店 · ibis Shanghai Hongqiao Railway Station  `pl_sh_yibisi_hongqiaozhan`
+- hotel/hotel · main · 分数 28 · 闵行区
+- 高德：未查询
+- 简介：住在七宝，可把老街游安排在虹桥坐车之前。 / A Qibao base for an old-town visit around a Hongqiao rail trip.
+- 开放时间：—
+- 来源：https://all.accor.com/hotel/B566/index.en.shtml
+- 提醒：pl_sh_yibisi_hongqiaozhan: unknown field 'hotel_class' is dropped on import
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 宜必思尚品上海青浦体育中心酒店 · ibis Styles Shanghai Qingpu Sports Center Hotel  `pl_sh_yibisishangpin_qingputiyu`
+- hotel/hotel · main · 分数 28 · 青浦区
+- 高德：未查询
+- 简介：青浦体育场旁，可按雅高官网查17号线接法。 / Stay by Qingpu Stadium, with Line 17 listed for reaching Hongqiao.
+- 开放时间：—
+- 来源：https://all.accor.com/hotel/B568/index.en.shtml
+- 提醒：pl_sh_yibisishangpin_qingputiyu: unknown field 'hotel_class' is dropped on import
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 宜必思尚品上海张江酒店 · ibis Styles Shanghai Zhangjiang Hotel  `pl_sh_yibisishangpin_zhangjiang`
+- hotel/hotel · main · 分数 28 · 浦东新区
+- 高德：未查询
+- 简介：浦东张江路的经济型酒店，可经广兰路换地铁。 / A Zhangjiang hotel for travelers spending most of their trip in Pudong.
+- 开放时间：—
+- 来源：https://all.accor.com/hotel/B3F1/index.en.shtml
+- 提醒：pl_sh_yibisishangpin_zhangjiang: unknown field 'hotel_class' is dropped on import
+- [ ] accept　[ ] reject　[ ] edit：
+
 ### 玉佛禅寺 · Jade Buddha Temple  `pl_sh_yufosi`
 - attraction/history · main · 分数 28 · 普陀区
 - 高德：未查询
@@ -116,22 +362,12 @@
 - 来源：https://www.yufotemple.com/
 - [ ] accept　[ ] reject　[ ] edit：
 
-### 上海艾迪逊酒店 · The Shanghai EDITION  `pl_sh_aidixun`
-- hotel/hotel · main · 分数 26 · 区未知
+### 真老大房（南京东路店） · Zhen Laodafang, East Nanjing Road  `pl_sh_zhenlaodafang_nanjing_shop`
+- shopping/time_honored_brand · main · 分数 28 · 黄浦区
 - 高德：未查询
-- 简介：南京东路地铁站附近，适合安排外滩傍晚散步。 / A hotel near East Nanjing Road station for the pedestrian street and Bund.
+- 简介：老字号点心铺，适合边走边买鲜肉月饼或其他糕点。 / A traditional pastry shop for savory mooncakes and other snacks to take away.
 - 开放时间：—
-- 来源：https://www.marriott.com/en-us/hotels/shaeb-the-shanghai-edition/overview/
-- 提醒：pl_sh_aidixun: unknown field 'hotel_class' is dropped on import
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 上海宝格丽酒店 · Bvlgari Hotel Shanghai  `pl_sh_baogeli`
-- hotel/hotel · main · 分数 26 · 区未知
-- 高德：未查询
-- 简介：苏州河边的宝格丽，适合喜欢河岸和城市旧建筑的游客。 / A Suzhou Creek waterfront stay within a district of parks and art spaces.
-- 开放时间：—
-- 来源：https://www.bulgarihotels.com/en-US/shanghai
-- 提醒：pl_sh_baogeli: unknown field 'hotel_class' is dropped on import
+- 来源：https://english.shanghai.gov.cn/en-TrendyStores/20241024/4649c91c13404df59b823438e4e892e7.html
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 大壶春（山西南路店） · Da Hu Chun (South Shanxi Road)  `pl_sh_dahuchun_shanxi`
@@ -142,23 +378,6 @@
 - 来源：https://english.shanghai.gov.cn/en-TrendyStores/20260212/53d47cbafcff4acfadc3d1ce86552283.html
 - [ ] accept　[ ] reject　[ ] edit：
 
-### 上海东锦江希尔顿逸林酒店 · DoubleTree by Hilton Hotel Shanghai - Pudong  `pl_sh_dongjinjiangyilin`
-- hotel/hotel · main · 分数 26 · 浦东新区
-- 高德：未查询
-- 简介：杨高南路酒店，可经蓝村路站游浦东。 / A Pudong hotel with Lancun Road station listed nearby.
-- 开放时间：—
-- 来源：https://www.hilton.com.cn/zh-cn/hotels/shaspdi-doubletree-by-hilton-hotel-shanghai--pudong
-- 提醒：pl_sh_dongjinjiangyilin: unknown field 'hotel_class' is dropped on import
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 兴业太古汇 · HKRI Taikoo Hui  `pl_sh_hkri_taikoo_hui`
-- shopping/mall · main · 分数 26 · 静安区
-- 高德：未查询
-- 简介：逛南京西路时，可在这里集中看时装与生活品牌。 / Fashion and lifestyle stores in one stop on West Nanjing Road.
-- 开放时间：—
-- 来源：https://www.shanghai.gov.cn/nw17239/20260806/d59b6ca73d874620abaf66e537e405f0.html
-- [ ] accept　[ ] reject　[ ] edit：
-
 ### 洪长兴（山西南路店） · Hong Chang Xing (South Shanxi Road)  `pl_sh_hongchangxing_shanxi`
 - food/halal · main · 分数 26 · 黄浦区
 - 高德：未查询
@@ -167,31 +386,12 @@
 - 来源：https://english.shanghai.gov.cn/en-TrendyStores/20260212/53d47cbafcff4acfadc3d1ce86552283.html
 - [ ] accept　[ ] reject　[ ] edit：
 
-### 上海虹桥国际机场希尔顿酒店 · Hilton Shanghai Hongqiao International Airport  `pl_sh_hongqiaojichangxierdun`
-- hotel/hotel · main · 分数 26 · 区未知
+### 佳佳汤包（黄河路） · Jia Jia Tang Bao (Huanghe Road)  `pl_sh_jiajia_huanghe`
+- food/local_cuisine · main · 分数 26 · 黄浦区
 - 高德：未查询
-- 简介：连接虹桥机场1号航站楼，适合早班航班。 / Connected to Hongqiao Airport Terminal 1 for a flight-focused stay.
-- 开放时间：—
-- 来源：https://www.hilton.com.cn/zh-cn/hotels/shaaphi-hilton-shanghai-hongqiao-international-airport
-- 提醒：pl_sh_hongqiaojichangxierdun: unknown field 'hotel_class' is dropped on import
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 上海虹桥万豪万枫酒店 · Fairfield by Marriott Shanghai Hongqiao  `pl_sh_hongqiaowanfeng`
-- hotel/hotel · main · 分数 26 · 区未知
-- 高德：未查询
-- 简介：闵行青杉路的万枫，去地铁可看10号线紫藤路。 / A Minhang stay with Line 10 at Ziteng Road listed for access.
-- 开放时间：—
-- 来源：https://www.marriott.com/en-us/hotels/shahf-fairfield-shanghai-hongqiao/overview/
-- 提醒：pl_sh_hongqiaowanfeng: unknown field 'hotel_class' is dropped on import
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 上海静安万枫酒店 · Fairfield by Marriott Shanghai Jingan  `pl_sh_jinganwanfeng`
-- hotel/hotel · main · 分数 26 · 区未知
-- 高德：未查询
-- 简介：住大宁一带，地铁1号线延长路站可用。 / Near Daning and Yanchang Road station, north of central Shanghai.
-- 开放时间：—
-- 来源：https://www.marriott.com/en-us/hotels/shafi-fairfield-shanghai-jingan/overview/
-- 提醒：pl_sh_jinganwanfeng: unknown field 'hotel_class' is dropped on import
+- 简介：黄河路逛吃时可尝汤包，开口后慢慢喝汤。 / Try soup dumplings at this Huanghe Road branch.
+- 开放时间：07:30–20:30
+- 来源：https://english.shanghai.gov.cn/en-GlobalTasteinShanghai2026-LocalFlavors/20260316/00b0c6d1698d406c8d532a6e169e1a1e.html
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 上海康莱德酒店 · Conrad Shanghai  `pl_sh_kanglaide`
@@ -202,6 +402,14 @@
 - 来源：https://www.hilton.com.cn/zh-cn/hotels/shawsci-conrad-shanghai
 - [ ] accept　[ ] reject　[ ] edit：
 
+### 莱莱小笼（天津路） · Lai Lai Xiao Long (Tianjin Road)  `pl_sh_lailai_tianjin`
+- food/local_cuisine · main · 分数 26 · 黄浦区
+- 高德：未查询
+- 简介：南京东路附近想吃蟹粉小笼，可走到天津路这一家。 / Try crab roe soup dumplings a short walk from East Nanjing Road.
+- 开放时间：08:00–14:00，15:00–20:00
+- 来源：https://english.shanghai.gov.cn/en-GlobalTasteinShanghai2026-LocalFlavors/20260316/00b0c6d1698d406c8d532a6e169e1a1e.html
+- [ ] accept　[ ] reject　[ ] edit：
+
 ### 岚华里·森系生活 · Lanhuali Market  `pl_sh_lanhuali_huacao`
 - shopping/market · main · 分数 26 · 宝山区
 - 高德：未查询
@@ -209,8 +417,6 @@
 - 开放时间：—
 - 来源：https://mzj.sh.gov.cn/lnb-xw/20260717/3d19f43f3c134e589f065fbfdfece2ae.html
 - [ ] accept　[ ] reject　[ ] edit：
-
-## 第 2 批
 
 ### 老大同手作工坊（江西中路） · Lao Da Tong Workshop, Middle Jiangxi Road  `pl_sh_laodatong_jiangxi_shop`
 - shopping/time_honored_brand · main · 分数 26 · 黄浦区
@@ -220,6 +426,8 @@
 - 来源：https://english.shanghai.gov.cn/en-TrendyStores/20260212/53d47cbafcff4acfadc3d1ce86552283.html
 - [ ] accept　[ ] reject　[ ] edit：
 
+## 第 3 批
+
 ### 老凤祥（南京东路总店） · Lao Feng Xiang, East Nanjing Road Flagship  `pl_sh_laofengxiang_nanjing_flagship`
 - shopping/time_honored_brand · main · 分数 26 · 黄浦区
 - 高德：未查询
@@ -228,21 +436,20 @@
 - 来源：https://www.shanghai.gov.cn/nw17239/20251105/f313048f316743c28825ab7e37848dc3.html
 - [ ] accept　[ ] reject　[ ] edit：
 
-### 上海明天广场JW万豪酒店 · JW Marriott Hotel Shanghai at Tomorrow Square  `pl_sh_mingtianwanhao`
-- hotel/hotel · main · 分数 26 · 区未知
-- 高德：未查询
-- 简介：从人民广场出发，可在南京西路回酒店歇脚。 / A People's Square stay on West Nanjing Road with an indoor pool.
-- 开放时间：—
-- 来源：https://www.marriott.com/en-us/hotels/shajw-jw-marriott-hotel-shanghai-at-tomorrow-square/overview/
-- 提醒：pl_sh_mingtianwanhao: unknown field 'hotel_class' is dropped on import
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 潘国仙耳光馄饨 · Pan Guoxian Erguang Wonton  `pl_sh_panguoxian_erguang`
+### 老正兴菜馆（福州路） · Lao Zheng Xing (Fuzhou Road)  `pl_sh_laozhengxing_fuzhou`
 - food/local_cuisine · main · 分数 26 · 黄浦区
 - 高德：未查询
-- 简介：除了菜肉馄饨，可用小吃搭配成便饭。 / Try pork and greens wontons for a casual meal.
-- 开放时间：—
-- 来源：https://english.shanghai.gov.cn/en-GlobalTasteinShanghai2026-LocalFlavors/20260605/81483538821d4e7ebfb82b5c8267c946.html
+- 简介：适合坐下来分食本帮菜，春笋上市时可问腌笃鲜。 / A sit-down Shanghainese meal, with bamboo shoot soup in season.
+- 开放时间：11:00–14:00，17:00–21:00
+- 来源：https://english.shanghai.gov.cn/en-GlobalTasteinShanghai2026-LocalFlavors/20260410/1554e7ea15da4a6796e5bf8dc5cfb57f.html
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 南翔馒头店（豫园） · Nanxiang Steam Bun Restaurant (Yuyuan)  `pl_sh_nanxiang_yuyuan`
+- food/local_cuisine · main · 分数 26 · 黄浦区
+- 高德：未查询
+- 简介：逛豫园时，可以停下来吃一笼鲜肉或蟹粉小笼。 / Stop for pork or crab soup dumplings while visiting Yuyuan.
+- 开放时间：07:30–20:30
+- 来源：https://english.shanghai.gov.cn/en-GlobalTasteinShanghai2026-LocalFlavors/20260316/00b0c6d1698d406c8d532a6e169e1a1e.html
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 上海浦东福朋喜来登由由酒店 · Four Points by Sheraton Shanghai, Pudong  `pl_sh_pudongfupeng`
@@ -253,56 +460,12 @@
 - 来源：https://www.marriott.com/en-us/hotels/shapf-four-points-shanghai-pudong/overview/
 - [ ] accept　[ ] reject　[ ] edit：
 
-### 上海浦东丽思卡尔顿酒店 · The Ritz-Carlton Shanghai, Pudong  `pl_sh_pudonglisi`
-- hotel/hotel · main · 分数 26 · 区未知
-- 高德：未查询
-- 简介：陆家嘴站附近，酒店列出英语、韩语等服务语言。 / A Lujiazui choice with several guest languages listed by the hotel.
-- 开放时间：—
-- 来源：https://www.ritzcarlton.com/en/hotels/shasz-the-ritz-carlton-shanghai-pudong/overview/
-- 提醒：pl_sh_pudonglisi: unknown field 'hotel_class' is dropped on import
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 上海浦东茂业万豪万枫酒店 · Fairfield by Marriott Shanghai Pudong South  `pl_sh_pudongmaoyewanfeng`
-- hotel/hotel · main · 分数 26 · 区未知
-- 高德：未查询
-- 简介：北蔡的万枫，官网列出13号线和18号线可选。 / A Beicai base with two different metro approaches in Pudong.
-- 开放时间：—
-- 来源：https://www.marriott.com/en-us/hotels/shapi-fairfield-shanghai-pudong-south/overview/
-- 提醒：pl_sh_pudongmaoyewanfeng: unknown field 'hotel_class' is dropped on import
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 上海普陀Moxy酒店 · Moxy Shanghai Putuo  `pl_sh_putuomoxy`
-- hotel/hotel · main · 分数 26 · 区未知
-- 高德：未查询
-- 简介：澳门路上的普陀门店，去上海站可先查酒店交通页。 / A Putuo hotel on Aomen Road, with English on the language list.
-- 开放时间：—
-- 来源：https://www.marriott.com/en-us/hotels/shaxx-moxy-shanghai-putuo/overview/
-- 提醒：pl_sh_putuomoxy: unknown field 'hotel_class' is dropped on import
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 上海浦西万怡酒店 · Courtyard by Marriott Shanghai Central  `pl_sh_puxiwanyi`
-- hotel/hotel · main · 分数 26 · 区未知
-- 高德：未查询
-- 简介：靠上海站及汉中路换乘，适合火车到上海的游客。 / A rail-friendly base between Shanghai Railway Station and Hanzhong Road.
-- 开放时间：—
-- 来源：https://www.marriott.com/en-us/hotels/shapx-courtyard-shanghai-central/overview/
-- 提醒：pl_sh_puxiwanyi: unknown field 'hotel_class' is dropped on import
-- [ ] accept　[ ] reject　[ ] edit：
-
 ### 三阳南货店（江西中路店） · Sanyang Nanhuo Store, Middle Jiangxi Road  `pl_sh_sanyang_jiangxi_shop`
 - shopping/time_honored_brand · main · 分数 26 · 黄浦区
 - 高德：未查询
 - 简介：在外滩一带挑上海点心与南北干货。 / A Bund-area stop for Shanghai pastries and regional dried goods.
 - 开放时间：—
 - 来源：https://english.shanghai.gov.cn/en-TrendyStores/20260212/53d47cbafcff4acfadc3d1ce86552283.html
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 上海国金中心商场 · Shanghai ifc mall  `pl_sh_shanghai_ifc_retail`
-- shopping/mall · main · 分数 26 · 浦东新区
-- 高德：未查询
-- 简介：游览陆家嘴时，可顺路看国际服装和配饰。 / Browse international fashion and accessories while visiting Lujiazui.
-- 开放时间：—
-- 来源：https://www.shkp.com/zh-CN/our-business/mainland-and-other-properties/shanghai-ifc
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 邵万生（江西中路店） · Shao Wan Sheng, Middle Jiangxi Road  `pl_sh_shaowansheng_jiangxi`
@@ -313,56 +476,20 @@
 - 来源：https://english.shanghai.gov.cn/en-TrendyStores/20260212/53d47cbafcff4acfadc3d1ce86552283.html
 - [ ] accept　[ ] reject　[ ] edit：
 
-### 唐老鸭欢享小厨 · Donald's Dine 'n Delights  `pl_sh_tanglaoya_disini`
-- food/western · main · 分数 26 · 浦东新区
+### 万寿斋（山阴路） · Wan Shou Zhai (Shanyin Road)  `pl_sh_wanshouzhai_shanyin`
+- food/local_cuisine · main · 分数 26 · 虹口区
 - 高德：未查询
-- 简介：不用安排整天入园，也能在小镇吃披萨和甜点。 / Stop for pizza or dessert in Disneytown.
-- 开放时间：—
-- 来源：https://www.shanghaidisneyresort.com/experience/restaurant/donalds-dine-n-delights/
+- 简介：山阴路一带的早餐点，可尝小笼或三鲜馄饨。 / A Shanyin Road breakfast stop for soup dumplings or wontons.
+- 开放时间：04:30–21:00
+- 来源：https://english.shanghai.gov.cn/en-GlobalTasteinShanghai2026-LocalFlavors/20260316/00b0c6d1698d406c8d532a6e169e1a1e.html
 - [ ] accept　[ ] reject　[ ] edit：
 
-### Tapa Tapa（西岸梦中心店） · Tapa Tapa (West Bund)  `pl_sh_tapatapa_xian`
-- food/western · main · 分数 26 · 徐汇区
+### 屋有鲜（茂名南路） · Wu You Xian (South Maoming Road)  `pl_sh_wuyouxian_maoming`
+- food/local_cuisine · main · 分数 26 · 黄浦区
 - 高德：未查询
-- 简介：几人同行可分点西班牙小盘菜或海鲜饭。 / Share Spanish small plates or seafood rice on the West Bund.
-- 开放时间：—
-- 来源：https://english.shanghai.gov.cn/en-TrendyStores/20260228/e0a382ffc0ec40fbab69d435d49fbca4.html
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 上海外滩华尔道夫酒店 · Waldorf Astoria Shanghai on the Bund  `pl_sh_waitanhuaerdaofu`
-- hotel/hotel · main · 分数 26 · 黄浦区
-- 高德：未查询
-- 简介：外滩历史建筑里的酒店，可接着走黄浦江岸。 / Stay beside the Bund in a property linked to the historic Shanghai Club.
-- 开放时间：—
-- 来源：https://www.hilton.com.cn/zh-cn/hotels/shawawa-waldorf-astoria-shanghai-on-the-bund
-- 提醒：pl_sh_waitanhuaerdaofu: unknown field 'hotel_class' is dropped on import
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 上海外滩中心威斯汀大饭店 · The Westin Bund Center, Shanghai  `pl_sh_waitanweisiting`
-- hotel/hotel · main · 分数 26 · 区未知
-- 高德：未查询
-- 简介：河南中路的威斯汀，适合留一天步行逛外滩。 / A Huangpu address for pairing the Bund with central Shanghai outings.
-- 开放时间：—
-- 来源：https://www.marriott.com/en-us/hotels/shawi-the-westin-bund-center-shanghai/overview/
-- 提醒：pl_sh_waitanweisiting: unknown field 'hotel_class' is dropped on import
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 上海徐汇Moxy酒店 · Moxy Shanghai Xuhui  `pl_sh_xuhuimoxy`
-- hotel/hotel · main · 分数 26 · 区未知
-- 高德：未查询
-- 简介：漕宝路一带的徐汇客房，酒店列出中英文服务。 / A Tianlin base for southern Xuhui, with English listed by the hotel.
-- 开放时间：—
-- 来源：https://www.marriott.com/en-us/hotels/shaos-moxy-shanghai-xuhui/overview/
-- 提醒：pl_sh_xuhuimoxy: unknown field 'hotel_class' is dropped on import
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 上海徐家汇万豪万枫酒店 · Fairfield by Marriott Shanghai Xuhui Center  `pl_sh_xuhuiwanfeng`
-- hotel/hotel · main · 分数 26 · 区未知
-- 高德：未查询
-- 简介：肇嘉浜路门店，可往徐家汇逛商场和街区。 / A Zhaojiabang Road hotel for the Xujiahui area.
-- 开放时间：—
-- 来源：https://www.marriott.com/en-us/hotels/shaxf-fairfield-shanghai-xuhui-center/overview/
-- 提醒：pl_sh_xuhuiwanfeng: unknown field 'hotel_class' is dropped on import
+- 简介：可以在同一笼里尝几种不同的蟹馅。 / Compare different crab fillings in one steamer of soup dumplings.
+- 开放时间：09:00–20:00
+- 来源：https://english.shanghai.gov.cn/en-GlobalTasteinShanghai2026-LocalFlavors/20260316/00b0c6d1698d406c8d532a6e169e1a1e.html
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 上海雅居乐万豪侯爵酒店 · Shanghai Marriott Marquis City Centre  `pl_sh_yajulewanhao`
@@ -381,31 +508,12 @@
 - 来源：https://yelixiali.com/page45.html
 - [ ] accept　[ ] reject　[ ] edit：
 
-### 宜必思上海虹桥火车站酒店 · ibis Shanghai Hongqiao Railway Station  `pl_sh_yibisi_hongqiaozhan`
-- hotel/hotel · main · 分数 26 · 闵行区
+### 一心斋清真饭店 · Yi Xin Zhai Halal Restaurant  `pl_sh_yixinzhai_yangpu`
+- food/halal · main · 分数 26 · 杨浦区
 - 高德：未查询
-- 简介：住在七宝，可把老街游安排在虹桥坐车之前。 / A Qibao base for an old-town visit around a Hongqiao rail trip.
+- 简介：可在杨浦尝牛肉煎包和本地清真熟食。 / Try beef buns and local halal cooking in Yangpu.
 - 开放时间：—
-- 来源：https://all.accor.com/hotel/B566/index.en.shtml
-- 提醒：pl_sh_yibisi_hongqiaozhan: unknown field 'hotel_class' is dropped on import
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 宜必思尚品上海青浦体育中心酒店 · ibis Styles Shanghai Qingpu Sports Center Hotel  `pl_sh_yibisishangpin_qingputiyu`
-- hotel/hotel · main · 分数 26 · 青浦区
-- 高德：未查询
-- 简介：青浦体育场旁，可按雅高官网查17号线接法。 / Stay by Qingpu Stadium, with Line 17 listed for reaching Hongqiao.
-- 开放时间：—
-- 来源：https://all.accor.com/hotel/B568/index.en.shtml
-- 提醒：pl_sh_yibisishangpin_qingputiyu: unknown field 'hotel_class' is dropped on import
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 宜必思尚品上海张江酒店 · ibis Styles Shanghai Zhangjiang Hotel  `pl_sh_yibisishangpin_zhangjiang`
-- hotel/hotel · main · 分数 26 · 浦东新区
-- 高德：未查询
-- 简介：浦东张江路的经济型酒店，可经广兰路换地铁。 / A Zhangjiang hotel for travelers spending most of their trip in Pudong.
-- 开放时间：—
-- 来源：https://all.accor.com/hotel/B3F1/index.en.shtml
-- 提醒：pl_sh_yibisishangpin_zhangjiang: unknown field 'hotel_class' is dropped on import
+- 来源：https://www.shanghai.gov.cn/yangpu/index.html
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 玉佛禅寺素食点 · Jade Buddha Temple Vegetarian Food  `pl_sh_yufosi_sushi`
@@ -416,40 +524,20 @@
 - 来源：https://www.shanghai.gov.cn/nw17239/20260331/e71d25065b4b4da7b5972d3dd2c72492.html
 - [ ] accept　[ ] reject　[ ] edit：
 
-### 上海豫园万丽酒店 · Renaissance Shanghai Yu Garden Hotel  `pl_sh_yuyuanwanli`
-- hotel/hotel · main · 分数 26 · 区未知
-- 高德：未查询
-- 简介：从豫园站到上海老城厢，行程可以少换一次车。 / A Yu Garden stay with Line 10 and an indoor pool.
-- 开放时间：—
-- 来源：https://www.marriott.com/en-us/hotels/shasy-renaissance-shanghai-yu-garden-hotel/overview/
-- 提醒：pl_sh_yuyuanwanli: unknown field 'hotel_class' is dropped on import
-- [ ] accept　[ ] reject　[ ] edit：
-
-## 第 3 批
-
-### 真老大房（南京东路店） · Zhen Laodafang, East Nanjing Road  `pl_sh_zhenlaodafang_nanjing_shop`
-- shopping/time_honored_brand · main · 分数 26 · 黄浦区
-- 高德：未查询
-- 简介：老字号点心铺，适合边走边买鲜肉月饼或其他糕点。 / A traditional pastry shop for savory mooncakes and other snacks to take away.
-- 开放时间：—
-- 来源：https://english.shanghai.gov.cn/en-TrendyStores/20241024/4649c91c13404df59b823438e4e892e7.html
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 上海龙之梦万丽酒店 · Renaissance Shanghai Zhongshan Park Hotel  `pl_sh_zhongshangongyuanwanli`
-- hotel/hotel · main · 分数 26 · 区未知
-- 高德：未查询
-- 简介：在中山公园站上方，2、3、4号线都可利用。 / Stay above Zhongshan Park station for direct access to three metro lines.
-- 开放时间：—
-- 来源：https://www.marriott.com/en-us/hotels/shabz-renaissance-shanghai-zhongshan-park-hotel/overview/
-- 提醒：pl_sh_zhongshangongyuanwanli: unknown field 'hotel_class' is dropped on import
-- [ ] accept　[ ] reject　[ ] edit：
-
 ### 南京路步行街 · Nanjing Road Pedestrian Street  `pl_sh_nanjinglu`
 - attraction/street · main · 分数 25 · 黄浦区
 - 高德：未查询
 - 简介：沿南京东路步行看百货街的立面 / Walk East Nanjing Road from the city center toward the river.
 - 开放时间：—
 - 来源：https://english.shanghai.gov.cn/en-144-hourtransfer-stayinShanghai/20240104/d25575598d6444e49dc75f7a23b985d2.html
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 南外滩轻纺面料市场 · South Bund Fabric Market  `pl_sh_south_bund_fabric`
+- shopping/market · main · 分数 25 · 黄浦区
+- 高德：未查询
+- 简介：一处可以比面料也可以问定制衣服的市场。 / Compare fabrics and ask about made-to-measure clothes in one market.
+- 开放时间：—
+- 来源：https://english.shanghai.gov.cn/en-TrendyStores/20260105/5614f3027a1f4a7c9472e5b0650f2038.html
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 田子坊 · Tianzifang  `pl_sh_tianzifang`
@@ -460,64 +548,8 @@
 - 来源：https://english.shanghai.gov.cn/en-144-hourtransfer-stayinShanghai/20240104/d25575598d6444e49dc75f7a23b985d2.html
 - [ ] accept　[ ] reject　[ ] edit：
 
-### 一心斋清真饭店 · Yi Xin Zhai Halal Restaurant  `pl_sh_yixinzhai_yangpu`
-- food/halal · main · 分数 25 · 杨浦区
-- 高德：未查询
-- 简介：可在杨浦尝牛肉煎包和本地清真熟食。 / Try beef buns and local halal cooking in Yangpu.
-- 开放时间：—
-- 来源：https://www.shanghai.gov.cn/yangpu/index.html
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 佳佳汤包（黄河路） · Jia Jia Tang Bao (Huanghe Road)  `pl_sh_jiajia_huanghe`
-- food/local_cuisine · main · 分数 24 · 黄浦区
-- 高德：未查询
-- 简介：黄河路逛吃时可尝汤包，开口后慢慢喝汤。 / Try soup dumplings at this Huanghe Road branch.
-- 开放时间：07:30–20:30
-- 来源：https://english.shanghai.gov.cn/en-GlobalTasteinShanghai2026-LocalFlavors/20260316/00b0c6d1698d406c8d532a6e169e1a1e.html
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 莱莱小笼（天津路） · Lai Lai Xiao Long (Tianjin Road)  `pl_sh_lailai_tianjin`
-- food/local_cuisine · main · 分数 24 · 黄浦区
-- 高德：未查询
-- 简介：南京东路附近想吃蟹粉小笼，可走到天津路这一家。 / Try crab roe soup dumplings a short walk from East Nanjing Road.
-- 开放时间：08:00–14:00，15:00–20:00
-- 来源：https://english.shanghai.gov.cn/en-GlobalTasteinShanghai2026-LocalFlavors/20260316/00b0c6d1698d406c8d532a6e169e1a1e.html
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 老正兴菜馆（福州路） · Lao Zheng Xing (Fuzhou Road)  `pl_sh_laozhengxing_fuzhou`
-- food/local_cuisine · main · 分数 24 · 黄浦区
-- 高德：未查询
-- 简介：适合坐下来分食本帮菜，春笋上市时可问腌笃鲜。 / A sit-down Shanghainese meal, with bamboo shoot soup in season.
-- 开放时间：11:00–14:00，17:00–21:00
-- 来源：https://english.shanghai.gov.cn/en-GlobalTasteinShanghai2026-LocalFlavors/20260410/1554e7ea15da4a6796e5bf8dc5cfb57f.html
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 南翔馒头店（豫园） · Nanxiang Steam Bun Restaurant (Yuyuan)  `pl_sh_nanxiang_yuyuan`
-- food/local_cuisine · main · 分数 24 · 黄浦区
-- 高德：未查询
-- 简介：逛豫园时，可以停下来吃一笼鲜肉或蟹粉小笼。 / Stop for pork or crab soup dumplings while visiting Yuyuan.
-- 开放时间：07:30–20:30
-- 来源：https://english.shanghai.gov.cn/en-GlobalTasteinShanghai2026-LocalFlavors/20260316/00b0c6d1698d406c8d532a6e169e1a1e.html
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 万寿斋（山阴路） · Wan Shou Zhai (Shanyin Road)  `pl_sh_wanshouzhai_shanyin`
-- food/local_cuisine · main · 分数 24 · 虹口区
-- 高德：未查询
-- 简介：山阴路一带的早餐点，可尝小笼或三鲜馄饨。 / A Shanyin Road breakfast stop for soup dumplings or wontons.
-- 开放时间：04:30–21:00
-- 来源：https://english.shanghai.gov.cn/en-GlobalTasteinShanghai2026-LocalFlavors/20260316/00b0c6d1698d406c8d532a6e169e1a1e.html
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 屋有鲜（茂名南路） · Wu You Xian (South Maoming Road)  `pl_sh_wuyouxian_maoming`
-- food/local_cuisine · main · 分数 24 · 黄浦区
-- 高德：未查询
-- 简介：可以在同一笼里尝几种不同的蟹馅。 / Compare different crab fillings in one steamer of soup dumplings.
-- 开放时间：09:00–20:00
-- 来源：https://english.shanghai.gov.cn/en-GlobalTasteinShanghai2026-LocalFlavors/20260316/00b0c6d1698d406c8d532a6e169e1a1e.html
-- [ ] accept　[ ] reject　[ ] edit：
-
 ### 春园·四如春（重庆南路） · Chun Yuan (South Chongqing Road)  `pl_sh_chunyuan_chongqing`
-- food/local_cuisine · main · 分数 23 · 黄浦区
+- food/local_cuisine · main · 分数 24 · 黄浦区
 - 高德：未查询
 - 简介：可尝现炸猪排，上海人常用辣酱油搭着吃。 / Try a fried pork chop with Shanghai-style tangy sauce.
 - 开放时间：06:30–19:00
@@ -525,7 +557,7 @@
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 德大西餐社（南京西路） · Deda Western Restaurant (West Nanjing Road)  `pl_sh_deda_nanjingxi`
-- food/western · main · 分数 23 · 黄浦区
+- food/western · main · 分数 24 · 黄浦区
 - 高德：未查询
 - 简介：想体验上海本地演化的西餐，可从老式炸猪排入手。 / Try an old-school pork chop to see how Shanghai adapted Western food.
 - 开放时间：11:00–13:30，17:00–20:00
@@ -533,7 +565,7 @@
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 东泰祥生煎馆（重庆北路） · Dong Tai Xiang (North Chongqing Road)  `pl_sh_dongtaixiang_chongqing`
-- food/local_cuisine · main · 分数 23 · 黄浦区
+- food/local_cuisine · main · 分数 24 · 黄浦区
 - 高德：未查询
 - 简介：半发酵面皮做的生煎，适合赶早或晚到时找一份小吃。 / Try pan-fried buns made with semi-fermented dough.
 - 开放时间：24小时
@@ -541,7 +573,7 @@
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 福1015 · Fu 1015  `pl_sh_fu_yuyuan`
-- food/local_cuisine · main · 分数 23 · 长宁区
+- food/local_cuisine · main · 分数 24 · 长宁区
 - 高德：未查询
 - 简介：想体验精致本帮菜，可以试本地红烧做法配现代搭配。 / An option for refined Shanghainese dishes with newer pairings.
 - 开放时间：11:00–14:00，17:30–23:00
@@ -549,7 +581,7 @@
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 福和慧 · Fu He Hui  `pl_sh_fuhehui_yuyuan`
-- food/vegetarian · main · 分数 23 · 长宁区
+- food/vegetarian · main · 分数 24 · 长宁区
 - 高德：未查询
 - 简介：愚园路的一顿素食正餐，适合留时间慢慢吃。 / Allow time for a vegetarian meal on Yuyuan Road.
 - 开放时间：11:30–14:00，17:30–22:30
@@ -557,7 +589,7 @@
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### Homes上海本帮菜（新乐路） · Homes Shanghainese Restaurant  `pl_sh_homes_xinle`
-- food/local_cuisine · main · 分数 23 · 徐汇区
+- food/local_cuisine · main · 分数 24 · 徐汇区
 - 高德：未查询
 - 简介：走新乐路时，可选这里尝上海家常味。 / Stop on Xinle Road for home-style Shanghainese dishes.
 - 开放时间：11:00–14:00，17:00–21:00
@@ -565,7 +597,7 @@
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 宏玲餐厅（四川南路） · Hong Ling Restaurant (South Sichuan Road)  `pl_sh_hongling_sichuan`
-- food/local_cuisine · main · 分数 23 · 黄浦区
+- food/local_cuisine · main · 分数 24 · 黄浦区
 - 高德：未查询
 - 简介：这家炸猪排用南乳调味，可与常见版本作对比。 / Compare a pork chop flavored with fermented bean curd.
 - 开放时间：11:00–14:00，17:00–21:30
@@ -573,7 +605,7 @@
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 老克勒上海菜（九江路） · Laokele Shanghai Cuisine (Jiujiang Road)  `pl_sh_laokele_jiujiang`
-- food/local_cuisine · main · 分数 23 · 黄浦区
+- food/local_cuisine · main · 分数 24 · 黄浦区
 - 高德：未查询
 - 简介：想尝浓油赤酱的本帮菜，可点红烧肉配饭。 / Pair a richly braised Shanghai-style pork dish with rice.
 - 开放时间：10:00–21:30
@@ -581,7 +613,7 @@
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 老正和生煎（四川南路） · Lao Zheng He (South Sichuan Road)  `pl_sh_laozhenghe_sichuan`
-- food/local_cuisine · main · 分数 23 · 黄浦区
+- food/local_cuisine · main · 分数 24 · 黄浦区
 - 高德：未查询
 - 简介：想比较生煎的皮和汤汁，可以试试这家传统做法。 / Compare another traditional style of Shanghai pan-fried bun.
 - 开放时间：06:30–21:00
@@ -589,15 +621,17 @@
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 萝春阁（浙江中路） · Luo Chun Ge  `pl_sh_luochunge_zhejiang`
-- food/local_cuisine · main · 分数 23 · 黄浦区
+- food/local_cuisine · main · 分数 24 · 黄浦区
 - 高德：未查询
 - 简介：喜欢味道更浓的生煎，可试带酱香汤汁的做法。 / Try pan-fried buns with a deeply savory broth.
 - 开放时间：09:00–19:00
 - 来源：https://english.shanghai.gov.cn/en-GlobalTasteinShanghai2026-LocalFlavors/20260430/c012ba9f05414f3184be86244a03e950.html
 - [ ] accept　[ ] reject　[ ] edit：
 
+## 第 4 批
+
 ### 人和馆·上海菜（肇嘉浜路） · Ren He Guan (Zhaojiabang Road)  `pl_sh_renheguan_zhaojiabang`
-- food/local_cuisine · main · 分数 23 · 徐汇区
+- food/local_cuisine · main · 分数 24 · 徐汇区
 - 高德：未查询
 - 简介：可单点小份红烧肉，再搭几样本帮菜。 / Try an individual portion of red-braised pork with local dishes.
 - 开放时间：11:00–21:30
@@ -605,11 +639,91 @@
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 舒蔡记生煎菜饭 · Shu Cai Ji  `pl_sh_shucaiji_zhejiang`
-- food/local_cuisine · main · 分数 23 · 黄浦区
+- food/local_cuisine · main · 分数 24 · 黄浦区
 - 高德：未查询
 - 简介：在人广附近可点生煎和菜饭，搭成一顿简餐。 / Pair pan-fried buns with vegetable rice near People's Square.
 - 开放时间：07:30–19:30
 - 来源：https://english.shanghai.gov.cn/en-GlobalTasteinShanghai2026-LocalFlavors/20260430/c012ba9f05414f3184be86244a03e950.html
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 味香斋（雁荡路） · Wei Xiang Zhai  `pl_sh_weixiangzhai_yandang`
+- food/local_cuisine · main · 分数 24 · 黄浦区
+- 高德：未查询
+- 简介：想吃一碗地道上海面，可点麻酱面。 / A compact neighborhood noodle shop known for sesame noodles.
+- 开放时间：06:30–21:00
+- 来源：https://english.shanghai.gov.cn/en-Restaurants/20260810/07654214d16346fba1010908917bc22e.html
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 小杨生煎（黄河路店） · Yang's Fry-Dumpling (Huanghe Road)  `pl_sh_xiaoyang_huanghe`
+- food/local_cuisine · main · 分数 24 · 黄浦区
+- 高德：未查询
+- 简介：这家生煎皮薄汤多，吃时小心热汤。 / These thinner pan-fried buns hold plenty of hot soup.
+- 开放时间：06:30–22:00
+- 来源：https://english.shanghai.gov.cn/en-GlobalTasteinShanghai2026-LocalFlavors/20260430/c012ba9f05414f3184be86244a03e950.html
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 圆苑（力宝广场） · Yuan Yuan (Lippo Plaza)  `pl_sh_yuanyuan_lippo`
+- food/local_cuisine · main · 分数 24 · 黄浦区
+- 高德：未查询
+- 简介：逛淮海路时可以安排一桌本帮菜，试一道红烧肉。 / Try soy-braised pork over a sit-down meal on Huaihai Road.
+- 开放时间：11:00–21:30
+- 来源：https://english.shanghai.gov.cn/en-GlobalTasteinShanghai2026-LocalFlavors/20260509/3cb184e834064f4cbb1af26cfc34dc1e.html
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 福慧坊（八字桥路） · Fu Hui Fang (Baziqiao Road)  `pl_sh_fuhuifang_baziqiao`
+- food/vegetarian · main · 分数 23 · 奉贤区
+- 高德：未查询
+- 简介：想尝素菜，可以点松露炒饭或拌豆制品。 / Try truffle fried rice or a dressed tofu dish.
+- 开放时间：—
+- 来源：https://english.shanghai.gov.cn/en-SpecialtyFood/20250930/9e99e613fa364c70a0a7c6bc769b9bb4.html
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 上海环球港 · Shanghai Global Harbor  `pl_sh_global_harbor_shop`
+- shopping/mall · main · 分数 23 · 普陀区
+- 高德：未查询
+- 简介：大型室内商场，适合雨天逛街与安排一顿饭。 / A large indoor mall for a rainy-day shopping trip and a meal.
+- 开放时间：—
+- 来源：https://www.shanghai.gov.cn/nw17239/20261109/dfa297c5611c4a22a83dbd713244d914.html
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 华良黑皮馄饨（广东路） · Hualiang Heipi Wonton (Guangdong Road)  `pl_sh_hualiang_guangdong`
+- food/local_cuisine · main · 分数 23 · 黄浦区
+- 高德：未查询
+- 简介：想比较不同馄饨皮，可试全麦皮这一种。 / Try wontons wrapped in whole-wheat dough.
+- 开放时间：—
+- 来源：https://english.shanghai.gov.cn/en-GlobalTasteinShanghai2026-LocalFlavors/20260605/81483538821d4e7ebfb82b5c8267c946.html
+- [ ] accept　[ ] reject　[ ] edit：
+
+### Lenbach（西岸梦中心店） · Lenbach West Bund  `pl_sh_lenbach_xian`
+- food/western · main · 分数 23 · 徐汇区
+- 高德：未查询
+- 简介：在西岸休息时可点披萨或烤鸡。 / Pause on the West Bund for pizza or roast chicken.
+- 开放时间：—
+- 来源：https://english.shanghai.gov.cn/en-TrendyStores/20260228/e0a382ffc0ec40fbab69d435d49fbca4.html
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 梦花街馄饨（中华路） · Menghuajie Wonton (Zhonghua Road)  `pl_sh_menghuajie_zhonghua`
+- food/local_cuisine · main · 分数 23 · 黄浦区
+- 高德：未查询
+- 简介：这家老城小店可尝荠菜鲜肉馄饨。 / Try pork wontons with shepherd's purse in the old city.
+- 开放时间：—
+- 来源：https://english.shanghai.gov.cn/en-GlobalTasteinShanghai2026-LocalFlavors/20260605/81483538821d4e7ebfb82b5c8267c946.html
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 宝莱纳餐厅（西岸梦中心） · Paulaner Wirtshaus (West Bund)  `pl_sh_paulaner_xian`
+- food/western · main · 分数 23 · 徐汇区
+- 高德：未查询
+- 简介：走西岸滨水步道后，可分吃德式香肠或烤猪肘。 / Share German sausages or roast pork knuckle after a riverside walk.
+- 开放时间：—
+- 来源：https://english.shanghai.gov.cn/en-TrendyStores/20260228/e0a382ffc0ec40fbab69d435d49fbca4.html
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 盛兴汤圆店（思南路） · Shengxing Tangyuan  `pl_sh_shengxing_sinan`
+- food/local_cuisine · main · 分数 23 · 黄浦区
+- 高德：未查询
+- 简介：想找一顿老上海点心，可以从一碗菜肉馄饨开始。 / Start with a bowl of pork and greens wontons on Sinan Road.
+- 开放时间：—
+- 来源：https://english.shanghai.gov.cn/en-GlobalTasteinShanghai2026-LocalFlavors/20260605/81483538821d4e7ebfb82b5c8267c946.html
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 思南公馆 · Sinan Mansions  `pl_sh_sinan_gongguan`
@@ -628,30 +742,12 @@
 - 来源：https://english.shanghai.gov.cn/en-144-hourtransfer-stayinShanghai/20240104/d25575598d6444e49dc75f7a23b985d2.html
 - [ ] accept　[ ] reject　[ ] edit：
 
-## 第 4 批
-
-### 味香斋（雁荡路） · Wei Xiang Zhai  `pl_sh_weixiangzhai_yandang`
-- food/local_cuisine · main · 分数 23 · 黄浦区
-- 高德：未查询
-- 简介：想吃一碗地道上海面，可点麻酱面。 / A compact neighborhood noodle shop known for sesame noodles.
-- 开放时间：06:30–21:00
-- 来源：https://english.shanghai.gov.cn/en-Restaurants/20260810/07654214d16346fba1010908917bc22e.html
-- [ ] accept　[ ] reject　[ ] edit：
-
 ### 武康路 · Wukang Road  `pl_sh_wukanglu`
 - attraction/street · main · 分数 23 · 徐汇区
 - 高德：未查询
 - 简介：从武康大楼沿武康路看梧桐老街 / Walk Wukang Road from its distinctive wedge-shaped building.
 - 开放时间：—
 - 来源：https://english.shanghai.gov.cn/cmsres/82/82807ce752024a6583b041090bd00d2a/7a5e8c4d7940b968edefb6a6480dfa23.pdf
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 小杨生煎（黄河路店） · Yang's Fry-Dumpling (Huanghe Road)  `pl_sh_xiaoyang_huanghe`
-- food/local_cuisine · main · 分数 23 · 黄浦区
-- 高德：未查询
-- 简介：这家生煎皮薄汤多，吃时小心热汤。 / These thinner pan-fried buns hold plenty of hot soup.
-- 开放时间：06:30–22:00
-- 来源：https://english.shanghai.gov.cn/en-GlobalTasteinShanghai2026-LocalFlavors/20260430/c012ba9f05414f3184be86244a03e950.html
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 上海新天地 · Xintiandi  `pl_sh_xintiandi`
@@ -662,12 +758,12 @@
 - 来源：https://english.shanghai.gov.cn/en-144-hourtransfer-stayinShanghai/20240104/d25575598d6444e49dc75f7a23b985d2.html
 - [ ] accept　[ ] reject　[ ] edit：
 
-### 圆苑（力宝广场） · Yuan Yuan (Lippo Plaza)  `pl_sh_yuanyuan_lippo`
-- food/local_cuisine · main · 分数 23 · 黄浦区
+### 真如羊肉馆 · Zhenru Lamb Restaurant  `pl_sh_zhenru_yangrou`
+- food/local_cuisine · main · 分数 23 · 普陀区
 - 高德：未查询
-- 简介：逛淮海路时可以安排一桌本帮菜，试一道红烧肉。 / Try soy-braised pork over a sit-down meal on Huaihai Road.
-- 开放时间：11:00–21:30
-- 来源：https://english.shanghai.gov.cn/en-GlobalTasteinShanghai2026-LocalFlavors/20260509/3cb184e834064f4cbb1af26cfc34dc1e.html
+- 简介：去真如古镇可以安排一碗羊肉面或一份白切羊肉。 / Try a bowl of lamb noodles or sliced lamb in Zhenru.
+- 开放时间：—
+- 来源：https://www.shanghai.gov.cn/nw17239/20261109/dfa297c5611c4a22a83dbd713244d914.html
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 德兴馆（福建中路店） · De Xing Restaurant (Middle Fujian Road)  `pl_sh_dexingguan_fujian`
@@ -676,38 +772,6 @@
 - 简介：想在南京路附近吃一桌本帮菜，可按福建中路门店找。 / A sit-down Shanghainese meal near East Nanjing Road.
 - 开放时间：—
 - 来源：https://english.shanghai.gov.cn/en-TrendyStores/20260212/53d47cbafcff4acfadc3d1ce86552283.html
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 福慧坊（八字桥路） · Fu Hui Fang (Baziqiao Road)  `pl_sh_fuhuifang_baziqiao`
-- food/vegetarian · main · 分数 21 · 奉贤区
-- 高德：未查询
-- 简介：想尝素菜，可以点松露炒饭或拌豆制品。 / Try truffle fried rice or a dressed tofu dish.
-- 开放时间：—
-- 来源：https://english.shanghai.gov.cn/en-SpecialtyFood/20250930/9e99e613fa364c70a0a7c6bc769b9bb4.html
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 上海环球港 · Shanghai Global Harbor  `pl_sh_global_harbor_shop`
-- shopping/mall · main · 分数 21 · 普陀区
-- 高德：未查询
-- 简介：大型室内商场，适合雨天逛街与安排一顿饭。 / A large indoor mall for a rainy-day shopping trip and a meal.
-- 开放时间：—
-- 来源：https://www.shanghai.gov.cn/nw17239/20261109/dfa297c5611c4a22a83dbd713244d914.html
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 港汇恒隆广场 · Grand Gateway 66  `pl_sh_grand_gateway_retail`
-- shopping/mall · main · 分数 21 · 徐汇区
-- 高德：未查询
-- 简介：徐家汇一站式看时装、化妆品和生活用品。 / A Xujiahui stop for fashion, beauty products and everyday shopping.
-- 开放时间：—
-- 来源：https://www.hanglung.com/zh-cn/properties/mainland-properties/shanghai/grand-gateway-66/
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 华良黑皮馄饨（广东路） · Hualiang Heipi Wonton (Guangdong Road)  `pl_sh_hualiang_guangdong`
-- food/local_cuisine · main · 分数 21 · 黄浦区
-- 高德：未查询
-- 简介：想比较不同馄饨皮，可试全麦皮这一种。 / Try wontons wrapped in whole-wheat dough.
-- 开放时间：—
-- 来源：https://english.shanghai.gov.cn/en-GlobalTasteinShanghai2026-LocalFlavors/20260605/81483538821d4e7ebfb82b5c8267c946.html
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### Il Teatro（新天地店） · Il Teatro  `pl_sh_ilteatro_xintiandi`
@@ -726,14 +790,6 @@
 - 来源：https://www.shanghai.gov.cn/nw17239/20260806/d59b6ca73d874620abaf66e537e405f0.html
 - [ ] accept　[ ] reject　[ ] edit：
 
-### Lenbach（西岸梦中心店） · Lenbach West Bund  `pl_sh_lenbach_xian`
-- food/western · main · 分数 21 · 徐汇区
-- 高德：未查询
-- 简介：在西岸休息时可点披萨或烤鸡。 / Pause on the West Bund for pizza or roast chicken.
-- 开放时间：—
-- 来源：https://english.shanghai.gov.cn/en-TrendyStores/20260228/e0a382ffc0ec40fbab69d435d49fbca4.html
-- [ ] accept　[ ] reject　[ ] edit：
-
 ### 荟选露香园集 · Huixuan Luxiangyuan Market  `pl_sh_luxiangyuan_market`
 - shopping/market · main · 分数 21 · 黄浦区
 - 高德：未查询
@@ -742,68 +798,12 @@
 - 来源：https://sww.sh.gov.cn/zxxxgk/20261112/c4d7c33ff3194371a84f20a92afcf0ff.html
 - [ ] accept　[ ] reject　[ ] edit：
 
-### 梦花街馄饨（中华路） · Menghuajie Wonton (Zhonghua Road)  `pl_sh_menghuajie_zhonghua`
-- food/local_cuisine · main · 分数 21 · 黄浦区
-- 高德：未查询
-- 简介：这家老城小店可尝荠菜鲜肉馄饨。 / Try pork wontons with shepherd's purse in the old city.
-- 开放时间：—
-- 来源：https://english.shanghai.gov.cn/en-GlobalTasteinShanghai2026-LocalFlavors/20260605/81483538821d4e7ebfb82b5c8267c946.html
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 宝莱纳餐厅（西岸梦中心） · Paulaner Wirtshaus (West Bund)  `pl_sh_paulaner_xian`
-- food/western · main · 分数 21 · 徐汇区
-- 高德：未查询
-- 简介：走西岸滨水步道后，可分吃德式香肠或烤猪肘。 / Share German sausages or roast pork knuckle after a riverside walk.
-- 开放时间：—
-- 来源：https://english.shanghai.gov.cn/en-TrendyStores/20260228/e0a382ffc0ec40fbab69d435d49fbca4.html
-- [ ] accept　[ ] reject　[ ] edit：
-
 ### Scarpetta意大利餐厅（蒙自路） · Scarpetta Trattoria  `pl_sh_scarpetta_mengzi`
 - food/western · main · 分数 21 · 黄浦区
 - 高德：未查询
 - 简介：在黄浦找意餐，可试手工意面或披萨。 / Try fresh pasta or pizza at this Huangpu trattoria.
 - 开放时间：—
 - 来源：https://english.shanghai.gov.cn/en-EditorsPick-ShopinShanghai/20260123/e2d3d081256341aa8df07ff652705f5d.html
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 盛兴汤圆店（思南路） · Shengxing Tangyuan  `pl_sh_shengxing_sinan`
-- food/local_cuisine · main · 分数 21 · 黄浦区
-- 高德：未查询
-- 简介：想找一顿老上海点心，可以从一碗菜肉馄饨开始。 / Start with a bowl of pork and greens wontons on Sinan Road.
-- 开放时间：—
-- 来源：https://english.shanghai.gov.cn/en-GlobalTasteinShanghai2026-LocalFlavors/20260605/81483538821d4e7ebfb82b5c8267c946.html
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 南外滩轻纺面料市场 · South Bund Fabric Market  `pl_sh_south_bund_fabric`
-- shopping/market · main · 分数 21 · 黄浦区
-- 高德：未查询
-- 简介：一处可以比面料也可以问定制衣服的市场。 / Compare fabrics and ask about made-to-measure clothes in one market.
-- 开放时间：—
-- 来源：https://english.shanghai.gov.cn/en-TrendyStores/20260105/5614f3027a1f4a7c9472e5b0650f2038.html
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 正大广场 · Super Brand Mall  `pl_sh_super_brand_mall_pd`
-- shopping/mall · main · 分数 21 · 浦东新区
-- 高德：未查询
-- 简介：从陆家嘴江岸步行可达，集合日常零售和家庭休闲。 / Shops and family activities within walking distance of the Lujiazui riverfront.
-- 开放时间：—
-- 来源：https://www.shanghai.gov.cn/nw17239/20260813/283e5f83f3654b088130e465229f991b.html
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 前滩太古里 · Taikoo Li Qiantan  `pl_sh_taikoo_li_qiantan_shops`
-- shopping/mall · main · 分数 21 · 浦东新区
-- 高德：未查询
-- 简介：逛前滩时，可从室内商铺走到开敞的店街。 / Move between indoor shops and open-air lanes in Qiantan.
-- 开放时间：—
-- 来源：https://www.shanghai.gov.cn/nw17239/20260813/283e5f83f3654b088130e465229f991b.html
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 真如羊肉馆 · Zhenru Lamb Restaurant  `pl_sh_zhenru_yangrou`
-- food/local_cuisine · main · 分数 21 · 普陀区
-- 高德：未查询
-- 简介：去真如古镇可以安排一碗羊肉面或一份白切羊肉。 / Try a bowl of lamb noodles or sliced lamb in Zhenru.
-- 开放时间：—
-- 来源：https://www.shanghai.gov.cn/nw17239/20261109/dfa297c5611c4a22a83dbd713244d914.html
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 北外滩国客中心景区 · North Bund International Cruise Terminal Waterfront  `pl_sh_bei_waitan`
@@ -1034,8 +1034,33 @@
 
 ## 第 6 批
 
+### 龙华素斋馆（龙华路） · Longhua Vegetarian Restaurant  `pl_sh_longhua_susu`
+- food/vegetarian · backup · 分数 31 · 徐汇区
+- 高德：未查询
+- 简介：龙华寺旁的素面点，可顺路尝豆制小菜。 / A stop for vegetarian noodles and tofu dishes at Longhua Temple.
+- 开放时间：07:00–15:30
+- 来源：https://english.shanghai.gov.cn/en-SpecialtyFood/20241231/077785c4ba164e11ba38159525192fde.html
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 上海西藏大厦万怡酒店 · Courtyard by Marriott Shanghai Xujiahui  `pl_sh_xizangdashawanyi`
+- hotel/hotel · backup · 分数 31 · 徐汇区
+- 高德：未查询
+- 简介：虹桥路100号，徐家汇和宜山路各有地铁可选。 / A Hongqiao Road address with metro options at Xujiahui and Yishan Road.
+- 开放时间：—
+- 来源：https://www.marriott.com/en-us/hotels/shasx-courtyard-shanghai-xujiahui/overview/
+- 提醒：pl_sh_xizangdashawanyi: unknown field 'hotel_class' is dropped on import
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 世博源 · The River Mall  `pl_sh_shibo_center_sh`
+- shopping/mall · backup · 分数 30 · 浦东新区
+- 高德：未查询
+- 简介：从世博片区散步后，可去看服饰和生活小物。 / Browse clothes and everyday goods after walking around the Expo area.
+- 开放时间：—
+- 来源：https://www.shanghai.gov.cn/nw17239/20260813/283e5f83f3654b088130e465229f991b.html
+- [ ] accept　[ ] reject　[ ] edit：
+
 ### 上海波特曼丽思卡尔顿酒店 · The Portman Ritz-Carlton, Shanghai  `pl_sh_botemanlisi`
-- hotel/hotel · backup · 分数 26 · 区未知
+- hotel/hotel · backup · 分数 29 · 静安区
 - 高德：未查询
 - 简介：静安寺站是此店官网给出的地铁选择。 / A Jing'an Temple area hotel with English listed on its property page.
 - 开放时间：—
@@ -1044,7 +1069,7 @@
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 上海苏宁环球万怡酒店 · Courtyard by Marriott Shanghai Changfeng Park  `pl_sh_changfengwanyi`
-- hotel/hotel · backup · 分数 26 · 区未知
+- hotel/hotel · backup · 分数 29 · 普陀区
 - 高德：未查询
 - 简介：丹巴路的万怡，可规划从威宁路乘地铁。 / A western Putuo option with Weining Road on Line 2 listed for access.
 - 开放时间：—
@@ -1053,7 +1078,7 @@
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 上海静安瑞吉酒店 · The St. Regis Shanghai Jingan  `pl_sh_jinganruiji`
-- hotel/hotel · backup · 分数 26 · 区未知
+- hotel/hotel · backup · 分数 29 · 静安区
 - 高德：未查询
 - 简介：北京西路的瑞吉，官网列出南京西路地铁站。 / A West Beijing Road address with West Nanjing Road station nearby.
 - 开放时间：—
@@ -1062,7 +1087,7 @@
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 上海鲁能JW万豪侯爵酒店 · JW Marriott Marquis Hotel Shanghai Pudong  `pl_sh_pudonglujiazuimaoqi`
-- hotel/hotel · backup · 分数 26 · 区未知
+- hotel/hotel · backup · 分数 29 · 浦东新区
 - 高德：未查询
 - 简介：浦明路的浦东酒店，住客可使用室内泳池。 / An east-bank stay on Puming Road with an indoor pool.
 - 开放时间：—
@@ -1076,15 +1101,6 @@
 - 简介：沿南京东路逛街，可到一楼看上海包装点心。 / Look for packaged Shanghai snacks on the ground floor along East Nanjing Road.
 - 开放时间：—
 - 来源：https://www.shanghai.gov.cn/hpq/20260904/3a01544debea4d37ad69d3ad5a3e0843.html
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 上海西藏大厦万怡酒店 · Courtyard by Marriott Shanghai Xujiahui  `pl_sh_xizangdashawanyi`
-- hotel/hotel · backup · 分数 26 · 区未知
-- 高德：未查询
-- 简介：虹桥路100号，徐家汇和宜山路各有地铁可选。 / A Hongqiao Road address with metro options at Xujiahui and Yishan Road.
-- 开放时间：—
-- 来源：https://www.marriott.com/en-us/hotels/shasx-courtyard-shanghai-xujiahui/overview/
-- 提醒：pl_sh_xizangdashawanyi: unknown field 'hotel_class' is dropped on import
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 金彪生煎（乍浦路） · Jinbiao Shengjian  `pl_sh_jinbiao_zhapu`
@@ -1117,6 +1133,14 @@
 - 简介：可尝锅贴或上海冷面。 / Try potstickers or Shanghai-style cold noodles.
 - 开放时间：05:00–23:00
 - 来源：https://www.shanghai.gov.cn/nw17239/20260331/e71d25065b4b4da7b5972d3dd2c72492.html
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 新雅粤菜馆（南京东路） · Sunya Cantonese Restaurant  `pl_sh_sunya_nanjing`
+- food/local_cuisine · backup · 分数 23 · 黄浦区
+- 高德：未查询
+- 简介：南京东路上可尝上海老字号做的粤菜和时令点心。 / A long-running stop for Cantonese dishes and seasonal snacks.
+- 开放时间：—
+- 来源：https://english.shanghai.gov.cn/en-GlobalTasteinShanghai2026-LocalFlavors/20260618/a74fedaf5c884243855303f04741060b.html
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### Coquille海鲜小馆（蒙自路） · Coquille Seafood Bistro  `pl_sh_coquille_mengzi`
@@ -1157,22 +1181,6 @@
 - 简介：聚餐可考虑披萨、海鲜或烤牛排。 / A group dining option for pizza, seafood or steak in Xintiandi.
 - 开放时间：—
 - 来源：https://english.shanghai.gov.cn/en-EditorsPick-ShopinShanghai/20260123/e2d3d081256341aa8df07ff652705f5d.html
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 世博源 · The River Mall  `pl_sh_shibo_center_sh`
-- shopping/mall · backup · 分数 21 · 浦东新区
-- 高德：未查询
-- 简介：从世博片区散步后，可去看服饰和生活小物。 / Browse clothes and everyday goods after walking around the Expo area.
-- 开放时间：—
-- 来源：https://www.shanghai.gov.cn/nw17239/20260813/283e5f83f3654b088130e465229f991b.html
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 新雅粤菜馆（南京东路） · Sunya Cantonese Restaurant  `pl_sh_sunya_nanjing`
-- food/local_cuisine · backup · 分数 21 · 黄浦区
-- 高德：未查询
-- 简介：南京东路上可尝上海老字号做的粤菜和时令点心。 / A long-running stop for Cantonese dishes and seasonal snacks.
-- 开放时间：—
-- 来源：https://english.shanghai.gov.cn/en-GlobalTasteinShanghai2026-LocalFlavors/20260618/a74fedaf5c884243855303f04741060b.html
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 万有集市（商城路） · Wanyou Market, Shangcheng Road  `pl_sh_wanyou_shangcheng`
@@ -1231,6 +1239,8 @@
 - 来源：https://whlyj.sh.gov.cn/4ajjq/20191008/0022-28627.html
 - [ ] accept　[ ] reject　[ ] edit：
 
+## 第 7 批
+
 ### 上海佘山国家森林公园 · Shanghai Sheshan National Forest Park  `pl_sh_sheshan`
 - attraction/park · backup · 分数 20 · 松江区
 - 高德：未查询
@@ -1238,8 +1248,6 @@
 - 开放时间：—
 - 来源：https://whlyj.sh.gov.cn/4ajjq/20191008/0022-28627.html
 - [ ] accept　[ ] reject　[ ] edit：
-
-## 第 7 批
 
 ### 上海四行仓库抗战纪念馆 · Shanghai Sihang Warehouse Battle Memorial  `pl_sh_sihang_cangku`
 - attraction/museum · backup · 分数 20 · 静安区
@@ -1271,12 +1279,4 @@
 - 简介：在崇明看湿地和明珠湖水岸 / Explore wetlands and lake shores in western Chongming.
 - 开放时间：—
 - 来源：https://whlyj.sh.gov.cn/5ajjq/20191008/0022-29706.html
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 龙华素斋馆（龙华路） · Longhua Vegetarian Restaurant  `pl_sh_longhua_susu`
-- food/vegetarian · backup · 分数 13 · 徐汇区
-- 高德：未查询
-- 简介：龙华寺旁的素面点，可顺路尝豆制小菜。 / A stop for vegetarian noodles and tofu dishes at Longhua Temple.
-- 开放时间：—
-- 来源：https://english.shanghai.gov.cn/en-SpecialtyFood/20241231/077785c4ba164e11ba38159525192fde.html
 - [ ] accept　[ ] reject　[ ] edit：

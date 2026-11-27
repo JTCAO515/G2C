@@ -10,6 +10,8 @@ struct LioRoadbookLibraryView: View {
     let candidates: [LioRoadbook]
     /// The account's saved trips (#1725): a popular route can be used as my trip from its page.
     var savedPlans: LioSavedPlansModel? = nil
+    /// #1997: given only with the trip canvas on; "Use as my trip" then makes and opens the canvas.
+    var canvasUse: LioTemplateCanvasUse? = nil
     @State private var kept: [LioRoadbook] = []
     @Environment(\.dynamicTypeSize) private var typeSize
     @Environment(\.lioRoadbookEnricher) private var injectedEnricher
@@ -49,7 +51,7 @@ struct LioRoadbookLibraryView: View {
                     ForEach(books) { book in
                         NavigationLink {
                             LioRoadbookView(roadbook: book, language: language, store: store, savedPlans: savedPlans,
-                                            onChange: reload)
+                                            canvasUse: canvasUse, onChange: reload)
                                 .environment(\.lioRoadbookEnricher, enricher)
                         } label: {
                             LioRoadbookCard(roadbook: book, language: language, kept: kept.contains { $0.id == book.id })
@@ -128,6 +130,8 @@ struct LioRoadbookView: View {
     let store: LioRoadbookStore?
     /// Saved trips (#1725); a template's page offers "Use as my trip" when they can be written.
     var savedPlans: LioSavedPlansModel? = nil
+    /// #1997: given only with the trip canvas on; "Use as my trip" then makes and opens the canvas.
+    var canvasUse: LioTemplateCanvasUse? = nil
     var onChange: () -> Void = {}
     @Environment(LioRouter.self) private var router: LioRouter?
     @State private var selectedDay: Int?
@@ -508,7 +512,11 @@ struct LioRoadbookView: View {
                         .font(.subheadline.weight(.semibold)).foregroundStyle(LioTheme.jade)
                         .frame(minHeight: 44)
                         .accessibilityIdentifier("lio.roadbook.template-saved")
-                    if let router {
+                    if let canvasUse {
+                        Button(language.text("Open trip canvas", "打开行程画布")) { openCanvas(canvasUse) }
+                            .buttonStyle(LioSecondaryButtonStyle(fullWidth: false))
+                            .accessibilityIdentifier("lio.roadbook.template-open-canvas")
+                    } else if let router {
                         Button(language.text("Open Trips", "查看行程")) { router.tab = .trips }
                             .buttonStyle(LioSecondaryButtonStyle(fullWidth: false))
                             .accessibilityIdentifier("lio.roadbook.template-open-trips")
@@ -527,9 +535,17 @@ struct LioRoadbookView: View {
     private func useTemplate(_ savedPlans: LioSavedPlansModel) {
         if savedPlans.saveTemplate(roadbook) != nil {
             notice = nil
+            if let canvasUse { openCanvas(canvasUse) }
         } else {
             notice = language.text("Couldn’t save this route as your trip. Try again.", "暂时无法用作我的行程，请重试。")
         }
+    }
+
+    /// #1997: the route becomes the trip canvas (made once; a canvas the traveller already has is kept) and opens.
+    /// A canvas that could not be written still opens, from the saved route, and is kept as soon as it is changed.
+    private func openCanvas(_ canvasUse: LioTemplateCanvasUse) {
+        _ = try? canvasUse.store.useTemplate(roadbook, lookup: canvasUse.lookup)
+        canvasUse.open(LioPlanSummary(template: roadbook).tripID)
     }
 
     private func keep() {

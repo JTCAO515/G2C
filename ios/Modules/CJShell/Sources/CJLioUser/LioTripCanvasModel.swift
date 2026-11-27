@@ -129,7 +129,8 @@ final class LioTripCanvasModel {
     private(set) var saveFailed = false
     private(set) var notice: Notice?
 
-    init(plan: LioPlanSummary?, store: LioTripCanvasStore?, makeID: @escaping @MainActor () -> String = { "p-" + UUID().uuidString }) {
+    init(plan: LioPlanSummary?, store: LioTripCanvasStore?, lookup: any LioPlaceLookup = LioPlaceLookups.standard,
+         makeID: @escaping @MainActor () -> String = { "p-" + UUID().uuidString }) {
         self.store = store
         self.makeID = makeID
         let tripID = plan?.tripID ?? LioTripCanvas.standaloneID
@@ -145,6 +146,11 @@ final class LioTripCanvasModel {
         unread = unreadable
         if let plan {
             canvas = LioTripCanvas.resolved(stored: stored, plan: plan)
+            // #1997: a popular route's canvas not made yet (the route was saved before the canvas switch was on) gets
+            // its places looked up here, so it matches the one "Use as my trip" makes.
+            if stored == nil, plan.source == .template {
+                canvas = canvas.resolvingPlaces(with: lookup, city: plan.templateCityID)
+            }
         } else {
             canvas = stored ?? LioTripCanvas(emptyTripID: tripID)
         }

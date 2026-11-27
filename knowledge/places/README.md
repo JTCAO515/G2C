@@ -18,7 +18,7 @@
 
 生成物（不要手改）：
 - 服务端副本 `backend/fact/cj_fact/places_<城市>.v1.json`，与源文件**逐字节一致**，读取入口 `cj_fact.places`（`load_city`、`by_id`、`by_category`、`match_name`）。
-- App 精简版 `ios/Modules/CJShell/Sources/CJLioUser/Resources/LioPlaces.v1.json`：只有 id、城市、类别、`kind`、等级、排名、中英名、别名、GCJ-02 坐标、amap_id、一句话简介、缩略图文件名。App 在问服务端之前就能显示的就这些。
+- App 精简版 `ios/Modules/CJShell/Sources/CJLioUser/Resources/LioPlaces.v1.json`：只有 id、城市、类别、`kind`、等级、排名、中英名、别名、GCJ-02 坐标、amap_id、酒店的 `price_band` / `star` / `accepts_foreigners`（其他类别为 null，「住」按它们筛选并与高德结果取交集）、一句话简介、缩略图文件名。App 在问服务端之前就能显示的就这些。
 - CI：`backend/tests/test_places_pipeline.py` 与 `backend/fact/tests/test_places_copy.py`。数据改了却没重新生成，`python` job 失败。App 副本也在 Python job 里比对（只改 `knowledge/` 的 PR 不跑 Swift job）。
 - 一个城市文件被删除时，它的副本也算过期，`--write` 会一并删掉。
 
@@ -96,3 +96,18 @@ JT 审核要一天一批，库会空一阵，而实体链接（对话线 D-1）�
 - 服务端：`cj_fact.places_dev`，**两个环境变量都设了才放行**：`CJ_PLACES_DEV_ENABLED=1` 和 `CJ_PLACES_DEV_PACK=<包的路径>`；否则一律 `FactFailure('places_dev_disabled')`。香港环境永远不设这两个变量（测试扫 deploy、.github、tooling 里的文件）。
 - App：`LioDevPlacesPack`（`#if DEBUG`，Release 和 Beta 编译里整个文件都没有），从启动参数 `--places-dev-pack <路径>` 或环境变量 `G2C_PLACES_DEV_PACK` 读；读不到、版本不对、有任何已审核条目就当没有。用到开发数据的界面必须标明这是开发数据。
 - JT 审核完、数据进了正式库，开发包自动缩小直至没有（没有待审候选时 `validate.py --write` 删除它）。
+
+## 审核结果入库（#1988）
+
+JT（或指定的人）在 `review/<城市>.review.csv` 的 `decision` 列填 `accept`、`reject` 或 `edit`（edit 必须在 `note` 写要改什么），可在 `rank` 列写同类别内的名次。然后：
+
+```bash
+python3 -B knowledge/places/import/apply_review.py beijing --reviewer JT --on 2026-11-30
+python3 -B knowledge/places/validate.py --write     # 重写副本，并与预约规则表交叉核对
+```
+
+- `accept` 的条目拿候选里的草稿字段（去掉 `external_signals`）加高德坐标、`rank`、审核记录（审核人、日期、备注）进库；没有坐标（高德没找到）的不能 accept。
+- 整个城市文件先用 `validate.py` 同一套规则试校验，**有一条不过就整城都不写**并列出全部问题（常见的是同城名称重复）。
+- `reject` 留在候选文件里标 `rejected`，不进库；`edit` 保持待审，修完草稿重新导入。
+- 再次 accept 同一个 id 会替换库里的旧条目（改审）。
+- 库里只有人点过 accept 的条目：这是「人审之后才进库」的唯一入口。

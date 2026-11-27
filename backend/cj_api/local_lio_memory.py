@@ -46,7 +46,7 @@ def pilot_write_configuration(configuration, subjects):
     return replace(configuration, collection=collection)
 
 
-def lio_candidates(database, boundary, subjects, configuration):
+def lio_candidates(database, boundary, subjects, configuration, *, scope=None):
     def repository(principal, scope):
         if principal.subject not in subjects:
             raise Unavailable('Lio memory owner unavailable')
@@ -70,6 +70,19 @@ def lio_candidates(database, boundary, subjects, configuration):
         return extraction, configuration.policy(principal.subject), lambda entry: (None, None)
 
     service = CollectionService(boundary, repository, collection)
+
+    def titles(read_scope, item_ids):
+        # #2001 (M-3): read-only, in the account's own scope; the timeline reader asks for the titles of the memories an
+        # answer used, and gets back only those that are still active with a valid source (`cj_memory.titles`).
+        # #2077: the same roster as `repository()` above. This reader is built for the one scope whose memory configuration
+        # the roster admitted (`scope`); a read for any other scope, or from a reader built without one, is refused.
+        if scope is None or read_scope != scope:
+            return {}
+        from cj_memory.titles import memory_titles
+        return memory_titles(Repository(lambda: database.connect(read_scope), read_scope, typed_context=True,
+                                        transaction_binder=lambda connection, cursor: connection.bind_scope(cursor)), item_ids)
+
+    service.titles = titles
     return LioCandidates(service, subjects, original_allows=supported_preference)
 
 
@@ -98,6 +111,17 @@ class LioMemoryExtraction:
     def _consented(self, scope):
         from .lio_memory_consent import ConsentStore, consent_required
         return not consent_required() or ConsentStore(self.database).granted(scope)
+
+    def plan_memory_allowed(self, scope):
+        """False while the consent switch is on and the account is not granted (never chosen, or withdrawn); a read that
+        cannot be done is no. Asked by a planning reply before it hands remembered preferences to the model (#2010)."""
+        return self._consented(scope)
+
+    def consent_prompt(self, binding, question):
+        """The marker effect for a first-time consent prompt (#1999), or None; see `lio_memory_prompt`."""
+        from .lio_memory_consent import ConsentStore
+        from .lio_memory_prompt import effect
+        return effect(question, ConsentStore(self.database), binding.scope)
 
     def extract(self, worker, binding):
         # #1970: no consent record, or a withdrawal, means nothing is prepared, no model is called and
