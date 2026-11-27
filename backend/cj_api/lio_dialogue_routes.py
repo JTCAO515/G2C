@@ -15,7 +15,7 @@ from cj_agent.run_timing import accepted
 from cj_run.display_snapshot import SnapshotTooLarge
 
 from cj_message.lio_followups import VERSION as FOLLOWUPS_VERSION, wire_followups
-from cj_message import lio_entities
+from cj_message import lio_cards, lio_entities
 from cj_message.lio_entities import ENTITIES_EFFECT
 
 from .local_lio_planning import ITINERARY_PREVIEW_VERSION,read_itinerary_preview
@@ -63,6 +63,7 @@ def _message(item, state, *, expired=False, trip=None, memory=None, identity=Tru
     layout = None
     followups = None
     entities = None
+    cards = None
     amap_weather = False
     weather_city = None
     activity = None
@@ -75,6 +76,8 @@ def _message(item, state, *, expired=False, trip=None, memory=None, identity=Tru
                 amap_weather |= citation['title'] in ('高德天气', 'Amap Weather') and citation['url'] is None
             elif effect.startswith(LAYOUT_EFFECT):
                 layout = effect.removeprefix(LAYOUT_EFFECT)
+            elif effect.startswith(lio_cards.CARDS_EFFECT):
+                cards = effect
             elif effect.startswith(ENTITIES_EFFECT):
                 entities = effect   # the last one counts
             elif effect.startswith(FOLLOWUPS_EFFECT):
@@ -117,13 +120,23 @@ def _message(item, state, *, expired=False, trip=None, memory=None, identity=Tru
         if status == 'completed' and answer and followups is not None and trip is None and layout == 'split':
             row['followups'] = followups
         if declared == 'rich' and status == 'completed' and answer:
-            rich = _rich(answer, entities)
+            rich = _rich(answer, entities, cards if trip is None else None)
             if rich is not None:
                 row['rich'] = rich
+                # The one difference from the followups.1 row: a taxi card replaces the taxi button.
+                if any(card['type'] == 'taxi' for card in rich.get('cards', ())) and 'followups' in row:
+                    kept = [a for a in row['followups'].get('actions', ()) if a.get('tool') != 'taxi']
+                    body = {k: v for k, v in row['followups'].items() if k != 'actions'}
+                    if kept:
+                        body['actions'] = kept
+                    if 'actions' in body or 'chips' in body:
+                        row['followups'] = body
+                    else:
+                        del row['followups']
     return row
 
 
-def _rich(answer, entities):
+def _rich(answer, entities, cards=None):
     """`rich` for a row of a poll that declared LIO-answer-rich.1, or None. Every part fails alone and quietly:
     a bad or missing part is left out, `rich` never fails the page. Parts are added here as their tickets land
     (entities D-1 #1989; cards D-2 #1990; receipt T-1 #1994; memory M-1/M-3)."""
@@ -135,14 +148,18 @@ def _rich(answer, entities):
             rows = lio_entities.wire(entities, answer, lio_entities.approved_ids().__contains__)
             if rows:
                 value['entities'] = rows
+        if cards is not None:
+            rows = lio_cards.wire(cards)
+            if rows:
+                value['cards'] = rows
         if not value:
             return None
         value = dict(version=RICH_VERSION, **value)
-        if len(json.dumps(value, ensure_ascii=False, separators=(',', ':')).encode('utf-8')) > MAX_RICH_BYTES:
-            value.pop('entities', None)   # the drop order of the contract: entities, then cards; never the receipt
-            if len(value) == 1:
-                return None
-        return value
+        for part in ('entities', 'cards'):   # the drop order of the contract: entities, then cards; never the receipt
+            if len(json.dumps(value, ensure_ascii=False, separators=(',', ':')).encode('utf-8')) <= MAX_RICH_BYTES:
+                break
+            value.pop(part, None)
+        return value if len(value) > 1 else None
     except Exception:
         return None
 
