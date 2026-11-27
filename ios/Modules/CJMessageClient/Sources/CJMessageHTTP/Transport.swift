@@ -317,6 +317,22 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
         try await lioMemoryRequest(action, bearer: bearer, path: "/v1/lio/memory/receipt", operation: "readLioMemoryChoiceV1")
     }
 
+    /// `PUT /v1/lio/memory/consent` (LIO-memory-consent.1): the body is the original bytes of one user action.
+    func sendLioMemoryConsent(_ consent: LioMemoryConsentWire.Request, bearer: String) async throws -> (HTTPResponse, HTTPBody?) {
+        guard let messages, messages.wire == .lio else { throw MessageHTTPFailure.productionActivationUnavailable }
+        var request = HTTPRequest(method: .put, scheme: nil, authority: nil, path: "/v1/lio/memory/consent")
+        request.headerFields[.authorization] = "Bearer " + bearer
+        request.headerFields[.contentType] = "application/octet-stream"
+        request.headerFields[.accept] = "application/json"
+        return try await sendLocalWrite(request, body: HTTPBody(consent.originalUTF8), baseURL: messages.endpoint.url,
+                                        operationID: "putLioMemoryConsentV1", capability: messages.boundary, messageWire: nil)
+    }
+
+    /// `GET /v1/lio/memory/consent`: no query string.
+    func readLioMemoryConsent(bearer: String) async throws -> (HTTPResponse, HTTPBody?) {
+        try await lioRead(path: "/v1/lio/memory/consent", query: [], operation: "readLioMemoryConsentV1", bearer: bearer)
+    }
+
     private func lioMemoryRequest(_ action: LioMemoryWire.Action, bearer: String, path: String,
                                   operation: String) async throws -> (HTTPResponse, HTTPBody?) {
         guard let messages, messages.wire == .lio else { throw MessageHTTPFailure.productionActivationUnavailable }

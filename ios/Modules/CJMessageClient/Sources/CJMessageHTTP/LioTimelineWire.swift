@@ -305,8 +305,16 @@ public enum LioTimelineWire {
         public let entities: [Entity]
         /// Tool cards (#1993): at most one of each type, in the contract's order.
         public let cards: [Card]
+        /// `memory.prompt == "consent"` (#1999): the account has never chosen whether Lio may remember preferences and this
+        /// answer holds a preference, so the App may ask once. It is not consent; the choice is written with
+        /// `PUT /v1/lio/memory/consent`.
+        public let memoryPrompt: Bool
 
-        public init(entities: [Entity] = [], cards: [Card] = []) { self.entities = entities; self.cards = cards }
+        public init(entities: [Entity] = [], cards: [Card] = [], memoryPrompt: Bool = false) {
+            self.entities = entities
+            self.cards = cards
+            self.memoryPrompt = memoryPrompt
+        }
     }
 
     /// A city as a card names it (`{id, zh, en}`), for display only.
@@ -471,7 +479,8 @@ public enum LioTimelineWire {
             cards = items.compactMap { $0.value.flatMap(validCard) }.filter { seen.insert($0.kind).inserted }
             cards.sort { (Card.Kind.allCases.firstIndex(of: $0.kind) ?? 0) < (Card.Kind.allCases.firstIndex(of: $1.kind) ?? 0) }
         }
-        return entities.isEmpty && cards.isEmpty ? nil : Rich(entities: entities, cards: cards)
+        let prompt = wire.memory?.prompt == "consent"
+        return entities.isEmpty && cards.isEmpty && !prompt ? nil : Rich(entities: entities, cards: cards, memoryPrompt: prompt)
     }
 
     /// The contract's card rules, as far as the App can see them: a known type; the type's own tool and a label from
@@ -679,6 +688,9 @@ public enum LioTimelineWire {
             struct RichWire: Decodable {
                 let version: String
                 let entities: [LossyEntity]?
+                /// `memory.prompt` only (#1999); the rest of `memory` is for M-3.
+                let memory: MemoryWire?
+                struct MemoryWire: Decodable { let prompt: String? }
                 let cards: [LossyCard]?
                 struct LossyCard: Decodable {
                     let value: CardWire?
@@ -700,8 +712,9 @@ public enum LioTimelineWire {
                     version = try c.decode(String.self, forKey: .version)
                     entities = (try? c.decodeIfPresent([LossyEntity].self, forKey: .entities)) ?? nil
                     cards = (try? c.decodeIfPresent([LossyCard].self, forKey: .cards)) ?? nil
+                    memory = (try? c.decodeIfPresent(MemoryWire.self, forKey: .memory)) ?? nil
                 }
-                enum CodingKeys: String, CodingKey { case version, entities, cards }
+                enum CodingKeys: String, CodingKey { case version, entities, cards, memory }
             }
             struct CardWire: Decodable {
                 let type: String

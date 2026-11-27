@@ -99,6 +99,8 @@ struct LioTurn: Identifiable {
     var chips: [LioTimelineWire.Chip] = []
     /// #1991: words of `answer` the server named as places (empty unless the build asked for them).
     var places: [LioPlaceSpan] = []
+    /// #1999: the server says the account has never chosen about memory and this answer holds a preference.
+    var memoryPrompt = false
     /// #1993: tool cards under the answer (empty unless the build asked for them).
     var cards: [LioTimelineWire.Card] = []
     var fromTimeline = false
@@ -362,6 +364,6 @@ final class LioConversation {
         return LioTurn(question: question, status: row.status, answer: row.answer,
                        sources: row.sources, itinerary: row.itinerary, memoryTags: row.memoryTags,
                        exploration: row.exploration, layout: row.layout, followups: row.followups, chips: row.chips,
-                       places: row.places, cards: row.cards, fromTimeline: true)
+                       places: row.places, memoryPrompt: row.memoryPrompt, cards: row.cards, fromTimeline: true)
     }
 }

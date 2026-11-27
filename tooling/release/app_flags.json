@@ -104,6 +104,10 @@
     {
       "setting": "G2C_ANSWER_RICH_ENABLED",
       "plist": "G2CAnswerRichEnabled"
+    },
+    {
+      "setting": "G2C_MEMORY_CONSENT_ENABLED",
+      "plist": "G2CMemoryConsentEnabled"
     }
   ],
   "release": {
