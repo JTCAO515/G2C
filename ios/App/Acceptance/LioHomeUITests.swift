@@ -2711,7 +2711,7 @@ import CryptoKit
             XCTAssertTrue(app.links[en ? "Jingshan Park" : "景山公园"].exists, "every place of the first bubble")
             XCTAssertTrue(app.links[en ? "Temple of Heaven" : "天坛公园"].exists, "and the second bubble's")
             palace.tap()
-            let card = app.otherElements["lio.place.bubble"]
+            let card = app.staticTexts["lio.place.bubble.name"]
             XCTAssertTrue(card.waitForExistence(timeout: 6), app.debugDescription)
             XCTAssertEqual(app.staticTexts["lio.place.bubble.name"].label, en ? "The Palace Museum" : "故宫博物院")
             XCTAssertEqual(app.staticTexts["lio.place.bubble.name.other"].label, en ? "故宫博物院" : "The Palace Museum")

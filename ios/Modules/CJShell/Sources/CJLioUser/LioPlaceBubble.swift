@@ -56,7 +56,8 @@ import UIKit
 /// names, one line about the place, an opening or booking hint, up to five buttons (add to trip, taxi, show the
 /// driver, directions, booking: the place page's own, from `LioPlaceActions`) and "See more" for the place page. A
 /// button appears only when it can work for that place; there are no greyed-out buttons. Identifiers are
-/// `lio.place.bubble` and `lio.place.bubble.add|taxi|driver|navigate|book|more`.
+/// `lio.place.bubble.name|name.other|intro|hint` and `lio.place.bubble.add|taxi|driver|navigate|book|more` (none on
+/// the card itself: an identifier on a container would replace its children's).
 struct LioPlaceBubbleCard: View {
     let place: LioPlace
     let language: LioLanguage
@@ -117,7 +118,6 @@ struct LioPlaceBubbleCard: View {
         .tint(LioTheme.vermilion)
         .padding(LioTheme.Spacing.md)
         .frame(width: 320, alignment: .leading)
-        .accessibilityIdentifier("lio.place.bubble")
     }
 
     /// No picture is shown without a licence record (as on the place page): a plain slot with the place's symbol.
