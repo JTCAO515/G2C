@@ -39,6 +39,19 @@ def answer(events):return ''.join(v for k,v in events if k=='text_delta')
 def context(events):return json.loads(next(v.split(':',1)[1]for k,v in events if v.startswith('lio_planning_context.1:')))
 
 
+class ContextCity(unittest.TestCase):
+    """#2072: the city word of the conversation's last planning context, read from what the planning step already holds."""
+
+    def test_a_conversation_with_a_confirmed_city_and_one_without(self):
+        from cj_api.local_lio_national import context_city
+        self.assertEqual(context_city(dict(facts=dict(city=dict(value=dict(query='北京'), sources=[])))), '北京')
+        for previous in (None, {}, dict(facts={}), dict(facts=dict(city=None)), dict(facts=dict(city=dict(value=None))),
+                         dict(facts=dict(city=dict(value=dict(query=7)))), dict(facts=dict(city=dict(value=dict(query='')))),
+                         dict(facts=dict(city=dict(value=dict(query='x' * 65)))), 'text', 7, [1]):
+            with self.subTest(previous=previous):
+                self.assertIsNone(context_city(previous))             # unreadable is no city, never an error
+
+
 class PlanningFlow(unittest.TestCase):
     def test_r12_shanghai_original_duplicate_absence_does_not_discard_its_sourced_date(self):
         text = 'I am going to Shanghai tomorrow. Could you make an itinerary?'
