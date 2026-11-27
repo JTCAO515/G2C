@@ -4,6 +4,65 @@
   "generated_on": "2026-11-27",
   "candidates": [
     {
+      "id": "pl_cq_anxin_jiazhou",
+      "source_file": "C8/chongqing-shopping.json",
+      "status": "pending",
+      "draft": {
+        "id": "pl_cq_anxin_jiazhou",
+        "city": "chongqing",
+        "category": "shopping",
+        "tier": "main",
+        "name_zh": "安心菜场（加州店）",
+        "name_en": "Anxin Produce Market, Jiazhou",
+        "aliases_zh": [],
+        "aliases_en": [],
+        "address_zh": "加州片区",
+        "address_en": null,
+        "district_zh": "两江新区",
+        "nearest_metro": null,
+        "foreigner_signals": {
+          "english_signage": null,
+          "foreign_cards": null,
+          "english_service": null,
+          "evidence": [
+            "https://nyncw.cq.gov.cn/zwxx_161/qxlb/202504/t20250415_14522984.html"
+          ]
+        },
+        "official_url": "https://nyncw.cq.gov.cn/zwxx_161/qxlb/202504/t20250415_14522984.html",
+        "sources": [
+          "https://nyncw.cq.gov.cn/zwxx_161/qxlb/202504/t20250415_14522984.html"
+        ],
+        "checked_on": "2026-11-27",
+        "confidence": "medium",
+        "notes": "营业依据为当前经营方点位或近期主管部门的具名记录。",
+        "subcategory": "market",
+        "hours_zh": null,
+        "hours_source": null,
+        "intro_short_zh": "想体验当地买菜，可在加州片区看看生鲜与小摊。",
+        "intro_short_en": "Browse fresh groceries and small vendors in the Jiazhou neighborhood.",
+        "intro_long_zh": "想体验当地买菜，可在加州片区看看生鲜与小摊。按中文店名在加州片区定位。",
+        "intro_long_en": "Browse fresh groceries and small vendors in the Jiazhou neighborhood. Use the full Chinese name when looking up this location."
+      },
+      "external_signals": [],
+      "location": null,
+      "amap": {
+        "status": "not-run",
+        "alternatives": []
+      },
+      "score": {
+        "total": 21,
+        "parts": {
+          "foreigner": 0,
+          "confidence": 12,
+          "sources": 5,
+          "complete": 4,
+          "amap": 0
+        },
+        "external_used": false
+      },
+      "flags": []
+    },
+    {
       "id": "pl_cq_apeng_qianjiang",
       "source_file": "C8/chongqing-food.json",
       "status": "pending",
@@ -346,9 +405,9 @@
         "name_en": "Four Points by Sheraton Chongqing North Railway Station",
         "aliases_zh": [],
         "aliases_en": [],
-        "address_zh": null,
-        "address_en": null,
-        "district_zh": null,
+        "address_zh": "重庆市天宫殿街道香锦路28号",
+        "address_en": "28 Xiangjin Road, Tiangongdian Subdistrict, Chongqing, China 401120",
+        "district_zh": "两江新区",
         "nearest_metro": null,
         "foreigner_signals": {
           "english_signage": null,
@@ -361,16 +420,19 @@
         "official_url": "https://www.marriott.com/en-us/hotels/ckgnu-four-points-chongqing-north-railway-station/overview/",
         "sources": [
           "https://www.marriott.com/en-us/hotels/ckgnu-four-points-chongqing-north-railway-station/overview/",
-          "https://www.marriott.com/en-us/destinations/china/chongqing.mi"
+          "https://www.marriott.com/en-us/destinations/china/chongqing.mi",
+          "https://help.marriott.com/s/article/Article-24483",
+          "https://www.marriott.com.cn/hotels/ckgnu-four-points-chongqing-north-railway-station/overview/",
+          "https://mzj.cq.gov.cn/zwgk_218/zfxxgkml/tzgg/202512/t20251205_15215632.html"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
-        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sat, Dec 26 - Sun, Dec 27。 官网样本为每房每晚人民币 ¥324。当前价以所选日期及房型的报价为准。",
+        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sat, Dec 26 - Sun, Dec 27。 官网样本为每房每晚人民币 ¥324。当前价以所选日期及房型的报价为准。 分档依据：万豪集团列为 Select 精选服务品牌，本库按中档处理。",
         "subcategory": "hotel",
-        "intro_short_zh": "可作为重庆北站周边的住宿选项。",
-        "intro_short_en": "An overnight option around Chongqing North Railway Station.",
-        "intro_long_zh": "可作为重庆北站周边的住宿选项。可在品牌官网查看房型和入住安排。",
-        "intro_long_en": "An overnight option around Chongqing North Railway Station. See the hotel's own website for room types and check-in details.",
+        "intro_short_zh": "重庆北站行程可考虑这家，门店列有中英文服务。",
+        "intro_short_en": "A rail-focused option that lists Chongqing North Railway Station for arrival.",
+        "intro_long_zh": "门店位于香锦路28号。万豪交通页列出重庆北站，适合从北站抵达或随后搭高铁的人。英语在门店的服务语言列表中。",
+        "intro_long_en": "Choose this property if your intercity trains use Chongqing North. Marriott provides the Xiangjin Road address and lists English among the languages spoken at the hotel.",
         "star": null,
         "price_band": "<500",
         "accepts_foreigners": true,
@@ -392,17 +454,19 @@
         "alternatives": []
       },
       "score": {
-        "total": 26,
+        "total": 29,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 4,
+          "complete": 7,
           "amap": 0
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "pl_cq_beizhanfupeng: unknown field 'hotel_class' is dropped on import"
+      ]
     },
     {
       "id": "pl_cq_bishan_qingzhen_biquan",
@@ -529,6 +593,67 @@
           "foreigner": 0,
           "confidence": 12,
           "sources": 5,
+          "complete": 4,
+          "amap": 0
+        },
+        "external_used": false
+      },
+      "flags": []
+    },
+    {
+      "id": "pl_cq_changjiahui_retail_cq",
+      "source_file": "C8/chongqing-shopping.json",
+      "status": "pending",
+      "draft": {
+        "id": "pl_cq_changjiahui_retail_cq",
+        "city": "chongqing",
+        "category": "shopping",
+        "tier": "main",
+        "name_zh": "长嘉汇购物公园",
+        "name_en": "Changjiahui Shopping Park",
+        "aliases_zh": [],
+        "aliases_en": [],
+        "address_zh": "泰昌路68号",
+        "address_en": null,
+        "district_zh": "南岸区",
+        "nearest_metro": null,
+        "foreigner_signals": {
+          "english_signage": null,
+          "foreign_cards": null,
+          "english_service": null,
+          "evidence": [
+            "https://www.cq.gov.cn/ywdt/zwhd/qxdt/202602/t20260214_15445478.html",
+            "https://fzggw.cq.gov.cn/zwgk/zfxxgkml/jgxx/jgfw/tcsfbz/202003/t20200304_5574715_wap.html"
+          ]
+        },
+        "official_url": "https://www.cq.gov.cn/ywdt/zwhd/qxdt/202602/t20260214_15445478.html",
+        "sources": [
+          "https://www.cq.gov.cn/ywdt/zwhd/qxdt/202602/t20260214_15445478.html",
+          "https://fzggw.cq.gov.cn/zwgk/zfxxgkml/jgxx/jgfw/tcsfbz/202003/t20200304_5574715_wap.html"
+        ],
+        "checked_on": "2026-11-27",
+        "confidence": "medium",
+        "notes": "营业依据为当前经营方点位或近期主管部门的具名记录。",
+        "subcategory": "mall",
+        "hours_zh": null,
+        "hours_source": null,
+        "intro_short_zh": "在弹子石和南滨路的行程间，可留一站逛店歇脚。",
+        "intro_short_en": "Take a shopping break between Danzishi and the Nanbin Road waterfront.",
+        "intro_long_zh": "在弹子石和南滨路的行程间，可留一站逛店歇脚。按中文店名在泰昌路68号定位。",
+        "intro_long_en": "Take a shopping break between Danzishi and the Nanbin Road waterfront. Use the full Chinese name when looking up this location."
+      },
+      "external_signals": [],
+      "location": null,
+      "amap": {
+        "status": "not-run",
+        "alternatives": []
+      },
+      "score": {
+        "total": 26,
+        "parts": {
+          "foreigner": 0,
+          "confidence": 12,
+          "sources": 10,
           "complete": 4,
           "amap": 0
         },
@@ -678,6 +803,83 @@
       "flags": []
     },
     {
+      "id": "pl_cq_chaotianmen_yingdige",
+      "source_file": "C8/chongqing-hotel.json",
+      "status": "pending",
+      "draft": {
+        "id": "pl_cq_chaotianmen_yingdige",
+        "city": "chongqing",
+        "category": "hotel",
+        "tier": "main",
+        "name_zh": "重庆朝天门英迪格酒店",
+        "name_en": "Hotel Indigo Chongqing Chaotianmen",
+        "aliases_zh": [],
+        "aliases_en": [],
+        "address_zh": "朝天门街道接圣街2号",
+        "address_en": "2 Jiesheng Street, Chaotianmen Subdistrict, Yuzhong District, Chongqing, China 400011",
+        "district_zh": "渝中区",
+        "nearest_metro": null,
+        "foreigner_signals": {
+          "english_signage": null,
+          "foreign_cards": null,
+          "english_service": true,
+          "evidence": [
+            "https://www.ihg.com/hotelindigo/hotels/us/en/chongqing/ckggq/hoteldetail",
+            "https://www.ihg.com/hotelindigo/hotels/us/en/chongqing/ckggq/hoteldetail/amenities"
+          ]
+        },
+        "official_url": "https://www.ihg.com/hotelindigo/hotels/us/en/chongqing/ckggq/hoteldetail",
+        "sources": [
+          "https://www.ihg.com/hotelindigo/hotels/us/en/chongqing/ckggq/hoteldetail",
+          "https://www.ihgplc.com/en/news-and-media/news-releases/2025/ihg-hotels-and-resorts-conversion-friendly-brands-fuel-growth-opportunities-for-owners",
+          "https://www.ihg.com/hotelindigo/hotels/us/en/chongqing/ckggq/hoteldetail/amenities",
+          "https://www.ihg.com/hotelindigo/hotels/us/en/chongqing/ckggq/hoteldetail/directions"
+        ],
+        "checked_on": "2026-11-27",
+        "confidence": "medium",
+        "notes": "分档依据：洲际酒店集团将英迪格列入 Luxury & Lifestyle，按其生活方式定位取高档。 洲际确认正式开业，房价档留空。",
+        "subcategory": "hotel",
+        "intro_short_zh": "朝天门接圣街，酒店可看两江交汇并列有英语服务。",
+        "intro_short_en": "A Raffles City hotel with views of the river confluence and English listed.",
+        "intro_long_zh": "洲际确认门店已在朝天门营业。住在接圣街2号，可以将朝天门码头和两江游船安排进渝中行程。门店设施页列有英文服务。",
+        "intro_long_en": "Stay on the Chaotianmen side of the peninsula if a river outing is on your list. The hotel overlooks the confluence and lists English as one of its languages.",
+        "star": null,
+        "price_band": null,
+        "accepts_foreigners": true,
+        "foreign_service": {
+          "english_front_desk": null,
+          "foreign_guest_share": null,
+          "foreign_guest_experience": null,
+          "international_brand": "IHG Hotels & Resorts",
+          "evidence_zh": "洲际运营方确认已开业，提供英文直接预订。门店设施页列英语和中文。",
+          "evidence": [
+            "https://www.ihg.com/hotelindigo/hotels/us/en/chongqing/ckggq/hoteldetail",
+            "https://www.ihg.com/hotelindigo/hotels/us/en/chongqing/ckggq/hoteldetail/amenities"
+          ]
+        }
+      },
+      "external_signals": [],
+      "location": null,
+      "amap": {
+        "status": "not-run",
+        "alternatives": []
+      },
+      "score": {
+        "total": 48,
+        "parts": {
+          "foreigner": 20,
+          "confidence": 12,
+          "sources": 10,
+          "complete": 6,
+          "amap": 0
+        },
+        "external_used": false
+      },
+      "flags": [
+        "pl_cq_chaotianmen_yingdige: unknown field 'hotel_class' is dropped on import"
+      ]
+    },
+    {
       "id": "pl_cq_chen_tihua_hechuan",
       "source_file": "C8/chongqing-food.json",
       "status": "pending",
@@ -800,6 +1002,132 @@
           "foreigner": 0,
           "confidence": 12,
           "sources": 5,
+          "complete": 4,
+          "amap": 0
+        },
+        "external_used": false
+      },
+      "flags": []
+    },
+    {
+      "id": "pl_cq_chenchangyin_ciqikou_shop",
+      "source_file": "C8/chongqing-shopping.json",
+      "status": "pending",
+      "draft": {
+        "id": "pl_cq_chenchangyin_ciqikou_shop",
+        "city": "chongqing",
+        "category": "shopping",
+        "tier": "main",
+        "name_zh": "陈昌银麻花（磁器口正街）",
+        "name_en": "Chen Changyin Mahua, Ciqikou",
+        "aliases_zh": [],
+        "aliases_en": [],
+        "address_zh": "磁器口正街一带",
+        "address_en": null,
+        "district_zh": "沙坪坝区",
+        "nearest_metro": null,
+        "foreigner_signals": {
+          "english_signage": null,
+          "foreign_cards": null,
+          "english_service": null,
+          "evidence": [
+            "https://jda.cq.gov.cn/web/article/web/content_1462768985577107456.html",
+            "https://sww.cq.gov.cn/sy_247/bmdt/202408/t20240812_13489099.html"
+          ]
+        },
+        "official_url": "https://jda.cq.gov.cn/web/article/web/content_1462768985577107456.html",
+        "sources": [
+          "https://jda.cq.gov.cn/web/article/web/content_1462768985577107456.html",
+          "https://sww.cq.gov.cn/sy_247/bmdt/202408/t20240812_13489099.html",
+          "https://www.cq.gov.cn/ywdt/jrcq/202408/t20240810_13488743.html",
+          "https://www.cq.gov.cn/zwgk/zfxxgkml/zdlyxxgk/ggwh/ly/zxdt/202504/t20250421_14540898.html"
+        ],
+        "checked_on": "2026-11-27",
+        "confidence": "medium",
+        "notes": "营业依据为当前经营方点位或近期主管部门的具名记录。 市档案及市政府资料分别支持磁器口正街的品牌与体验点。幸福街5号的第二分公司旧食品经营许可已注销。正街门店的营业时段和精确门牌待核。",
+        "subcategory": "time_honored_brand",
+        "hours_zh": null,
+        "hours_source": null,
+        "intro_short_zh": "在磁器口找陈昌银牌，挑重庆传统麻花和包装礼盒。",
+        "intro_short_en": "Look for the Chen Changyin name for Chongqing fried twists and gift boxes.",
+        "intro_long_zh": "在磁器口找陈昌银牌，挑重庆传统麻花和包装礼盒。按中文店名在磁器口正街一带定位。",
+        "intro_long_en": "Look for the Chen Changyin name for Chongqing fried twists and gift boxes. Use the full Chinese name when looking up this location."
+      },
+      "external_signals": [],
+      "location": null,
+      "amap": {
+        "status": "not-run",
+        "alternatives": []
+      },
+      "score": {
+        "total": 26,
+        "parts": {
+          "foreigner": 0,
+          "confidence": 12,
+          "sources": 10,
+          "complete": 4,
+          "amap": 0
+        },
+        "external_used": false
+      },
+      "flags": []
+    },
+    {
+      "id": "pl_cq_chongqing_department_jfb",
+      "source_file": "C8/chongqing-shopping.json",
+      "status": "pending",
+      "draft": {
+        "id": "pl_cq_chongqing_department_jfb",
+        "city": "chongqing",
+        "category": "shopping",
+        "tier": "main",
+        "name_zh": "重庆百货大楼（解放碑）",
+        "name_en": "Chongqing Department Store, Jiefangbei",
+        "aliases_zh": [],
+        "aliases_en": [],
+        "address_zh": "民权路2号",
+        "address_en": null,
+        "district_zh": "渝中区",
+        "nearest_metro": null,
+        "foreigner_signals": {
+          "english_signage": null,
+          "foreign_cards": null,
+          "english_service": null,
+          "evidence": [
+            "https://travel.cnr.cn/dsywzl/20260106/t20260106_527484364.shtml",
+            "https://www.cqtk.com.cn/channel/merchantsSearch/2?area_key=%E6%B8%9D%E4%B8%AD%E5%8C%BA&consumeType_key=%E7%95%85%E4%BA%AB%E8%B4%A6%E6%88%B7&serviceType_key=%E5%95%86%E8%B6%85%E9%9B%B6%E5%94%AE",
+            "https://cqlzh.org.cn/"
+          ]
+        },
+        "official_url": "https://travel.cnr.cn/dsywzl/20260106/t20260106_527484364.shtml",
+        "sources": [
+          "https://travel.cnr.cn/dsywzl/20260106/t20260106_527484364.shtml",
+          "https://www.cqtk.com.cn/channel/merchantsSearch/2?area_key=%E6%B8%9D%E4%B8%AD%E5%8C%BA&consumeType_key=%E7%95%85%E4%BA%AB%E8%B4%A6%E6%88%B7&serviceType_key=%E5%95%86%E8%B6%85%E9%9B%B6%E5%94%AE",
+          "https://cqlzh.org.cn/"
+        ],
+        "checked_on": "2026-11-27",
+        "confidence": "medium",
+        "notes": "营业依据为当前经营方点位或近期主管部门的具名记录。",
+        "subcategory": "time_honored_brand",
+        "hours_zh": null,
+        "hours_source": null,
+        "intro_short_zh": "逛解放碑时进老百货，可看服饰、钟表和日用零售。",
+        "intro_short_en": "A long-running department store for fashion, watches and everyday goods.",
+        "intro_long_zh": "逛解放碑时进老百货，可看服饰、钟表和日用零售。按中文店名在民权路2号定位。",
+        "intro_long_en": "A long-running department store for fashion, watches and everyday goods. Use the full Chinese name when looking up this location."
+      },
+      "external_signals": [],
+      "location": null,
+      "amap": {
+        "status": "not-run",
+        "alternatives": []
+      },
+      "score": {
+        "total": 26,
+        "parts": {
+          "foreigner": 0,
+          "confidence": 12,
+          "sources": 10,
           "complete": 4,
           "amap": 0
         },
@@ -1541,6 +1869,89 @@
       "flags": []
     },
     {
+      "id": "pl_cq_ciqikou_hiex",
+      "source_file": "C8/chongqing-hotel.json",
+      "status": "pending",
+      "draft": {
+        "id": "pl_cq_ciqikou_hiex",
+        "city": "chongqing",
+        "category": "hotel",
+        "tier": "main",
+        "name_zh": "重庆磁器口古镇智选假日酒店",
+        "name_en": "Holiday Inn Express Chongqing Ciqikou Ancient Town",
+        "aliases_zh": [],
+        "aliases_en": [],
+        "address_zh": "石井坡街261号7号楼",
+        "address_en": "Building 7, 261 Shijingpo Street, Shapingba District, Chongqing, China 400032",
+        "district_zh": "沙坪坝区",
+        "nearest_metro": {
+          "station_zh": "石井坡",
+          "station_en": null,
+          "line": "1号线",
+          "exit": null
+        },
+        "foreigner_signals": {
+          "english_signage": null,
+          "foreign_cards": true,
+          "english_service": null,
+          "evidence": [
+            "https://www.ihg.com/holidayinnexpress/hotels/us/en/chongqing/ckgck/hoteldetail",
+            "https://www.ihg.com/holidayinnexpress/hotels/us/en/chongqing/ckgck/hoteldetail/amenities"
+          ]
+        },
+        "official_url": "https://www.ihg.com/holidayinnexpress/hotels/us/en/chongqing/ckgck/hoteldetail",
+        "sources": [
+          "https://www.ihg.com/holidayinnexpress/hotels/us/en/chongqing/ckgck/hoteldetail",
+          "https://www.ihgplc.com/en/news-and-media/news-releases/2025/holiday-inn-express-unveils-the-five-point-zero-dawn",
+          "https://www.ihg.com/holidayinnexpress/hotels/us/en/chongqing/ckgck/hoteldetail/amenities",
+          "https://www.ihg.com/holidayinnexpress/hotels/us/en/chongqing/ckgck/hoteldetail/directions",
+          "https://www.ihg.com/holidayinnexpress/hotels/cn/zh/chongqing/ckgck/hoteldetail/directions"
+        ],
+        "checked_on": "2026-11-27",
+        "confidence": "medium",
+        "notes": "分档依据：洲际酒店集团将智选假日定位为 Upper-Midscale，本库归中档。",
+        "subcategory": "hotel",
+        "intro_short_zh": "石井坡一带可游磁器口，酒店公示可刷外卡。",
+        "intro_short_en": "A Ciqikou-area stay with card acceptance listed by IHG.",
+        "intro_long_zh": "酒店位于沙坪坝石井坡街。洲际列出1号线石井坡站和磁器口古镇，门店设施页明确接受 Visa 和 Mastercard 等外卡。",
+        "intro_long_en": "Plan a day in Ciqikou and use Shijingpo on Line 1 for local trips. Check the hotel's English arrival information and its list of accepted cards before you go.",
+        "star": null,
+        "price_band": null,
+        "accepts_foreigners": true,
+        "foreign_service": {
+          "english_front_desk": null,
+          "foreign_guest_share": null,
+          "foreign_guest_experience": null,
+          "international_brand": "IHG Hotels & Resorts",
+          "evidence_zh": "洲际公开英文门店页与预订入口。门店设施页列明接受 Visa、Mastercard 等外卡。",
+          "evidence": [
+            "https://www.ihg.com/holidayinnexpress/hotels/us/en/chongqing/ckgck/hoteldetail",
+            "https://www.ihg.com/holidayinnexpress/hotels/us/en/chongqing/ckgck/hoteldetail/amenities"
+          ]
+        }
+      },
+      "external_signals": [],
+      "location": null,
+      "amap": {
+        "status": "not-run",
+        "alternatives": []
+      },
+      "score": {
+        "total": 49,
+        "parts": {
+          "foreigner": 20,
+          "confidence": 12,
+          "sources": 10,
+          "complete": 7,
+          "amap": 0
+        },
+        "external_used": false
+      },
+      "flags": [
+        "pl_cq_ciqikou_hiex: unknown field 'hotel_class' is dropped on import"
+      ]
+    },
+    {
       "id": "pl_cq_ckg",
       "source_file": "C7/hubs.json",
       "status": "pending",
@@ -1611,6 +2022,140 @@
           "confidence": 20,
           "sources": 10,
           "complete": 10,
+          "amap": 0
+        },
+        "external_used": false
+      },
+      "flags": []
+    },
+    {
+      "id": "pl_cq_congyansi_rail_market",
+      "source_file": "C8/chongqing-shopping.json",
+      "status": "pending",
+      "draft": {
+        "id": "pl_cq_congyansi_rail_market",
+        "city": "chongqing",
+        "category": "shopping",
+        "tier": "main",
+        "name_zh": "丛岩寺站农贸市场",
+        "name_en": "Congyansi Station Produce Market",
+        "aliases_zh": [],
+        "aliases_en": [],
+        "address_zh": "轨道交通9号线丛岩寺站旁",
+        "address_en": null,
+        "district_zh": "两江新区",
+        "nearest_metro": {
+          "station_zh": "丛岩寺",
+          "station_en": null,
+          "line": "9号线",
+          "exit": null
+        },
+        "foreigner_signals": {
+          "english_signage": null,
+          "foreign_cards": null,
+          "english_service": null,
+          "evidence": [
+            "https://zfcxjw.cq.gov.cn/zwxx_166/zwyw/202608/t20260827_15989274.html",
+            "https://www.camet.org.cn/hyzx/hyzc/873898248036421.shtml"
+          ]
+        },
+        "official_url": "https://zfcxjw.cq.gov.cn/zwxx_166/zwyw/202608/t20260827_15989274.html",
+        "sources": [
+          "https://zfcxjw.cq.gov.cn/zwxx_166/zwyw/202608/t20260827_15989274.html",
+          "https://www.camet.org.cn/hyzx/hyzc/873898248036421.shtml",
+          "https://www.cq.gov.cn/ywdt/jrcq/202608/t20260827_15984721.html"
+        ],
+        "checked_on": "2026-11-27",
+        "confidence": "medium",
+        "notes": "营业依据为当前经营方点位或近期主管部门的具名记录。",
+        "subcategory": "market",
+        "hours_zh": null,
+        "hours_source": null,
+        "intro_short_zh": "可在轨道站旁看买菜小摊，适合顺路了解社区日常。",
+        "intro_short_en": "Produce stalls by a rail transit stop offer a look at local daily shopping.",
+        "intro_long_zh": "可在轨道站旁看买菜小摊，适合顺路了解社区日常。按中文店名在轨道交通9号线丛岩寺站旁定位。",
+        "intro_long_en": "Produce stalls by a rail transit stop offer a look at local daily shopping. Use the full Chinese name when looking up this location."
+      },
+      "external_signals": [],
+      "location": null,
+      "amap": {
+        "status": "not-run",
+        "alternatives": []
+      },
+      "score": {
+        "total": 28,
+        "parts": {
+          "foreigner": 0,
+          "confidence": 12,
+          "sources": 10,
+          "complete": 6,
+          "amap": 0
+        },
+        "external_used": false
+      },
+      "flags": []
+    },
+    {
+      "id": "pl_cq_cq_mixc_retail",
+      "source_file": "C8/chongqing-shopping.json",
+      "status": "pending",
+      "draft": {
+        "id": "pl_cq_cq_mixc_retail",
+        "city": "chongqing",
+        "category": "shopping",
+        "tier": "main",
+        "name_zh": "重庆万象城",
+        "name_en": "The MixC Chongqing",
+        "aliases_zh": [],
+        "aliases_en": [],
+        "address_zh": "谢家湾片区",
+        "address_en": null,
+        "district_zh": "九龙坡区",
+        "nearest_metro": {
+          "station_zh": "谢家湾",
+          "station_en": null,
+          "line": "2号线、环线",
+          "exit": null
+        },
+        "foreigner_signals": {
+          "english_signage": null,
+          "foreign_cards": null,
+          "english_service": null,
+          "evidence": [
+            "https://cq.gov.cn/ywdt/zwhd/bmdt/202411/t20241106_13774850.html",
+            "https://neiwai.life/pages/jianjie-cn2"
+          ]
+        },
+        "official_url": "https://cq.gov.cn/ywdt/zwhd/bmdt/202411/t20241106_13774850.html",
+        "sources": [
+          "https://cq.gov.cn/ywdt/zwhd/bmdt/202411/t20241106_13774850.html",
+          "https://neiwai.life/pages/jianjie-cn2",
+          "https://wap.cq.gov.cn/ywdt/bmts/202306/t20230602_12024263.html"
+        ],
+        "checked_on": "2026-11-27",
+        "confidence": "medium",
+        "notes": "营业依据为当前经营方点位或近期主管部门的具名记录。",
+        "subcategory": "mall",
+        "hours_zh": null,
+        "hours_source": null,
+        "intro_short_zh": "在谢家湾找一站式服装、配饰及生活零售。",
+        "intro_short_en": "One stop for fashion, accessories and everyday shopping in Xiejiawan.",
+        "intro_long_zh": "在谢家湾找一站式服装、配饰及生活零售。按中文店名在谢家湾片区定位。",
+        "intro_long_en": "One stop for fashion, accessories and everyday shopping in Xiejiawan. Use the full Chinese name when looking up this location."
+      },
+      "external_signals": [],
+      "location": null,
+      "amap": {
+        "status": "not-run",
+        "alternatives": []
+      },
+      "score": {
+        "total": 28,
+        "parts": {
+          "foreigner": 0,
+          "confidence": 12,
+          "sources": 10,
+          "complete": 6,
           "amap": 0
         },
         "external_used": false
@@ -3021,6 +3566,70 @@
       "flags": []
     },
     {
+      "id": "pl_cq_ifs_chongqing_retail",
+      "source_file": "C8/chongqing-shopping.json",
+      "status": "pending",
+      "draft": {
+        "id": "pl_cq_ifs_chongqing_retail",
+        "city": "chongqing",
+        "category": "shopping",
+        "tier": "main",
+        "name_zh": "重庆IFS购物中心",
+        "name_en": "Chongqing IFS",
+        "aliases_zh": [],
+        "aliases_en": [],
+        "address_zh": "庆云路1号",
+        "address_en": "1 Qingyun Road, Liangjiang New Area, Chongqing, China",
+        "district_zh": "两江新区",
+        "nearest_metro": null,
+        "foreigner_signals": {
+          "english_signage": null,
+          "foreign_cards": null,
+          "english_service": null,
+          "evidence": [
+            "https://www.wharfholdings.com/en/our-businesses/china-investment-properties",
+            "https://www.niccolohotels.com/en/niccolo-chongqing/contact-us",
+            "https://www.fornet.com.cn/cq"
+          ]
+        },
+        "official_url": "https://www.wharfholdings.com/en/our-businesses/china-investment-properties",
+        "sources": [
+          "https://www.wharfholdings.com/en/our-businesses/china-investment-properties",
+          "https://www.niccolohotels.com/en/niccolo-chongqing/contact-us",
+          "https://www.fornet.com.cn/cq",
+          "https://www.niccolohotels.com/en/niccolo-chongqing"
+        ],
+        "checked_on": "2026-11-27",
+        "confidence": "medium",
+        "notes": "营业依据为当前经营方点位或近期主管部门的具名记录。",
+        "subcategory": "mall",
+        "hours_zh": null,
+        "hours_source": null,
+        "intro_short_zh": "江北嘴游览途中，可进室内商场看时装和设计零售。",
+        "intro_short_en": "An indoor shopping stop for fashion and design in Jiangbeizui.",
+        "intro_long_zh": "江北嘴游览途中，可进室内商场看时装和设计零售。按中文店名在庆云路1号定位。",
+        "intro_long_en": "An indoor shopping stop for fashion and design in Jiangbeizui. Use the full Chinese name when looking up this location."
+      },
+      "external_signals": [],
+      "location": null,
+      "amap": {
+        "status": "not-run",
+        "alternatives": []
+      },
+      "score": {
+        "total": 28,
+        "parts": {
+          "foreigner": 0,
+          "confidence": 12,
+          "sources": 10,
+          "complete": 6,
+          "amap": 0
+        },
+        "external_used": false
+      },
+      "flags": []
+    },
+    {
       "id": "pl_cq_jiafayilin",
       "source_file": "C8/chongqing-hotel.json",
       "status": "pending",
@@ -3071,6 +3680,69 @@
             "https://www.hilton.com.cn/zh-cn/hotels/ckgnadi-doubletree-by-hilton-hotel-chongqing--nanan"
           ]
         }
+      },
+      "external_signals": [],
+      "location": null,
+      "amap": {
+        "status": "not-run",
+        "alternatives": []
+      },
+      "score": {
+        "total": 26,
+        "parts": {
+          "foreigner": 0,
+          "confidence": 12,
+          "sources": 10,
+          "complete": 4,
+          "amap": 0
+        },
+        "external_used": false
+      },
+      "flags": []
+    },
+    {
+      "id": "pl_cq_jiahe_xiabu_store",
+      "source_file": "C8/chongqing-shopping.json",
+      "status": "pending",
+      "draft": {
+        "id": "pl_cq_jiahe_xiabu_store",
+        "city": "chongqing",
+        "category": "shopping",
+        "tier": "backup",
+        "name_zh": "加合夏布（夏布小镇）",
+        "name_en": "Jiahe Xiabu, Rongchang Xiabu Town",
+        "aliases_zh": [],
+        "aliases_en": [],
+        "address_zh": "夏布小镇",
+        "address_en": null,
+        "district_zh": "荣昌区",
+        "nearest_metro": null,
+        "foreigner_signals": {
+          "english_signage": null,
+          "foreign_cards": null,
+          "english_service": null,
+          "evidence": [
+            "https://www.rongchang.gov.cn/zwxx/bmjz/202504/t20250429_14571083.html",
+            "https://www.rongchang.gov.cn/bm/qwhlyw/bmdt/202408/t20240802_13456855.html"
+          ]
+        },
+        "official_url": "https://www.rongchang.gov.cn/zwxx/bmjz/202504/t20250429_14571083.html",
+        "sources": [
+          "https://www.rongchang.gov.cn/zwxx/bmjz/202504/t20250429_14571083.html",
+          "https://www.rongchang.gov.cn/bm/qwhlyw/bmdt/202408/t20240802_13456855.html",
+          "https://www.rongchang.gov.cn/bm/qwhlyw/zwgk_70831/zfxxgkml_160173/jczwgk_158289/ggwhfwlyjczwgk/ggfw/qwhd/202605/t20260527_15708393.html",
+          "https://www.rongchang.gov.cn/bm/qwhlyw/zwgk_70831/zfxxgkml_160173/jczwgk_158289/ggwhfwlyjczwgk/ggfw/qwhd/202606/t20260625_15776464.html"
+        ],
+        "checked_on": "2026-11-27",
+        "confidence": "medium",
+        "notes": "区政府公开活动曾列店名，当前散客开放与门牌需进一步核对。 近期官方资料确认身份，具体到店位置待复核。 区文旅委活动日程核到2026年6月及7月在加合夏布办体验，区政府旧资料确认夏布小镇商家身份。日常散客开放、门牌及预约规则仍待核，继续保留候补。",
+        "subcategory": "boutique",
+        "hours_zh": null,
+        "hours_source": null,
+        "intro_short_zh": "喜欢织物工艺，可在夏布小镇看苎麻布手作。",
+        "intro_short_en": "See ramie cloth and local textile crafts at a shop in Xiabu Town.",
+        "intro_long_zh": "喜欢织物工艺，可在夏布小镇看苎麻布手作。按中文店名在夏布小镇定位。",
+        "intro_long_en": "See ramie cloth and local textile crafts at a shop in Xiabu Town. Use the full Chinese name when looking up this location."
       },
       "external_signals": [],
       "location": null,
@@ -3166,15 +3838,20 @@
         "id": "pl_cq_jiangbeiyilin",
         "city": "chongqing",
         "category": "hotel",
-        "tier": "main",
+        "tier": "backup",
         "name_zh": "重庆江北希尔顿逸林酒店",
         "name_en": "DoubleTree by Hilton Hotel Chongqing North",
         "aliases_zh": [],
         "aliases_en": [],
-        "address_zh": null,
-        "address_en": null,
+        "address_zh": "重庆市两江新区洋河一路68号协信中心B栋",
+        "address_en": "Sincere Center, 68 Yanghe Yi Road, Chongqing, China 400020",
         "district_zh": "江北区",
-        "nearest_metro": null,
+        "nearest_metro": {
+          "station_zh": "观音桥",
+          "station_en": "Guanyinqiao",
+          "line": "3号线",
+          "exit": "4"
+        },
         "foreigner_signals": {
           "english_signage": null,
           "foreign_cards": null,
@@ -3186,16 +3863,19 @@
         "official_url": "https://www.hilton.com.cn/zh-cn/hotels/ckgjbdi-doubletree-by-hilton-hotel-chongqing-north",
         "sources": [
           "https://www.hilton.com.cn/zh-cn/hotels/ckgjbdi-doubletree-by-hilton-hotel-chongqing-north",
-          "https://www.hilton.com.cn/zh-cn/locations/china/chongqing-chongqing"
+          "https://www.hilton.com.cn/zh-cn/locations/china/chongqing-chongqing",
+          "https://ir.hilton.com/_assets/_de1e637820b6842c68b34801d11a8fd1/hilton/db/3577/34740/pdf/HLT_Investor_Presentation_-_November_2026.pdf",
+          "https://www.hilton.com.cn/file/pdf_doc/file_20250307120213919SE8mM3U.pdf",
+          "https://www.hilton.com/en/hotels/ckgjbdi-doubletree-chongqing-north/hotel-location/"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
-        "notes": "希尔顿城市页显示 2026-11-27 入住、11-28 退房的起价。 官网样本为每房每晚人民币 ¥484。当前价以所选日期及房型的报价为准。",
+        "notes": "希尔顿城市页显示 2026-11-27 入住、11-28 退房的起价。 官网样本为每房每晚人民币 ¥484。当前价以所选日期及房型的报价为准。 分档依据：希尔顿集团将品牌列为 Full Service，本库按高档处理。",
         "subcategory": "hotel",
-        "intro_short_zh": "在观音桥一带游览的住宿候选。",
-        "intro_short_en": "A hotel in the Guanyinqiao area.",
-        "intro_long_zh": "在观音桥一带游览的住宿候选。可在品牌官网查看房型和入住安排。",
-        "intro_long_en": "A hotel in the Guanyinqiao area. See the hotel's own website for room types and check-in details.",
+        "intro_short_zh": "在观音桥北城天街附近，适合把逛店和用餐排在一起。",
+        "intro_short_en": "A Guanyinqiao stay for the shops and restaurants of Paradise Walk.",
+        "intro_long_zh": "品牌位置页将门店放在观音桥片区。想在江北留一个下午逛街，可从酒店所在的北城天街商圈开始。",
+        "intro_long_en": "Consider this DoubleTree for a shopping day in Guanyinqiao. The English directions name Paradise Walk and describe the neighborhood.",
         "star": null,
         "price_band": "<500",
         "accepts_foreigners": true,
@@ -3217,17 +3897,19 @@
         "alternatives": []
       },
       "score": {
-        "total": 26,
+        "total": 31,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 4,
+          "complete": 9,
           "amap": 0
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "pl_cq_jiangbeiyilin: unknown field 'hotel_class' is dropped on import"
+      ]
     },
     {
       "id": "pl_cq_jiangbeizuixierdun",
@@ -3237,14 +3919,14 @@
         "id": "pl_cq_jiangbeizuixierdun",
         "city": "chongqing",
         "category": "hotel",
-        "tier": "backup",
+        "tier": "main",
         "name_zh": "重庆江北嘴希尔顿花园酒店",
         "name_en": "Hilton Garden Inn Chongqing Jiangbeizui",
         "aliases_zh": [],
         "aliases_en": [],
-        "address_zh": null,
-        "address_en": null,
-        "district_zh": null,
+        "address_zh": "重庆市两江新区江北嘴力帆中心3号楼",
+        "address_en": "Building 3, Lifan Center, Jiangbeizui, Liangjiang New Area, Chongqing, China",
+        "district_zh": "两江新区",
         "nearest_metro": null,
         "foreigner_signals": {
           "english_signage": null,
@@ -3257,16 +3939,18 @@
         "official_url": "https://www.hilton.com.cn/zh-cn/hotels/ckgjzgi-hilton-garden-inn-chongqing-jiangbeizui",
         "sources": [
           "https://www.hilton.com.cn/zh-cn/hotels/ckgjzgi-hilton-garden-inn-chongqing-jiangbeizui",
-          "https://www.hilton.com.cn/zh-cn/locations/china/chongqing-chongqing"
+          "https://www.hilton.com.cn/zh-cn/locations/china/chongqing-chongqing",
+          "https://ir.hilton.com/_assets/_de1e637820b6842c68b34801d11a8fd1/hilton/db/3577/34740/pdf/HLT_Investor_Presentation_-_November_2026.pdf",
+          "https://www.hilton.com/en/hotels/ckgjzgi-hilton-garden-inn-chongqing-jiangbeizui/hotel-location/"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
-        "notes": "希尔顿城市页显示 2026-11-27 入住、11-28 退房的起价。 官网样本为每房每晚人民币 ¥462。当前价以所选日期及房型的报价为准。",
+        "notes": "希尔顿城市页显示 2026-11-27 入住、11-28 退房的起价。 官网样本为每房每晚人民币 ¥462。当前价以所选日期及房型的报价为准。 分档依据：希尔顿集团将品牌列为 Focused Service，本库按中档处理。",
         "subcategory": "hotel",
-        "intro_short_zh": "在江北嘴一带停留可考虑。",
-        "intro_short_en": "A hotel option in Jiangbeizui.",
-        "intro_long_zh": "在江北嘴一带停留可考虑。可在品牌官网查看房型和入住安排。",
-        "intro_long_en": "A hotel option in Jiangbeizui. See the hotel's own website for room types and check-in details.",
+        "intro_short_zh": "江北嘴力帆中心的希尔顿花园，可据酒店英文页抵达。",
+        "intro_short_en": "A Jiangbeizui hotel with English arrival directions to Lifan Center.",
+        "intro_long_zh": "门店位于江北嘴力帆中心3号楼。准备在江北一侧游览或用餐的旅客，可先在品牌的英文位置页核对到店路线。",
+        "intro_long_en": "Choose this side of the river if your plans are centered on Jiangbeizui. Hilton's location information identifies Building 3 at Lifan Center.",
         "star": null,
         "price_band": "<500",
         "accepts_foreigners": true,
@@ -3288,17 +3972,19 @@
         "alternatives": []
       },
       "score": {
-        "total": 26,
+        "total": 29,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 4,
+          "complete": 7,
           "amap": 0
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "pl_cq_jiangbeizuixierdun: unknown field 'hotel_class' is dropped on import"
+      ]
     },
     {
       "id": "pl_cq_jiangyuan_qianjiang",
@@ -3506,13 +4192,13 @@
         "id": "pl_cq_jiefangbeiwanhao",
         "city": "chongqing",
         "category": "hotel",
-        "tier": "main",
+        "tier": "backup",
         "name_zh": "重庆JW万豪酒店",
         "name_en": "JW Marriott Hotel Chongqing",
         "aliases_zh": [],
         "aliases_en": [],
-        "address_zh": null,
-        "address_en": null,
+        "address_zh": "重庆市民生路235号",
+        "address_en": "235 Minsheng Road, Chongqing, China 400010",
         "district_zh": null,
         "nearest_metro": null,
         "foreigner_signals": {
@@ -3526,16 +4212,18 @@
         "official_url": "https://www.marriott.com/en-us/hotels/ckgjw-jw-marriott-hotel-chongqing/overview/",
         "sources": [
           "https://www.marriott.com/en-us/hotels/ckgjw-jw-marriott-hotel-chongqing/overview/",
-          "https://www.marriott.com/en-us/destinations/china/chongqing.mi"
+          "https://www.marriott.com/en-us/destinations/china/chongqing.mi",
+          "https://help.marriott.com/s/article/Article-24483",
+          "https://www.marriott.com.cn/hotels/ckgjw-jw-marriott-hotel-chongqing/overview/"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
-        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sat, Dec 26 - Sun, Dec 27。 官网样本为每房每晚人民币 ¥651。当前价以所选日期及房型的报价为准。",
+        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sat, Dec 26 - Sun, Dec 27。 官网样本为每房每晚人民币 ¥651。当前价以所选日期及房型的报价为准。 分档依据：万豪集团将此品牌列为 Luxury。",
         "subcategory": "hotel",
-        "intro_short_zh": "在解放碑一带住一晚的候选。",
-        "intro_short_en": "A hotel option in the Jiefangbei area.",
-        "intro_long_zh": "在解放碑一带住一晚的候选。可在品牌官网查看房型和入住安排。",
-        "intro_long_en": "A hotel option in the Jiefangbei area. See the hotel's own website for room types and check-in details.",
+        "intro_short_zh": "民生路的JW万豪，适合留时间在渝中半岛步行。",
+        "intro_short_en": "A Minsheng Road stay in Yuzhong, with an indoor pool for a break.",
+        "intro_long_zh": "酒店位于渝中区民生路235号。安排重庆老城时可从民生路出发，品牌页面列有英文服务和室内泳池。",
+        "intro_long_en": "This address keeps you in the Yuzhong Peninsula. Marriott lists English among the hotel's languages and an indoor pool for a break between city outings.",
         "star": null,
         "price_band": "500-1000",
         "accepts_foreigners": true,
@@ -3557,17 +4245,19 @@
         "alternatives": []
       },
       "score": {
-        "total": 26,
+        "total": 29,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 4,
+          "complete": 7,
           "amap": 0
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "pl_cq_jiefangbeiwanhao: unknown field 'hotel_class' is dropped on import"
+      ]
     },
     {
       "id": "pl_cq_jiefangbeiweisiting",
@@ -3582,9 +4272,9 @@
         "name_en": "The Westin Chongqing Liberation Square",
         "aliases_zh": [],
         "aliases_en": [],
-        "address_zh": null,
-        "address_en": null,
-        "district_zh": null,
+        "address_zh": "重庆市渝中区新华路222号",
+        "address_en": "222 Xin Hua Road, Yuzhong District, Chongqing, China 400010",
+        "district_zh": "渝中区",
         "nearest_metro": null,
         "foreigner_signals": {
           "english_signage": null,
@@ -3597,16 +4287,18 @@
         "official_url": "https://www.marriott.com/en-us/hotels/ckgwi-the-westin-chongqing-liberation-square/overview/",
         "sources": [
           "https://www.marriott.com/en-us/hotels/ckgwi-the-westin-chongqing-liberation-square/overview/",
-          "https://www.marriott.com/en-us/destinations/china/chongqing.mi"
+          "https://www.marriott.com/en-us/destinations/china/chongqing.mi",
+          "https://help.marriott.com/s/article/Article-24483",
+          "https://www.marriott.com.cn/hotels/ckgwi-the-westin-chongqing-liberation-square/overview/"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
-        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sat, Dec 26 - Sun, Dec 27。 官网样本为每房每晚人民币 ¥1,065。当前价以所选日期及房型的报价为准。",
+        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sat, Dec 26 - Sun, Dec 27。 官网样本为每房每晚人民币 ¥1,065。当前价以所选日期及房型的报价为准。 分档依据：万豪集团将此品牌列为 Premium。",
         "subcategory": "hotel",
-        "intro_short_zh": "在解放碑周边步行游览的一处住处。",
-        "intro_short_en": "A Westin hotel for exploring Jiefangbei on foot.",
-        "intro_long_zh": "在解放碑周边步行游览的一处住处。可在品牌官网查看房型和入住安排。",
-        "intro_long_en": "A Westin hotel for exploring Jiefangbei on foot. See the hotel's own website for room types and check-in details.",
+        "intro_short_zh": "解放碑附近，出行可查小什字或临江门站。",
+        "intro_short_en": "A central Yuzhong stay with two subway options listed by Marriott.",
+        "intro_long_zh": "酒店在新华路222号。万豪交通页提示可分别用小什字和临江门站。想白天游渝中、晚餐后回店，也可用店方列出的英语服务。",
+        "intro_long_en": "Use Xiaoshizi on Line 1 or Linjiangmen on Line 2 depending on the day's plans. The property lists English as one of its spoken languages.",
         "star": null,
         "price_band": "1000-2000",
         "accepts_foreigners": true,
@@ -3628,17 +4320,19 @@
         "alternatives": []
       },
       "score": {
-        "total": 26,
+        "total": 29,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 4,
+          "complete": 7,
           "amap": 0
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "pl_cq_jiefangbeiweisiting: unknown field 'hotel_class' is dropped on import"
+      ]
     },
     {
       "id": "pl_cq_jindaoxia",
@@ -3768,6 +4462,73 @@
           "confidence": 4,
           "sources": 5,
           "complete": 1,
+          "amap": 0
+        },
+        "external_used": false
+      },
+      "flags": []
+    },
+    {
+      "id": "pl_cq_jinsha_paradise_walk_cq",
+      "source_file": "C8/chongqing-shopping.json",
+      "status": "pending",
+      "draft": {
+        "id": "pl_cq_jinsha_paradise_walk_cq",
+        "city": "chongqing",
+        "category": "shopping",
+        "tier": "backup",
+        "name_zh": "龙湖重庆金沙天街",
+        "name_en": "Longfor Chongqing Jinsha Paradise Walk",
+        "aliases_zh": [],
+        "aliases_en": [],
+        "address_zh": "沙坪坝铁路综合交通枢纽旁",
+        "address_en": null,
+        "district_zh": "沙坪坝区",
+        "nearest_metro": {
+          "station_zh": "沙坪坝",
+          "station_en": "Shapingba",
+          "line": "1、9号线、环线",
+          "exit": null
+        },
+        "foreigner_signals": {
+          "english_signage": null,
+          "foreign_cards": null,
+          "english_service": null,
+          "evidence": [
+            "https://www.longfor.com/detail/220_5416f4c9a4a6ed71610405d776e6d40a.html",
+            "https://cq.gov.cn/ywdt/zwhd/bmdt/202411/t20241106_13774850.html"
+          ]
+        },
+        "official_url": "https://www.longfor.com/detail/220_5416f4c9a4a6ed71610405d776e6d40a.html",
+        "sources": [
+          "https://www.longfor.com/detail/220_5416f4c9a4a6ed71610405d776e6d40a.html",
+          "https://cq.gov.cn/ywdt/zwhd/bmdt/202411/t20241106_13774850.html",
+          "https://jtj.cq.gov.cn/sy_240/bmdt/202209/t20220930_11159836.html"
+        ],
+        "checked_on": "2026-11-27",
+        "confidence": "medium",
+        "notes": "营业依据为当前经营方点位或近期主管部门的具名记录。",
+        "subcategory": "mall",
+        "hours_zh": null,
+        "hours_source": null,
+        "intro_short_zh": "到沙坪坝站附近换乘时，可在商场逛店或吃饭。",
+        "intro_short_en": "A mall for a meal or shopping near Shapingba's railway and metro hub.",
+        "intro_long_zh": "到沙坪坝站附近换乘时，可在商场逛店或吃饭。按中文店名在沙坪坝铁路综合交通枢纽旁定位。",
+        "intro_long_en": "A mall for a meal or shopping near Shapingba's railway and metro hub. Use the full Chinese name when looking up this location."
+      },
+      "external_signals": [],
+      "location": null,
+      "amap": {
+        "status": "not-run",
+        "alternatives": []
+      },
+      "score": {
+        "total": 28,
+        "parts": {
+          "foreigner": 0,
+          "confidence": 12,
+          "sources": 10,
+          "complete": 6,
           "amap": 0
         },
         "external_used": false
@@ -3979,15 +4740,20 @@
         "id": "pl_cq_kaiyuanmingdu",
         "city": "chongqing",
         "category": "hotel",
-        "tier": "main",
+        "tier": "backup",
         "name_zh": "重庆开元名都臻品之选酒店",
         "name_en": "MajesTang Hotel, Chongqing, a Tribute Portfolio Hotel",
         "aliases_zh": [],
         "aliases_en": [],
-        "address_zh": null,
-        "address_en": null,
-        "district_zh": null,
-        "nearest_metro": null,
+        "address_zh": "重庆市渝中区民族路1号",
+        "address_en": "1 Minzu Road, Yuzhong District, Chongqing, China 400011",
+        "district_zh": "渝中区",
+        "nearest_metro": {
+          "station_zh": "小什字",
+          "station_en": "Xiaoshizi",
+          "line": "1、6号线",
+          "exit": null
+        },
         "foreigner_signals": {
           "english_signage": null,
           "foreign_cards": null,
@@ -3999,16 +4765,19 @@
         "official_url": "https://www.marriott.com/en-us/hotels/ckggb-majestang-hotel-chongqing-a-tribute-portfolio-hotel/overview/",
         "sources": [
           "https://www.marriott.com/en-us/hotels/ckggb-majestang-hotel-chongqing-a-tribute-portfolio-hotel/overview/",
-          "https://www.marriott.com/en-us/destinations/china/chongqing.mi"
+          "https://www.marriott.com/en-us/destinations/china/chongqing.mi",
+          "https://help.marriott.com/s/article/Article-24483",
+          "https://www.marriott.com.cn/hotels/ckggb-majestang-hotel-chongqing-a-tribute-portfolio-hotel/overview/",
+          "https://english.cq.gov.cn/specials/explore/PhotoPerfectSpots/202608/t20260810_15912630.html"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
-        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sat, Dec 26 - Sun, Dec 27。 官网样本为每房每晚人民币 ¥650。当前价以所选日期及房型的报价为准。",
+        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sat, Dec 26 - Sun, Dec 27。 官网样本为每房每晚人民币 ¥650。当前价以所选日期及房型的报价为准。 分档依据：万豪集团将此品牌列为 Premium。",
         "subcategory": "hotel",
-        "intro_short_zh": "重庆的臻品之选酒店，有品牌官网预订入口。",
-        "intro_short_en": "A Tribute Portfolio hotel in Chongqing with direct booking.",
-        "intro_long_zh": "重庆的臻品之选酒店，有品牌官网预订入口。可在品牌官网查看房型和入住安排。",
-        "intro_long_en": "A Tribute Portfolio hotel in Chongqing with direct booking. See the hotel's own website for room types and check-in details.",
+        "intro_short_zh": "渝中民族路1号，官网列小什字为地铁选择。",
+        "intro_short_en": "A Minzu Road hotel with Xiaoshizi listed for metro access.",
+        "intro_long_zh": "门店在民族路1号，万豪中英文页对应该地址。想在渝中半岛多住一晚，可按交通页列的小什字站规划到店。",
+        "intro_long_en": "If you stay in this part of Yuzhong, use the hotel guide to find Xiaoshizi on your subway route. Marriott's English listing gives the Minzu Road address.",
         "star": null,
         "price_band": "500-1000",
         "accepts_foreigners": true,
@@ -4030,17 +4799,19 @@
         "alternatives": []
       },
       "score": {
-        "total": 26,
+        "total": 31,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 4,
+          "complete": 9,
           "amap": 0
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "pl_cq_kaiyuanmingdu: unknown field 'hotel_class' is dropped on import"
+      ]
     },
     {
       "id": "pl_cq_kanglaide",
@@ -4055,9 +4826,9 @@
         "name_en": "Conrad Chongqing",
         "aliases_zh": [],
         "aliases_en": [],
-        "address_zh": null,
-        "address_en": null,
-        "district_zh": null,
+        "address_zh": "重庆市南岸区南坪西路36号",
+        "address_en": "36 West Nanping Road, Nan’an District, Chongqing, China 400060",
+        "district_zh": "南岸区",
         "nearest_metro": null,
         "foreigner_signals": {
           "english_signage": null,
@@ -4070,16 +4841,18 @@
         "official_url": "https://www.hilton.com.cn/zh-cn/hotels/ckgcici-conrad-chongqing",
         "sources": [
           "https://www.hilton.com.cn/zh-cn/hotels/ckgcici-conrad-chongqing",
-          "https://www.hilton.com.cn/zh-cn/locations/china/chongqing-chongqing"
+          "https://www.hilton.com.cn/zh-cn/locations/china/chongqing-chongqing",
+          "https://ir.hilton.com/_assets/_de1e637820b6842c68b34801d11a8fd1/hilton/db/3577/34740/pdf/HLT_Investor_Presentation_-_November_2026.pdf",
+          "https://www.hilton.com/en/hotels/ckgcici-conrad-chongqing/hotel-location/"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
-        "notes": "希尔顿城市页显示 2026-11-27 入住、11-28 退房的起价。 官网样本为每房每晚人民币 ¥1,237。当前价以所选日期及房型的报价为准。",
+        "notes": "希尔顿城市页显示 2026-11-27 入住、11-28 退房的起价。 官网样本为每房每晚人民币 ¥1,237。当前价以所选日期及房型的报价为准。 分档依据：希尔顿集团将品牌列为 Luxury。",
         "subcategory": "hotel",
-        "intro_short_zh": "重庆的康莱德酒店，可查各类房型。",
-        "intro_short_en": "The Conrad property in Chongqing offers online room options.",
-        "intro_long_zh": "重庆的康莱德酒店，可查各类房型。可在品牌官网查看房型和入住安排。",
-        "intro_long_en": "The Conrad property in Chongqing offers online room options. See the hotel's own website for room types and check-in details.",
+        "intro_short_zh": "南坪西路的康莱德，高层用餐可看山城。",
+        "intro_short_en": "A Nanping stay with high-floor dining overlooking Chongqing.",
+        "intro_long_zh": "酒店位于南坪西路，适合把南岸行程与一顿看城景的晚餐放在一起。希尔顿英文页列出店内餐厅和客房。",
+        "intro_long_en": "Choose this Conrad if you are spending time on the Nan'an side. See the hotel's English information for room views and its restaurants on the upper floors.",
         "star": null,
         "price_band": "1000-2000",
         "accepts_foreigners": true,
@@ -4101,17 +4874,19 @@
         "alternatives": []
       },
       "score": {
-        "total": 26,
+        "total": 29,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 4,
+          "complete": 7,
           "amap": 0
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "pl_cq_kanglaide: unknown field 'hotel_class' is dropped on import"
+      ]
     },
     {
       "id": "pl_cq_kitchen_on8_jfb",
@@ -4127,7 +4902,7 @@
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": "邹容路68号重庆解放碑凯悦酒店8楼",
-        "address_en": null,
+        "address_en": "Level 8, Hyatt Regency Metropolitan Chongqing, 68 Zou Rong Road, Yuzhong District, Chongqing, China 400010",
         "district_zh": "渝中区",
         "nearest_metro": null,
         "foreigner_signals": {
@@ -4140,7 +4915,8 @@
         },
         "official_url": "https://www.hyatt.com/hyatt-regency/en-US/ckgro-hyatt-regency-metropolitan-chongqing/dining",
         "sources": [
-          "https://www.hyatt.com/hyatt-regency/en-US/ckgro-hyatt-regency-metropolitan-chongqing/dining"
+          "https://www.hyatt.com/hyatt-regency/en-US/ckgro-hyatt-regency-metropolitan-chongqing/dining",
+          "https://www.hyatt.com/hyatt-regency/en-US/ckgro-hyatt-regency-metropolitan-chongqing/hotel-info"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
@@ -4166,12 +4942,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 23,
+        "total": 29,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
-          "sources": 5,
-          "complete": 6,
+          "sources": 10,
+          "complete": 7,
           "amap": 0
         },
         "external_used": false
@@ -4192,9 +4968,14 @@
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": "重庆市渝中区长江滨江路2号",
-        "address_en": null,
+        "address_en": "2 Changjiang Binjiang Road, Yuzhong District, Chongqing, China 400010",
         "district_zh": "渝中区",
-        "nearest_metro": null,
+        "nearest_metro": {
+          "station_zh": "朝天门",
+          "station_en": "Chaotianmen",
+          "line": "1号线",
+          "exit": null
+        },
         "foreigner_signals": {
           "english_signage": null,
           "foreign_cards": null,
@@ -4206,16 +4987,18 @@
         "official_url": "https://www.ihg.com/intercontinental/hotels/cn/zh/chongqing/chghb/hoteldetail",
         "sources": [
           "https://www.ihg.com/intercontinental/hotels/cn/zh/chongqing/chghb/hoteldetail",
-          "https://www.ihg.com/hotels/cn/zh/find-hotels/hotel-search?qDest=Chongqing%2C%20China&qPt=CASH&qCiD=31&qCoD=1&qCiMy=112026&qCoMy=002027&qAdlt=1&qChld=0&qRms=1&qRtP=6CBARC&qAAR=6CBARC&srb_u=1&qFS=false&qSrt=sHL&qRdU=km"
+          "https://www.ihg.com/hotels/cn/zh/find-hotels/hotel-search?qDest=Chongqing%2C%20China&qPt=CASH&qCiD=31&qCoD=1&qCiMy=112026&qCoMy=002027&qAdlt=1&qChld=0&qRms=1&qRtP=6CBARC&qAAR=6CBARC&srb_u=1&qFS=false&qSrt=sHL&qRdU=km",
+          "https://www.ihgplc.com/en/news-and-media/news-releases/2025/ihg-hotels-and-resorts-conversion-friendly-brands-fuel-growth-opportunities-for-owners",
+          "https://www.ihg.com/intercontinental/hotels/us/en/chongqing/chghb/hoteldetail/directions"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
-        "notes": "洲际官网查 2026-12-31 至 2027-01-01 的单人跨年夜报价，包含页面列出的客房费用。 官网样本为每房每晚人民币 ¥2,090。当前价以所选日期及房型的报价为准。",
+        "notes": "洲际官网查 2026-12-31 至 2027-01-01 的单人跨年夜报价，包含页面列出的客房费用。 官网样本为每房每晚人民币 ¥2,090。当前价以所选日期及房型的报价为准。 分档依据：洲际酒店集团将该品牌列入 Luxury & Lifestyle。",
         "subcategory": "hotel",
-        "intro_short_zh": "可作为朝天门和两江交汇处一带的住宿。",
-        "intro_short_en": "A hotel for exploring Chaotianmen near the meeting of the two rivers.",
-        "intro_long_zh": "可作为朝天门和两江交汇处一带的住宿。可在品牌官网查看房型和入住安排。",
-        "intro_long_en": "A hotel for exploring Chaotianmen near the meeting of the two rivers. See the hotel's own website for room types and check-in details.",
+        "intro_short_zh": "朝天门广场的来福士酒店，可看长江与嘉陵江。",
+        "intro_short_en": "A Raffles City stay at Chaotianmen Square for a two-river itinerary.",
+        "intro_long_zh": "住在朝天门时可把两江交汇与附近街区作为游览重心。洲际品牌页有英文门店说明，可核对朝天门广场的位置和不同客房。",
+        "intro_long_en": "Choose this address to spend time around the Yangtze–Jialing confluence. IHG's English listing describes the setting at Chaotianmen Square and the room outlooks.",
         "star": null,
         "price_band": ">2000",
         "accepts_foreigners": true,
@@ -4237,17 +5020,19 @@
         "alternatives": []
       },
       "score": {
-        "total": 28,
+        "total": 31,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 6,
+          "complete": 9,
           "amap": 0
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "pl_cq_laifushizhouji: unknown field 'hotel_class' is dropped on import"
+      ]
     },
     {
       "id": "pl_cq_laoganjia_longxi",
@@ -4389,15 +5174,20 @@
         "id": "pl_cq_liangjiangxierdun",
         "city": "chongqing",
         "category": "hotel",
-        "tier": "main",
+        "tier": "backup",
         "name_zh": "重庆两江新区高科希尔顿酒店",
         "name_en": "Hilton Chongqing Liangjiang New Area",
         "aliases_zh": [],
         "aliases_en": [],
-        "address_zh": null,
-        "address_en": null,
-        "district_zh": null,
-        "nearest_metro": null,
+        "address_zh": "重庆市两江新区财富东路8号1幢",
+        "address_en": "Building 1, 8 Fortune East Road, Liangjiang New District, Chongqing, China 401121",
+        "district_zh": "两江新区",
+        "nearest_metro": {
+          "station_zh": "洪湖东路",
+          "station_en": null,
+          "line": "环线",
+          "exit": null
+        },
         "foreigner_signals": {
           "english_signage": null,
           "foreign_cards": null,
@@ -4409,16 +5199,18 @@
         "official_url": "https://www.hilton.com.cn/zh-cn/hotels/ckgcchi-hilton-chongqing-liangjiang-new-area",
         "sources": [
           "https://www.hilton.com.cn/zh-cn/hotels/ckgcchi-hilton-chongqing-liangjiang-new-area",
-          "https://www.hilton.com.cn/zh-cn/locations/china/chongqing-chongqing"
+          "https://www.hilton.com.cn/zh-cn/locations/china/chongqing-chongqing",
+          "https://ir.hilton.com/_assets/_de1e637820b6842c68b34801d11a8fd1/hilton/db/3577/34740/pdf/HLT_Investor_Presentation_-_November_2026.pdf",
+          "https://www.hilton.com/en/hotels/ckgcchi-hilton-chongqing-liangjiang-new-area/hotel-location/"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
-        "notes": "希尔顿城市页显示 2026-11-27 入住、11-28 退房的起价。 官网样本为每房每晚人民币 ¥617。当前价以所选日期及房型的报价为准。",
+        "notes": "希尔顿城市页显示 2026-11-27 入住、11-28 退房的起价。 官网样本为每房每晚人民币 ¥617。当前价以所选日期及房型的报价为准。 分档依据：希尔顿集团将品牌列为 Full Service，本库按高档处理。",
         "subcategory": "hotel",
-        "intro_short_zh": "在两江新区停留的一处住宿候选。",
-        "intro_short_en": "A Hilton hotel in Liangjiang New Area.",
-        "intro_long_zh": "在两江新区停留的一处住宿候选。可在品牌官网查看房型和入住安排。",
-        "intro_long_en": "A Hilton hotel in Liangjiang New Area. See the hotel's own website for room types and check-in details.",
+        "intro_short_zh": "财富东路的希尔顿，可安排园博园或两江新区购物。",
+        "intro_short_en": "A Liangjiang stay for a separate outing to Chongqing Garden Expo Park.",
+        "intro_long_zh": "酒店在财富东路8号，希尔顿列出园博园和财富购物片区。适合把重庆北侧地区安排为独立一站，店内另有室内泳池。",
+        "intro_long_en": "Use this Hilton if you're setting aside time for northern Chongqing. The hotel lists Garden Expo Park and nearby shops in its English location guide.",
         "star": null,
         "price_band": "500-1000",
         "accepts_foreigners": true,
@@ -4440,17 +5232,19 @@
         "alternatives": []
       },
       "score": {
-        "total": 26,
+        "total": 31,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 4,
+          "complete": 9,
           "amap": 0
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "pl_cq_liangjiangxierdun: unknown field 'hotel_class' is dropped on import"
+      ]
     },
     {
       "id": "pl_cq_lijiabaiyunhu",
@@ -4465,9 +5259,9 @@
         "name_en": "Chongqing Lijia Baiyun Lake Hotel, Curio Collection by Hilton",
         "aliases_zh": [],
         "aliases_en": [],
-        "address_zh": null,
-        "address_en": null,
-        "district_zh": null,
+        "address_zh": "重庆市两江新区礼嘉街道云霄路501号",
+        "address_en": "501 Yunxiao Road, Liangjiang New Area, Chongqing, China 401122",
+        "district_zh": "两江新区",
         "nearest_metro": null,
         "foreigner_signals": {
           "english_signage": null,
@@ -4480,16 +5274,18 @@
         "official_url": "https://www.hilton.com.cn/zh-cn/hotels/ckgqqqq-chongqing-lijia-baiyun-lake-hotel-curio-collection-by-hilton",
         "sources": [
           "https://www.hilton.com.cn/zh-cn/hotels/ckgqqqq-chongqing-lijia-baiyun-lake-hotel-curio-collection-by-hilton",
-          "https://www.hilton.com.cn/zh-cn/locations/china/chongqing-chongqing"
+          "https://www.hilton.com.cn/zh-cn/locations/china/chongqing-chongqing",
+          "https://ir.hilton.com/_assets/_de1e637820b6842c68b34801d11a8fd1/hilton/db/3577/34740/pdf/HLT_Investor_Presentation_-_November_2026.pdf",
+          "https://www.hilton.com/en/hotels/ckgqqqq-chongqing-lijia-baiyun-lake-hotel/"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
-        "notes": "希尔顿城市页显示 2026-11-27 入住、11-28 退房的起价。 官网样本为每房每晚人民币 ¥624。当前价以所选日期及房型的报价为准。",
+        "notes": "希尔顿城市页显示 2026-11-27 入住、11-28 退房的起价。 官网样本为每房每晚人民币 ¥624。当前价以所选日期及房型的报价为准。 分档依据：希尔顿集团将品牌列为 Lifestyle，本库从严按高档处理。",
         "subcategory": "hotel",
-        "intro_short_zh": "礼嘉白云湖一带的希尔顿格芮精选酒店。",
-        "intro_short_en": "A Curio Collection hotel near Lijia Baiyun Lake.",
-        "intro_long_zh": "礼嘉白云湖一带的希尔顿格芮精选酒店。可在品牌官网查看房型和入住安排。",
-        "intro_long_en": "A Curio Collection hotel near Lijia Baiyun Lake. See the hotel's own website for room types and check-in details.",
+        "intro_short_zh": "礼嘉白云湖公园中的酒店，可留时间在湖边散步。",
+        "intro_short_en": "A park stay on the Lijia Peninsula, near Baiyun Lake.",
+        "intro_long_zh": "想在重庆行程中留一段绿地休息时间，可选礼嘉这家酒店。经营方明确酒店已开业，位置在白云湖公园内，也提供英文门店信息。",
+        "intro_long_en": "Set aside a slower morning around Baiyun Lake. The hotel is in the Lijia park area and publishes property information in English for planning arrival.",
         "star": null,
         "price_band": "500-1000",
         "accepts_foreigners": true,
@@ -4511,17 +5307,19 @@
         "alternatives": []
       },
       "score": {
-        "total": 26,
+        "total": 29,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 4,
+          "complete": 7,
           "amap": 0
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "pl_cq_lijiabaiyunhu: unknown field 'hotel_class' is dropped on import"
+      ]
     },
     {
       "id": "pl_cq_lijing",
@@ -4537,8 +5335,8 @@
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": "重庆市两江新区金沙门路66号",
-        "address_en": null,
-        "district_zh": null,
+        "address_en": "66 Jinshamen Road, Liangjiang New District, Chongqing, China 400021",
+        "district_zh": "两江新区",
         "nearest_metro": null,
         "foreigner_signals": {
           "english_signage": null,
@@ -4551,16 +5349,18 @@
         "official_url": "https://www.ihg.com/regent/hotels/cn/zh/chongqing/ckgrh/hoteldetail",
         "sources": [
           "https://www.ihg.com/regent/hotels/cn/zh/chongqing/ckgrh/hoteldetail",
-          "https://www.ihg.com/hotels/cn/zh/find-hotels/hotel-search?qDest=Chongqing%2C%20China&qPt=CASH&qCiD=31&qCoD=1&qCiMy=112026&qCoMy=002027&qAdlt=1&qChld=0&qRms=1&qRtP=6CBARC&qAAR=6CBARC&srb_u=1&qFS=false&qSrt=sHL&qRdU=km"
+          "https://www.ihg.com/hotels/cn/zh/find-hotels/hotel-search?qDest=Chongqing%2C%20China&qPt=CASH&qCiD=31&qCoD=1&qCiMy=112026&qCoMy=002027&qAdlt=1&qChld=0&qRms=1&qRtP=6CBARC&qAAR=6CBARC&srb_u=1&qFS=false&qSrt=sHL&qRdU=km",
+          "https://www.ihgplc.com/en/news-and-media/news-releases/2025/ihg-hotels-and-resorts-conversion-friendly-brands-fuel-growth-opportunities-for-owners",
+          "https://www.ihg.com/regent/hotels/us/en/chongqing/ckgrh/hoteldetail"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
-        "notes": "洲际官网查 2026-12-31 至 2027-01-01 的单人跨年夜报价，包含页面列出的客房费用。 官网样本为每房每晚人民币 ¥2,226。当前价以所选日期及房型的报价为准。",
+        "notes": "洲际官网查 2026-12-31 至 2027-01-01 的单人跨年夜报价，包含页面列出的客房费用。 官网样本为每房每晚人民币 ¥2,226。当前价以所选日期及房型的报价为准。 分档依据：洲际酒店集团将该品牌列入 Luxury & Lifestyle。",
         "subcategory": "hotel",
-        "intro_short_zh": "在江北嘴一带停留时可考虑这家丽晶。",
-        "intro_short_en": "A Regent hotel in Jiangbeizui.",
-        "intro_long_zh": "在江北嘴一带停留时可考虑这家丽晶。可在品牌官网查看房型和入住安排。",
-        "intro_long_en": "A Regent hotel in Jiangbeizui. See the hotel's own website for room types and check-in details.",
+        "intro_short_zh": "金沙门路的丽晶，可把江北嘴河岸放进散步行程。",
+        "intro_short_en": "A Jinshamen Road base across the rivers from central Chongqing.",
+        "intro_long_zh": "酒店位于金沙门路66号。适合想把江北嘴河岸和重庆城景排在同一晚的旅客，洲际有英文门店及地区游览资料。",
+        "intro_long_en": "If you want to see Chongqing from the north side of the river, stay in Jiangbeizui. The hotel publishes an English local area guide for planning nearby outings.",
         "star": null,
         "price_band": ">2000",
         "accepts_foreigners": true,
@@ -4582,17 +5382,19 @@
         "alternatives": []
       },
       "score": {
-        "total": 28,
+        "total": 29,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 6,
+          "complete": 7,
           "amap": 0
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "pl_cq_lijing: unknown field 'hotel_class' is dropped on import"
+      ]
     },
     {
       "id": "pl_cq_liziba",
@@ -4723,6 +5525,129 @@
           "confidence": 12,
           "sources": 10,
           "complete": 1,
+          "amap": 0
+        },
+        "external_used": false
+      },
+      "flags": []
+    },
+    {
+      "id": "pl_cq_longta_diyi_market",
+      "source_file": "C8/chongqing-shopping.json",
+      "status": "pending",
+      "draft": {
+        "id": "pl_cq_longta_diyi_market",
+        "city": "chongqing",
+        "category": "shopping",
+        "tier": "main",
+        "name_zh": "龙塔帝怡菜市场",
+        "name_en": "Longta Diyi Produce Market",
+        "aliases_zh": [],
+        "aliases_en": [],
+        "address_zh": "龙塔街道",
+        "address_en": null,
+        "district_zh": "两江新区",
+        "nearest_metro": null,
+        "foreigner_signals": {
+          "english_signage": null,
+          "foreign_cards": null,
+          "english_service": null,
+          "evidence": [
+            "https://sww.cq.gov.cn/zwgk_247/zfxxgkml/qtfdxx/tzgg/202512/t20251226_15274727.html"
+          ]
+        },
+        "official_url": "https://sww.cq.gov.cn/zwgk_247/zfxxgkml/qtfdxx/tzgg/202512/t20251226_15274727.html",
+        "sources": [
+          "https://sww.cq.gov.cn/zwgk_247/zfxxgkml/qtfdxx/tzgg/202512/t20251226_15274727.html"
+        ],
+        "checked_on": "2026-11-27",
+        "confidence": "medium",
+        "notes": "营业依据为当前经营方点位或近期主管部门的具名记录。",
+        "subcategory": "market",
+        "hours_zh": null,
+        "hours_source": null,
+        "intro_short_zh": "在龙塔街区看看本地居民如何挑选当日生鲜。",
+        "intro_short_en": "A neighborhood market for seeing what locals buy fresh in Longta.",
+        "intro_long_zh": "在龙塔街区看看本地居民如何挑选当日生鲜。按中文店名在龙塔街道定位。",
+        "intro_long_en": "A neighborhood market for seeing what locals buy fresh in Longta. Use the full Chinese name when looking up this location."
+      },
+      "external_signals": [],
+      "location": null,
+      "amap": {
+        "status": "not-run",
+        "alternatives": []
+      },
+      "score": {
+        "total": 21,
+        "parts": {
+          "foreigner": 0,
+          "confidence": 12,
+          "sources": 5,
+          "complete": 4,
+          "amap": 0
+        },
+        "external_used": false
+      },
+      "flags": []
+    },
+    {
+      "id": "pl_cq_longxing_paradise_walk_cq",
+      "source_file": "C8/chongqing-shopping.json",
+      "status": "pending",
+      "draft": {
+        "id": "pl_cq_longxing_paradise_walk_cq",
+        "city": "chongqing",
+        "category": "shopping",
+        "tier": "backup",
+        "name_zh": "龙湖重庆龙兴天街",
+        "name_en": "Longfor Chongqing Longxing Paradise Walk",
+        "aliases_zh": [],
+        "aliases_en": [],
+        "address_zh": "轨道4号线龙驿大道站",
+        "address_en": null,
+        "district_zh": "两江新区",
+        "nearest_metro": {
+          "station_zh": "龙驿大道",
+          "station_en": null,
+          "line": "4号线",
+          "exit": null
+        },
+        "foreigner_signals": {
+          "english_signage": null,
+          "foreign_cards": null,
+          "english_service": null,
+          "evidence": [
+            "https://www.longfor.com/detail/220_038ad08d71a32fa67710eb3c865058d6.html"
+          ]
+        },
+        "official_url": "https://www.longfor.com/detail/220_038ad08d71a32fa67710eb3c865058d6.html",
+        "sources": [
+          "https://www.longfor.com/detail/220_038ad08d71a32fa67710eb3c865058d6.html"
+        ],
+        "checked_on": "2026-11-27",
+        "confidence": "medium",
+        "notes": "营业依据为当前经营方点位或近期主管部门的具名记录。",
+        "subcategory": "mall",
+        "hours_zh": null,
+        "hours_source": null,
+        "intro_short_zh": "去龙盛新城可把逛店、电影和吃饭安排在同一站。",
+        "intro_short_en": "Combine shopping, a film and a meal at this Longxing mall by Line 4.",
+        "intro_long_zh": "去龙盛新城可把逛店、电影和吃饭安排在同一站。按中文店名在轨道4号线龙驿大道站定位。",
+        "intro_long_en": "Combine shopping, a film and a meal at this Longxing mall by Line 4. Use the full Chinese name when looking up this location."
+      },
+      "external_signals": [],
+      "location": null,
+      "amap": {
+        "status": "not-run",
+        "alternatives": []
+      },
+      "score": {
+        "total": 23,
+        "parts": {
+          "foreigner": 0,
+          "confidence": 12,
+          "sources": 5,
+          "complete": 6,
           "amap": 0
         },
         "external_used": false
@@ -4938,7 +5863,7 @@
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": "观音桥商圈北城天街11号",
-        "address_en": null,
+        "address_en": "Hyatt Regency Chongqing, 11 Paradise Walk, Liangjiang New Area, Chongqing, China 400020",
         "district_zh": "两江新区",
         "nearest_metro": null,
         "foreigner_signals": {
@@ -4951,7 +5876,8 @@
         },
         "official_url": "https://www.hyatt.com/hyatt-regency/en-US/chong-hyatt-regency-chongqing/dining",
         "sources": [
-          "https://www.hyatt.com/hyatt-regency/en-US/chong-hyatt-regency-chongqing/dining"
+          "https://www.hyatt.com/hyatt-regency/en-US/chong-hyatt-regency-chongqing/dining",
+          "https://www.hyatt.com/hyatt-regency/en-US/chong-hyatt-regency-chongqing/parking-and-transportation"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
@@ -4977,12 +5903,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 23,
+        "total": 29,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
-          "sources": 5,
-          "complete": 6,
+          "sources": 10,
+          "complete": 7,
           "amap": 0
         },
         "external_used": false
@@ -5055,6 +5981,67 @@
       "flags": []
     },
     {
+      "id": "pl_cq_miniso_land_jiefangbei",
+      "source_file": "C8/chongqing-shopping.json",
+      "status": "pending",
+      "draft": {
+        "id": "pl_cq_miniso_land_jiefangbei",
+        "city": "chongqing",
+        "category": "shopping",
+        "tier": "backup",
+        "name_zh": "MINISO LAND（解放碑店）",
+        "name_en": "MINISO LAND, Jiefangbei",
+        "aliases_zh": [],
+        "aliases_en": [],
+        "address_zh": "民族路地王广场",
+        "address_en": null,
+        "district_zh": "渝中区",
+        "nearest_metro": null,
+        "foreigner_signals": {
+          "english_signage": null,
+          "foreign_cards": null,
+          "english_service": null,
+          "evidence": [
+            "https://paper.people.com.cn/rmrb/pc/attachement/202512/31/ec069756-8900-40e2-9933-09be583f3f5d.pdf",
+            "https://epaper.cqrb.cn/cqrb/2025-08/05/008/cqrb20250805008.pdf"
+          ]
+        },
+        "official_url": "https://paper.people.com.cn/rmrb/pc/attachement/202512/31/ec069756-8900-40e2-9933-09be583f3f5d.pdf",
+        "sources": [
+          "https://paper.people.com.cn/rmrb/pc/attachement/202512/31/ec069756-8900-40e2-9933-09be583f3f5d.pdf",
+          "https://epaper.cqrb.cn/cqrb/2025-08/05/008/cqrb20250805008.pdf"
+        ],
+        "checked_on": "2026-11-27",
+        "confidence": "medium",
+        "notes": "营业依据为当前经营方点位或近期主管部门的具名记录。",
+        "subcategory": "boutique",
+        "hours_zh": null,
+        "hours_source": null,
+        "intro_short_zh": "想逛玩偶、盲盒和角色周边，可在解放碑走到这家店。",
+        "intro_short_en": "Browse toys, blind boxes and character goods near Jiefangbei.",
+        "intro_long_zh": "想逛玩偶、盲盒和角色周边，可在解放碑走到这家店。按中文店名在民族路地王广场定位。",
+        "intro_long_en": "Browse toys, blind boxes and character goods near Jiefangbei. Use the full Chinese name when looking up this location."
+      },
+      "external_signals": [],
+      "location": null,
+      "amap": {
+        "status": "not-run",
+        "alternatives": []
+      },
+      "score": {
+        "total": 26,
+        "parts": {
+          "foreigner": 0,
+          "confidence": 12,
+          "sources": 10,
+          "complete": 4,
+          "amap": 0
+        },
+        "external_used": false
+      },
+      "flags": []
+    },
+    {
       "id": "pl_cq_moxyjiudian",
       "source_file": "C8/chongqing-hotel.json",
       "status": "pending",
@@ -5067,10 +6054,15 @@
         "name_en": "Moxy Chongqing",
         "aliases_zh": [],
         "aliases_en": [],
-        "address_zh": null,
-        "address_en": null,
-        "district_zh": null,
-        "nearest_metro": null,
+        "address_zh": "重庆市渝中区八一路168号",
+        "address_en": "168 Bayi Road, Yuzhong District, Chongqing, China 400010",
+        "district_zh": "渝中区",
+        "nearest_metro": {
+          "station_zh": "较场口",
+          "station_en": "Jiaochangkou",
+          "line": "2号线",
+          "exit": null
+        },
         "foreigner_signals": {
           "english_signage": null,
           "foreign_cards": null,
@@ -5082,16 +6074,19 @@
         "official_url": "https://www.marriott.com/en-us/hotels/ckgox-moxy-chongqing/overview/",
         "sources": [
           "https://www.marriott.com/en-us/hotels/ckgox-moxy-chongqing/overview/",
-          "https://www.marriott.com/en-us/destinations/china/chongqing.mi"
+          "https://www.marriott.com/en-us/destinations/china/chongqing.mi",
+          "https://help.marriott.com/s/article/Article-24483",
+          "https://www.marriott.com.cn/hotels/ckgox-moxy-chongqing/overview/",
+          "https://www.cq.gov.cn/ywdt/bmts/202607/t20260708_15806324.html"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
-        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sat, Dec 26 - Sun, Dec 27。 官网样本为每房每晚人民币 ¥292。当前价以所选日期及房型的报价为准。",
+        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sat, Dec 26 - Sun, Dec 27。 官网样本为每房每晚人民币 ¥292。当前价以所选日期及房型的报价为准。 分档依据：万豪集团将 Moxy 定位为平价的 Select 酒店品牌，本库按经济型处理。",
         "subcategory": "hotel",
-        "intro_short_zh": "在重庆停留的一处 Moxy 住宿候选。",
-        "intro_short_en": "A Moxy hotel for a stay in Chongqing.",
-        "intro_long_zh": "在重庆停留的一处 Moxy 住宿候选。可在品牌官网查看房型和入住安排。",
-        "intro_long_en": "A Moxy hotel for a stay in Chongqing. See the hotel's own website for room types and check-in details.",
+        "intro_short_zh": "八一路的Moxy，适合把解放碑和街巷小吃放在一起。",
+        "intro_short_en": "A Bayi Road base for exploring Jiefangbei, with English listed by the hotel.",
+        "intro_long_zh": "酒店在渝中区八一路168号。希望把解放碑周围的餐饮安排在多天行程里，可从这家店出发。门店还列中英文服务语言。",
+        "intro_long_en": "Start with the Jiefangbei neighborhood if this is your first visit to Chongqing. The property has English arrival information and lists English among the spoken languages.",
         "star": null,
         "price_band": "<500",
         "accepts_foreigners": true,
@@ -5113,17 +6108,19 @@
         "alternatives": []
       },
       "score": {
-        "total": 26,
+        "total": 31,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 4,
+          "complete": 9,
           "amap": 0
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "pl_cq_moxyjiudian: unknown field 'hotel_class' is dropped on import"
+      ]
     },
     {
       "id": "pl_cq_nananailimei",
@@ -5138,10 +6135,15 @@
         "name_en": "Le Méridien Chongqing, Nan'an",
         "aliases_zh": [],
         "aliases_en": [],
-        "address_zh": null,
-        "address_en": null,
-        "district_zh": null,
-        "nearest_metro": null,
+        "address_zh": "重庆市南岸区江南大道10号",
+        "address_en": "10 Jiangnan Avenue, Nan’an District, Chongqing, China 400060",
+        "district_zh": "南岸区",
+        "nearest_metro": {
+          "station_zh": "南坪",
+          "station_en": "Nanping",
+          "line": "3号线",
+          "exit": null
+        },
         "foreigner_signals": {
           "english_signage": null,
           "foreign_cards": null,
@@ -5153,16 +6155,18 @@
         "official_url": "https://www.marriott.com/en-us/hotels/ckgmd-le-meridien-chongqing-nanan/overview/",
         "sources": [
           "https://www.marriott.com/en-us/hotels/ckgmd-le-meridien-chongqing-nanan/overview/",
-          "https://www.marriott.com/en-us/destinations/china/chongqing.mi"
+          "https://www.marriott.com/en-us/destinations/china/chongqing.mi",
+          "https://help.marriott.com/s/article/Article-24483",
+          "https://www.marriott.com.cn/hotels/ckgmd-le-meridien-chongqing-nanan/overview/"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
-        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sat, Dec 26 - Sun, Dec 27。 官网样本为每房每晚人民币 ¥418。当前价以所选日期及房型的报价为准。",
+        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sat, Dec 26 - Sun, Dec 27。 官网样本为每房每晚人民币 ¥418。当前价以所选日期及房型的报价为准。 分档依据：万豪集团将此品牌列为 Premium。",
         "subcategory": "hotel",
-        "intro_short_zh": "南岸区的艾美酒店。",
-        "intro_short_en": "A Le Méridien hotel in Nan'an.",
-        "intro_long_zh": "南岸区的艾美酒店。可在品牌官网查看房型和入住安排。",
-        "intro_long_en": "A Le Méridien hotel in Nan'an. See the hotel's own website for room types and check-in details.",
+        "intro_short_zh": "江南大道的艾美，可查南坪站和地铁3号线。",
+        "intro_short_en": "A Nanping stay with Line 3 directions from Marriott.",
+        "intro_long_zh": "酒店位于南岸区江南大道10号。适合把南坪一带纳入重庆行程，门店到店页列南坪站，也列英语与中文服务。",
+        "intro_long_en": "If you want to explore Nan'an by subway, the hotel lists Nanping on Line 3. English is among the languages shown on its property page.",
         "star": null,
         "price_band": "<500",
         "accepts_foreigners": true,
@@ -5184,17 +6188,19 @@
         "alternatives": []
       },
       "score": {
-        "total": 26,
+        "total": 31,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 4,
+          "complete": 9,
           "amap": 0
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "pl_cq_nananailimei: unknown field 'hotel_class' is dropped on import"
+      ]
     },
     {
       "id": "pl_cq_nananwanfeng",
@@ -5204,15 +6210,20 @@
         "id": "pl_cq_nananwanfeng",
         "city": "chongqing",
         "category": "hotel",
-        "tier": "backup",
+        "tier": "main",
         "name_zh": "重庆南岸万豪万枫酒店",
         "name_en": "Fairfield by Marriott Chongqing Nan’an District",
         "aliases_zh": [],
         "aliases_en": [],
-        "address_zh": null,
-        "address_en": null,
-        "district_zh": null,
-        "nearest_metro": null,
+        "address_zh": "重庆市南岸区江南大道9号",
+        "address_en": "9 Jiangnan Avenue, Nan’an District, Chongqing, China 400060",
+        "district_zh": "南岸区",
+        "nearest_metro": {
+          "station_zh": "工贸",
+          "station_en": "Gongmao",
+          "line": "3号线",
+          "exit": null
+        },
         "foreigner_signals": {
           "english_signage": null,
           "foreign_cards": null,
@@ -5224,16 +6235,19 @@
         "official_url": "https://www.marriott.com/en-us/hotels/ckgfn-fairfield-chongqing-nanan-district/overview/",
         "sources": [
           "https://www.marriott.com/en-us/hotels/ckgfn-fairfield-chongqing-nanan-district/overview/",
-          "https://www.marriott.com/en-us/destinations/china/chongqing.mi"
+          "https://www.marriott.com/en-us/destinations/china/chongqing.mi",
+          "https://help.marriott.com/s/article/Article-24483",
+          "https://www.marriott.com.cn/hotels/ckgfn-fairfield-chongqing-nanan-district/overview/",
+          "https://cq.gov.cn/ywdt/jrcq/202407/t20240716_13374413.html"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
-        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sat, Dec 26 - Sun, Dec 27。 官网样本为每房每晚人民币 ¥298。当前价以所选日期及房型的报价为准。",
+        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sat, Dec 26 - Sun, Dec 27。 官网样本为每房每晚人民币 ¥298。当前价以所选日期及房型的报价为准。 分档依据：万豪集团列为 Select 精选服务品牌，本库按中档处理。",
         "subcategory": "hotel",
-        "intro_short_zh": "南岸区的万枫酒店。",
-        "intro_short_en": "A Fairfield hotel in Nan'an.",
-        "intro_long_zh": "南岸区的万枫酒店。可在品牌官网查看房型和入住安排。",
-        "intro_long_en": "A Fairfield hotel in Nan'an. See the hotel's own website for room types and check-in details.",
+        "intro_short_zh": "南岸江南大道的万枫，官网列出工贸地铁站。",
+        "intro_short_en": "A south-bank Fairfield with Gongmao station listed for metro trips.",
+        "intro_long_zh": "把南岸安排成单独半天，可在江南大道9号住一晚。酒店交通页给出工贸站，回酒店后可使用店内健身房。",
+        "intro_long_en": "Use Gongmao for local connections from this Fairfield. The hotel sits in Nan'an and offers a gym for time back at the property.",
         "star": null,
         "price_band": "<500",
         "accepts_foreigners": true,
@@ -5255,17 +6269,19 @@
         "alternatives": []
       },
       "score": {
-        "total": 26,
+        "total": 31,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 4,
+          "complete": 9,
           "amap": 0
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "pl_cq_nananwanfeng: unknown field 'hotel_class' is dropped on import"
+      ]
     },
     {
       "id": "pl_cq_nananxilaideng",
@@ -5351,9 +6367,9 @@
         "name_en": "Chongqing Marriott Hotel",
         "aliases_zh": [],
         "aliases_en": [],
-        "address_zh": null,
-        "address_en": null,
-        "district_zh": null,
+        "address_zh": "重庆市南岸区烟雨路9号",
+        "address_en": "9 Yan Yu Road, Nan’an District, Chongqing, China 400060",
+        "district_zh": "南岸区",
         "nearest_metro": null,
         "foreigner_signals": {
           "english_signage": null,
@@ -5366,16 +6382,18 @@
         "official_url": "https://www.marriott.com/en-us/hotels/ckgmc-chongqing-marriott-hotel/overview/",
         "sources": [
           "https://www.marriott.com/en-us/hotels/ckgmc-chongqing-marriott-hotel/overview/",
-          "https://www.marriott.com/en-us/destinations/china/chongqing.mi"
+          "https://www.marriott.com/en-us/destinations/china/chongqing.mi",
+          "https://help.marriott.com/s/article/Article-24483",
+          "https://www.marriott.com.cn/hotels/ckgmc-chongqing-marriott-hotel/rooms/"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
-        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sat, Dec 26 - Sun, Dec 27。 官网样本为每房每晚人民币 ¥544。当前价以所选日期及房型的报价为准。",
+        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sat, Dec 26 - Sun, Dec 27。 官网样本为每房每晚人民币 ¥544。当前价以所选日期及房型的报价为准。 分档依据：万豪集团将此品牌列为 Premium。",
         "subcategory": "hotel",
-        "intro_short_zh": "可作为南滨路一带的住宿选择。",
-        "intro_short_en": "A Marriott hotel in the Nanbin Road area.",
-        "intro_long_zh": "可作为南滨路一带的住宿选择。可在品牌官网查看房型和入住安排。",
-        "intro_long_en": "A Marriott hotel in the Nanbin Road area. See the hotel's own website for room types and check-in details.",
+        "intro_short_zh": "南岸烟雨路的万豪，适合把南滨片区排进多日游。",
+        "intro_short_en": "A Nan'an address for a trip focused on Chongqing's south bank.",
+        "intro_long_zh": "酒店在烟雨路9号。若想从南岸游览重庆，可先用万豪位置页查接驳。门店服务语言包括英语和中文。",
+        "intro_long_en": "Give the south bank time of its own. The hotel lists English and Chinese and publishes its Yanyu Road address for planning arrival.",
         "star": null,
         "price_band": "500-1000",
         "accepts_foreigners": true,
@@ -5397,17 +6415,19 @@
         "alternatives": []
       },
       "score": {
-        "total": 26,
+        "total": 29,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 4,
+          "complete": 7,
           "amap": 0
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "pl_cq_nanbinluwanhao: unknown field 'hotel_class' is dropped on import"
+      ]
     },
     {
       "id": "pl_cq_nanshan_yikeshu",
@@ -5622,7 +6642,7 @@
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": "庆云路1号重庆尼依格罗酒店",
-        "address_en": null,
+        "address_en": "Level 62, Tower 1, Chongqing IFS, 1 Qingyun Road, Liangjiang New Area, Chongqing, China 400023",
         "district_zh": "两江新区",
         "nearest_metro": null,
         "foreigner_signals": {
@@ -5639,7 +6659,8 @@
         "sources": [
           "https://www.niccolohotels.com/en/niccolo-chongqing/dining/niccolo-kitchen",
           "https://www.niccolohotels.com/en/niccolo-chongqing/faqs/dining-restaurants",
-          "https://www.niccolohotels.com/getmedia/676601cc-47d2-4a96-a5d3-338a0e7d15ae/niccolo-kitchen.pdf"
+          "https://www.niccolohotels.com/getmedia/676601cc-47d2-4a96-a5d3-338a0e7d15ae/niccolo-kitchen.pdf",
+          "https://www.niccolohotels.com/en/niccolo-chongqing/faqs"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
@@ -5665,12 +6686,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 49,
+        "total": 51,
         "parts": {
           "foreigner": 20,
           "confidence": 12,
           "sources": 10,
-          "complete": 7,
+          "complete": 9,
           "amap": 0
         },
         "external_used": false
@@ -5756,8 +6777,8 @@
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": "重庆市两江新区庆云路1号重庆国金中心1号楼",
-        "address_en": null,
-        "district_zh": null,
+        "address_en": "Tower 1, Chongqing IFS, 1 Qingyun Road, Liangjiang New Area, Chongqing, China 400023",
+        "district_zh": "两江新区",
         "nearest_metro": null,
         "foreigner_signals": {
           "english_signage": null,
@@ -5773,19 +6794,19 @@
         "sources": [
           "https://www.niccolohotels.com/en/niccolo-chongqing",
           "https://www.niccolohotels.com/zh-cn/niccolo-chongqing/faqs/check-in-check-out",
-          "https://www.ghadiscovery.com/Ultratravel-Collection/Niccolo-Chongqing",
-          "https://www.niccolohotels.com/en/niccolo-chongqing/faqs/pricing-payment"
+          "https://www.niccolohotels.com/en/niccolo-chongqing/faqs/pricing-payment",
+          "https://www.wharfhotels.com/en/media-centre/press-release/introducing-persona-n-by-niccolo-hotels"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
-        "notes": "品牌参与的 GHA 官方订房页列出的 N1 豪华大床房非会员价，税费另计，页面摘要未列日期。 官网样本为每房每晚人民币 ¥1,105。当前价以所选日期及房型的报价为准。",
+        "notes": "分档依据：Wharf Hotels 官方发布将 Niccolo 定位为 Luxury。 原房价出处为跨集团订房渠道，现留空。",
         "subcategory": "hotel",
-        "intro_short_zh": "位于江北嘴的尼依格罗酒店。",
-        "intro_short_en": "A Niccolo hotel in Jiangbeizui.",
-        "intro_long_zh": "位于江北嘴的尼依格罗酒店。可在品牌官网查看房型和入住安排。",
-        "intro_long_en": "A Niccolo hotel in Jiangbeizui. See the hotel's own website for room types and check-in details.",
+        "intro_short_zh": "重庆IFS一号楼的酒店，官网列出护照入住。",
+        "intro_short_en": "Stay in Chongqing IFS, with passport check-in confirmed by the hotel.",
+        "intro_long_zh": "想在江北嘴购物后就近回酒店，可从庆云路的重庆IFS一号楼进店。门店位置页也说明附近有地铁，入住 FAQ 列明护照可作证件。",
+        "intro_long_en": "Use the IFS tower address and the hotel's metro notes to plan arrival. Niccolo's official check-in guide lists a passport as accepted identification.",
         "star": null,
-        "price_band": "1000-2000",
+        "price_band": null,
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -5813,6 +6834,69 @@
           "confidence": 12,
           "sources": 10,
           "complete": 6,
+          "amap": 0
+        },
+        "external_used": false
+      },
+      "flags": [
+        "pl_cq_niyigeluo: unknown field 'hotel_class' is dropped on import"
+      ]
+    },
+    {
+      "id": "pl_cq_north_paradise_walk_cq",
+      "source_file": "C8/chongqing-shopping.json",
+      "status": "pending",
+      "draft": {
+        "id": "pl_cq_north_paradise_walk_cq",
+        "city": "chongqing",
+        "category": "shopping",
+        "tier": "main",
+        "name_zh": "龙湖重庆北城天街",
+        "name_en": "Longfor Chongqing North Paradise Walk",
+        "aliases_zh": [],
+        "aliases_en": [],
+        "address_zh": "观音桥片区北城天街",
+        "address_en": null,
+        "district_zh": "两江新区",
+        "nearest_metro": null,
+        "foreigner_signals": {
+          "english_signage": null,
+          "foreign_cards": null,
+          "english_service": null,
+          "evidence": [
+            "https://www.longfor.com/detail/220_74cadfd2becf343f7f8e4d2117b094bf.html",
+            "https://cq.people.com.cn/n2/2026/0420/c367632-41557580.html"
+          ]
+        },
+        "official_url": "https://www.longfor.com/detail/220_74cadfd2becf343f7f8e4d2117b094bf.html",
+        "sources": [
+          "https://www.longfor.com/detail/220_74cadfd2becf343f7f8e4d2117b094bf.html",
+          "https://cq.people.com.cn/n2/2026/0420/c367632-41557580.html"
+        ],
+        "checked_on": "2026-11-27",
+        "confidence": "medium",
+        "notes": "营业依据为当前经营方点位或近期主管部门的具名记录。",
+        "subcategory": "mall",
+        "hours_zh": null,
+        "hours_source": null,
+        "intro_short_zh": "在观音桥逛时装时，可挑一栋购物馆慢慢走。",
+        "intro_short_en": "Choose a section of North Paradise Walk for fashion shopping in Guanyinqiao.",
+        "intro_long_zh": "在观音桥逛时装时，可挑一栋购物馆慢慢走。按中文店名在观音桥片区北城天街定位。",
+        "intro_long_en": "Choose a section of North Paradise Walk for fashion shopping in Guanyinqiao. Use the full Chinese name when looking up this location."
+      },
+      "external_signals": [],
+      "location": null,
+      "amap": {
+        "status": "not-run",
+        "alternatives": []
+      },
+      "score": {
+        "total": 26,
+        "parts": {
+          "foreigner": 0,
+          "confidence": 12,
+          "sources": 10,
+          "complete": 4,
           "amap": 0
         },
         "external_used": false
@@ -6015,6 +7099,75 @@
       "flags": []
     },
     {
+      "id": "pl_cq_raffles_chongqing_shops",
+      "source_file": "C8/chongqing-shopping.json",
+      "status": "pending",
+      "draft": {
+        "id": "pl_cq_raffles_chongqing_shops",
+        "city": "chongqing",
+        "category": "shopping",
+        "tier": "main",
+        "name_zh": "重庆来福士购物中心",
+        "name_en": "Raffles City Chongqing",
+        "aliases_zh": [],
+        "aliases_en": [],
+        "address_zh": "接圣街8号",
+        "address_en": "8 Jiesheng Street, Yuzhong District, Chongqing, China",
+        "district_zh": "渝中区",
+        "nearest_metro": {
+          "station_zh": "朝天门",
+          "station_en": "Chaotianmen",
+          "line": "1号线",
+          "exit": "2"
+        },
+        "foreigner_signals": {
+          "english_signage": null,
+          "foreign_cards": null,
+          "english_service": null,
+          "evidence": [
+            "https://www.capitaland.com/cn/zh/find-a-property/global-property-listing/retail/raffles-city-chongqi.html",
+            "https://www.fornet.com.cn/cq"
+          ]
+        },
+        "official_url": "https://www.capitaland.com/cn/zh/find-a-property/global-property-listing/retail/raffles-city-chongqi.html",
+        "sources": [
+          "https://www.capitaland.com/cn/zh/find-a-property/global-property-listing/retail/raffles-city-chongqi.html",
+          "https://www.fornet.com.cn/cq",
+          "https://www.cq.gov.cn/zwgk/zfxxgkzl/fdzdgknr/zdxm/dtxx/202101/t20210104_8808495.html",
+          "https://www.capitaland.com/en/development/our-portfolio/residential/raffles-city-chongqing.html",
+          "https://www.capitaland.com/sg/en/lease/businesspark-industrial-logistics/campaign/global-property-listing/retail/raffles-city-chongqing.html"
+        ],
+        "checked_on": "2026-11-27",
+        "confidence": "medium",
+        "notes": "营业依据为当前经营方点位或近期主管部门的具名记录。",
+        "subcategory": "mall",
+        "hours_zh": null,
+        "hours_source": null,
+        "intro_short_zh": "游完朝天门两江江岸，可进商场逛店和用餐。",
+        "intro_short_en": "Browse shops and take a meal break after visiting the Chaotianmen waterfront.",
+        "intro_long_zh": "游完朝天门两江江岸，可进商场逛店和用餐。按中文店名在接圣街8号定位。",
+        "intro_long_en": "Browse shops and take a meal break after visiting the Chaotianmen waterfront. Use the full Chinese name when looking up this location."
+      },
+      "external_signals": [],
+      "location": null,
+      "amap": {
+        "status": "not-run",
+        "alternatives": []
+      },
+      "score": {
+        "total": 30,
+        "parts": {
+          "foreigner": 0,
+          "confidence": 12,
+          "sources": 10,
+          "complete": 8,
+          "amap": 0
+        },
+        "external_used": false
+      },
+      "flags": []
+    },
+    {
       "id": "pl_cq_renmin_dalitang",
       "source_file": "C1/chongqing.json",
       "status": "pending",
@@ -6095,7 +7248,7 @@
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": "金沙门路66号重庆丽晶酒店2楼",
-        "address_en": null,
+        "address_en": "Level 2, Regent Chongqing, 66 Jinshamen Road, Liangjiang New District, Chongqing, China 400021",
         "district_zh": "两江新区",
         "nearest_metro": null,
         "foreigner_signals": {
@@ -6108,7 +7261,8 @@
         },
         "official_url": "https://www.ihg.com/regent/hotels/cn/zh/chongqing/ckgrh/hoteldetail/dining",
         "sources": [
-          "https://www.ihg.com/regent/hotels/cn/zh/chongqing/ckgrh/hoteldetail/dining"
+          "https://www.ihg.com/regent/hotels/cn/zh/chongqing/ckgrh/hoteldetail/dining",
+          "https://www.ihg.com/regent/hotels/us/en/chongqing/ckgrh/hoteldetail"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
@@ -6134,17 +7288,230 @@
         "alternatives": []
       },
       "score": {
-        "total": 23,
+        "total": 29,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
-          "sources": 5,
-          "complete": 6,
+          "sources": 10,
+          "complete": 7,
           "amap": 0
         },
         "external_used": false
       },
       "flags": []
+    },
+    {
+      "id": "pl_cq_rongchang_folding_fans",
+      "source_file": "C8/chongqing-shopping.json",
+      "status": "pending",
+      "draft": {
+        "id": "pl_cq_rongchang_folding_fans",
+        "city": "chongqing",
+        "category": "shopping",
+        "tier": "backup",
+        "name_zh": "荣昌折扇传承体验馆",
+        "name_en": "Rongchang Folding Fan Heritage Center",
+        "aliases_zh": [],
+        "aliases_en": [],
+        "address_zh": "夏布小镇内",
+        "address_en": null,
+        "district_zh": "荣昌区",
+        "nearest_metro": null,
+        "foreigner_signals": {
+          "english_signage": null,
+          "foreign_cards": null,
+          "english_service": null,
+          "evidence": [
+            "https://www.rongchang.gov.cn/zwxx/rcdt/202506/t20250624_14740368.html"
+          ]
+        },
+        "official_url": "https://www.rongchang.gov.cn/zwxx/rcdt/202506/t20250624_14740368.html",
+        "sources": [
+          "https://www.rongchang.gov.cn/zwxx/rcdt/202506/t20250624_14740368.html"
+        ],
+        "checked_on": "2026-11-27",
+        "confidence": "medium",
+        "notes": "营业依据为当前经营方点位或近期主管部门的具名记录。",
+        "subcategory": "boutique",
+        "hours_zh": null,
+        "hours_source": null,
+        "intro_short_zh": "在荣昌了解折扇做法，也可看馆里的成品展销。",
+        "intro_short_en": "Learn how Rongchang fans are made and browse finished pieces for sale.",
+        "intro_long_zh": "在荣昌了解折扇做法，也可看馆里的成品展销。按中文店名在夏布小镇内定位。",
+        "intro_long_en": "Learn how Rongchang fans are made and browse finished pieces for sale. Use the full Chinese name when looking up this location."
+      },
+      "external_signals": [],
+      "location": null,
+      "amap": {
+        "status": "not-run",
+        "alternatives": []
+      },
+      "score": {
+        "total": 21,
+        "parts": {
+          "foreigner": 0,
+          "confidence": 12,
+          "sources": 5,
+          "complete": 4,
+          "amap": 0
+        },
+        "external_used": false
+      },
+      "flags": []
+    },
+    {
+      "id": "pl_cq_rujia_neo_hongyadong",
+      "source_file": "C8/chongqing-hotel.json",
+      "status": "pending",
+      "draft": {
+        "id": "pl_cq_rujia_neo_hongyadong",
+        "city": "chongqing",
+        "category": "hotel",
+        "tier": "main",
+        "name_zh": "如家·neo（重庆解放碑洪崖洞店）",
+        "name_en": "Home Inn neo — Jiefangbei / Hongyadong",
+        "aliases_zh": [],
+        "aliases_en": [],
+        "address_zh": "重庆市渝中区临江路6号",
+        "address_en": null,
+        "district_zh": "渝中区",
+        "nearest_metro": null,
+        "foreigner_signals": {
+          "english_signage": null,
+          "foreign_cards": null,
+          "english_service": null,
+          "evidence": [
+            "https://www.bthhotels.com/hotel/023007?beginDate=2026-11-18&endDate=2026-11-19"
+          ]
+        },
+        "official_url": "https://www.bthhotels.com/hotel/023007",
+        "sources": [
+          "https://www.bthhotels.com/hotel/023007",
+          "https://www.bthhotels.com/hotel/023007?beginDate=2026-11-18&endDate=2026-11-19",
+          "https://images.bthhotels.com/investmentrelations/reports/A27E7EB0-6C86-43A9-9A79-625C3D0D8FBE.pdf",
+          "https://english.cq.gov.cn/specials/explore/PhotoPerfectSpots/202608/t20260810_15912600.html"
+        ],
+        "checked_on": "2026-11-27",
+        "confidence": "high",
+        "notes": "分档依据：首旅酒店集团年报将如家 NEO 3.0 列为经济型产品升级。外宾依据：首旅如家同门店官网标明“接待外宾”。英文店名为编辑用译名。",
+        "subcategory": "hotel",
+        "intro_short_zh": "把洪崖洞与解放碑夜游排进同一晚，回店方便。",
+        "intro_short_en": "A central Chongqing address for an evening at Hongyadong and Jiefangbei.",
+        "intro_long_zh": "门店在渝中区临江路，挨着洪崖洞，也靠近解放碑步行街。首旅标明接待外宾，店内有洗烘设备。可按酒店指引从小什字9号口或临江门D口到店。",
+        "intro_long_en": "If you want to see Hongyadong after dusk, stay on Linjiang Road near the site and the Jiefangbei walking streets. The branch confirms it hosts foreign guests and lists a washer and dryer.",
+        "star": null,
+        "price_band": null,
+        "accepts_foreigners": true,
+        "foreign_service": {
+          "english_front_desk": null,
+          "foreign_guest_share": null,
+          "foreign_guest_experience": null,
+          "international_brand": null,
+          "evidence_zh": "首旅如家门店官方页面标明“接待外宾”。",
+          "evidence": [
+            "https://www.bthhotels.com/hotel/023007?beginDate=2026-11-18&endDate=2026-11-19"
+          ]
+        }
+      },
+      "external_signals": [],
+      "location": null,
+      "amap": {
+        "status": "not-run",
+        "alternatives": []
+      },
+      "score": {
+        "total": 34,
+        "parts": {
+          "foreigner": 0,
+          "confidence": 20,
+          "sources": 10,
+          "complete": 4,
+          "amap": 0
+        },
+        "external_used": false
+      },
+      "flags": [
+        "pl_cq_rujia_neo_hongyadong: unknown field 'hotel_class' is dropped on import"
+      ]
+    },
+    {
+      "id": "pl_cq_rujia_neo_nanping",
+      "source_file": "C8/chongqing-hotel.json",
+      "status": "pending",
+      "draft": {
+        "id": "pl_cq_rujia_neo_nanping",
+        "city": "chongqing",
+        "category": "hotel",
+        "tier": "main",
+        "name_zh": "如家·neo（重庆南坪万达广场店）",
+        "name_en": "Home Inn neo — Nanping Wanda Plaza",
+        "aliases_zh": [],
+        "aliases_en": [],
+        "address_zh": "重庆市南岸区南坪街道珊瑚村118号3层",
+        "address_en": null,
+        "district_zh": "南岸区",
+        "nearest_metro": {
+          "station_zh": "南坪",
+          "station_en": null,
+          "line": "3号线",
+          "exit": "1、2"
+        },
+        "foreigner_signals": {
+          "english_signage": null,
+          "foreign_cards": null,
+          "english_service": null,
+          "evidence": [
+            "https://www.bthhotels.com/hotel/023048?beginDate=2026-11-25&endDate=2026-11-26"
+          ]
+        },
+        "official_url": "https://www.bthhotels.com/hotel/023048",
+        "sources": [
+          "https://www.bthhotels.com/hotel/023048",
+          "https://www.bthhotels.com/hotel/023048?beginDate=2026-11-25&endDate=2026-11-26",
+          "https://images.bthhotels.com/investmentrelations/reports/A27E7EB0-6C86-43A9-9A79-625C3D0D8FBE.pdf"
+        ],
+        "checked_on": "2026-11-27",
+        "confidence": "high",
+        "notes": "分档依据：首旅酒店集团年报将如家 NEO 3.0 列为经济型产品升级。外宾依据：首旅如家同门店官网标明“接待外宾”。英文店名为编辑用译名。",
+        "subcategory": "hotel",
+        "intro_short_zh": "南岸南坪住处，坐轨道3号线可到重庆北站。",
+        "intro_short_en": "A south-bank stay with everyday amenities and access to Line 3.",
+        "intro_long_zh": "住在南坪万达旁，出行可用轨道3号线南坪站1号或2号口。门店注明接待外宾，并设自助洗衣房。适合从重庆北站到达、打算住在长江南岸的游客。",
+        "intro_long_en": "For a stay on the south side of the Yangtze, the branch is beside Nanping Wanda Plaza. The hotel confirms foreign guest reception and gives two exits for the nearby Line 3 stop. A laundry room is available.",
+        "star": null,
+        "price_band": null,
+        "accepts_foreigners": true,
+        "foreign_service": {
+          "english_front_desk": null,
+          "foreign_guest_share": null,
+          "foreign_guest_experience": null,
+          "international_brand": null,
+          "evidence_zh": "首旅如家门店官方页面标明“接待外宾”。",
+          "evidence": [
+            "https://www.bthhotels.com/hotel/023048?beginDate=2026-11-25&endDate=2026-11-26"
+          ]
+        }
+      },
+      "external_signals": [],
+      "location": null,
+      "amap": {
+        "status": "not-run",
+        "alternatives": []
+      },
+      "score": {
+        "total": 36,
+        "parts": {
+          "foreigner": 0,
+          "confidence": 20,
+          "sources": 10,
+          "complete": 6,
+          "amap": 0
+        },
+        "external_used": false
+      },
+      "flags": [
+        "pl_cq_rujia_neo_nanping: unknown field 'hotel_class' is dropped on import"
+      ]
     },
     {
       "id": "pl_cq_sanxia_bowuguan",
@@ -6552,6 +7919,70 @@
       "flags": []
     },
     {
+      "id": "pl_cq_sklp_xinguangli_cq",
+      "source_file": "C8/chongqing-shopping.json",
+      "status": "pending",
+      "draft": {
+        "id": "pl_cq_sklp_xinguangli_cq",
+        "city": "chongqing",
+        "category": "shopping",
+        "tier": "main",
+        "name_zh": "SKLP（新光里+）",
+        "name_en": "SKLP Chongqing",
+        "aliases_zh": [],
+        "aliases_en": [],
+        "address_zh": "红锦大道89号",
+        "address_en": null,
+        "district_zh": "两江新区",
+        "nearest_metro": null,
+        "foreigner_signals": {
+          "english_signage": null,
+          "foreign_cards": null,
+          "english_service": null,
+          "evidence": [
+            "https://www.ljxq.gov.cn/bm/qsww/zwxx/dt/202607/t20260707_15803613.html",
+            "https://www.cqnews.net/app/content_1570011573897498624.html",
+            "https://www.lecreuset.com.cn/stores.html"
+          ]
+        },
+        "official_url": "https://www.ljxq.gov.cn/bm/qsww/zwxx/dt/202607/t20260707_15803613.html",
+        "sources": [
+          "https://www.ljxq.gov.cn/bm/qsww/zwxx/dt/202607/t20260707_15803613.html",
+          "https://www.cqnews.net/app/content_1570011573897498624.html",
+          "https://www.lecreuset.com.cn/stores.html",
+          "https://www.ljxq.gov.cn/zwxx/ljyw/202608/t20260805_15895057.html"
+        ],
+        "checked_on": "2026-11-27",
+        "confidence": "high",
+        "notes": "营业依据为当前经营方点位或近期主管部门的具名记录。 两江新区政府2026年8月确认SKLP C区焕新营业，项目沿用新光里+。该公告未列当前通用营业时间或入场预约要求，继续留空。",
+        "subcategory": "mall",
+        "hours_zh": null,
+        "hours_source": null,
+        "intro_short_zh": "在嘉州一带可逛运动服饰、设计生活店与高层休闲空间。",
+        "intro_short_en": "Browse sportswear, design shops and leisure spaces in the Jiazhou area.",
+        "intro_long_zh": "在嘉州一带可逛运动服饰、设计生活店与高层休闲空间。按中文店名在红锦大道89号定位。",
+        "intro_long_en": "Browse sportswear, design shops and leisure spaces in the Jiazhou area. Use the full Chinese name when looking up this location."
+      },
+      "external_signals": [],
+      "location": null,
+      "amap": {
+        "status": "not-run",
+        "alternatives": []
+      },
+      "score": {
+        "total": 34,
+        "parts": {
+          "foreigner": 0,
+          "confidence": 20,
+          "sources": 10,
+          "complete": 4,
+          "amap": 0
+        },
+        "external_used": false
+      },
+      "flags": []
+    },
+    {
       "id": "pl_cq_small_yutuo_rice",
       "source_file": "C8/chongqing-food.json",
       "status": "pending",
@@ -6762,8 +8193,8 @@
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": "重庆市两江新区东升门路55号",
-        "address_en": null,
-        "district_zh": null,
+        "address_en": "55 Dongshengmen Road, Liangjiang New Area, Chongqing, China 400000",
+        "district_zh": "两江新区",
         "nearest_metro": null,
         "foreigner_signals": {
           "english_signage": null,
@@ -6776,16 +8207,18 @@
         "official_url": "https://www.ihg.com/vignettecollection/hotels/cn/zh/chongqing/ckgjh/hoteldetail",
         "sources": [
           "https://www.ihg.com/vignettecollection/hotels/cn/zh/chongqing/ckgjh/hoteldetail",
-          "https://www.ihg.com/hotels/cn/zh/find-hotels/hotel-search?qDest=Chongqing%2C%20China&qPt=CASH&qCiD=31&qCoD=1&qCiMy=112026&qCoMy=002027&qAdlt=1&qChld=0&qRms=1&qRtP=6CBARC&qAAR=6CBARC&srb_u=1&qFS=false&qSrt=sHL&qRdU=km"
+          "https://www.ihg.com/hotels/cn/zh/find-hotels/hotel-search?qDest=Chongqing%2C%20China&qPt=CASH&qCiD=31&qCoD=1&qCiMy=112026&qCoMy=002027&qAdlt=1&qChld=0&qRms=1&qRtP=6CBARC&qAAR=6CBARC&srb_u=1&qFS=false&qSrt=sHL&qRdU=km",
+          "https://www.ihgplc.com/en/news-and-media/news-releases/2025/ihg-hotels-and-resorts-conversion-friendly-brands-fuel-growth-opportunities-for-owners",
+          "https://www.ihg.com/vignettecollection/hotels/us/en/chongqing/ckgjh/hoteldetail/directions"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
-        "notes": "洲际官网查 2026-12-31 至 2027-01-01 的单人跨年夜报价，包含页面列出的客房费用。 官网样本为每房每晚人民币 ¥1,564。当前价以所选日期及房型的报价为准。",
+        "notes": "洲际官网查 2026-12-31 至 2027-01-01 的单人跨年夜报价，包含页面列出的客房费用。 官网样本为每房每晚人民币 ¥1,564。当前价以所选日期及房型的报价为准。 分档依据：洲际酒店集团将该品牌列入 Luxury & Lifestyle。",
         "subcategory": "hotel",
-        "intro_short_zh": "东升门路的一家洲际旗下酒店。",
-        "intro_short_en": "An IHG hotel on Dongshengmen Road.",
-        "intro_long_zh": "东升门路的一家洲际旗下酒店。可在品牌官网查看房型和入住安排。",
-        "intro_long_en": "An IHG hotel on Dongshengmen Road. See the hotel's own website for room types and check-in details.",
+        "intro_short_zh": "江北嘴东升门路的高层酒店，可看都市天际线。",
+        "intro_short_en": "A Jiangbeizui high-floor hotel on Dongshengmen Road.",
+        "intro_long_zh": "门店在东升门路55号。想把两江新区和江北嘴安排成单独一段时，可选这里过夜。洲际有英文交通页供出发前参考。",
+        "intro_long_en": "For an itinerary centered on Jiangbeizui, check IHG's directions to Dongshengmen Road. The hotel occupies upper floors with views over the city.",
         "star": null,
         "price_band": "1000-2000",
         "accepts_foreigners": true,
@@ -6807,17 +8240,19 @@
         "alternatives": []
       },
       "score": {
-        "total": 28,
+        "total": 29,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 6,
+          "complete": 7,
           "amap": 0
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "pl_cq_tftjiudian: unknown field 'hotel_class' is dropped on import"
+      ]
     },
     {
       "id": "pl_cq_the_peak_cq",
@@ -6833,7 +8268,7 @@
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": "南坪西路36号重庆康莱德酒店52楼",
-        "address_en": null,
+        "address_en": "Level 52, Conrad Chongqing, 36 West Nanping Road, Nan’an District, Chongqing, China 400060",
         "district_zh": "南岸区",
         "nearest_metro": null,
         "foreigner_signals": {
@@ -6848,7 +8283,8 @@
         "official_url": "https://www.hilton.com/en-gb/hotels/ckgcici-conrad-chongqing/dining/",
         "sources": [
           "https://www.hilton.com/en-gb/hotels/ckgcici-conrad-chongqing/dining/",
-          "https://www.hilton.com.cn/file/pdf_doc/file_20240326113702229sB6lB9s.pdf"
+          "https://www.hilton.com.cn/file/pdf_doc/file_20240326113702229sB6lB9s.pdf",
+          "https://www.hilton.com/en/hotels/ckgcici-conrad-chongqing/hotel-location/"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
@@ -6874,12 +8310,82 @@
         "alternatives": []
       },
       "score": {
-        "total": 28,
+        "total": 29,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 6,
+          "complete": 7,
+          "amap": 0
+        },
+        "external_used": false
+      },
+      "flags": []
+    },
+    {
+      "id": "pl_cq_the_ring_cq_shops",
+      "source_file": "C8/chongqing-shopping.json",
+      "status": "pending",
+      "draft": {
+        "id": "pl_cq_the_ring_cq_shops",
+        "city": "chongqing",
+        "category": "shopping",
+        "tier": "main",
+        "name_zh": "重庆光环购物公园",
+        "name_en": "The Ring Chongqing",
+        "aliases_zh": [],
+        "aliases_en": [],
+        "address_zh": "重庆市两江新区湖彩路118号",
+        "address_en": "118 Hucai Road, Liangjiang New Area, Chongqing",
+        "district_zh": "两江新区",
+        "nearest_metro": {
+          "station_zh": "重光",
+          "station_en": "Chongguang",
+          "line": "5号线",
+          "exit": null
+        },
+        "foreigner_signals": {
+          "english_signage": null,
+          "foreign_cards": null,
+          "english_service": null,
+          "evidence": [
+            "https://www.cq.gov.cn/ywdt/zwhd/qxdt/202604/t20260430_15647790.html",
+            "https://www.ichongqing.info/2026/08/31/chongqings-green-heart-commercial-complex-attracts-niche-brands-and-shoppers/"
+          ]
+        },
+        "official_url": "https://www.cq.gov.cn/ywdt/zwhd/qxdt/202604/t20260430_15647790.html",
+        "sources": [
+          "https://www.cq.gov.cn/ywdt/zwhd/qxdt/202604/t20260430_15647790.html",
+          "https://www.ichongqing.info/2026/08/31/chongqings-green-heart-commercial-complex-attracts-niche-brands-and-shoppers/",
+          "https://scjgj.cq.gov.cn/zz/ljxq/zwgk/fdzdgknr_146781/xzxk_146787/xzspjg/sp/202607/t20260707_15804899.html",
+          "https://webfile.hkland.com/assets/financial-reports-and-results/2024/en/ar2023.pdf",
+          "https://www.cq.gov.cn/zwgk/zfxxgkzl/fdzdgknr/zdxm/dtxx/202401/t20240124_12859925.html",
+          "https://www.cq.gov.cn/ywdt/bmts/202607/t20260708_15806324.html"
+        ],
+        "checked_on": "2026-11-27",
+        "confidence": "medium",
+        "notes": "营业依据为当前经营方点位或近期主管部门的具名记录。",
+        "subcategory": "mall",
+        "hours_zh": null,
+        "hours_source": null,
+        "intro_short_zh": "适合把商场购物和室内绿植空间安排在一起。",
+        "intro_short_en": "Combine shopping with a look at the mall's indoor planted spaces.",
+        "intro_long_zh": "适合把商场购物和室内绿植空间安排在一起。按中文店名在两江新区定位。",
+        "intro_long_en": "Combine shopping with a look at the mall's indoor planted spaces. Use the full Chinese name when looking up this location."
+      },
+      "external_signals": [],
+      "location": null,
+      "amap": {
+        "status": "not-run",
+        "alternatives": []
+      },
+      "score": {
+        "total": 30,
+        "parts": {
+          "foreigner": 0,
+          "confidence": 12,
+          "sources": 10,
+          "complete": 8,
           "amap": 0
         },
         "external_used": false
@@ -7012,6 +8518,134 @@
           "confidence": 4,
           "sources": 5,
           "complete": 3,
+          "amap": 0
+        },
+        "external_used": false
+      },
+      "flags": []
+    },
+    {
+      "id": "pl_cq_times_paradise_walk_cq",
+      "source_file": "C8/chongqing-shopping.json",
+      "status": "pending",
+      "draft": {
+        "id": "pl_cq_times_paradise_walk_cq",
+        "city": "chongqing",
+        "category": "shopping",
+        "tier": "main",
+        "name_zh": "龙湖重庆时代天街",
+        "name_en": "Longfor Chongqing Times Paradise Walk",
+        "aliases_zh": [],
+        "aliases_en": [],
+        "address_zh": "长江二路174号",
+        "address_en": null,
+        "district_zh": "渝中区",
+        "nearest_metro": {
+          "station_zh": "石油路",
+          "station_en": null,
+          "line": "1号线",
+          "exit": null
+        },
+        "foreigner_signals": {
+          "english_signage": null,
+          "foreign_cards": null,
+          "english_service": null,
+          "evidence": [
+            "https://www.longfor.com/space/operations.html",
+            "https://www.ccfa.org.cn/portal/cn/xiangxi.jsp?id=447005&imageType=0&type=2"
+          ]
+        },
+        "official_url": "https://www.longfor.com/space/operations.html",
+        "sources": [
+          "https://www.longfor.com/space/operations.html",
+          "https://www.ccfa.org.cn/portal/cn/xiangxi.jsp?id=447005&imageType=0&type=2",
+          "https://zfcxjw.cq.gov.cn/zwxx_166/gsgg/202201/P020220126659119065139.pdf"
+        ],
+        "checked_on": "2026-11-27",
+        "confidence": "medium",
+        "notes": "营业依据为当前经营方点位或近期主管部门的具名记录。",
+        "subcategory": "mall",
+        "hours_zh": null,
+        "hours_source": null,
+        "intro_short_zh": "在大坪可用半天逛服饰、生活零售和多栋商场。",
+        "intro_short_en": "Leave time to browse fashion and everyday shops across several Daping mall buildings.",
+        "intro_long_zh": "在大坪可用半天逛服饰、生活零售和多栋商场。按中文店名在长江二路174号定位。",
+        "intro_long_en": "Leave time to browse fashion and everyday shops across several Daping mall buildings. Use the full Chinese name when looking up this location."
+      },
+      "external_signals": [],
+      "location": null,
+      "amap": {
+        "status": "not-run",
+        "alternatives": []
+      },
+      "score": {
+        "total": 28,
+        "parts": {
+          "foreigner": 0,
+          "confidence": 12,
+          "sources": 10,
+          "complete": 6,
+          "amap": 0
+        },
+        "external_used": false
+      },
+      "flags": []
+    },
+    {
+      "id": "pl_cq_wanghai_flower_market",
+      "source_file": "C8/chongqing-shopping.json",
+      "status": "pending",
+      "draft": {
+        "id": "pl_cq_wanghai_flower_market",
+        "city": "chongqing",
+        "category": "shopping",
+        "tier": "main",
+        "name_zh": "宏帆望海花都",
+        "name_en": "Hongfan Wanghai Flower Market",
+        "aliases_zh": [],
+        "aliases_en": [],
+        "address_zh": "宏帆路136号",
+        "address_en": null,
+        "district_zh": "两江新区",
+        "nearest_metro": null,
+        "foreigner_signals": {
+          "english_signage": null,
+          "foreign_cards": null,
+          "english_service": null,
+          "evidence": [
+            "https://ljxq.gov.cn/zwxx/ljyw/202602/t20260209_15399691.html",
+            "https://ghzrzyj.cq.gov.cn/bsfw_186/dtfw/mzyt/202108/t20210818_9595968_wap.html"
+          ]
+        },
+        "official_url": "https://ljxq.gov.cn/zwxx/ljyw/202602/t20260209_15399691.html",
+        "sources": [
+          "https://ljxq.gov.cn/zwxx/ljyw/202602/t20260209_15399691.html",
+          "https://ghzrzyj.cq.gov.cn/bsfw_186/dtfw/mzyt/202108/t20210818_9595968_wap.html"
+        ],
+        "checked_on": "2026-11-27",
+        "confidence": "medium",
+        "notes": "营业依据为当前经营方点位或近期主管部门的具名记录。",
+        "subcategory": "market",
+        "hours_zh": null,
+        "hours_source": null,
+        "intro_short_zh": "可比较鲜花、盆栽和园艺摊位，适合想看重庆花市的人。",
+        "intro_short_en": "Compare cut flowers, potted plants and gardening stalls at a Chongqing flower market.",
+        "intro_long_zh": "可比较鲜花、盆栽和园艺摊位，适合想看重庆花市的人。按中文店名在宏帆路136号定位。",
+        "intro_long_en": "Compare cut flowers, potted plants and gardening stalls at a Chongqing flower market. Use the full Chinese name when looking up this location."
+      },
+      "external_signals": [],
+      "location": null,
+      "amap": {
+        "status": "not-run",
+        "alternatives": []
+      },
+      "score": {
+        "total": 26,
+        "parts": {
+          "foreigner": 0,
+          "confidence": 12,
+          "sources": 10,
+          "complete": 4,
           "amap": 0
         },
         "external_used": false
@@ -7694,9 +9328,9 @@
         "name_en": "Hilton Chongqing",
         "aliases_zh": [],
         "aliases_en": [],
-        "address_zh": null,
-        "address_en": null,
-        "district_zh": null,
+        "address_zh": "重庆市渝中区中山三路139号",
+        "address_en": "139 Zhong Shan San Lu, Yuzhong District, Chongqing, China 400015",
+        "district_zh": "渝中区",
         "nearest_metro": null,
         "foreigner_signals": {
           "english_signage": null,
@@ -7709,16 +9343,19 @@
         "official_url": "https://www.hilton.com.cn/zh-cn/hotels/ckghihi-hilton-chongqing",
         "sources": [
           "https://www.hilton.com.cn/zh-cn/hotels/ckghihi-hilton-chongqing",
-          "https://www.hilton.com.cn/zh-cn/locations/china/chongqing-chongqing"
+          "https://www.hilton.com.cn/zh-cn/locations/china/chongqing-chongqing",
+          "https://ir.hilton.com/_assets/_de1e637820b6842c68b34801d11a8fd1/hilton/db/3577/34740/pdf/HLT_Investor_Presentation_-_November_2026.pdf",
+          "https://www.hilton.com.cn/zh-cn/hotel/Chongqing/hilton-Chongqing-CKGHIHI/maps-directions.html",
+          "https://www.hilton.com/en/hotels/ckghihi-hilton-chongqing/hotel-location/"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
-        "notes": "希尔顿城市页显示 2026-11-27 入住、11-28 退房的起价。 官网样本为每房每晚人民币 ¥429。当前价以所选日期及房型的报价为准。",
+        "notes": "希尔顿城市页显示 2026-11-27 入住、11-28 退房的起价。 官网样本为每房每晚人民币 ¥429。当前价以所选日期及房型的报价为准。 分档依据：希尔顿集团将品牌列为 Full Service，本库按高档处理。",
         "subcategory": "hotel",
-        "intro_short_zh": "在重庆中心城区安排住宿时可考虑。",
-        "intro_short_en": "A Hilton hotel in central Chongqing.",
-        "intro_long_zh": "在重庆中心城区安排住宿时可考虑。可在品牌官网查看房型和入住安排。",
-        "intro_long_en": "A Hilton hotel in central Chongqing. See the hotel's own website for room types and check-in details.",
+        "intro_short_zh": "两路口的希尔顿，可安排大田湾和宋庆龄旧居。",
+        "intro_short_en": "A Lianglukou base for Datianwan and an outing around historic Yuzhong.",
+        "intro_long_zh": "酒店位于中山三路139号，品牌列出两路口位置和大田湾等附近去处。适合对渝中老街和旧建筑有兴趣的游客。",
+        "intro_long_en": "Pick Lianglukou for a trip with time in the older city. Hilton's English property guide names Datianwan and the Soong Ching Ling Residence nearby.",
         "star": null,
         "price_band": "<500",
         "accepts_foreigners": true,
@@ -7740,17 +9377,19 @@
         "alternatives": []
       },
       "score": {
-        "total": 26,
+        "total": 29,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 4,
+          "complete": 7,
           "amap": 0
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "pl_cq_xierdun: unknown field 'hotel_class' is dropped on import"
+      ]
     },
     {
       "id": "pl_cq_xishi_weiyang_tiandi",
@@ -7810,6 +9449,67 @@
           "foreigner": 0,
           "confidence": 12,
           "sources": 5,
+          "complete": 4,
+          "amap": 0
+        },
+        "external_used": false
+      },
+      "flags": []
+    },
+    {
+      "id": "pl_cq_xuetianwan_dayanggou",
+      "source_file": "C8/chongqing-shopping.json",
+      "status": "pending",
+      "draft": {
+        "id": "pl_cq_xuetianwan_dayanggou",
+        "city": "chongqing",
+        "category": "shopping",
+        "tier": "main",
+        "name_zh": "学田湾大阳沟市场",
+        "name_en": "Xuetianwan Dayanggou Market",
+        "aliases_zh": [],
+        "aliases_en": [],
+        "address_zh": "学田湾片区",
+        "address_en": null,
+        "district_zh": "渝中区",
+        "nearest_metro": null,
+        "foreigner_signals": {
+          "english_signage": null,
+          "foreign_cards": null,
+          "english_service": null,
+          "evidence": [
+            "https://sww.cq.gov.cn/zwgk_247/zfxxgkml/qtfdxx/tzgg/202512/t20251226_15274727.html",
+            "https://sww.cq.gov.cn/sy_247/bmdt/202408/t20240812_13489099.html"
+          ]
+        },
+        "official_url": "https://sww.cq.gov.cn/zwgk_247/zfxxgkml/qtfdxx/tzgg/202512/t20251226_15274727.html",
+        "sources": [
+          "https://sww.cq.gov.cn/zwgk_247/zfxxgkml/qtfdxx/tzgg/202512/t20251226_15274727.html",
+          "https://sww.cq.gov.cn/sy_247/bmdt/202408/t20240812_13489099.html"
+        ],
+        "checked_on": "2026-11-27",
+        "confidence": "medium",
+        "notes": "营业依据为当前经营方点位或近期主管部门的具名记录。",
+        "subcategory": "market",
+        "hours_zh": null,
+        "hours_source": null,
+        "intro_short_zh": "看居民买菜和干货，可把它安排在渝中的日常街巷行程里。",
+        "intro_short_en": "See residents shop for produce and dried goods in the Xuetianwan neighborhood.",
+        "intro_long_zh": "看居民买菜和干货，可把它安排在渝中的日常街巷行程里。按中文店名在学田湾片区定位。",
+        "intro_long_en": "See residents shop for produce and dried goods in the Xuetianwan neighborhood. Use the full Chinese name when looking up this location."
+      },
+      "external_signals": [],
+      "location": null,
+      "amap": {
+        "status": "not-run",
+        "alternatives": []
+      },
+      "score": {
+        "total": 26,
+        "parts": {
+          "foreigner": 0,
+          "confidence": 12,
+          "sources": 10,
           "complete": 4,
           "amap": 0
         },
@@ -7881,6 +9581,152 @@
         "external_used": false
       },
       "flags": []
+    },
+    {
+      "id": "pl_cq_yibisi_jiefangbeibuxingjie",
+      "source_file": "C8/chongqing-hotel.json",
+      "status": "pending",
+      "draft": {
+        "id": "pl_cq_yibisi_jiefangbeibuxingjie",
+        "city": "chongqing",
+        "category": "hotel",
+        "tier": "main",
+        "name_zh": "宜必思重庆解放碑步行街酒店",
+        "name_en": "ibis Chongqing Jiefangbei Pedestrian Street Hotel",
+        "aliases_zh": [],
+        "aliases_en": [],
+        "address_zh": "八一路39号9–13层",
+        "address_en": "Levels 9–13, 39 Bayi Road, Yuzhong District, Chongqing, China 400010",
+        "district_zh": "渝中区",
+        "nearest_metro": null,
+        "foreigner_signals": {
+          "english_signage": null,
+          "foreign_cards": null,
+          "english_service": null,
+          "evidence": [
+            "https://all.accor.com/hotel/B583/index.en.shtml"
+          ]
+        },
+        "official_url": "https://all.accor.com/hotel/B583/index.en.shtml",
+        "sources": [
+          "https://all.accor.com/hotel/B583/index.en.shtml",
+          "https://group.accor.com/en/news-stories/midscale-economy-brands-novotel-mercure-ibis"
+        ],
+        "checked_on": "2026-11-27",
+        "confidence": "medium",
+        "notes": "分档依据：雅高集团将宜必思及宜必思尚品归为经济型。",
+        "subcategory": "hotel",
+        "intro_short_zh": "解放碑步行街上的经济型客房，可用临江门站。",
+        "intro_short_en": "A Jiefangbei ibis with Linjiangmen and Xiaoshizi metro options.",
+        "intro_long_zh": "雅高门店位置页列小什字和临江门站，适合地铁抵达后走老街，也可将罗汉寺和长江索道放进附近行程。",
+        "intro_long_en": "The hotel is on Bayi Road in the pedestrian area. Its English listing gives metro options and nearby places such as Luohan Temple and the Yangtze River Cableway.",
+        "star": null,
+        "price_band": null,
+        "accepts_foreigners": true,
+        "foreign_service": {
+          "english_front_desk": null,
+          "foreign_guest_share": null,
+          "foreign_guest_experience": null,
+          "international_brand": "Accor",
+          "evidence_zh": "雅高英文门店页列有预订入口与双语地址信息，面向所有旅客。",
+          "evidence": [
+            "https://all.accor.com/hotel/B583/index.en.shtml"
+          ]
+        }
+      },
+      "external_signals": [],
+      "location": null,
+      "amap": {
+        "status": "not-run",
+        "alternatives": []
+      },
+      "score": {
+        "total": 28,
+        "parts": {
+          "foreigner": 0,
+          "confidence": 12,
+          "sources": 10,
+          "complete": 6,
+          "amap": 0
+        },
+        "external_used": false
+      },
+      "flags": [
+        "pl_cq_yibisi_jiefangbeibuxingjie: unknown field 'hotel_class' is dropped on import"
+      ]
+    },
+    {
+      "id": "pl_cq_yibisi_shuanglong",
+      "source_file": "C8/chongqing-hotel.json",
+      "status": "pending",
+      "draft": {
+        "id": "pl_cq_yibisi_shuanglong",
+        "city": "chongqing",
+        "category": "hotel",
+        "tier": "main",
+        "name_zh": "宜必思重庆江北机场双龙大道酒店",
+        "name_en": "ibis Chongqing Jiangbei Airport Shuanglong Avenue Hotel",
+        "aliases_zh": [],
+        "aliases_en": [],
+        "address_zh": "双龙大道60号1幢",
+        "address_en": "60 Shuanglong Avenue, Yubei District, Chongqing, China 401120",
+        "district_zh": "渝北区",
+        "nearest_metro": null,
+        "foreigner_signals": {
+          "english_signage": null,
+          "foreign_cards": null,
+          "english_service": null,
+          "evidence": [
+            "https://all.accor.com/hotel/B7L0/index.en.shtml"
+          ]
+        },
+        "official_url": "https://all.accor.com/hotel/B7L0/index.en.shtml",
+        "sources": [
+          "https://all.accor.com/hotel/B7L0/index.en.shtml",
+          "https://group.accor.com/en/news-stories/midscale-economy-brands-novotel-mercure-ibis"
+        ],
+        "checked_on": "2026-11-27",
+        "confidence": "medium",
+        "notes": "分档依据：雅高集团将宜必思及宜必思尚品归为经济型。",
+        "subcategory": "hotel",
+        "intro_short_zh": "双龙大道的经济型酒店，可提前向店方约机场接驳。",
+        "intro_short_en": "A Shuanglong Avenue ibis with airport pickup by arrangement.",
+        "intro_long_zh": "需早晚往返江北机场时，可看这家门店的接送说明。酒店在渝北，也在品牌页列出碧津公园附近的地铁站，便于另安排进城路线。",
+        "intro_long_en": "If your stay is built around a flight, arrange the airport shuttle in advance. The property's location page also points to the metro near Bijin Park.",
+        "star": null,
+        "price_band": null,
+        "accepts_foreigners": true,
+        "foreign_service": {
+          "english_front_desk": null,
+          "foreign_guest_share": null,
+          "foreign_guest_experience": null,
+          "international_brand": "Accor",
+          "evidence_zh": "雅高英文门店页列有预订入口及江北机场接驳说明，面向所有旅客。",
+          "evidence": [
+            "https://all.accor.com/hotel/B7L0/index.en.shtml"
+          ]
+        }
+      },
+      "external_signals": [],
+      "location": null,
+      "amap": {
+        "status": "not-run",
+        "alternatives": []
+      },
+      "score": {
+        "total": 28,
+        "parts": {
+          "foreigner": 0,
+          "confidence": 12,
+          "sources": 10,
+          "complete": 6,
+          "amap": 0
+        },
+        "external_used": false
+      },
+      "flags": [
+        "pl_cq_yibisi_shuanglong: unknown field 'hotel_class' is dropped on import"
+      ]
     },
     {
       "id": "pl_cq_youyang_taoyuan_douhua",
@@ -7961,7 +9807,7 @@
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": "南坪西路36号重庆康莱德酒店53楼",
-        "address_en": null,
+        "address_en": "Level 53, Conrad Chongqing, 36 West Nanping Road, Nan’an District, Chongqing, China 400060",
         "district_zh": "南岸区",
         "nearest_metro": null,
         "foreigner_signals": {
@@ -7976,7 +9822,8 @@
         "official_url": "https://www.hilton.com/en-gb/hotels/ckgcici-conrad-chongqing/dining/",
         "sources": [
           "https://www.hilton.com/en-gb/hotels/ckgcici-conrad-chongqing/dining/",
-          "https://www.hilton.com.cn/file/pdf_doc/file_20240326113702229sB6lB9s.pdf"
+          "https://www.hilton.com.cn/file/pdf_doc/file_20240326113702229sB6lB9s.pdf",
+          "https://www.hilton.com/en/hotels/ckgcici-conrad-chongqing/hotel-location/"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
@@ -8002,12 +9849,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 28,
+        "total": 29,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 6,
+          "complete": 7,
           "amap": 0
         },
         "external_used": false
@@ -8222,9 +10069,9 @@
         "name_en": "Four Points by Sheraton Chongqing Yuzhong Peninsula",
         "aliases_zh": [],
         "aliases_en": [],
-        "address_zh": null,
-        "address_en": null,
-        "district_zh": null,
+        "address_zh": "重庆市渝中区中山三路156号",
+        "address_en": "156 Zhongshan Third Road, Yuzhong District, Chongqing, China 400014",
+        "district_zh": "渝中区",
         "nearest_metro": null,
         "foreigner_signals": {
           "english_signage": null,
@@ -8237,16 +10084,18 @@
         "official_url": "https://www.marriott.com/en-us/hotels/ckgyp-four-points-chongqing-yuzhong-peninsula/overview/",
         "sources": [
           "https://www.marriott.com/en-us/hotels/ckgyp-four-points-chongqing-yuzhong-peninsula/overview/",
-          "https://www.marriott.com/en-us/destinations/china/chongqing.mi"
+          "https://www.marriott.com/en-us/destinations/china/chongqing.mi",
+          "https://help.marriott.com/s/article/Article-24483",
+          "https://www.marriott.com.cn/hotels/ckgyp-four-points-chongqing-yuzhong-peninsula/overview/"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
-        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sat, Dec 26 - Sun, Dec 27。 官网样本为每房每晚人民币 ¥398。当前价以所选日期及房型的报价为准。",
+        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sat, Dec 26 - Sun, Dec 27。 官网样本为每房每晚人民币 ¥398。当前价以所选日期及房型的报价为准。 分档依据：万豪集团列为 Select 精选服务品牌，本库按中档处理。",
         "subcategory": "hotel",
-        "intro_short_zh": "可作为在渝中半岛游览时的住宿点。",
-        "intro_short_en": "A Four Points hotel on the Yuzhong peninsula.",
-        "intro_long_zh": "可作为在渝中半岛游览时的住宿点。可在品牌官网查看房型和入住安排。",
-        "intro_long_en": "A Four Points hotel on the Yuzhong peninsula. See the hotel's own website for room types and check-in details.",
+        "intro_short_zh": "中山三路的门店，万豪列明英语与中文。",
+        "intro_short_en": "A Yuzhong Peninsula option on Zhongshan 3rd Road, with English listed.",
+        "intro_long_zh": "酒店在中山三路156号。适合把渝中区的步行行程分成几天、回店也想安排运动的游客，官网列有健身房和服务语言。",
+        "intro_long_en": "For a few days on the Yuzhong Peninsula, use the hotel's English page to plan arrival. Marriott lists a fitness room on the property.",
         "star": null,
         "price_band": "<500",
         "accepts_foreigners": true,
@@ -8268,17 +10117,19 @@
         "alternatives": []
       },
       "score": {
-        "total": 26,
+        "total": 29,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 4,
+          "complete": 7,
           "amap": 0
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "pl_cq_yuzhongfupeng: unknown field 'hotel_class' is dropped on import"
+      ]
     },
     {
       "id": "pl_cq_zhang_douhua",

@@ -15,6 +15,10 @@ from cj_agent.run_timing import accepted
 from cj_run.display_snapshot import SnapshotTooLarge
 
 from cj_message.lio_followups import VERSION as FOLLOWUPS_VERSION, wire_followups
+from cj_message import lio_cards, lio_entities, lio_rich_receipt
+from .lio_memory_prompt import PROMPT_EFFECT
+from cj_memory.titles import USED_EFFECT, parse_used
+from cj_message.lio_entities import ENTITIES_EFFECT
 
 from .local_lio_planning import ITINERARY_PREVIEW_VERSION,read_itinerary_preview
 from .lio_weather import CITY_EFFECT,reference as city_weather_reference
@@ -25,6 +29,9 @@ from .message_routes import BodyError, _read_body, _token, message_failure
 TIMELINE_VERSION = 'LIO-timeline.1'
 RECEIPT_VERSION = 'LIO-message-receipt.1'
 BEIJING_PUBLIC_FORECAST = 'https://www.weather.com.cn/weather/101010100.shtml'
+RICH_VERSION = 'LIO-answer-rich.1'   # #1984; `accepts` takes exactly one of FOLLOWUPS_VERSION, RICH_VERSION
+MAX_RICH_BYTES = 16384
+RECEIPT_EFFECT = 'lio_trip_receipt:'   # written by the trip side (T-1); this module only reads it
 
 
 def _json(value, status=200):
@@ -35,7 +42,7 @@ def _failure(status):
     return _json({'failure': 'quota' if status == 429 else 'unavailable'}, status)
 
 
-def _message(item, state, *, expired=False, trip=None, memory=None, identity=True, declared=False):
+def _message(item, state, *, expired=False, trip=None, memory=None, identity=True, declared=False, receipt=None, prompt_open=None, used_titles=None):
     failure = None
     locale = answer_locale(item.text, item.locale)
     if trip is not None:
@@ -58,6 +65,10 @@ def _message(item, state, *, expired=False, trip=None, memory=None, identity=Tru
     sources = []
     layout = None
     followups = None
+    entities = None
+    cards = None
+    prompt = False
+    used = None
     amap_weather = False
     weather_city = None
     activity = None
@@ -70,6 +81,14 @@ def _message(item, state, *, expired=False, trip=None, memory=None, identity=Tru
                 amap_weather |= citation['title'] in ('高德天气', 'Amap Weather') and citation['url'] is None
             elif effect.startswith(LAYOUT_EFFECT):
                 layout = effect.removeprefix(LAYOUT_EFFECT)
+            elif effect.startswith(USED_EFFECT):
+                used = effect
+            elif effect == PROMPT_EFFECT:
+                prompt = True
+            elif effect.startswith(lio_cards.CARDS_EFFECT):
+                cards = effect
+            elif effect.startswith(ENTITIES_EFFECT):
+                entities = effect   # the last one counts
             elif effect.startswith(FOLLOWUPS_EFFECT):
                 try:
                     followups = wire_followups(json.loads(effect.removeprefix(FOLLOWUPS_EFFECT)))
@@ -109,10 +128,121 @@ def _message(item, state, *, expired=False, trip=None, memory=None, identity=Tru
             row['layout'] = layout
         if status == 'completed' and answer and followups is not None and trip is None and layout == 'split':
             row['followups'] = followups
+        if declared == 'rich' and status in ('completed', 'failed'):
+            # Entities and cards need a finished answer; the save receipt also rides a failed row, because a save
+            # that committed before the answer failed still needs its undo (contract).
+            finished = status == 'completed' and bool(answer)
+            rich = _rich(answer, entities if finished else None, cards if finished and trip is None else None, receipt,
+                         prompt=prompt_open if finished and prompt else None,
+                         used=(used, used_titles) if finished and used is not None and used_titles is not None else None)
+            if rich is not None:
+                row['rich'] = rich
+                # The one difference from the followups.1 row: a taxi card replaces the taxi button.
+                if any(card['type'] == 'taxi' for card in rich.get('cards', ())) and 'followups' in row:
+                    kept = [a for a in row['followups'].get('actions', ()) if a.get('tool') != 'taxi']
+                    body = {k: v for k, v in row['followups'].items() if k != 'actions'}
+                    if kept:
+                        body['actions'] = kept
+                    if 'actions' in body or 'chips' in body:
+                        row['followups'] = body
+                    else:
+                        del row['followups']
     return row
 
 
-def _timeline(boundary, resolve_runs, trip_cards, memory_cards, token, conversation_id, before, multiple=False,calendar=False,declared=False):
+def _rich(answer, entities, cards=None, receipt=None, prompt=None, used=None):
+    """`rich` for a row of a poll that declared LIO-answer-rich.1, or None. Every part fails alone and quietly:
+    a bad or missing part is left out, `rich` never fails the page. Parts are added here as their tickets land
+    (entities D-1 #1989; cards D-2 #1990; receipt T-1 #1994; memory M-1/M-3)."""
+    try:
+        if not lio_entities.rich_enabled():
+            return None   # off: a rich declaration reads exactly like followups.1, not a 400
+        value = {}
+        if entities is not None:
+            rows = lio_entities.wire(entities, answer, lio_entities.approved_ids().__contains__)
+            if rows:
+                value['entities'] = rows
+        if cards is not None:
+            rows = lio_cards.wire(cards)
+            if rows:
+                value['cards'] = rows
+        memory = {}
+        if prompt is not None and prompt():   # only after the rich switch said yes: no extra read while it is off
+            memory['prompt'] = 'consent'
+        if used is not None:
+            parsed = parse_used(used[0])
+            titles = used[1](parsed[0]) if parsed is not None else {}
+            rows = [dict(item_id=i, title=titles[i]) for i in (parsed[0] if parsed else [])
+                    if type(titles.get(i)) is str and 0 < len(titles[i]) <= 40 and '\n' not in titles[i]]
+            if rows:
+                # the traveler may have taken some back since: the count never claims more than is still shown
+                memory['used'] = rows
+                memory['used_total'] = len(rows) if len(rows) < len(parsed[0]) else max(parsed[1], len(rows))
+        if memory:
+            value['memory'] = memory
+        if receipt is not None:
+            checked = lio_rich_receipt.wire(receipt)
+            if checked is not None:
+                value['trip_receipt'] = checked
+        if not value:
+            return None
+        value = dict(version=RICH_VERSION, **value)
+        for part in ('entities', 'cards'):   # the drop order of the contract: entities, then cards; never the receipt
+            if len(json.dumps(value, ensure_ascii=False, separators=(',', ':')).encode('utf-8')) <= MAX_RICH_BYTES:
+                break
+            value.pop(part, None)
+        return value if len(value) > 1 else None
+    except Exception:
+        return None
+
+
+def _used_titles(memory_cards, context):
+    """A lookup of the titles of the memories a row used, run only for a row that carries the used effect; any failure
+    is no titles. One read per row at most (three ids)."""
+    allowed = []
+
+    def lookup(item_ids):
+        try:
+            titles = getattr(memory_cards, 'used_titles', None)
+            if titles is None:
+                return {}
+            if not allowed:   # the consent state is read once for the whole page
+                allowed.append(bool(memory_cards.used_allowed(context.scope)))
+            return titles(context.scope, item_ids, checked=True) if allowed[0] else {}
+        except Exception:
+            return {}
+    return lookup
+
+
+def _prompt_open(memory_cards, context):
+    """A check, run only for a row that carries the prompt marker, that the account still has no consent record and
+    the consent switch is on: the prompt is a hint to ask once, never consent, and it is not sent to an account that chose."""
+    memo = []
+
+    def check():
+        if not memo:   # one read for the whole page
+            from .lio_memory_consent import consent_required
+            from .lio_memory_prompt import never_chosen
+            memo.append(consent_required() and never_chosen(getattr(memory_cards, 'consent', None), context.scope))
+        return memo[0]
+    return check
+
+
+def _receipt(reader, context, binding, state):
+    """The trip side's receipt for one RUN (T-1, `cj_api.lio_trip_receipt.read`), only when the RUN wrote a receipt effect
+    and the poll declared rich; any failure of the reader leaves the receipt out and never fails the page."""
+    if reader is None or state is None or state.status not in ('completed', 'failed', 'unknown') \
+            or not any(e.startswith(RECEIPT_EFFECT) for e in state.effects):
+        return None
+    try:
+        if not lio_entities.rich_enabled():
+            return None   # off: no extra database read (contract R-1)
+        return reader(context.scope, binding.run_id, state.effects)
+    except Exception:
+        return None
+
+
+def _timeline(boundary, resolve_runs, trip_cards, memory_cards, token, conversation_id, before, multiple=False,calendar=False,declared=False,receipt_reader=None):
     def compose(context, page, bindings, snapshots):
         messages = []
         if page.messages:
@@ -130,7 +260,10 @@ def _timeline(boundary, resolve_runs, trip_cards, memory_cards, token, conversat
                         trip = trip_cards.read(token, binding)
                 memory = (memory_cards.project(context, token, item.message_id, binding.run_id)
                           if memory_cards is not None and state is not None and state.status == 'completed' else None)
-                messages.append(_message(item, state, expired=expired, trip=trip, memory=memory, declared=declared))
+                messages.append(_message(item, state, expired=expired, trip=trip, memory=memory, declared=declared,
+                                         receipt=_receipt(receipt_reader, context, binding, state) if declared == 'rich' else None,
+                                         prompt_open=_prompt_open(memory_cards, context) if declared == 'rich' else None,
+                                         used_titles=_used_titles(memory_cards, context) if declared == 'rich' else None))
         version = 'LIO-timeline.3' if calendar else 'LIO-timeline.2' if multiple else TIMELINE_VERSION
         response = _json(dict(version=version, conversation_id=page.conversation_id,
                               messages=messages, next_before=page.next_before))
@@ -185,7 +318,8 @@ def _itinerary_preview(boundary, resolve_runs, token, conversation_id, mid):
     return boundary.with_history_context(token, read)
 
 
-def register_lio_dialogue_routes(app, boundary, resolve_runs, trip_cards, *, prepare_scope, memory_cards=None,calendar_cards=None,calendar_boundary=None):
+def register_lio_dialogue_routes(app, boundary, resolve_runs, trip_cards, *, prepare_scope, memory_cards=None,calendar_cards=None,calendar_boundary=None,
+                                 trip_receipt_reader=None):
     async def send(request, version, receipt_version):
         token = _token(request)
         if token is None:
@@ -212,7 +346,7 @@ def register_lio_dialogue_routes(app, boundary, resolve_runs, trip_cards, *, pre
         try:
             params = _query(request, (), ('conversation_id', 'before', 'accepts'))
             # W2-1 (#1727): only the v2 conversation timeline knows this declaration; any other value is refused.
-            if 'accepts' in params and (not multiple or calendar or params['accepts'] != FOLLOWUPS_VERSION):
+            if 'accepts' in params and (not multiple or calendar or params['accepts'] not in (FOLLOWUPS_VERSION, RICH_VERSION)):
                 raise ValueError('unsupported accepts')
             conversation = params.get('conversation_id')
             if conversation is not None and not LIO_CHAT_PATTERN.fullmatch(conversation):
@@ -223,7 +357,9 @@ def register_lio_dialogue_routes(app, boundary, resolve_runs, trip_cards, *, pre
         try:
             return await run_in_threadpool(_timeline, calendar_boundary if calendar else boundary, resolve_runs,
                                            calendar_cards if calendar else trip_cards, memory_cards, token,
-                                           conversation, before, multiple,calendar, 'accepts' in params)
+                                           conversation, before, multiple,calendar,
+                                           'rich' if params.get('accepts') == RICH_VERSION else 'accepts' in params,
+                                           trip_receipt_reader if not calendar else None)
         except Exception as exc:
             return _failure(message_failure(request, exc, False).status_code)
 

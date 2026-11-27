@@ -50,7 +50,11 @@ import XCTest
             XCTAssertTrue(suggestions.waitForExistence(timeout: 8))
             XCTAssertEqual(firstSuggestion.label, chinese ? "你偏好豪华酒店。" : "You prefer luxury hotels.")
             XCTAssertEqual(secondSuggestion.label, chinese ? "你喜欢参观博物馆。" : "You enjoy museums.")
-            XCTAssertTrue(app.staticTexts[chinese ? "你让 Lio 记住的内容会出现在这里。" : "Things you ask Lio to remember appear here."].waitForExistence(timeout: 10))
+            XCTAssertTrue(app.staticTexts[chinese ? "还没有记忆" : "No memories yet"].waitForExistence(timeout: 10))
+            // #2002: the empty page teaches how to make a memory, with sentences the service accepts.
+            XCTAssertTrue(app.staticTexts["lio.memory.empty.example.0"].exists)
+            XCTAssertTrue(app.staticTexts["lio.memory.empty.example.2"].exists)
+            XCTAssertTrue(app.staticTexts["lio.memory.usage-note"].exists)
             XCTAssertFalse(hotel.exists); XCTAssertFalse(museum.exists)
             try app.performAccessibilityAudit(for: .all)
             closeLioMemory(app)
@@ -76,7 +80,8 @@ import XCTest
             XCTAssertTrue(museum.waitForExistence(timeout: 10))
             XCTAssertEqual(museum.value as? String, chinese ? "你喜欢参观博物馆。" : "You enjoy museums.")
             XCTAssertEqual(hotel.frame.width, museum.frame.width, accuracy: 0.5)
-            XCTAssertEqual(hotel.frame.height, museum.frame.height, accuracy: 0.5)
+            // The fixture's slots are not ones the app groups, so both land under Other.
+            XCTAssertTrue(app.descendants(matching: .any)["lio.memory.group.other"].exists)
             // Audit the memory grid as before #1452 moved it into a sheet, then close it to reach the fixture controls.
             try app.performAccessibilityAudit(for: .all)
             let image = XCTAttachment(screenshot: app.screenshot())

@@ -55,6 +55,8 @@ enum LioEvent: Sendable {
     case savedItinerary(LioItinerary)
     /// Debug preview only (#1727): the answer's layout and buttons.
     case layout(LioTimelineWire.AnswerLayout, [LioTimelineWire.Followup], [LioTimelineWire.Chip])
+    /// Debug preview only (#1991): the places named in the answer.
+    case places([LioPlaceSpan])
     case finished
     case failed(LioFailure)
 }
@@ -93,6 +95,8 @@ struct LioTurn: Identifiable {
     var layout: LioTimelineWire.AnswerLayout?
     var followups: [LioTimelineWire.Followup] = []
     var chips: [LioTimelineWire.Chip] = []
+    /// #1991: words of `answer` the server named as places (empty unless the build asked for them).
+    var places: [LioPlaceSpan] = []
     var fromTimeline = false
     var readFailure: LioRequestProblem?
     var id: Data { question.id }
@@ -239,6 +243,8 @@ final class LioConversation {
                 turns[index].layout = layout
                 turns[index].followups = followups
                 turns[index].chips = chips
+            case .places(let places):
+                turns[index].places = places
             case .finished:
                 turns[index].status = .finished
                 return
@@ -350,6 +356,6 @@ final class LioConversation {
         return LioTurn(question: question, status: row.status, answer: row.answer,
                        sources: row.sources, itinerary: row.itinerary, memoryTags: row.memoryTags,
                        exploration: row.exploration, layout: row.layout, followups: row.followups, chips: row.chips,
-                       fromTimeline: true)
+                       places: row.places, fromTimeline: true)
     }
 }
