@@ -80,6 +80,9 @@ def memory_titles(repository, item_ids):
 
     `repository` is the account's own memory repository (its scope and role); nothing here crosses accounts. Any
     failure of one item leaves that item out; a failure to open the read raises, and the caller leaves `used` out.
+
+    It does not check `cj_memory_scope.active` (as `effective()` does): a deactivated account is stopped by the account
+    fence before any answer is produced, so an inactive scope never reaches this read.
     """
     ids = list(dict.fromkeys(i for i in item_ids if type(i) is str))[:MAX_USED]
     titles = {}
