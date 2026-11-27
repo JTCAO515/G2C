@@ -105,6 +105,28 @@ class LoggedShape(unittest.TestCase):
         self.assertIsNone(_duration_quote('玩2天，也就是 二天', 2))                       # same count in two spellings: ambiguous
         self.assertIsNone(_duration_quote('规划北京2天', 3))                              # does not match the claimed count
         self.assertIsNone(_duration_quote('规划北京行程', 2))
+        for dated in ('2天后出发，规划北京', '规划北京，两天之后出发', '3天前订的酒店', 'leave in 2 days, plan Beijing', 'in 2 days I fly',
+                      'booked 2 days ago', '2 days later we arrive', 'within 3 days'):   # dates, not a trip length
+            with self.subTest(dated=dated):
+                self.assertIsNone(_duration_quote(dated, 2) or _duration_quote(dated, 3))
+        self.assertEqual(_duration_quote('2天后出发，玩3天', 3), '3天')
+        self.assertEqual(_duration_quote('3-day trip to Beijing', 3), '3-day')
+        self.assertEqual(_duration_quote('规划北京三日游', 3), '三日')
+
+    def test_inputs_found_by_the_red_line_review_are_never_restored_as_a_trip_length(self):
+        from cj_api.lio_flow_intake import _duration_quote
+        for text, claimed in (('2天后出发去成都', 2), ('两天后出发去成都', 2), ('2日后出发去成都', 2), ('3天前订好了酒店', 3),
+                              ('leave in 3 days, plan Chengdu', 3), ('booked 3 days ago', 3), ('12月2日出发去成都', 2),
+                              ('去成都玩十二天', 2), ('去成都二十天', 10), ('去成都玩2.5天', 5), ('去成都玩2.5天', 2),
+                              ('过去3天很累，去成都', 3), ('前3天去成都', 3), ('最近3天', 3), ('一两天去成都', 2), ('一两天去成都', 1),
+                              ('第3天去成都', 3), ('每天2小时', 2), ('玩2天，再玩3天', 2), ('玩2天，再玩3天', 3), ('2号出发规划北京', 2),
+                              ('3天内到', 3)):
+            with self.subTest(text=text, claimed=claimed):
+                self.assertIsNone(_duration_quote(text, claimed))
+        for text, claimed, quote in (('规划北京三日游', 3, '三日'), ('规划北京3日行程', 3, '3日'), ('三天两晚成都', 3, '三天'),
+                                     ('2晚3天成都', 3, '3天'), ('规划成都两天', 2, '两天'), ('Spend ten days in Beijing', 10, 'ten days')):
+            with self.subTest(text=text, claimed=claimed):
+                self.assertEqual(_duration_quote(text, claimed), quote)
 
     def test_no_restoration_without_a_traveler_span_or_when_the_model_already_gave_a_source(self):
         text = '规划北京行程，去故宫'

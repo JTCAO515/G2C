@@ -379,7 +379,16 @@ def _drop_empty_field_sources(value):
     return dropped
 
 
-_DURATION_SPAN=re.compile(r'(?<![第每])(?<![0-9])(?P<n>'+NUMBER+r')\s*(?:天|日)(?![0-9])|\b(?P<m>'+NUMBER+r')(?:\s+|-)days?\b',re.I)
+# Only a count that is plainly a trip length (red-line review of #2112). Not a count: 「第一天」「每天」, a date (「2天后」「12月2日」
+# 「in 2 days」「3 days ago」), part of a longer number (「十二天」「2.5天」「一两天」), a past or leading stretch (「过去3天」「前3天」).
+# 「日」 counts only in 「三日游」「3日行程」 form, never as the day of a month.
+_ZH_NUMBER_CHARS='零〇一二两三四五六七八九十百'
+_DURATION_SPAN=re.compile(
+    r'(?<![第每月前近上头首末后0-9.．'+_ZH_NUMBER_CHARS+r'])(?<!过去)(?<!最近)(?<!接下来的)'
+    r'(?:(?P<n>'+NUMBER+r')\s*天(?![0-9.．]|之?后|以后|之?前|以前|内|以内)'
+    r'|(?P<d>'+NUMBER+r')\s*日(?=游|的?行程|的?旅行|的?旅游|之旅))'
+    r'|(?<![0-9.．])(?<!\bin )(?<!\bwithin )(?<!\bafter )(?<!\blast )(?<!\bpast )(?<!\bfirst )(?<!\bover )'
+    r'\b(?P<m>'+NUMBER+r')(?:\s+|-)days?\b(?![.．]?[0-9])(?!\s+(?:ago|later|from now|before|after|earlier))',re.I)
 
 
 def _duration_quote(text,days):
@@ -387,7 +396,7 @@ def _duration_quote(text,days):
     not counts. A message that states two different counts, or the same count in two different spans, is not recovered."""
     spans=[]
     for match in _DURATION_SPAN.finditer(text):
-        number=match['n']or match['m']
+        number=match['n']or match['d']or match['m']
         count=int(number)if number.isdecimal()else NUMBERS.get(number.casefold())
         if count is None:return None
         spans.append((count,match[0]))
