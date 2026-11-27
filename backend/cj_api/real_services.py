@@ -936,7 +936,14 @@ class RealTools:
             # W2-8 (#1738): read the task call sent before intake; any failure keeps the old prompt.
             from .lio_tasks import guidance_text,take_pending
             reader=take_pending(binding.run_id)
-            if reader is not None:system+=guidance_text(reader(),lio_locale)
+            if reader is not None:
+                guidance=reader()
+                system+=guidance_text(guidance,lio_locale)
+                # #1978: only the worker's answer path (`lio_layout`) gets the hint, so the chips can answer the one
+                # question this answer ends with; the exploration answer neither receives nor needs it.
+                if lio_layout and guidance is not None and guidance.question is not None:
+                    from cj_message.lio_followups import FollowupHint
+                    yield FollowupHint(guidance.question[1])
             # W2 #1826/#1859: reviewed attraction-booking and Guangzhou business facts, read by code;
             # any read failure leaves the prompt as it was.
             from .lio_fact_blocks import collect,fact_blocks_enabled,prompt_text

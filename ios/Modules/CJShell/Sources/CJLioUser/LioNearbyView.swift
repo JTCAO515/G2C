@@ -118,7 +118,7 @@ struct LioNearbyView: View {
                     get: { essential != nil },
                     set: { essentials in essential = essentials ? (essential ?? .atm) : nil })) {
                     Text(language.text("Eat & explore", "吃喝玩逛")).tag(false)
-                    Text(language.text("Essentials", "必需品")).tag(true)
+                    Text(LioNearbyPlace.convenienceTitle(language)).tag(true)
                 }
                 .pickerStyle(.segmented)
                 .accessibilityIdentifier("lio.nearby.group")
@@ -279,6 +279,7 @@ struct LioNearbyView: View {
         case .pharmacy: "cross.case.fill"
         case .toilet: "toilet.fill"
         case .luggage: "suitcase.fill"
+        case .community: "building.2.fill"
         case nil: "mappin"
         }
     }
@@ -460,6 +461,9 @@ extension LioNearbyService {
                 .init(id: "7", name: "示例行李寄存", address: "王府井大街", category: .luggage,
                       coordinate: .init(latitude: 39.9140, longitude: 116.4100, referenceSystem: .gcj02),
                       meters: 480, rating: nil, cost: nil, hours: nil, photo: nil),
+                .init(id: "8", name: "示例社区服务中心", address: "东华门街道", category: .community,
+                      coordinate: .init(latitude: 39.9135, longitude: 116.4090, referenceSystem: .gcj02),
+                      meters: 380, rating: nil, cost: nil, hours: "09:00-17:00", photo: nil),
             ]
             let matching = all.filter { $0.category.map(query.categories.contains) ?? false && ($0.meters ?? 0) <= query.radius }
             return query.nearest ? matching.sorted { ($0.meters ?? .max) < ($1.meters ?? .max) } : matching

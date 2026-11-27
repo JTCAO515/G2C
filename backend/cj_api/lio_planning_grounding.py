@@ -73,7 +73,9 @@ NONPERSISTENT_SAVE = re.compile(r'\bsav(?:e|ing)\s+(?:time|money)\b', re.I)
 SAVE_ASSENT = re.compile(
     r'(?:please\s+)?(?:save|store)\s+(?:it|this|(?:this|the|my)\s+(?:trip|plan|itinerary))'
     r'(?:\s+(?:to|in)\s+(?:my account|my trips|the trips tab))?'
-    r'|(?:请\s*)?(?:把(?:这份|这个|我的)?行程)?保存(?:这份行程|这个行程|行程|到行程页)?',
+    # "Save to my trips" is the label of the save chip (#1976); a typed "保存到行程" / "保存到 trip" says the same.
+    r'|(?:please\s+)?(?:save|store)\s+(?:it\s+|this\s+)?(?:to|in)\s+(?:my\s+|the\s+)?(?:trips?|itinerary)(?:\s+tab)?'
+    r'|(?:请\s*)?(?:把(?:这份|这个|我的)?行程)?保存(?:这份行程|这个行程|行程|到(?:我的)?\s*(?:行程|trips?)(?:页|里)?)?',
     re.I,
 )
 SAVE_JOIN = re.compile(r'\s+(?:and|then)\s+|[，,]?\s*(?:并|然后)', re.I)

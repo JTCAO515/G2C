@@ -161,8 +161,8 @@ enum LioNearbyWire {
 
     static func encodeSearch(_ query: LioNearbyQuery, requestID: UUID) throws -> Data {
         guard LioNearbyQuery.radii.contains(query.radius), !query.categories.isEmpty, query.categories.count <= 4,
-              // Luggage storage is searched by name and only on its own.
-              !query.categories.contains(.luggage) || query.categories.count == 1 else {
+              // Luggage storage and community services are searched by name and only on their own.
+              !query.categories.contains(where: \.isSearchedByName) || query.categories.count == 1 else {
             throw LioNearbyFailure.unavailable
         }
         let ordered = LioNearbyPlace.Category.allCases.filter(query.categories.contains).map(\.rawValue)
