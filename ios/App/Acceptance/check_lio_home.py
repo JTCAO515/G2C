@@ -94,6 +94,7 @@ def main():
         tests += "\n" + (HERE / "LioHotelUITests.swift").read_text()
         tests += "\n" + (HERE / "LioToolsLocalSupportUITests.swift").read_text()
         tests += "\n" + (HERE / "LioToolsPlaceToolsUITests.swift").read_text()
+        tests += "\n" + (HERE / "LioToolsMetroVisualUITests.swift").read_text()
         if "testDebugDialUsesTheConfiguredNumberWithoutCalling" in (args.case or []):
             number = os.environ.get("G2C_LOCAL_SUPPORT_TEST_PHONE", "")
             if len(number) != 11 or not number.isascii() or not number.isdecimal():
