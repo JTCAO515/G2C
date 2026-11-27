@@ -8,10 +8,11 @@ struct LioRoadbookEntryTests {
         #expect(!LioToolCatalog.visible(.init(taxi: true, currency: true, hotels: true, nearby: true)).contains(.roadbook))
     }
 
-    @Test func roadbookCardFollowsHotelsWhenEnabled() {
-        #expect(LioToolCatalog.visible(.init(roadbook: true)) == [.localSupport, .roadbook, .metro, .payment, .translation, .showCards])
-        let all = LioToolCatalog.visible(.init(taxi: true, currency: true, hotels: true, nearby: true, roadbook: true))
-        #expect(all == [.localSupport, .taxi, .hotels, .roadbook, .nearby, .currency, .metro, .payment, .translation, .showCards])
+    @Test func roadbookIsRouteOnlyAfterTheToolsCut() {
+        // #1980: the roadbook moved to the trip tab; its id still opens it by route, but it is no card.
+        #expect(LioToolCatalog.visible(.init(roadbook: true)).contains(.roadbook))
+        #expect(!LioToolCatalog.cards(.init(roadbook: true)).contains(.roadbook))
+        #expect(LioRoute(tool: .roadbook) != nil)
     }
 
     @Test func roadbookCardCopy() {

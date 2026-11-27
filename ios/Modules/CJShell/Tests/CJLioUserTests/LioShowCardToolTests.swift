@@ -6,7 +6,7 @@ import Testing
 /// "show it to someone" screen.
 struct LioShowCardToolTests {
     @Test func showCardsTakesThePhraseCardsSlotAndIsAlwaysShown() {
-        #expect(LioToolCatalog.visible(.init()).last == .showCards)
+        #expect(LioToolCatalog.cards(.init()).first == .showCards, "#1980: first card, in JT's order")
         #expect(!LioTool.allCases.map(\.rawValue).contains("phrase-cards"), "phrases are part of Show Cards now")
         #expect(LioTool.showCards.identifier == "lio.tools.show-cards")
         #expect(LioTool.showCards.name(.english) == "Show Cards")
