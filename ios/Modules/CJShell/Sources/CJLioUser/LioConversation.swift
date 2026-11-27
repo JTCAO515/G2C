@@ -107,6 +107,8 @@ struct LioTurn: Identifiable {
     var memoryNote: LioMemoryUsedNote?
     /// #2010: the saved memories this plan was based on (empty unless the build asked for rich answers).
     var memoryUsed: LioTimelineWire.MemoryUsed?
+    /// #1994: what the automatic save of this answer did.
+    var tripReceipt: LioTimelineWire.TripReceipt?
     var fromTimeline = false
     var readFailure: LioRequestProblem?
     var id: Data { question.id }
@@ -383,6 +385,6 @@ final class LioConversation {
                        sources: row.sources, itinerary: row.itinerary, memoryTags: row.memoryTags,
                        exploration: row.exploration, layout: row.layout, followups: row.followups, chips: row.chips,
                        places: row.places, memoryPrompt: row.memoryPrompt, cards: row.cards,
-                       memoryNote: row.memoryNote, memoryUsed: row.memoryUsed, fromTimeline: true)
+                       memoryNote: row.memoryNote, memoryUsed: row.memoryUsed, tripReceipt: row.tripReceipt, fromTimeline: true)
     }
 }

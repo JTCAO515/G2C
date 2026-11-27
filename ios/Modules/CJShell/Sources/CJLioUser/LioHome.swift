@@ -83,6 +83,9 @@ public struct LioHome<MenuContent: View>: View {
     private let answerLayoutOn = LioAnswerLayoutFeature.enabledInBuild
     /// #1991: places the server named in an answer are tappable words (`G2CAnswerRichEnabled`).
     private let answerRichOn = LioAnswerRichFeature.enabledInBuild
+    /// #1994: what the automatic save did under an answer, and the one-time notice at the account's first
+    /// (`G2CAutosaveNoticeEnabled`; nil unless `G2CAnswerRichEnabled` is on too).
+    @State private var autosaveNotice: LioAutosaveNotice?
     @State private var feedbackDetails: FeedbackDetails?
     /// #1748: the account's in-app location choice, when the build asks for it (`G2CLocationConsentEnabled`).
     @State private var locationConsent: LioLocationConsent?
@@ -224,6 +227,8 @@ public struct LioHome<MenuContent: View>: View {
             }, isCurrent: toolsSessionIsCurrent) : nil)
         _consent = State(initialValue: LioConsentFeature.enabledInBuild ? LioConsent(
             store: messageDirectory.map { LioConsentStore(directory: LioConsentStore.storageDirectory(inMessageDirectory: $0)) }) : nil)
+        _autosaveNotice = State(initialValue: LioAutosaveNoticeFeature.activeInBuild
+            ? LioAutosaveNotice(store: LioAutosaveNoticeStore(tripHome: tripHomeStore)) : nil)
         _savedPlans = State(initialValue: LioSavedPlansModel(store: plans))
         self.toolsSessionIsCurrent = toolsSessionIsCurrent
         self.answerFeedback = LioAnswerFeedbackFeature.enabledInBuild ? answerFeedback : nil
@@ -252,6 +257,11 @@ public struct LioHome<MenuContent: View>: View {
     private var tripPlan: LioTripPlan? {
         if chatID == chatLibrary?.currentID { return defaultTripPlan }
         return selectedChat?.trips?.plan
+    }
+
+    /// #1994: the one answer that carries the notice, in case more than one receipt is marked as the first.
+    private var autosaveNoticeTurnID: Data? {
+        conversation.turns.first { $0.tripReceipt?.isFirstSave == true }?.id
     }
 
     private var latestTripCard: LioTripCard? {
@@ -1362,6 +1372,12 @@ public struct LioHome<MenuContent: View>: View {
                     LioAnswerFollowups(actions: turn.followups, chips: turn.chips, open: { openFollowup($0) },
                                        ask: { chip in _ = sendQuestion(chip.label, chipTicket: chip.ticket) })
                 }
+            }
+            // #1994: the receipt of the automatic save, also under an answer that failed after the save committed.
+            if let receipt = turn.tripReceipt {
+                LioTripReceiptBlock(receipt: receipt, language: language,
+                                    showsNotice: turn.id == autosaveNoticeTurnID && autosaveNotice?.shows(for: receipt) == true,
+                                    gotIt: { autosaveNotice?.acknowledge() })
             }
             messageStatus(turn)
             if answerShown(turn) {

@@ -71,6 +71,7 @@ JT 要 58.1 的回答「和行程有关就自动进画布，可以撤销」，�
      - 撤回之后，这个对话绑定（`cj_trip_needs_current`）标成已撤回，Lio 不再往这一趟回写；之后的规划另建新的一趟。
      - 撤回不算删除用户数据。真正的删除仍然只走注销账号的清理。
      - 回执在 wire 上的形状见 `LIO-answer-rich.1`（`undo.kind = withdraw_created`，请求 `LIO-trip-undo.5`）。
+     - **T-1 的实现**（#1994 第三部分）：撤回标记是迁移 0061 里的 `cj_trip_withdrawal` 表，放在 structured.4 内容之外；撤回追加的版本 2 与版本 1 逐字节相同（basis `lio-withdraw.1`，属于撤销类，origin 照抄版本 1），和标记在同一事务写入。「已撤回」的行程只读：所有写入口（Lio 自动保存、手动编辑、NEEDS、scoped、`/v1/trip-actions`、各种撤销）都在唯一提交点 `_act_in_tx` 被拒绝，按版本冲突处理（Lio 回执读成 `not_saved`，reason `conflict`）；行程列表不再返回它，App 不显示；详情、历史版本、回执、origin、墓碑和审计照旧保留。Lio 下次保存时视同这个对话没有行程：对话的行程选择（`cj_trip_needs_current` 经 `planning_context`）把已撤回的行程读成「没有」，下一次规划另建新的一趟并把对话绑定改指向它，不按 conflict 处理。
 
 6. **审计链。**
    - 每次自动写入和撤销都留下：scope、action_id、消息（message_scope、run_id、message_id、sequence，沿用 `cj_trip_needs_basis` 和 `cj_message_receipt` 的关联）、candidate_hash、trip_id、committed_version、**提交时的数据库时间**（0061 新增，现在没有）、这一版的 origin 记录。
