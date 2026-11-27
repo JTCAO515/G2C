@@ -66,7 +66,7 @@ from scripts.m4_budget_transfer import seal,adopt
 from scripts import m4_budget_transfer as transfer
 
 
-@pytest.mark.parametrize('schema',[53,54,55])
+@pytest.mark.parametrize('schema',[53,54,55,59,60,61])
 def test_schema53_readiness_requires_its_completed_signed_anchor_and_keeps_quota_gate(tmp_path,monkeypatch,schema):
     from deploy.hk import demo_quota,entrypoint
     from contextlib import nullcontext
@@ -102,13 +102,29 @@ def test_schema53_readiness_requires_its_completed_signed_anchor_and_keeps_quota
             with pytest.raises(ValueError,match='exploration-origin cutover incomplete'):
                 entrypoint._runtime_gate(database,runtime)
         checkpoint.atomic(tmp_path/'demo-schema54.json',dict(state='COMPLETE',lineage='original-lineage'))
-    if schema==55:
+    if schema>=55:
         for marker in ({'state':'INTENT','lineage':'original-lineage'},
                        {'state':'COMPLETE','lineage':'foreign-lineage'}):
             checkpoint.atomic(tmp_path/'demo-schema55.json',marker)
             with pytest.raises(ValueError,match='native4 accounting cutover incomplete'):
                 entrypoint._runtime_gate(database,runtime)
         checkpoint.atomic(tmp_path/'demo-schema55.json',dict(state='COMPLETE',lineage='original-lineage'))
+    if schema>=59:
+        for marker in ({'state':'INTENT','lineage':'original-lineage'},
+                       {'state':'COMPLETE','lineage':'foreign-lineage'}):
+            checkpoint.atomic(tmp_path/'demo-schema59.json',marker)
+            with pytest.raises(ValueError,match='service and chip cutover incomplete'):
+                entrypoint._runtime_gate(database,runtime)
+        checkpoint.atomic(tmp_path/'demo-schema59.json',dict(state='COMPLETE',lineage='original-lineage',from_version=55))
+    for step in range(60,schema+1):
+        for marker in (None,{'state':'INTENT','lineage':'original-lineage'},
+                       {'state':'COMPLETE','lineage':'foreign-lineage'}):
+            path=tmp_path/f'demo-schema{step}.json'
+            if marker is None:path.unlink(missing_ok=True)
+            else:checkpoint.atomic(path,marker)
+            with pytest.raises((ValueError,OSError)):
+                entrypoint._runtime_gate(database,runtime)
+        checkpoint.atomic(tmp_path/f'demo-schema{step}.json',dict(state='COMPLETE',lineage='original-lineage'))
     entrypoint._runtime_gate(database,runtime)
     runtime.context.current.meter.budget=80
     with pytest.raises(ValueError,match='quota cutover incomplete'):
@@ -831,3 +847,18 @@ def test_hk_roles_before_0058_keep_exactly_two(monkeypatch):
     assert all(' LOGIN ' in r for r in roles)
     monkeypatch.setattr(migrate,'load',lambda:[m for m in full if m['version']!=11])  # a committed role missing
     with pytest.raises(ValueError,match='exact_committed_application_roles_required'):schema.application_roles()
+
+
+def test_demo_schema_single_step_commands_after_59():
+    from deploy.hk import demo_schema
+    assert demo_schema.FIRST_SINGLE==60
+    assert demo_schema.single_command(['--target','60'])==('target',60)
+    assert demo_schema.single_command(['--resume-schema61'])==('resume-schema',61)
+    assert demo_schema.single_command(['--check-rollback','60'])==('check-rollback',60)
+    for arguments in (['--target','59'],['--target','060'],['--target','60','x'],['--resume-schema','60'],
+                      ['--resume-schema59'],['--check-rollback','59'],['--check-rollback=60'],['--target=60'],[]):
+        assert demo_schema.single_command(arguments) is None
+    assert all(demo_schema._supported(t) for t in (49,55,59,60,61)) and not any(
+        demo_schema._supported(t) for t in (48,56,57,58))
+    assert demo_schema._previous(59)==list(range(1,56)) and demo_schema._previous(61)==list(range(1,61))
+    with pytest.raises(ValueError):demo_schema.rollback_tables(59)
