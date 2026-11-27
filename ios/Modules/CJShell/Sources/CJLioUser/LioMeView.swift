@@ -22,6 +22,7 @@ struct LioMeView<Menu: View>: View {
     let menu: Menu
     @State private var showingMemory = false
     @Environment(\.lioLocationConsent) private var locationConsent
+    @Environment(\.lioConsent) private var consent
 
     var body: some View {
         NavigationStack {
@@ -51,6 +52,17 @@ struct LioMeView<Menu: View>: View {
                             detail: language.text("Name, home country, travel style", "称呼、常住国家、出行偏好"))
                     }
                     .accessibilityIdentifier("lio.me.profile")
+                    // #1747: AI processing, on or off.
+                    if let consent {
+                        NavigationLink {
+                            LioPrivacyView(language: language, consent: consent)
+                        } label: {
+                            row(LioConsentCopy.privacyTitle(language), symbol: "lock.shield",
+                                detail: consent.aiProcessing ? language.text("AI processing is on", "AI 处理已开启")
+                                                             : language.text("AI processing is off", "AI 处理已关闭"))
+                        }
+                        .accessibilityIdentifier("lio.me.privacy")
+                    }
                     // #1748: where the in-app location choice is turned off (or on again).
                     if let locationConsent {
                         NavigationLink {

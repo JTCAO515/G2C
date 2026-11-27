@@ -301,3 +301,42 @@ def test_a_failing_card_build_never_fails_the_answer():
     with patch('cj_message.lio_cards.build', side_effect=RuntimeError('boom')):
         state = _card_run('北京地铁怎么坐', True)
     assert not any(e.startswith('lio_cards:') for e in state.effects)
+
+
+# --- #1999 (M-1): the consent prompt marker -----------------------------------------------------------------
+
+class PromptMemory:
+    def __init__(self, marker=None, fail=False):
+        self.marker, self.fail, self.asked = marker, fail, []
+
+    def consent_prompt(self, binding, question):
+        self.asked.append(question)
+        if self.fail:
+            raise RuntimeError('consent unreadable')
+        return self.marker
+
+    def extract(self, worker, binding):
+        return None
+
+
+def _prompt_run(memory, layout='split', question='我不喜欢辣的'):
+    runs = Service(MemoryRepository(), lambda _: True)
+    worker = RunWorker(scope='scope', messages=Messages(question, TICKETS), runs=runs, provider=None,
+                       tools=Tools(layout, '好的。\n\n推荐这几家。'), drafts=Drafts(), lio_memory=memory,
+                       lio_original=lambda binding: LioOriginal('zh', None))
+    outcome, = worker.process()
+    assert outcome.status == 'completed'
+    return runs.snapshot(Binding('scope', 'chat', 'g', 'm', 'r', 1))
+
+
+def test_the_prompt_marker_is_written_after_the_followups_for_a_split_answer():
+    memory = PromptMemory('lio_memory_prompt:consent')
+    state = _prompt_run(memory)
+    assert state.effects[-1] == 'lio_memory_prompt:consent' and state.effects[-2].startswith(FOLLOWUPS_EFFECT)
+    assert memory.asked == ['我不喜欢辣的']
+
+
+def test_no_marker_for_a_single_answer_nothing_to_say_or_a_failing_reader():
+    assert not any(e.startswith('lio_memory_prompt') for e in _prompt_run(PromptMemory('lio_memory_prompt:consent'), layout='single').effects)
+    assert not any(e.startswith('lio_memory_prompt') for e in _prompt_run(PromptMemory(None)).effects)
+    assert not any(e.startswith('lio_memory_prompt') for e in _prompt_run(PromptMemory(fail=True)).effects)   # the answer still completes

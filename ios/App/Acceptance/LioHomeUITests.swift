@@ -2608,6 +2608,86 @@ import CryptoKit
         }
     }
 
+    /// #1747: with `G2CConsentEnabled` (Debug: `--lio-consent-preview`) the first page comes before anything else: three
+    /// answers, none preselected; declining stays on the page and offers the policy and Leave; "keep AI processing off"
+    /// goes in with the AI features stopped (the notice shows, Send is disabled); Me → Privacy turns it back on.
+    /// Without the flag no page appears.
+    func testFirstLaunchConsentAndTheAIProcessingChoiceInBothLanguages() throws {
+        continueAfterFailure = false
+        for language in ["en", "zh-Hans"] {
+            let en = language == "en"
+            let launch = { (flag: Bool) -> XCUIApplication in
+                let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
+                app.launchArguments = ["--lio-preview", "-cj.ui.language.v1", language] + (flag ? ["--lio-consent-preview"] : [])
+                app.launch()
+                return app
+            }
+            // Flag off: the home screen as before, no page, nothing withheld.
+            let plain = launch(false)
+            XCTAssertTrue(plain.buttons["lio.menu"].waitForExistence(timeout: 12))
+            XCTAssertFalse(plain.staticTexts["lio.consent.title"].exists)
+            XCTAssertFalse(plain.staticTexts["lio.consent.ai-off"].exists)
+            plain.terminate()
+
+            let app = launch(true)
+            defer { app.terminate() }
+            let title = app.staticTexts["lio.consent.title"]
+            XCTAssertTrue(title.waitForExistence(timeout: 12), app.debugDescription)
+            XCTAssertEqual(title.label, en ? "How your data is handled" : "先看看你的数据怎么处理")
+            for index in 0..<6 { XCTAssertTrue(app.descendants(matching: .any)["lio.consent.item.\(index)"].exists) }
+            let agreeAI = app.buttons["lio.consent.agree-ai"], agree = app.buttons["lio.consent.agree"], decline = app.buttons["lio.consent.decline"]
+            for _ in 0..<6 where !decline.isHittable { app.swipeUp() }
+            XCTAssertTrue(agreeAI.exists && agree.exists && decline.exists)
+            XCTAssertEqual(agreeAI.label, en ? "Agree and turn on AI processing" : "同意，并开启 AI 处理")
+            XCTAssertEqual(agree.label, en ? "Agree, but keep AI processing off" : "同意，暂不开启 AI 处理")
+            let shot = XCTAttachment(screenshot: app.screenshot()); shot.name = "consent-\(language)"; shot.lifetime = .keepAlways; add(shot)
+
+            // Declining stays on the page.
+            decline.tap()
+            let declined = app.staticTexts["lio.consent.declined"]
+            XCTAssertTrue(declined.waitForExistence(timeout: 4))
+            for _ in 0..<6 where !app.buttons["lio.consent.leave"].isHittable { app.swipeUp() }
+            XCTAssertTrue(app.buttons["lio.consent.policy"].exists && app.buttons["lio.consent.leave"].exists)
+            XCTAssertTrue(title.exists, "still on the consent page")
+            app.buttons["lio.consent.back"].tap()
+            for _ in 0..<6 where !agree.isHittable { app.swipeUp() }
+
+            // Agree with AI processing off: in, with the AI features stopped.
+            agree.tap()
+            XCTAssertTrue(app.buttons["lio.menu"].waitForExistence(timeout: 8))
+            XCTAssertFalse(title.exists)
+            let off = app.descendants(matching: .any)["lio.consent.ai-off"]
+            XCTAssertTrue(off.waitForExistence(timeout: 4), "the notice where chat stopped")
+            XCTAssertEqual(off.label, en ? "AI processing is off. You can turn it back on under Me → Privacy."
+                                         : "已关闭 AI 处理，可在「我的」→「隐私」里重新开启。")
+            XCTAssertFalse(app.buttons["lio.send"].isEnabled, "Send is stopped")
+
+            // Me → Privacy turns it on again, after one confirmation.
+            app.tabBars.buttons[en ? "Me" : "我的"].tap()
+            let privacy = app.buttons["lio.me.privacy"]
+            XCTAssertTrue(privacy.waitForExistence(timeout: 6))
+            privacy.tap()
+            let toggle = app.buttons["lio.privacy.ai-toggle"]
+            XCTAssertTrue(toggle.waitForExistence(timeout: 6))
+            XCTAssertEqual(toggle.label, en ? "Turn on" : "开启")
+            toggle.tap()
+            let alert = app.alerts.firstMatch
+            XCTAssertTrue(alert.waitForExistence(timeout: 4))
+            XCTAssertEqual(alert.label, en ? "Once on, your chats and translation content are sent to Alibaba Cloud Model Studio in Beijing, mainland China, for processing."
+                                           : "开启后，你的对话和翻译内容会发到中国大陆北京的阿里云百炼处理。")
+            alert.buttons[en ? "Turn on" : "开启"].tap()
+            expectation(for: NSPredicate(format: "label == %@", en ? "Turn off AI processing" : "关闭 AI 处理"), evaluatedWith: toggle)
+            waitForExpectations(timeout: 6)
+            toggle.tap()
+            XCTAssertTrue(app.alerts.firstMatch.waitForExistence(timeout: 4))
+            app.alerts.firstMatch.buttons[en ? "Cancel" : "取消"].tap()
+            XCTAssertEqual(toggle.label, en ? "Turn off AI processing" : "关闭 AI 处理", "cancel keeps it on")
+            app.tabBars.buttons[en ? "Chat" : "聊天"].tap()
+            XCTAssertTrue(app.buttons["lio.menu"].waitForExistence(timeout: 6))
+            XCTAssertFalse(app.descendants(matching: .any)["lio.consent.ai-off"].exists, "the notice is gone")
+        }
+    }
+
     /// #1727: with `G2CAnswerLayoutEnabled` (Debug: `--lio-answer-layout-preview`, a fixture that sends nothing) the
     /// answer is two bubbles cut at the first blank line, with the server's buttons under them; a button opens its tool.
     /// Without the flag the same answer is one bubble and no buttons.
