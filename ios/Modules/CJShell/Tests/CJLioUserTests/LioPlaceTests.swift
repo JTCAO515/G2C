@@ -108,8 +108,12 @@ struct LioPlaceTests {
     // MARK: The bundled samples
 
     #if DEBUG
-    @Test func debugBuildsReadTheSamples() {
-        #expect(LioPlaceRepository.bundled.places == LioPlaceRepository.samples.places)
+    @Test func debugBuildsReadTheSamples() throws {
+        // `bundled` also honours `--places-dev-pack`; the samples are what it shows when no pack is asked for.
+        let data = try #require(LioPlaceRepository.resource(LioPlaceRepository.sampleResource))
+        let repository = LioPlaceRepository.debugRepository(library: nil, samples: data, arguments: ["app"], environment: [:])
+        #expect(repository.places == LioPlaceRepository.samples.places)
+        #expect(repository.places.allSatisfy { !repository.isDevelopmentData($0) })
     }
     #else
     @Test func releaseBuildsDoNotReadTheSamples() {

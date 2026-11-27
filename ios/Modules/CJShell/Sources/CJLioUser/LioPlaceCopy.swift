@@ -34,6 +34,9 @@ enum LioPlaceCopy: String, CaseIterable, Sendable {
     case terminalsLabel = "place.terminals.label"
     case tipsLabel = "place.tips.label"
     case coordinateMissing = "place.directions.no_coordinate"
+    /// Debug builds only, for places read from the development pack (`LioPlacesDevPack`).
+    case devData = "place.dev_data.label"
+    case devDataNote = "place.dev_data.note"
 
     /// Wording that has not been through the copy review.
     var isPlaceholder: Bool {
@@ -73,6 +76,8 @@ enum LioPlaceCopy: String, CaseIterable, Sendable {
         case .terminalsLabel: ("Terminals", "航站楼")
         case .tipsLabel: ("Tips for travellers", "出行提示")
         case .coordinateMissing: ("Location not confirmed yet", "位置尚未确认")
+        case .devData: ("Dev data", "开发数据")
+        case .devDataNote: ("Dev data: unreviewed, for development only. Not shown to travelers.", "开发数据：未审核，仅供开发使用，不会展示给旅客。")
         }
     }
 
