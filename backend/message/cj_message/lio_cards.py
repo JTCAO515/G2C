@@ -150,7 +150,8 @@ def card_entry(card, library=None):
         parameters = opened['parameters']
         data = card.get('data')
         if kind == 'taxi':
-            if checked_parameters('taxi', parameters) is None or not {'destination', 'lat', 'lng'} <= set(parameters) or data is not None:
+            if (checked_parameters('taxi', parameters) != parameters or not {'destination', 'lat', 'lng'} <= set(parameters)
+                    or data is not None):   # equal after cleaning: a stored value with stray spaces is a damaged record
                 return None
         elif kind == 'metro':
             if parameters != {} or type(data) is not dict or set(data) != {'city'} or not _city_ok(data['city'], METRO_CITIES):

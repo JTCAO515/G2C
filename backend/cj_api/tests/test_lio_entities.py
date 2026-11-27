@@ -64,6 +64,17 @@ class Linker(unittest.TestCase):
         for answer in ('看[故宫的介绍](https://example.com/故宫)吧', '用 `故宫` 这个词', '```\n故宫\n```', '见 https://example.com/jingshan景山公园 页面'):
             self.assertEqual(items(answer), [], answer)
 
+    def test_a_long_run_of_unclosed_brackets_is_linear_and_an_overlong_answer_is_not_scanned(self):
+        import time
+        for filler in ('[', '[a', '```', '`x'):
+            answer = filler * (ent.MAX_LINK_SCALARS // len(filler)) + '故宫'
+            started = time.monotonic()
+            items(answer)
+            self.assertLess(time.monotonic() - started, 0.4, repr(filler))   # before the bound: about 0.9 s for '['
+        self.assertEqual(items('故宫' + '。' * ent.MAX_LINK_SCALARS), [])                       # over the linker's own limit
+        self.assertEqual(len(items('故宫' + '。' * (ent.MAX_LINK_SCALARS - 3))), 1)             # just under it
+        self.assertEqual(items('看[' + '故宫' * 100 + '](https://example.com/x)吧'), [])         # a long link text is still skipped
+
     def test_a_stop_suffix_means_a_different_place(self):
         for answer in ('王府井站很近。', '故宫路很堵。', '天坛区域不错', 'Wangfujing Station is near.', '天坛机场不存在'):
             self.assertEqual(items(answer), [], answer)
