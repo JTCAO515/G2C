@@ -351,6 +351,11 @@ class Runtime:
                 candidates=lio_candidates(database,boundary,self.demo_subjects,self.typed_memory)
                 return LioMemoryCards(candidates.collection,candidates.current)
 
+        lio_undo_sources=None
+        if self.demo_subjects:
+            # #1994: the v4 undo routes for autosave receipts, only while CJ_LIO_TRIP_AUTOSAVE is on.
+            from cj_api.lio_trip_autosave import undo_sources
+            lio_undo_sources=undo_sources(database,self.typed_memory)
         app=create_local_app(conninfo_path=None,auth_dir=self.auth,database=database,run_context=self.context,
             confirmation_signer=signer,history_configuration=history,
             account_admission=True,needs_profile=needs_profile,message_subjects=message_subjects,
@@ -359,7 +364,8 @@ class Runtime:
             lio_dialogue_subjects=self.demo_subjects or None,lio_memory_factory=lio_memory_factory,
             lio_calendar_subjects=self.demo_subjects or None,
             lio_exploration_subjects=self.demo_subjects or None,
-            lio_profile_epoch_reader=lio_profile_epoch_reader)
+            lio_profile_epoch_reader=lio_profile_epoch_reader,
+            lio_rich_undo_sources=lio_undo_sources)
         if self.typed_memory is not None:
             from cj_memory.typed_api import register_typed_routes
             typed_memory=self.typed_memory

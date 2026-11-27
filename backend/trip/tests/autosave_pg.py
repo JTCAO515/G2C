@@ -330,6 +330,69 @@ def main(config, conninfo):
     refused('user_item_changed', lambda: commit(LIO_PLAN, document(retext('item-1', 'x')), trip='trip-old'))
     print('PASS Trip points without an origin record (before 0061) are user; Lio can only add')
 
+    # --- trip_receipt projection (LIO-answer-rich.1, part 2): table truth, undo state at read -----------
+    from cj_api.lio_trip_receipt import project, read, undo_action_id
+    from cj_api.lio_trip_routes import _rich_target
+    from cj_message.lio_trip_receipt import effect
+    from cj_trip.lio_history import edit_action_id, plan_action_id
+    sys.path.insert(0, str(ROOT / 'contracts/message'))
+    import check_lio_answer_rich as rich_check
+
+    def receipt_of(run, *effects, undo_route=True):
+        with repo.transaction() as cur:
+            result = project(repo, cur, run, list(effects), undo_route=undo_route)
+        if result is not None:
+            rich_check.check({'version': 'LIO-answer-rich.1', 'trip_receipt': result.wire})
+        return result
+
+    def saved(run, kind=plan_action_id):
+        return effect(kind(run), 'unknown'), effect(kind(run), 'saved')
+
+    repo.autosave = True
+    created = act(*publish(LIO_PLAN, document(), trip='trip-rcpt'), plan_action_id('r1'))
+    assert created.committed_version == 1 and receipt_of('r1', *saved('r1')) is None   # nothing to undo: no receipt
+    v1 = repo.detail('trip-rcpt')
+    second = act(*publish(LIO_PLAN, document(add('item-r2')), trip='trip-rcpt'), plan_action_id('r2'))
+    v2 = repo.detail('trip-rcpt')
+    got = receipt_of('r2', *saved('r2'))
+    assert got.first is False and got.wire['status'] == 'saved' and got.wire['committed_version'] == 2
+    undo = got.wire['undo']
+    assert (undo['state'], undo['action_id']) == ('available', undo_action_id(plan_action_id('r2')))
+    assert undo['target'] == _rich_target(v2, v1), undo   # the same seven fields the v4 undo route checks
+    assert undo['until'].endswith('+00:00') and len(undo['until']) == 29
+    assert receipt_of('r2', effect(plan_action_id('r2'), 'unknown')).wire == got.wire       # intent + row = saved
+    assert read(database, owner, 'r2', list(saved('r2')), undo_route=True).wire == got.wire  # host read path
+    assert receipt_of('r2', *saved('r2'), undo_route=False).wire['undo'] == {'state': 'unavailable'}
+    assert receipt_of('r9', *saved('r9')).wire == {'status': 'unknown', 'action_id': plan_action_id('r9')}  # no row
+    assert receipt_of('r9', effect(plan_action_id('r9'), 'unknown')).wire['status'] == 'unknown'
+    assert receipt_of('r3', *saved('r2')) is None             # an effect naming another RUN's write is dropped
+    declined = receipt_of('r4', effect(edit_action_id('r4'), 'unknown'),
+                         effect(edit_action_id('r4'), 'not_saved', 'protected'))
+    assert declined.wire == {'status': 'not_saved', 'action_id': edit_action_id('r4'), 'reason': 'protected'}
+    backdate(plan_action_id('r2'), 25)
+    late = receipt_of('r2', *saved('r2')).wire['undo']
+    assert late == {'state': 'expired', 'until': late['until']} and late['until'] < undo['until']
+    backdate(plan_action_id('r2'), 1)
+    act(*publish(USER_EDIT, document(chain(add('item-r2'), retext('item-1', 'mine'))), trip='trip-rcpt'), 'user-r')
+    assert receipt_of('r2', *saved('r2')).wire['undo']['state'] == 'superseded'
+    act(*publish(LIO_PLAN, document(chain(add('item-r2'), retext('item-1', 'mine'), add('item-r5'))),
+                 trip='trip-rcpt'), plan_action_id('r5'))
+    v4 = repo.detail('trip-rcpt')
+    assert receipt_of('r5', *saved('r5')).wire['undo']['state'] == 'available'
+    with owner_db() as conn:
+        restore_bytes = bytes(conn.execute('SELECT p.content FROM cj_trip_receipt r JOIN cj_trip_proposal p '
+                                           'USING(scope,proposal_id) WHERE r.scope=%s AND r.action_id=%s',
+                                           (scope, 'user-r')).fetchone()[0])
+    restore = Proposal('undo-r5', 'trip-rcpt', v4.version, LIO_UNDO, int(time.time()) + 3600, restore_bytes)
+    act(restore, repo.publish(restore), undo_action_id(plan_action_id('r5')))
+    assert receipt_of('r5', *saved('r5')).wire['undo']['state'] == 'undone'
+    with owner_db() as conn:
+        conn.execute("SET session_replication_role=replica")   # test-only: the Trip is gone
+        conn.execute('DELETE FROM cj_trip_record WHERE scope=%s AND trip_id=%s', (scope, 'trip-rcpt'))
+    assert receipt_of('r5', *saved('r5')).wire['undo'] == {'state': 'unavailable'}
+    print('PASS trip_receipt: saved only from the receipt table, undo available/expired/superseded/undone/unavailable '
+          'at read with the v4 route target; first save of a new Trip sends none; contract checker passes')
+
     # --- down refused while rows exist ---------------------------------------------------------------
     with owner_db() as conn:
         conn.autocommit = True

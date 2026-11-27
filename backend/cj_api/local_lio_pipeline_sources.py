@@ -85,6 +85,8 @@ def _capture_sources(host,worker,binding,view,profiles,day_count,start_date):
     original=host.legacy.calendar.context_publisher
     repository=TripRepository(original.repository.connect,original.repository.scope,
         host.legacy.calendar.confirmation,structured=True,calendar=True,rich=True)
+    from cj_draft.lio_plan import lio_autosave
+    repository.autosave=lio_autosave(original)
     calendar=RichCalendarSource(host.database,worker.message_context,day_count=day_count,
         start_date=start_date,references=view.references)
     providers=RegisteredProviderSources(worker,binding)
