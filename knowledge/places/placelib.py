@@ -232,9 +232,12 @@ def terminals(value, where):
         return
     _require(type(value) is list, f'{where}: a list')
     for i, item in enumerate(value):
-        _object(item, ('name', 'note_zh'), f'{where}[{i}]')
+        # `note_en` is optional (C7 drafts have only the Chinese note; the App reads it when it is there)
+        _object(item, ('name', 'note_zh', 'note_en') if type(item) is dict and 'note_en' in item else ('name', 'note_zh'), f'{where}[{i}]')
         text(item['name'], f'{where}[{i}].name')
         text(item['note_zh'], f'{where}[{i}].note_zh', nullable=True)
+        if 'note_en' in item:
+            text(item['note_en'], f'{where}[{i}].note_en', nullable=True)
 
 
 def location(value, where, city):
