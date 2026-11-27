@@ -313,3 +313,13 @@ def test_side_files_in_the_draft_folders_are_not_drafts(tmp_path):
     (box / 'C1' / 'notes.json').write_text('{"not": "a list of places"}', encoding='utf-8')
     by_city, rejected, _ = importer.process(box, TODAY, library_dir=tmp_path / 'none')
     assert rejected == [] and [c['id'] for c in by_city['beijing']] == ['pl_bj_gugong']
+
+
+def test_a_clean_rerun_removes_the_old_rejected_report(tmp_path):
+    out, review = tmp_path / 'out', tmp_path / 'review'
+    bad = importer.process(inbox(tmp_path, C1__beijing=[C1, second(lat=3)]), TODAY, library_dir=tmp_path / 'none')
+    importer.write_outputs(*bad, TODAY, out, review, 25)
+    assert (out / f'rejected-{TODAY}.json').is_file()
+    good = importer.process(inbox(tmp_path, C1__beijing=[C1, second()]), TODAY, library_dir=tmp_path / 'none')
+    importer.write_outputs(*good, TODAY, out, review, 25)
+    assert not (out / f'rejected-{TODAY}.json').exists()
