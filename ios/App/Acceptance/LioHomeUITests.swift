@@ -1934,19 +1934,13 @@ import CryptoKit
                 let second = app.buttons["lio.memory.card.city-walks"]
                 XCTAssertTrue(first.waitForExistence(timeout: 8), app.debugDescription)
                 XCTAssertTrue(second.exists)
+                // #2002: memories are full-width rows under their group headings, never a square grid.
                 XCTAssertEqual(first.frame.width, second.frame.width, accuracy: 1)
-                XCTAssertEqual(first.frame.height, second.frame.height, accuracy: 1)
-                XCTAssertEqual(first.frame.height, first.frame.width, accuracy: 1)
                 for card in app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "lio.memory.card.")).allElementsBoundByIndex {
-                    XCTAssertEqual(card.frame.height, first.frame.height, accuracy: 1)
                     XCTAssertEqual(card.frame.width, first.frame.width, accuracy: 1)
+                    XCTAssertGreaterThanOrEqual(card.frame.height, 44)
                 }
-                if style == "largest" {
-                    XCTAssertGreaterThan(second.frame.minY, first.frame.maxY)
-                } else {
-                    XCTAssertEqual(first.frame.minY, second.frame.minY, accuracy: 2)
-                    XCTAssertGreaterThan(second.frame.minX, first.frame.maxX)
-                }
+                XCTAssertGreaterThan(second.frame.minY, first.frame.minY)
                 try app.performAccessibilityAudit(for: .all) { issue in
                     let detail = XCTAttachment(string: String(describing: issue.auditType) + "\n" +
                                                (issue.element?.debugDescription ?? "No element supplied by audit") + "\n" + app.debugDescription)
@@ -2711,7 +2705,7 @@ import CryptoKit
             XCTAssertTrue(app.links[en ? "Jingshan Park" : "景山公园"].exists, "every place of the first bubble")
             XCTAssertTrue(app.links[en ? "Temple of Heaven" : "天坛公园"].exists, "and the second bubble's")
             palace.tap()
-            let card = app.otherElements["lio.place.bubble"]
+            let card = app.staticTexts["lio.place.bubble.name"]
             XCTAssertTrue(card.waitForExistence(timeout: 6), app.debugDescription)
             XCTAssertEqual(app.staticTexts["lio.place.bubble.name"].label, en ? "The Palace Museum" : "故宫博物院")
             XCTAssertEqual(app.staticTexts["lio.place.bubble.name.other"].label, en ? "故宫博物院" : "The Palace Museum")

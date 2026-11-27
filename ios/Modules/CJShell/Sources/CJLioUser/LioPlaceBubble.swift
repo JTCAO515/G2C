@@ -56,11 +56,14 @@ import UIKit
 /// names, one line about the place, an opening or booking hint, up to five buttons (add to trip, taxi, show the
 /// driver, directions, booking: the place page's own, from `LioPlaceActions`) and "See more" for the place page. A
 /// button appears only when it can work for that place; there are no greyed-out buttons. Identifiers are
-/// `lio.place.bubble` and `lio.place.bubble.add|taxi|driver|navigate|book|more`.
+/// `lio.place.bubble.name|name.other|intro|hint` and `lio.place.bubble.add|taxi|driver|navigate|book|more` (none on
+/// the card itself: an identifier on a container would replace its children's).
 struct LioPlaceBubbleCard: View {
     let place: LioPlace
     let language: LioLanguage
     let actions: LioPlaceActions
+    /// The place comes from the unreviewed development pack (Debug builds only): the card says so, as the place page does.
+    var developmentData = false
     /// Whether "Add to trip" can work here; `addResult` is what the last tap did.
     let canAdd: Bool
     let addResult: LioPlaceTripAdd?
@@ -72,7 +75,7 @@ struct LioPlaceBubbleCard: View {
     @ScaledMetric(relativeTo: .body) private var pictureSize = 56.0
 
     var body: some View {
-        let page = LioPlacePresentation(place, language: language)
+        let page = LioPlacePresentation(place, language: language, developmentData: developmentData)
         VStack(alignment: .leading, spacing: LioTheme.Spacing.sm) {
             HStack(alignment: .top, spacing: LioTheme.Spacing.sm) {
                 picture(page)
@@ -88,6 +91,11 @@ struct LioPlaceBubbleCard: View {
                 }
                 .fixedSize(horizontal: false, vertical: true)
                 Spacer(minLength: 0)
+            }
+            if let label = page.developmentLabel, let note = page.developmentNote {
+                Label(label, systemImage: "hammer.fill").font(.caption.weight(.semibold)).foregroundStyle(LioTheme.vermilion)
+                    .accessibilityLabel(note)
+                    .accessibilityIdentifier("lio.place.bubble.dev")
             }
             if let line = page.oneLiner {
                 Text(line).font(.subheadline).fixedSize(horizontal: false, vertical: true)
@@ -117,7 +125,6 @@ struct LioPlaceBubbleCard: View {
         .tint(LioTheme.vermilion)
         .padding(LioTheme.Spacing.md)
         .frame(width: 320, alignment: .leading)
-        .accessibilityIdentifier("lio.place.bubble")
     }
 
     /// No picture is shown without a licence record (as on the place page): a plain slot with the place's symbol.
@@ -135,7 +142,7 @@ struct LioPlaceBubbleCard: View {
             VStack(spacing: LioTheme.Spacing.xs) {
                 if canAdd { addButton }
                 if !actions.actions.isEmpty {
-                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 136), spacing: LioTheme.Spacing.xs)],
+                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 128), spacing: LioTheme.Spacing.xs)],
                               spacing: LioTheme.Spacing.xs) {
                         if let route = actions.taxi {
                             Button { open(route) } label: {
@@ -162,7 +169,7 @@ struct LioPlaceBubbleCard: View {
                             .accessibilityIdentifier("lio.place.bubble.book")
                         }
                     }
-                    .buttonStyle(LioSecondaryButtonStyle())
+                    .buttonStyle(LioPlaceBubbleButtonStyle())
                 }
             }
         }
@@ -188,6 +195,31 @@ struct LioPlaceBubbleCard: View {
         case .alreadyThere: LioPlaceBubbleCopy.alreadyAdded.text(language)
         case .failed, nil: LioPlaceCopy.addToTrip.text(language)
         }
+    }
+}
+
+/// The card's small buttons: the secondary look with less padding and a smaller type, so a label such as "Get directions"
+/// wraps between words (never inside one) in the card's width, and at least 44 pt high.
+struct LioPlaceBubbleButtonStyle: ButtonStyle {
+    @Environment(\.isEnabled) private var isEnabled
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(.subheadline.weight(.semibold))
+            .multilineTextAlignment(.center)
+            .foregroundStyle(isEnabled ? LioTheme.ink : LioTheme.inkSecondary)
+            .fixedSize(horizontal: false, vertical: true)
+            .padding(.horizontal, LioTheme.Spacing.xs)
+            .padding(.vertical, LioTheme.Spacing.xs)
+            .frame(maxWidth: .infinity, minHeight: 44)
+            .background(configuration.isPressed ? LioTheme.surfaceSunken : LioTheme.surface,
+                        in: RoundedRectangle(cornerRadius: LioTheme.Radius.small))
+            .overlay {
+                RoundedRectangle(cornerRadius: LioTheme.Radius.small)
+                    .stroke(LioTheme.hairline, lineWidth: LioTheme.outlineWidth)
+                    .allowsHitTesting(false)
+            }
+            .contentShape(RoundedRectangle(cornerRadius: LioTheme.Radius.small))
     }
 }
 
@@ -286,7 +318,8 @@ struct LioPlaceMentionHost<Content: View>: View {
     private func bubble(_ place: LioPlace) -> some View {
         let actions = placeActions(place)
         let card = LioPlaceBubbleCard(
-            place: place, language: language, actions: actions, canAdd: addToTrip != nil, addResult: addResult,
+            place: place, language: language, actions: actions, developmentData: repository.isDevelopmentData(place),
+            canAdd: addToTrip != nil, addResult: addResult,
             add: { addResult = addToTrip?(place) ?? .failed },
             open: { route in if router?.open(route) == true { selection = nil } },
             showDriver: {
@@ -309,7 +342,8 @@ struct LioPlaceMentionHost<Content: View>: View {
         context.taxiEntry = taxiEntry
         let visible = Set(LioToolCatalog.visible(context.availability()))
         let routable = router?.toolsShown == true
-        return LioPlacePresentation(place, language: language).actions { routable && visible.contains($0) }
+        return LioPlacePresentation(place, language: language, developmentData: repository.isDevelopmentData(place))
+            .actions { routable && visible.contains($0) }
     }
 
     /// Closes the card, then does `work` once it is gone (a cover or sheet cannot open while the popover is closing).
