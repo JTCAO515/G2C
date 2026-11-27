@@ -16,10 +16,15 @@
         "name_en": "The Shanghai EDITION",
         "aliases_zh": [],
         "aliases_en": [],
-        "address_zh": null,
-        "address_en": null,
+        "address_zh": "上海市南京东路199号",
+        "address_en": "199 Nanjing Road East, Shanghai, China 200002",
         "district_zh": null,
-        "nearest_metro": null,
+        "nearest_metro": {
+          "station_zh": "南京东路",
+          "station_en": "East Nanjing Road",
+          "line": "2、10号线",
+          "exit": null
+        },
         "foreigner_signals": {
           "english_signage": null,
           "foreign_cards": null,
@@ -32,7 +37,8 @@
         "sources": [
           "https://www.marriott.com/en-us/hotels/shaeb-the-shanghai-edition/overview/",
           "https://www.marriott.com/en-us/destinations/china/shanghai.mi",
-          "https://help.marriott.com/s/article/Article-24483"
+          "https://help.marriott.com/s/article/Article-24483",
+          "https://www.marriott.com.cn/hotels/shaeb-the-shanghai-edition/overview/"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
@@ -63,12 +69,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 26,
+        "total": 31,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 4,
+          "complete": 9,
           "amap": 0
         },
         "external_used": false
@@ -90,9 +96,9 @@
         "name_en": "Bvlgari Hotel Shanghai",
         "aliases_zh": [],
         "aliases_en": [],
-        "address_zh": null,
-        "address_en": null,
-        "district_zh": null,
+        "address_zh": "上海市静安区山西北路108弄",
+        "address_en": "Lane 108 North Shanxi Road, Shanghai, China 200085",
+        "district_zh": "静安区",
         "nearest_metro": null,
         "foreigner_signals": {
           "english_signage": null,
@@ -106,7 +112,9 @@
         "sources": [
           "https://www.bulgarihotels.com/en-US/shanghai",
           "https://www.marriott.com/en-us/destinations/china/shanghai.mi",
-          "https://www.grouppartners.marriott.com/TAGP_docs/Multimedia/PDF/Group_Intermediaries/Group_Partners/b2b-brandbrochure-8.5x11-2021.pdf"
+          "https://www.grouppartners.marriott.com/TAGP_docs/Multimedia/PDF/Group_Intermediaries/Group_Partners/b2b-brandbrochure-8.5x11-2021.pdf",
+          "https://www.bulgarihotels.com/zh_CN/shanghai/contact-us",
+          "https://www.bulgarihotels.com/en_US/shanghai/contact-us"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
@@ -137,12 +145,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 26,
+        "total": 29,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 4,
+          "complete": 7,
           "amap": 0
         },
         "external_used": false
@@ -298,9 +306,9 @@
         "name_en": "The Portman Ritz-Carlton, Shanghai",
         "aliases_zh": [],
         "aliases_en": [],
-        "address_zh": null,
-        "address_en": null,
-        "district_zh": null,
+        "address_zh": "上海市静安区南京西路1376号上海商城",
+        "address_en": "Shanghai Centre, 1376 Nanjing West Road, Shanghai, China 200040",
+        "district_zh": "静安区",
         "nearest_metro": null,
         "foreigner_signals": {
           "english_signage": null,
@@ -314,7 +322,9 @@
         "sources": [
           "https://www.ritzcarlton.com/en/hotels/sharz-the-portman-ritz-carlton-shanghai/overview/",
           "https://www.marriott.com/en-us/destinations/china/shanghai.mi",
-          "https://help.marriott.com/s/article/Article-24483"
+          "https://help.marriott.com/s/article/Article-24483",
+          "https://www.ritzcarlton.com/zh-cn/hotels/sharz-the-portman-ritz-carlton-shanghai/overview/",
+          "https://www.shanghai.gov.cn/nw45144/20200916/0001-45144_61224.html"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
@@ -345,12 +355,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 26,
+        "total": 29,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 4,
+          "complete": 7,
           "amap": 0
         },
         "external_used": false
@@ -372,9 +382,9 @@
         "name_en": "Courtyard by Marriott Shanghai Changfeng Park",
         "aliases_zh": [],
         "aliases_en": [],
-        "address_zh": null,
-        "address_en": null,
-        "district_zh": null,
+        "address_zh": "上海市普陀区丹巴路99号",
+        "address_en": "99 Danba Road, Putuo District, Shanghai, China 200062",
+        "district_zh": "普陀区",
         "nearest_metro": null,
         "foreigner_signals": {
           "english_signage": null,
@@ -388,7 +398,8 @@
         "sources": [
           "https://www.marriott.com/en-us/hotels/shafp-courtyard-shanghai-changfeng-park/overview/",
           "https://www.marriott.com/en-us/destinations/china/shanghai.mi?pg=3",
-          "https://help.marriott.com/s/article/Article-24483"
+          "https://help.marriott.com/s/article/Article-24483",
+          "https://www.marriott.com.cn/hotels/shafp-courtyard-shanghai-changfeng-park/overview/"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
@@ -419,12 +430,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 26,
+        "total": 29,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 4,
+          "complete": 7,
           "amap": 0
         },
         "external_used": false
@@ -648,7 +659,7 @@
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": "重庆南路183号",
-        "address_en": null,
+        "address_en": "183 South Chongqing Road, Huangpu District, Shanghai",
         "district_zh": "黄浦区",
         "nearest_metro": null,
         "foreigner_signals": {
@@ -687,12 +698,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 23,
+        "total": 24,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 5,
-          "complete": 6,
+          "complete": 7,
           "amap": 0
         },
         "external_used": false
@@ -912,7 +923,7 @@
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": "南京西路473号",
-        "address_en": null,
+        "address_en": "473 West Nanjing Road, Huangpu District, Shanghai",
         "district_zh": "黄浦区",
         "nearest_metro": null,
         "foreigner_signals": {
@@ -951,12 +962,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 23,
+        "total": 24,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 5,
-          "complete": 6,
+          "complete": 7,
           "amap": 0
         },
         "external_used": false
@@ -1175,7 +1186,7 @@
         "name_en": "DoubleTree by Hilton Hotel Shanghai - Pudong",
         "aliases_zh": [],
         "aliases_en": [],
-        "address_zh": null,
+        "address_zh": "上海市浦东新区杨高南路889号",
         "address_en": null,
         "district_zh": "浦东新区",
         "nearest_metro": null,
@@ -1191,7 +1202,8 @@
         "sources": [
           "https://www.hilton.com.cn/zh-cn/hotels/shaspdi-doubletree-by-hilton-hotel-shanghai--pudong",
           "https://www.hilton.com.cn/zh-cn/locations/china/shanghai-shanghai",
-          "https://ir.hilton.com/_assets/_de1e637820b6842c68b34801d11a8fd1/hilton/db/3577/34740/pdf/HLT_Investor_Presentation_-_November_2026.pdf"
+          "https://ir.hilton.com/_assets/_de1e637820b6842c68b34801d11a8fd1/hilton/db/3577/34740/pdf/HLT_Investor_Presentation_-_November_2026.pdf",
+          "https://www.hilton.com.cn/zh-CN/hotels/shaspdi-doubletree-by-hilton-hotel-shanghai--pudong"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
@@ -1222,12 +1234,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 26,
+        "total": 28,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 4,
+          "complete": 6,
           "amap": 0
         },
         "external_used": false
@@ -1250,7 +1262,7 @@
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": "重庆北路188号",
-        "address_en": null,
+        "address_en": "188 North Chongqing Road, Shanghai",
         "district_zh": "黄浦区",
         "nearest_metro": null,
         "foreigner_signals": {
@@ -1289,12 +1301,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 23,
+        "total": 24,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 5,
-          "complete": 6,
+          "complete": 7,
           "amap": 0
         },
         "external_used": false
@@ -1449,7 +1461,7 @@
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": "愚园路1015号",
-        "address_en": null,
+        "address_en": "1015 Yuyuan Road, Shanghai",
         "district_zh": "长宁区",
         "nearest_metro": null,
         "foreigner_signals": {
@@ -1488,12 +1500,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 23,
+        "total": 24,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 5,
-          "complete": 6,
+          "complete": 7,
           "amap": 0
         },
         "external_used": false
@@ -1514,7 +1526,7 @@
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": "愚园路1037号",
-        "address_en": null,
+        "address_en": "1037 Yuyuan Road, Changning District, Shanghai",
         "district_zh": "长宁区",
         "nearest_metro": null,
         "foreigner_signals": {
@@ -1553,12 +1565,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 23,
+        "total": 24,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 5,
-          "complete": 6,
+          "complete": 7,
           "amap": 0
         },
         "external_used": false
@@ -1579,7 +1591,7 @@
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": "八字桥路873号",
-        "address_en": null,
+        "address_en": "873 Baziqiao Road, Shanghai",
         "district_zh": "奉贤区",
         "nearest_metro": null,
         "foreigner_signals": {
@@ -1618,12 +1630,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 21,
+        "total": 23,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 5,
-          "complete": 4,
+          "complete": 6,
           "amap": 0
         },
         "external_used": false
@@ -1705,7 +1717,12 @@
         "address_zh": "中山北路3300号",
         "address_en": null,
         "district_zh": "普陀区",
-        "nearest_metro": null,
+        "nearest_metro": {
+          "station_zh": "金沙江路",
+          "station_en": "Jinshajiang Road",
+          "line": "3、4、13号线",
+          "exit": null
+        },
         "foreigner_signals": {
           "english_signage": null,
           "foreign_cards": null,
@@ -1736,12 +1753,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 21,
+        "total": 23,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 5,
-          "complete": 4,
+          "complete": 6,
           "amap": 0
         },
         "external_used": false
@@ -1829,9 +1846,14 @@
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": "虹桥路1号",
-        "address_en": null,
+        "address_en": "1 Hongqiao Road, Xuhui District, Shanghai",
         "district_zh": "徐汇区",
-        "nearest_metro": null,
+        "nearest_metro": {
+          "station_zh": "徐家汇",
+          "station_en": "Xujiahui",
+          "line": "1、9、11号线",
+          "exit": null
+        },
         "foreigner_signals": {
           "english_signage": null,
           "foreign_cards": null,
@@ -1842,7 +1864,8 @@
         },
         "official_url": "https://www.hanglung.com/zh-cn/properties/mainland-properties/shanghai/grand-gateway-66/",
         "sources": [
-          "https://www.hanglung.com/zh-cn/properties/mainland-properties/shanghai/grand-gateway-66/"
+          "https://www.hanglung.com/zh-cn/properties/mainland-properties/shanghai/grand-gateway-66/",
+          "https://www.hanglung.com/en-us/properties/mainland-properties/shanghai/grand-gateway-66"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
@@ -1862,12 +1885,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 21,
+        "total": 30,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
-          "sources": 5,
-          "complete": 4,
+          "sources": 10,
+          "complete": 8,
           "amap": 0
         },
         "external_used": false
@@ -2223,9 +2246,14 @@
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": "南京西路789号",
-        "address_en": null,
+        "address_en": "789 Nanjing Road West, Jing'an District, Shanghai",
         "district_zh": "静安区",
-        "nearest_metro": null,
+        "nearest_metro": {
+          "station_zh": "南京西路",
+          "station_en": "West Nanjing Road",
+          "line": "2、12、13号线",
+          "exit": "5、6、7、8、11"
+        },
         "foreigner_signals": {
           "english_signage": null,
           "foreign_cards": null,
@@ -2238,7 +2266,9 @@
         "official_url": "https://www.shanghai.gov.cn/nw17239/20260806/d59b6ca73d874620abaf66e537e405f0.html",
         "sources": [
           "https://www.shanghai.gov.cn/nw17239/20260806/d59b6ca73d874620abaf66e537e405f0.html",
-          "https://english.shanghai.gov.cn/en-ShoppingCenters/20231217/03a268a425a94adb8bfe521234f7f1f5.html"
+          "https://english.shanghai.gov.cn/en-ShoppingCenters/20231217/03a268a425a94adb8bfe521234f7f1f5.html",
+          "https://www.swireproperties.com/en/portfolio/current-developments/hkri-taikoo-hui/",
+          "https://english.shanghai.gov.cn/en-FestivalsCelebrations/20260430/739b3e396c944da1b77738b32434c7a6.html"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
@@ -2258,12 +2288,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 26,
+        "total": 30,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 4,
+          "complete": 8,
           "amap": 0
         },
         "external_used": false
@@ -2284,7 +2314,7 @@
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": "新乐路47号",
-        "address_en": null,
+        "address_en": "47 Xinle Road, Shanghai",
         "district_zh": "徐汇区",
         "nearest_metro": null,
         "foreigner_signals": {
@@ -2323,12 +2353,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 23,
+        "total": 24,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 5,
-          "complete": 6,
+          "complete": 7,
           "amap": 0
         },
         "external_used": false
@@ -2418,7 +2448,7 @@
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": "四川南路29号",
-        "address_en": null,
+        "address_en": "29 South Sichuan Road, Huangpu District, Shanghai",
         "district_zh": "黄浦区",
         "nearest_metro": null,
         "foreigner_signals": {
@@ -2457,12 +2487,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 23,
+        "total": 24,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 5,
-          "complete": 6,
+          "complete": 7,
           "amap": 0
         },
         "external_used": false
@@ -2482,9 +2512,9 @@
         "name_en": "Hilton Shanghai Hongqiao International Airport",
         "aliases_zh": [],
         "aliases_en": [],
-        "address_zh": null,
-        "address_en": null,
-        "district_zh": null,
+        "address_zh": "上海市长宁区云纱路188号",
+        "address_en": "188 Yunsha Road, Changning District, Shanghai, China 200335",
+        "district_zh": "长宁区",
         "nearest_metro": null,
         "foreigner_signals": {
           "english_signage": null,
@@ -2498,7 +2528,9 @@
         "sources": [
           "https://www.hilton.com.cn/zh-cn/hotels/shaaphi-hilton-shanghai-hongqiao-international-airport",
           "https://www.hilton.com.cn/zh-cn/locations/china/shanghai-shanghai",
-          "https://ir.hilton.com/_assets/_de1e637820b6842c68b34801d11a8fd1/hilton/db/3577/34740/pdf/HLT_Investor_Presentation_-_November_2026.pdf"
+          "https://ir.hilton.com/_assets/_de1e637820b6842c68b34801d11a8fd1/hilton/db/3577/34740/pdf/HLT_Investor_Presentation_-_November_2026.pdf",
+          "https://www.hilton.com.cn/zh-cn/hotel/shanghai/SHAAPHI/maps-directions.html",
+          "https://www.hilton.com/zh-hans/hotels/shaaphi-hilton-shanghai-hongqiao-international-airport/hotel-info/"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
@@ -2529,12 +2561,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 26,
+        "total": 29,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 4,
+          "complete": 7,
           "amap": 0
         },
         "external_used": false
@@ -2556,10 +2588,15 @@
         "name_en": "Fairfield by Marriott Shanghai Hongqiao",
         "aliases_zh": [],
         "aliases_en": [],
-        "address_zh": null,
-        "address_en": null,
-        "district_zh": null,
-        "nearest_metro": null,
+        "address_zh": "上海市闵行区青杉路369号",
+        "address_en": "369 Qingshan Road, Minhang District, Shanghai, China 201103",
+        "district_zh": "闵行区",
+        "nearest_metro": {
+          "station_zh": "紫藤路",
+          "station_en": "Ziteng Road",
+          "line": "10号线",
+          "exit": null
+        },
         "foreigner_signals": {
           "english_signage": null,
           "foreign_cards": null,
@@ -2572,7 +2609,8 @@
         "sources": [
           "https://www.marriott.com/en-us/hotels/shahf-fairfield-shanghai-hongqiao/overview/",
           "https://www.marriott.com/en-us/destinations/china/shanghai.mi?pg=4",
-          "https://help.marriott.com/s/article/Article-24483"
+          "https://help.marriott.com/s/article/Article-24483",
+          "https://www.marriott.com.cn/hotels/shahf-fairfield-shanghai-hongqiao/overview/"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
@@ -2603,12 +2641,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 26,
+        "total": 31,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 4,
+          "complete": 9,
           "amap": 0
         },
         "external_used": false
@@ -2696,7 +2734,7 @@
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": "广东路475号",
-        "address_en": null,
+        "address_en": "475 Guangdong Road, Shanghai",
         "district_zh": "黄浦区",
         "nearest_metro": null,
         "foreigner_signals": {
@@ -2735,12 +2773,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 21,
+        "total": 23,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 5,
-          "complete": 4,
+          "complete": 6,
           "amap": 0
         },
         "external_used": false
@@ -2893,7 +2931,7 @@
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": "黄河路127号",
-        "address_en": null,
+        "address_en": "127 Huanghe Road, Shanghai",
         "district_zh": "黄浦区",
         "nearest_metro": null,
         "foreigner_signals": {
@@ -2932,12 +2970,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 24,
+        "total": 26,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 5,
-          "complete": 7,
+          "complete": 9,
           "amap": 0
         },
         "external_used": false
@@ -3148,9 +3186,9 @@
         "name_en": "The St. Regis Shanghai Jingan",
         "aliases_zh": [],
         "aliases_en": [],
-        "address_zh": null,
-        "address_en": null,
-        "district_zh": null,
+        "address_zh": "上海市北京西路1008号",
+        "address_en": "1008 Beijing West Road, Shanghai, China 200041",
+        "district_zh": "静安区",
         "nearest_metro": null,
         "foreigner_signals": {
           "english_signage": null,
@@ -3164,7 +3202,8 @@
         "sources": [
           "https://www.marriott.com/en-us/hotels/shaxr-the-st-regis-shanghai-jingan/overview/",
           "https://www.marriott.com/en-us/destinations/china/shanghai.mi",
-          "https://help.marriott.com/s/article/Article-24483"
+          "https://help.marriott.com/s/article/Article-24483",
+          "https://www.marriott.com.cn/hotels/shaxr-the-st-regis-shanghai-jingan/overview/"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
@@ -3195,12 +3234,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 26,
+        "total": 29,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 4,
+          "complete": 7,
           "amap": 0
         },
         "external_used": false
@@ -3289,9 +3328,9 @@
         "name_en": "Fairfield by Marriott Shanghai Jingan",
         "aliases_zh": [],
         "aliases_en": [],
-        "address_zh": null,
-        "address_en": null,
-        "district_zh": null,
+        "address_zh": "上海市静安区共和新路1500号",
+        "address_en": "1500 Gonghe Xin Road, Jing'an District, Shanghai, China 200070",
+        "district_zh": "静安区",
         "nearest_metro": null,
         "foreigner_signals": {
           "english_signage": null,
@@ -3305,7 +3344,8 @@
         "sources": [
           "https://www.marriott.com/en-us/hotels/shafi-fairfield-shanghai-jingan/overview/",
           "https://www.marriott.com/en-us/destinations/china/shanghai.mi?pg=2",
-          "https://help.marriott.com/s/article/Article-24483"
+          "https://help.marriott.com/s/article/Article-24483",
+          "https://www.marriott.com.cn/hotels/shafi-fairfield-shanghai-jingan/overview/"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
@@ -3336,12 +3376,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 26,
+        "total": 29,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 4,
+          "complete": 7,
           "amap": 0
         },
         "external_used": false
@@ -3435,7 +3475,7 @@
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": "天津路506号",
-        "address_en": null,
+        "address_en": "506 Tianjin Road, Shanghai",
         "district_zh": "黄浦区",
         "nearest_metro": null,
         "foreigner_signals": {
@@ -3474,12 +3514,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 24,
+        "total": 26,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 5,
-          "complete": 7,
+          "complete": 9,
           "amap": 0
         },
         "external_used": false
@@ -3561,7 +3601,7 @@
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": "进贤路130号",
-        "address_en": null,
+        "address_en": "130 Jinxian Road, Shanghai",
         "district_zh": "黄浦区",
         "nearest_metro": null,
         "foreigner_signals": {
@@ -3602,12 +3642,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 29,
+        "total": 31,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 7,
+          "complete": 9,
           "amap": 0
         },
         "external_used": false
@@ -3815,7 +3855,7 @@
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": "九江路399号四层",
-        "address_en": null,
+        "address_en": "Level 4, 399 Jiujiang Road, Shanghai",
         "district_zh": "黄浦区",
         "nearest_metro": null,
         "foreigner_signals": {
@@ -3854,12 +3894,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 23,
+        "total": 24,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 5,
-          "complete": 6,
+          "complete": 7,
           "amap": 0
         },
         "external_used": false
@@ -3880,7 +3920,7 @@
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": "四川南路11号",
-        "address_en": null,
+        "address_en": "11 South Sichuan Road, Shanghai",
         "district_zh": "黄浦区",
         "nearest_metro": null,
         "foreigner_signals": {
@@ -3919,12 +3959,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 23,
+        "total": 24,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 5,
-          "complete": 6,
+          "complete": 7,
           "amap": 0
         },
         "external_used": false
@@ -3945,7 +3985,7 @@
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": "福州路556号",
-        "address_en": null,
+        "address_en": "556 Fuzhou Road, Shanghai",
         "district_zh": "黄浦区",
         "nearest_metro": null,
         "foreigner_signals": {
@@ -3984,12 +4024,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 24,
+        "total": 26,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 5,
-          "complete": 7,
+          "complete": 9,
           "amap": 0
         },
         "external_used": false
@@ -4137,7 +4177,7 @@
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": "龙腾大道2266号6号楼二层204室",
-        "address_en": null,
+        "address_en": "Room 204, Level 2, Building 6, 2266 Longteng Avenue, Shanghai",
         "district_zh": "徐汇区",
         "nearest_metro": null,
         "foreigner_signals": {
@@ -4176,12 +4216,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 21,
+        "total": 23,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 5,
-          "complete": 4,
+          "complete": 6,
           "amap": 0
         },
         "external_used": false
@@ -4267,9 +4307,14 @@
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": "龙华路2787号",
-        "address_en": null,
+        "address_en": "2787 Longhua Road, Shanghai",
         "district_zh": "徐汇区",
-        "nearest_metro": null,
+        "nearest_metro": {
+          "station_zh": "龙华",
+          "station_en": "Longhua",
+          "line": "11、12号线",
+          "exit": null
+        },
         "foreigner_signals": {
           "english_signage": null,
           "foreign_cards": null,
@@ -4280,14 +4325,16 @@
         },
         "official_url": "https://english.shanghai.gov.cn/en-SpecialtyFood/20241231/077785c4ba164e11ba38159525192fde.html",
         "sources": [
-          "https://english.shanghai.gov.cn/en-SpecialtyFood/20241231/077785c4ba164e11ba38159525192fde.html"
+          "https://english.shanghai.gov.cn/en-SpecialtyFood/20241231/077785c4ba164e11ba38159525192fde.html",
+          "https://www.meet-in-shanghai.net/cn/food/longhua-suzhai-longhua-temple-store-280988/",
+          "https://service.shanghai.gov.cn/sheninfo/specialdetail.aspx?Id=6181d31f-8089-4a30-b77a-b7149978cd6b"
         ],
         "checked_on": "2026-11-27",
-        "confidence": "low",
-        "notes": "到访前需复查现行供餐。 旧官方来源可确认身份，现行营业待复核。",
+        "confidence": "medium",
+        "notes": "到访前需复查现行供餐。 旧官方来源可确认身份，现行营业待复核。 市文旅推广网公开列出龙华寺店地址和营业时间，市政府对外指南有散客供餐介绍。未发现供餐需提前预约的官方规则，字段保留空。",
         "subcategory": "vegetarian",
-        "hours_zh": null,
-        "hours_source": null,
+        "hours_zh": "07:00–15:30",
+        "hours_source": "https://www.meet-in-shanghai.net/cn/food/longhua-suzhai-longhua-temple-store-280988/",
         "intro_short_zh": "龙华寺旁的素面点，可顺路尝豆制小菜。",
         "intro_short_en": "A stop for vegetarian noodles and tofu dishes at Longhua Temple.",
         "intro_long_zh": "龙华寺旁的素面点，可顺路尝豆制小菜。按中文店名在龙华路2787号定位。",
@@ -4306,12 +4353,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 13,
+        "total": 31,
         "parts": {
           "foreigner": 0,
-          "confidence": 4,
-          "sources": 5,
-          "complete": 4,
+          "confidence": 12,
+          "sources": 10,
+          "complete": 9,
           "amap": 0
         },
         "external_used": false
@@ -4466,7 +4513,7 @@
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": "浙江中路425号",
-        "address_en": null,
+        "address_en": "425 Middle Zhejiang Road, Shanghai",
         "district_zh": "黄浦区",
         "nearest_metro": null,
         "foreigner_signals": {
@@ -4505,12 +4552,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 23,
+        "total": 24,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 5,
-          "complete": 6,
+          "complete": 7,
           "amap": 0
         },
         "external_used": false
@@ -4655,7 +4702,7 @@
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": "中华路805号",
-        "address_en": null,
+        "address_en": "805 Zhonghua Road, Shanghai",
         "district_zh": "黄浦区",
         "nearest_metro": null,
         "foreigner_signals": {
@@ -4694,12 +4741,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 21,
+        "total": 23,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 5,
-          "complete": 4,
+          "complete": 6,
           "amap": 0
         },
         "external_used": false
@@ -4719,10 +4766,15 @@
         "name_en": "JW Marriott Hotel Shanghai at Tomorrow Square",
         "aliases_zh": [],
         "aliases_en": [],
-        "address_zh": null,
-        "address_en": null,
-        "district_zh": null,
-        "nearest_metro": null,
+        "address_zh": "上海市黄浦区南京西路399号",
+        "address_en": "399 Nanjing West Road, Huangpu District, Shanghai, China 200003",
+        "district_zh": "黄浦区",
+        "nearest_metro": {
+          "station_zh": "人民广场",
+          "station_en": "People's Square",
+          "line": "1、2、8号线",
+          "exit": null
+        },
         "foreigner_signals": {
           "english_signage": null,
           "foreign_cards": null,
@@ -4735,7 +4787,8 @@
         "sources": [
           "https://www.marriott.com/en-us/hotels/shajw-jw-marriott-hotel-shanghai-at-tomorrow-square/overview/",
           "https://www.marriott.com/en-us/destinations/china/shanghai.mi",
-          "https://help.marriott.com/s/article/Article-24483"
+          "https://help.marriott.com/s/article/Article-24483",
+          "https://www.marriott.com.cn/hotels/shajw-jw-marriott-hotel-shanghai-at-tomorrow-square/overview/"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
@@ -4766,12 +4819,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 26,
+        "total": 31,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 4,
+          "complete": 9,
           "amap": 0
         },
         "external_used": false
@@ -4929,7 +4982,7 @@
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": "豫园路87号",
-        "address_en": null,
+        "address_en": "87 Yuyuan Road, Huangpu District, Shanghai",
         "district_zh": "黄浦区",
         "nearest_metro": null,
         "foreigner_signals": {
@@ -4968,12 +5021,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 24,
+        "total": 26,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 5,
-          "complete": 7,
+          "complete": 9,
           "amap": 0
         },
         "external_used": false
@@ -4994,7 +5047,7 @@
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": "黄家阙路109号",
-        "address_en": null,
+        "address_en": "109 Huangjiaque Road, Huangpu District, Shanghai",
         "district_zh": "黄浦区",
         "nearest_metro": null,
         "foreigner_signals": {
@@ -5035,12 +5088,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 26,
+        "total": 28,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 4,
+          "complete": 6,
           "amap": 0
         },
         "external_used": false
@@ -5126,7 +5179,7 @@
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": "龙腾大道2266号10号楼一层115室",
-        "address_en": null,
+        "address_en": "Room 115, Level 1, Building 10, 2266 Longteng Avenue, Shanghai",
         "district_zh": "徐汇区",
         "nearest_metro": null,
         "foreigner_signals": {
@@ -5165,12 +5218,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 21,
+        "total": 23,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 5,
-          "complete": 4,
+          "complete": 6,
           "amap": 0
         },
         "external_used": false
@@ -5328,9 +5381,9 @@
         "name_en": "The Ritz-Carlton Shanghai, Pudong",
         "aliases_zh": [],
         "aliases_en": [],
-        "address_zh": null,
-        "address_en": null,
-        "district_zh": null,
+        "address_zh": "上海市浦东新区陆家嘴世纪大道8号上海国际金融中心",
+        "address_en": "Shanghai IFC, 8 Century Avenue, Lujiazui, Pudong, Shanghai, China 200120",
+        "district_zh": "浦东新区",
         "nearest_metro": null,
         "foreigner_signals": {
           "english_signage": null,
@@ -5344,7 +5397,9 @@
         "sources": [
           "https://www.ritzcarlton.com/en/hotels/shasz-the-ritz-carlton-shanghai-pudong/overview/",
           "https://www.marriott.com/en-us/destinations/china/shanghai.mi",
-          "https://help.marriott.com/s/article/Article-24483"
+          "https://help.marriott.com/s/article/Article-24483",
+          "https://www.ritzcarlton.com/zh-cn/hotels/shasz-the-ritz-carlton-shanghai-pudong/overview/",
+          "https://www.ritzcarlton.com/content/dam/marriott-digital/rz/greater-china/hws/s/shasz/en_us/document/assets/spa-tariff.pdf"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
@@ -5375,12 +5430,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 26,
+        "total": 29,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 4,
+          "complete": 7,
           "amap": 0
         },
         "external_used": false
@@ -5402,9 +5457,9 @@
         "name_en": "JW Marriott Marquis Hotel Shanghai Pudong",
         "aliases_zh": [],
         "aliases_en": [],
-        "address_zh": null,
-        "address_en": null,
-        "district_zh": null,
+        "address_zh": "上海市浦东新区浦明路988号",
+        "address_en": "988 Puming Road, Pudong New Area, Shanghai, China 200122",
+        "district_zh": "浦东新区",
         "nearest_metro": null,
         "foreigner_signals": {
           "english_signage": null,
@@ -5418,7 +5473,8 @@
         "sources": [
           "https://www.marriott.com/en-us/hotels/shamj-jw-marriott-marquis-hotel-shanghai-pudong/overview/",
           "https://www.marriott.com/en-us/destinations/china/shanghai.mi?pg=2",
-          "https://help.marriott.com/s/article/Article-24483"
+          "https://help.marriott.com/s/article/Article-24483",
+          "https://www.marriott.com.cn/hotels/shamj-jw-marriott-marquis-hotel-shanghai-pudong/overview/"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
@@ -5449,12 +5505,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 26,
+        "total": 29,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 4,
+          "complete": 7,
           "amap": 0
         },
         "external_used": false
@@ -5476,9 +5532,9 @@
         "name_en": "Fairfield by Marriott Shanghai Pudong South",
         "aliases_zh": [],
         "aliases_en": [],
-        "address_zh": null,
-        "address_en": null,
-        "district_zh": null,
+        "address_zh": "上海市浦东新区北蔡镇沪南路938号",
+        "address_en": "938 Hunan Road, Beicai Town, Pudong New Area, Shanghai, China 200120",
+        "district_zh": "浦东新区",
         "nearest_metro": null,
         "foreigner_signals": {
           "english_signage": null,
@@ -5492,7 +5548,8 @@
         "sources": [
           "https://www.marriott.com/en-us/hotels/shapi-fairfield-shanghai-pudong-south/overview/",
           "https://www.marriott.com/en-us/destinations/china/shanghai.mi?pg=3",
-          "https://help.marriott.com/s/article/Article-24483"
+          "https://help.marriott.com/s/article/Article-24483",
+          "https://www.marriott.com.cn/hotels/shapi-fairfield-shanghai-pudong-south/overview/"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
@@ -5523,12 +5580,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 26,
+        "total": 29,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 4,
+          "complete": 7,
           "amap": 0
         },
         "external_used": false
@@ -5550,10 +5607,15 @@
         "name_en": "Moxy Shanghai Putuo",
         "aliases_zh": [],
         "aliases_en": [],
-        "address_zh": null,
-        "address_en": null,
-        "district_zh": null,
-        "nearest_metro": null,
+        "address_zh": "上海市普陀区澳门路409号",
+        "address_en": "409 Aomen Road, Putuo District, Shanghai, China 200060",
+        "district_zh": "普陀区",
+        "nearest_metro": {
+          "station_zh": "江宁路",
+          "station_en": "Jiangning Road",
+          "line": "13号线",
+          "exit": null
+        },
         "foreigner_signals": {
           "english_signage": null,
           "foreign_cards": null,
@@ -5566,7 +5628,8 @@
         "sources": [
           "https://www.marriott.com/en-us/hotels/shaxx-moxy-shanghai-putuo/overview/",
           "https://www.marriott.com/en-us/destinations/china/shanghai.mi?pg=2",
-          "https://help.marriott.com/s/article/Article-24483"
+          "https://help.marriott.com/s/article/Article-24483",
+          "https://www.marriott.com.cn/hotels/shaxx-moxy-shanghai-putuo/overview/"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
@@ -5597,12 +5660,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 26,
+        "total": 31,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 4,
+          "complete": 9,
           "amap": 0
         },
         "external_used": false
@@ -5624,10 +5687,15 @@
         "name_en": "Courtyard by Marriott Shanghai Central",
         "aliases_zh": [],
         "aliases_en": [],
-        "address_zh": null,
-        "address_en": null,
+        "address_zh": "上海市恒丰路338号",
+        "address_en": "338 Hengfeng Road, Shanghai, China 200070",
         "district_zh": null,
-        "nearest_metro": null,
+        "nearest_metro": {
+          "station_zh": "汉中路",
+          "station_en": "Hanzhong Road",
+          "line": "1、12、13号线",
+          "exit": "1"
+        },
         "foreigner_signals": {
           "english_signage": null,
           "foreign_cards": null,
@@ -5640,7 +5708,8 @@
         "sources": [
           "https://www.marriott.com/en-us/hotels/shapx-courtyard-shanghai-central/overview/",
           "https://www.marriott.com/en-us/destinations/china/shanghai.mi",
-          "https://help.marriott.com/s/article/Article-24483"
+          "https://help.marriott.com/s/article/Article-24483",
+          "https://www.marriott.com.cn/hotels/shapx-courtyard-shanghai-central/overview/"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
@@ -5671,12 +5740,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 26,
+        "total": 31,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 4,
+          "complete": 9,
           "amap": 0
         },
         "external_used": false
@@ -5841,7 +5910,7 @@
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": "肇嘉浜路407号",
-        "address_en": null,
+        "address_en": "407 Zhaojiabang Road, Shanghai",
         "district_zh": "徐汇区",
         "nearest_metro": null,
         "foreigner_signals": {
@@ -5880,12 +5949,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 23,
+        "total": 24,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 5,
-          "complete": 6,
+          "complete": 7,
           "amap": 0
         },
         "external_used": false
@@ -6245,9 +6314,14 @@
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": "世纪大道8号",
-        "address_en": null,
+        "address_en": "8 Century Avenue, Lujiazui, Pudong, Shanghai",
         "district_zh": "浦东新区",
-        "nearest_metro": null,
+        "nearest_metro": {
+          "station_zh": "陆家嘴",
+          "station_en": "Lujiazui",
+          "line": "2、14号线",
+          "exit": null
+        },
         "foreigner_signals": {
           "english_signage": null,
           "foreign_cards": null,
@@ -6260,7 +6334,9 @@
         "official_url": "https://www.shkp.com/zh-CN/our-business/mainland-and-other-properties/shanghai-ifc",
         "sources": [
           "https://www.shkp.com/zh-CN/our-business/mainland-and-other-properties/shanghai-ifc",
-          "https://www.meet-in-shanghai.net/cn/shopping/shanghai-ifc-shopping-mall-916712/"
+          "https://www.meet-in-shanghai.net/cn/shopping/shanghai-ifc-shopping-mall-916712/",
+          "https://www.shkp.com/en-US/our-business/mainland-and-other-properties/shanghai-ifc",
+          "https://www.shanghai.gov.cn/nw17239/20260813/283e5f83f3654b088130e465229f991b.html"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
@@ -6280,12 +6356,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 26,
+        "total": 30,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 4,
+          "complete": 8,
           "amap": 0
         },
         "external_used": false
@@ -6629,7 +6705,7 @@
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": "思南路8号",
-        "address_en": null,
+        "address_en": "8 Sinan Road, Shanghai",
         "district_zh": "黄浦区",
         "nearest_metro": null,
         "foreigner_signals": {
@@ -6668,12 +6744,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 21,
+        "total": 23,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 5,
-          "complete": 4,
+          "complete": 6,
           "amap": 0
         },
         "external_used": false
@@ -6828,9 +6904,14 @@
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": "世博大道1368号",
-        "address_en": null,
+        "address_en": "1368 Shibo Avenue, Pudong New Area, Shanghai",
         "district_zh": "浦东新区",
-        "nearest_metro": null,
+        "nearest_metro": {
+          "station_zh": "耀华路",
+          "station_en": "Yaohua Road",
+          "line": "7、8号线",
+          "exit": null
+        },
         "foreigner_signals": {
           "english_signage": null,
           "foreign_cards": null,
@@ -6841,7 +6922,8 @@
         },
         "official_url": "https://www.shanghai.gov.cn/nw17239/20260813/283e5f83f3654b088130e465229f991b.html",
         "sources": [
-          "https://www.shanghai.gov.cn/nw17239/20260813/283e5f83f3654b088130e465229f991b.html"
+          "https://www.shanghai.gov.cn/nw17239/20260813/283e5f83f3654b088130e465229f991b.html",
+          "https://english.shanghai.gov.cn/en-InFocus/20240628/fcd4b3d060fa446088315d80f9b09a02.html"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
@@ -6861,12 +6943,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 21,
+        "total": 30,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
-          "sources": 5,
-          "complete": 4,
+          "sources": 10,
+          "complete": 8,
           "amap": 0
         },
         "external_used": false
@@ -6954,7 +7036,7 @@
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": "浙江中路120号",
-        "address_en": null,
+        "address_en": "120 Middle Zhejiang Road, Shanghai",
         "district_zh": "黄浦区",
         "nearest_metro": null,
         "foreigner_signals": {
@@ -6993,12 +7075,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 23,
+        "total": 24,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 5,
-          "complete": 6,
+          "complete": 7,
           "amap": 0
         },
         "external_used": false
@@ -7351,9 +7433,14 @@
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": "陆家浜路399号",
-        "address_en": null,
+        "address_en": "399 Lujiabang Road, Huangpu District, Shanghai",
         "district_zh": "黄浦区",
-        "nearest_metro": null,
+        "nearest_metro": {
+          "station_zh": "南浦大桥",
+          "station_en": "Nanpu Bridge",
+          "line": "4号线",
+          "exit": "3"
+        },
         "foreigner_signals": {
           "english_signage": null,
           "foreign_cards": null,
@@ -7384,12 +7471,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 21,
+        "total": 25,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 5,
-          "complete": 4,
+          "complete": 8,
           "amap": 0
         },
         "external_used": false
@@ -7410,7 +7497,7 @@
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": "南京东路719号",
-        "address_en": null,
+        "address_en": "719 East Nanjing Road, Huangpu District, Shanghai",
         "district_zh": "黄浦区",
         "nearest_metro": null,
         "foreigner_signals": {
@@ -7449,12 +7536,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 21,
+        "total": 23,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 5,
-          "complete": 4,
+          "complete": 6,
           "amap": 0
         },
         "external_used": false
@@ -7475,9 +7562,14 @@
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": "陆家嘴西路168号",
-        "address_en": null,
+        "address_en": "168 West Lujiazui Road, Pudong New Area, Shanghai",
         "district_zh": "浦东新区",
-        "nearest_metro": null,
+        "nearest_metro": {
+          "station_zh": "陆家嘴",
+          "station_en": "Lujiazui",
+          "line": "2、14号线",
+          "exit": null
+        },
         "foreigner_signals": {
           "english_signage": null,
           "foreign_cards": null,
@@ -7488,7 +7580,8 @@
         },
         "official_url": "https://www.shanghai.gov.cn/nw17239/20260813/283e5f83f3654b088130e465229f991b.html",
         "sources": [
-          "https://www.shanghai.gov.cn/nw17239/20260813/283e5f83f3654b088130e465229f991b.html"
+          "https://www.shanghai.gov.cn/nw17239/20260813/283e5f83f3654b088130e465229f991b.html",
+          "https://english.shanghai.gov.cn/en-MajorConsumerEvents/20260430/e671bf33172246e6be59f80d29296c11.html"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
@@ -7508,12 +7601,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 21,
+        "total": 30,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
-          "sources": 5,
-          "complete": 4,
+          "sources": 10,
+          "complete": 8,
           "amap": 0
         },
         "external_used": false
@@ -7595,9 +7688,14 @@
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": "东育路500号",
-        "address_en": null,
+        "address_en": "500 Dongyu Road, Pudong New Area, Shanghai",
         "district_zh": "浦东新区",
-        "nearest_metro": null,
+        "nearest_metro": {
+          "station_zh": "东方体育中心",
+          "station_en": "Oriental Sports Center",
+          "line": "6、8、11号线",
+          "exit": null
+        },
         "foreigner_signals": {
           "english_signage": null,
           "foreign_cards": null,
@@ -7608,7 +7706,8 @@
         },
         "official_url": "https://www.shanghai.gov.cn/nw17239/20260813/283e5f83f3654b088130e465229f991b.html",
         "sources": [
-          "https://www.shanghai.gov.cn/nw17239/20260813/283e5f83f3654b088130e465229f991b.html"
+          "https://www.shanghai.gov.cn/nw17239/20260813/283e5f83f3654b088130e465229f991b.html",
+          "https://www.swireproperties.com/-/media/images/swireproperties/media/media-library/factsheets/taikoo-li-qiantan/taikoo-li-qiantan-factsheet_202406.ashx?sc_lang=en"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
@@ -7628,12 +7727,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 21,
+        "total": 30,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
-          "sources": 5,
-          "complete": 4,
+          "sources": 10,
+          "complete": 8,
           "amap": 0
         },
         "external_used": false
@@ -7654,9 +7753,14 @@
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": "上海迪士尼小镇",
-        "address_en": null,
+        "address_en": "Disneytown, Shanghai Disney Resort",
         "district_zh": "浦东新区",
-        "nearest_metro": null,
+        "nearest_metro": {
+          "station_zh": "迪士尼",
+          "station_en": "Disney Resort",
+          "line": "11号线",
+          "exit": null
+        },
         "foreigner_signals": {
           "english_signage": null,
           "foreign_cards": null,
@@ -7669,7 +7773,8 @@
         "official_url": "https://www.shanghaidisneyresort.com/experience/restaurant/donalds-dine-n-delights/",
         "sources": [
           "https://www.shanghaidisneyresort.com/experience/restaurant/donalds-dine-n-delights/",
-          "https://shcorporate.shanghaidisneyresort.com/wp-content/uploads/2023/01/%E6%96%B0%E9%97%BB%E7%A8%BF_%E4%B8%8A%E6%B5%B7%E8%BF%AA%E5%A3%AB%E5%B0%BC%E5%BA%A6%E5%81%87%E5%8C%BA%E5%B0%86%E4%BA%8E2023%E5%B9%B41%E6%9C%8813%E6%97%A5%E5%BC%80%E5%90%AF%E5%85%94%E5%B9%B4%E6%96%B0%E6%98%A5%E5%BA%86%E5%85%B8-%E9%82%80%E6%82%A8%E5%B0%BD%E4%BA%AB%E5%A5%87%E5%A6%99%E5%9B%A2%E5%9C%86-1.pdf"
+          "https://shcorporate.shanghaidisneyresort.com/wp-content/uploads/2023/01/%E6%96%B0%E9%97%BB%E7%A8%BF_%E4%B8%8A%E6%B5%B7%E8%BF%AA%E5%A3%AB%E5%B0%BC%E5%BA%A6%E5%81%87%E5%8C%BA%E5%B0%86%E4%BA%8E2023%E5%B9%B41%E6%9C%8813%E6%97%A5%E5%BC%80%E5%90%AF%E5%85%94%E5%B9%B4%E6%96%B0%E6%98%A5%E5%BA%86%E5%85%B8-%E9%82%80%E6%82%A8%E5%B0%BD%E4%BA%AB%E5%A5%87%E5%A6%99%E5%9B%A2%E5%9C%86-1.pdf",
+          "https://www.shanghaidisneyresort.com/en/information/transportation"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
@@ -7695,12 +7800,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 26,
+        "total": 29,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 4,
+          "complete": 7,
           "amap": 0
         },
         "external_used": false
@@ -7721,7 +7826,7 @@
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": "龙腾大道2266号6号楼一层107室",
-        "address_en": null,
+        "address_en": "Room 107, Level 1, Building 6, 2266 Longteng Avenue, Shanghai",
         "district_zh": "徐汇区",
         "nearest_metro": null,
         "foreigner_signals": {
@@ -7762,12 +7867,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 26,
+        "total": 28,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 4,
+          "complete": 6,
           "amap": 0
         },
         "external_used": false
@@ -7994,7 +8099,7 @@
         "name_en": "Waldorf Astoria Shanghai on the Bund",
         "aliases_zh": [],
         "aliases_en": [],
-        "address_zh": null,
+        "address_zh": "上海市黄浦区四川中路88号（新翼）；中山东一路2号（总会大楼）",
         "address_en": null,
         "district_zh": "黄浦区",
         "nearest_metro": null,
@@ -8010,7 +8115,8 @@
         "sources": [
           "https://www.hilton.com.cn/zh-cn/hotels/shawawa-waldorf-astoria-shanghai-on-the-bund",
           "https://www.hilton.com.cn/zh-cn/locations/china/shanghai-shanghai",
-          "https://ir.hilton.com/_assets/_de1e637820b6842c68b34801d11a8fd1/hilton/db/3577/34740/pdf/HLT_Investor_Presentation_-_November_2026.pdf"
+          "https://ir.hilton.com/_assets/_de1e637820b6842c68b34801d11a8fd1/hilton/db/3577/34740/pdf/HLT_Investor_Presentation_-_November_2026.pdf",
+          "https://www.hilton.com.cn/zh-CN/hotels/shawawa-waldorf-astoria-shanghai-on-the-bund"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
@@ -8041,12 +8147,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 26,
+        "total": 28,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 4,
+          "complete": 6,
           "amap": 0
         },
         "external_used": false
@@ -8068,8 +8174,8 @@
         "name_en": "The Westin Bund Center, Shanghai",
         "aliases_zh": [],
         "aliases_en": [],
-        "address_zh": null,
-        "address_en": null,
+        "address_zh": "上海市河南中路88号外滩中心",
+        "address_en": "Bund Center, 88 Henan Central Road, Shanghai, China 200002",
         "district_zh": null,
         "nearest_metro": null,
         "foreigner_signals": {
@@ -8084,7 +8190,8 @@
         "sources": [
           "https://www.marriott.com/en-us/hotels/shawi-the-westin-bund-center-shanghai/overview/",
           "https://www.marriott.com/en-us/destinations/china/shanghai.mi",
-          "https://help.marriott.com/s/article/Article-24483"
+          "https://help.marriott.com/s/article/Article-24483",
+          "https://www.marriott.com.cn/hotels/shawi-the-westin-bund-center-shanghai/overview/"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
@@ -8115,12 +8222,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 26,
+        "total": 29,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 4,
+          "complete": 7,
           "amap": 0
         },
         "external_used": false
@@ -8143,7 +8250,7 @@
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": "山阴路123号",
-        "address_en": null,
+        "address_en": "123 Shanyin Road, Shanghai",
         "district_zh": "虹口区",
         "nearest_metro": null,
         "foreigner_signals": {
@@ -8182,12 +8289,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 24,
+        "total": 26,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 5,
-          "complete": 7,
+          "complete": 9,
           "amap": 0
         },
         "external_used": false
@@ -8267,7 +8374,7 @@
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": "雁荡路14号",
-        "address_en": null,
+        "address_en": "14 Yandang Road, Huangpu District, Shanghai",
         "district_zh": "黄浦区",
         "nearest_metro": null,
         "foreigner_signals": {
@@ -8306,12 +8413,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 23,
+        "total": 24,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 5,
-          "complete": 6,
+          "complete": 7,
           "amap": 0
         },
         "external_used": false
@@ -8400,7 +8507,7 @@
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": "茂名南路7号103室",
-        "address_en": null,
+        "address_en": "Room 103, 7 South Maoming Road, Shanghai",
         "district_zh": "黄浦区",
         "nearest_metro": null,
         "foreigner_signals": {
@@ -8439,12 +8546,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 24,
+        "total": 26,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 5,
-          "complete": 7,
+          "complete": 9,
           "amap": 0
         },
         "external_used": false
@@ -8530,7 +8637,7 @@
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": "黄河路97号",
-        "address_en": null,
+        "address_en": "97 Huanghe Road, Shanghai",
         "district_zh": "黄浦区",
         "nearest_metro": null,
         "foreigner_signals": {
@@ -8569,12 +8676,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 23,
+        "total": 24,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 5,
-          "complete": 6,
+          "complete": 7,
           "amap": 0
         },
         "external_used": false
@@ -8796,10 +8903,15 @@
         "name_en": "Courtyard by Marriott Shanghai Xujiahui",
         "aliases_zh": [],
         "aliases_en": [],
-        "address_zh": null,
-        "address_en": null,
-        "district_zh": null,
-        "nearest_metro": null,
+        "address_zh": "上海市徐汇区虹桥路100号",
+        "address_en": "100 Hongqiao Road, Xuhui District, Shanghai, China 200030",
+        "district_zh": "徐汇区",
+        "nearest_metro": {
+          "station_zh": "徐家汇",
+          "station_en": "Xujiahui",
+          "line": "1、9、11号线",
+          "exit": null
+        },
         "foreigner_signals": {
           "english_signage": null,
           "foreign_cards": null,
@@ -8812,7 +8924,8 @@
         "sources": [
           "https://www.marriott.com/en-us/hotels/shasx-courtyard-shanghai-xujiahui/overview/",
           "https://www.marriott.com/en-us/destinations/china/shanghai.mi?pg=2",
-          "https://help.marriott.com/s/article/Article-24483"
+          "https://help.marriott.com/s/article/Article-24483",
+          "https://www.marriott.com.cn/hotels/shasx-courtyard-shanghai-xujiahui/overview/"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
@@ -8843,12 +8956,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 26,
+        "total": 31,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 4,
+          "complete": 9,
           "amap": 0
         },
         "external_used": false
@@ -8870,9 +8983,9 @@
         "name_en": "Moxy Shanghai Xuhui",
         "aliases_zh": [],
         "aliases_en": [],
-        "address_zh": null,
-        "address_en": null,
-        "district_zh": null,
+        "address_zh": "上海市徐汇区田林东路55号",
+        "address_en": "55 East Tianlin Road, Xuhui District, Shanghai, China 200235",
+        "district_zh": "徐汇区",
         "nearest_metro": null,
         "foreigner_signals": {
           "english_signage": null,
@@ -8886,7 +8999,8 @@
         "sources": [
           "https://www.marriott.com/en-us/hotels/shaos-moxy-shanghai-xuhui/overview/",
           "https://www.marriott.com/en-us/destinations/china/shanghai.mi?pg=3",
-          "https://help.marriott.com/s/article/Article-24483"
+          "https://help.marriott.com/s/article/Article-24483",
+          "https://www.marriott.com.cn/hotels/shaos-moxy-shanghai-xuhui/overview/"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
@@ -8917,12 +9031,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 26,
+        "total": 29,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 4,
+          "complete": 7,
           "amap": 0
         },
         "external_used": false
@@ -8944,9 +9058,9 @@
         "name_en": "Fairfield by Marriott Shanghai Xuhui Center",
         "aliases_zh": [],
         "aliases_en": [],
-        "address_zh": null,
-        "address_en": null,
-        "district_zh": null,
+        "address_zh": "上海市徐汇区枫林路街道肇嘉浜路831号",
+        "address_en": "831 Zhaojiabang Road, Fenglin Road Subdistrict, Xuhui District, Shanghai, China 200032",
+        "district_zh": "徐汇区",
         "nearest_metro": null,
         "foreigner_signals": {
           "english_signage": null,
@@ -8960,7 +9074,8 @@
         "sources": [
           "https://www.marriott.com/en-us/hotels/shaxf-fairfield-shanghai-xuhui-center/overview/",
           "https://www.marriott.com/en-us/destinations/china/shanghai.mi?pg=2",
-          "https://help.marriott.com/s/article/Article-24483"
+          "https://help.marriott.com/s/article/Article-24483",
+          "https://www.marriott.com.cn/hotels/shaxf-fairfield-shanghai-xuhui-center/overview/"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
@@ -8991,12 +9106,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 26,
+        "total": 29,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 4,
+          "complete": 7,
           "amap": 0
         },
         "external_used": false
@@ -9293,7 +9408,7 @@
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": "沪星路289弄1号",
-        "address_en": null,
+        "address_en": "1 Lane 289 Huxing Road, Minhang District, Shanghai, China 201101",
         "district_zh": "闵行区",
         "nearest_metro": null,
         "foreigner_signals": {
@@ -9338,12 +9453,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 26,
+        "total": 28,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 4,
+          "complete": 6,
           "amap": 0
         },
         "external_used": false
@@ -9366,7 +9481,7 @@
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": "沙埭浜路35号",
-        "address_en": null,
+        "address_en": "35 Shaduobang Road, Qingpu District, Shanghai, China 201799",
         "district_zh": "青浦区",
         "nearest_metro": null,
         "foreigner_signals": {
@@ -9411,12 +9526,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 26,
+        "total": 28,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 4,
+          "complete": 6,
           "amap": 0
         },
         "external_used": false
@@ -9439,7 +9554,7 @@
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": "张江路1206号",
-        "address_en": null,
+        "address_en": "1206 Zhangjiang Road, Pudong, Shanghai, China 201203",
         "district_zh": "浦东新区",
         "nearest_metro": null,
         "foreigner_signals": {
@@ -9484,12 +9599,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 26,
+        "total": 28,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 4,
+          "complete": 6,
           "amap": 0
         },
         "external_used": false
@@ -9511,7 +9626,7 @@
         "name_en": "Yi Xin Zhai Halal Restaurant",
         "aliases_zh": [],
         "aliases_en": [],
-        "address_zh": null,
+        "address_zh": "上海市杨浦区平凉路1625号",
         "address_en": null,
         "district_zh": "杨浦区",
         "nearest_metro": null,
@@ -9527,11 +9642,13 @@
         "official_url": "https://www.shanghai.gov.cn/yangpu/index.html",
         "sources": [
           "https://www.shanghai.gov.cn/yangpu/index.html",
-          "https://www.shanghai.gov.cn/nw4411/20260123/1cc9dd0a374945aeb3bb8517d30adb28.html"
+          "https://www.shanghai.gov.cn/nw4411/20260123/1cc9dd0a374945aeb3bb8517d30adb28.html",
+          "https://yptimes.shyp.gov.cn/html/2026-02/26/content_9401_19320217.htm",
+          "https://www.meet-in-shanghai.net/cn/news/new-years-shopping-and-eating-guide-invite-you-to-taste-the-intangible-cultural-heritage-delicacies-on-the-tip-of-your-tonguein-shanghai-celebrate-the-spring-festival-437952/"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
-        "notes": "营业依据为当前经营方点位或近期主管部门的具名记录。",
+        "notes": "营业依据为当前经营方点位或近期主管部门的具名记录。 杨浦区属媒体明确现门牌为平凉路1625号，市文旅近期活动亦定位该处。其他官方旧资料中的1503号属于旧地址。营业时段和预约规则仍无一手披露。",
         "subcategory": "halal",
         "hours_zh": null,
         "hours_source": null,
@@ -9553,12 +9670,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 25,
+        "total": 26,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 3,
+          "complete": 4,
           "amap": 0
         },
         "external_used": false
@@ -9646,7 +9763,7 @@
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": "淮海中路222号力宝广场二层",
-        "address_en": null,
+        "address_en": "Level 2, Lippo Plaza, 222 Middle Huaihai Road, Shanghai",
         "district_zh": "黄浦区",
         "nearest_metro": null,
         "foreigner_signals": {
@@ -9685,12 +9802,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 23,
+        "total": 24,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 5,
-          "complete": 6,
+          "complete": 7,
           "amap": 0
         },
         "external_used": false
@@ -9919,10 +10036,15 @@
         "name_en": "Renaissance Shanghai Yu Garden Hotel",
         "aliases_zh": [],
         "aliases_en": [],
-        "address_zh": null,
-        "address_en": null,
-        "district_zh": null,
-        "nearest_metro": null,
+        "address_zh": "上海市黄浦区河南南路159号",
+        "address_en": "159 South He Nan Road, Huangpu District, Shanghai, China 200010",
+        "district_zh": "黄浦区",
+        "nearest_metro": {
+          "station_zh": "豫园",
+          "station_en": "Yuyuan Garden",
+          "line": "10号线",
+          "exit": "1、3"
+        },
         "foreigner_signals": {
           "english_signage": null,
           "foreign_cards": null,
@@ -9935,13 +10057,14 @@
         "sources": [
           "https://www.marriott.com/en-us/hotels/shasy-renaissance-shanghai-yu-garden-hotel/overview/",
           "https://www.marriott.com/en-us/destinations/china/shanghai.mi",
-          "https://help.marriott.com/s/article/Article-24483"
+          "https://help.marriott.com/s/article/Article-24483",
+          "https://www.marriott.com.cn/hotels/shasy-renaissance-shanghai-yu-garden-hotel/overview/"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
         "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sat, Dec 26 - Sun, Dec 27。 官网样本为每房每晚人民币 ¥1,140。当前价以所选日期及房型的报价为准。 分档依据：万豪集团将此品牌列为 Premium。",
         "subcategory": "hotel",
-        "intro_short_zh": "从豫园站到上海老城厢，行程可以少换一次车。",
+        "intro_short_zh": "豫园站附近，适合把豫园和老城厢安排在同一天。",
         "intro_short_en": "A Yu Garden stay with Line 10 and an indoor pool.",
         "intro_long_zh": "酒店在河南南路159号，交通页给出豫园站。适合把豫园、老城厢排在同一段行程的人，店内也有室内泳池。",
         "intro_long_en": "Spend a morning around the old city and head back via Yuyuan Garden station. Marriott lists English at the hotel and an indoor pool for guests.",
@@ -9966,12 +10089,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 26,
+        "total": 31,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 4,
+          "complete": 9,
           "amap": 0
         },
         "external_used": false
@@ -9994,7 +10117,7 @@
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": "南京东路536号",
-        "address_en": null,
+        "address_en": "536 East Nanjing Road, Huangpu District, Shanghai",
         "district_zh": "黄浦区",
         "nearest_metro": null,
         "foreigner_signals": {
@@ -10029,12 +10152,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 26,
+        "total": 28,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 4,
+          "complete": 6,
           "amap": 0
         },
         "external_used": false
@@ -10057,7 +10180,12 @@
         "address_zh": "兰溪路300号",
         "address_en": null,
         "district_zh": "普陀区",
-        "nearest_metro": null,
+        "nearest_metro": {
+          "station_zh": "真如",
+          "station_en": "Zhenru",
+          "line": "11号线",
+          "exit": null
+        },
         "foreigner_signals": {
           "english_signage": null,
           "foreign_cards": null,
@@ -10094,12 +10222,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 21,
+        "total": 23,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 5,
-          "complete": 4,
+          "complete": 6,
           "amap": 0
         },
         "external_used": false
@@ -10186,10 +10314,15 @@
         "name_en": "Renaissance Shanghai Zhongshan Park Hotel",
         "aliases_zh": [],
         "aliases_en": [],
-        "address_zh": null,
-        "address_en": null,
-        "district_zh": null,
-        "nearest_metro": null,
+        "address_zh": "上海市长宁区长宁路1018号",
+        "address_en": "1018 Changning Road, Changning District, Shanghai, China 200042",
+        "district_zh": "长宁区",
+        "nearest_metro": {
+          "station_zh": "中山公园",
+          "station_en": "Zhongshan Park",
+          "line": "2、3、4号线",
+          "exit": null
+        },
         "foreigner_signals": {
           "english_signage": null,
           "foreign_cards": null,
@@ -10202,7 +10335,8 @@
         "sources": [
           "https://www.marriott.com/en-us/hotels/shabz-renaissance-shanghai-zhongshan-park-hotel/overview/",
           "https://www.marriott.com/en-us/destinations/china/shanghai.mi?pg=2",
-          "https://help.marriott.com/s/article/Article-24483"
+          "https://help.marriott.com/s/article/Article-24483",
+          "https://www.marriott.com.cn/hotels/shabz-renaissance-shanghai-zhongshan-park-hotel/overview/"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
@@ -10233,12 +10367,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 26,
+        "total": 31,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 4,
+          "complete": 9,
           "amap": 0
         },
         "external_used": false
