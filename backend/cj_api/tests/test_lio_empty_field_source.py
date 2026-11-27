@@ -141,12 +141,21 @@ class LoggedShape(unittest.TestCase):
                 ('spend 3 days waiting for my visa, plan Chengdu', 3), ('stay 3 days in quarantine', 3),
                 ('for 3 days I will be away, plan Chengdu', 3), ('规划3天的预算', 3), ('我想住3天的酒店', 3), ('stay 3 days at the hotel', 3),
                 ('玩3天', 3),   # not a plan request on its own
+                # fourth review round: the count sits in a later clause that is not the request itself
+                ('帮我规划北京行程，我在深圳待3天再过去', 3), ('帮我规划北京行程，我在医院住3天', 3), ('帮我规划成都行程，孩子在夏令营待3天', 3),
+                ('帮我规划成都行程，我爸妈来北京住3天', 3), ('帮我规划成都行程，路上要待3天', 3),
+                ('plan a trip to Beijing, I will stay 3 days in Shanghai first', 3), ('plan a Beijing trip, the kids stay 3 days at camp', 3),
+                ('plan a trip to Beijing, my mom will stay 3 days', 3), ('帮我规划成都行程，之后去重庆玩3天', 3),
+                ('帮我规划成都和重庆的行程，重庆玩3天', 3), ('帮我规划北京行程，我先在上海玩3天', 3), ('plan a trip to Beijing; Shanghai for 3 days', 3),
+                ('帮我规划成都行程，展会排3天', 3), ('帮我规划成都行程，婚礼安排3天', 3), ('帮我规划成都行程，猫寄养要3天的计划', 3),
+                ('帮我规划成都行程，车只租了3天的计划', 3), ('帮我规划成都行程，签证有效期3天', 3), ('帮我规划成都行程，我只能请3天假', 3),
                 # two counts in one message
                 ('玩2天，再玩3天', 2), ('玩2天，再玩3天', 3)):
             with self.subTest(text=text, claimed=claimed):
                 self.assertIsNone(_duration_quote(text, claimed))
         for text, claimed, quote in (('规划北京三日游', 3, '三日'), ('规划北京3日行程', 3, '3日'), ('规划成都三天两晚', 3, '三天'), ('三天', 3, '三天'),
-                                     ('3 days', 3, '3 days'), ('我想去成都玩3天，预算1000', 3, '3天'), ('去成都玩3天但是预算1000', 3, '3天'), ('帮我规划成都三天的行程，不要太累', 3, '三天'),
+                                     ('3 days', 3, '3 days'), ('帮我规划一个不累的成都3天行程', 3, '3天'), ('帮我规划无锡3天的行程', 3, '3天'),
+ ('我想去成都玩3天，预算1000', 3, '3天'), ('去成都玩3天但是预算1000', 3, '3天'), ('帮我规划成都三天的行程，不要太累', 3, '三天'),
                                      ('Plan a 3-day trip', 3, '3-day'),
                                      ('去成都玩十天', 10, '十天'),
                                      ('Plan 3 days in Chengdu', 3, '3 days')):

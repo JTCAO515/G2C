@@ -403,7 +403,8 @@ _BAD_AFTER=re.compile(r'\s*(?:[.．][0-9]|半|多|余|来|左右|上下|以?内|
 _ZH_REQUEST=re.compile(r'\s*(?:我想|我要|我们想|我们要|想|要)?去[^，,。.！!？?；;]{1,16}?玩\s*(?:'+_NUM+r')\s*天',re.I)
 _CLAUSE_BREAK=re.compile(r'[，,。.！!？?；;:：\n]|\bbut\b|\bthen\b|\band\b|但是?|可是|不过|然后',re.I)
 _CLAUSE_VETO=re.compile(
-    r'不|别|没|无|未|勿|取消|算了|免|上次|去年|前年|以前|从前|曾|刚|昨天|前天|朋友|同事|家人|亲戚|他们|她们|他|她|别人|老板|客户|'
+    r'不是|不想|不要|不去|不能|不用|不行|不会|不可|不再|别去|别玩|别安排|别规划|没有|没法|没能|无法|未能|勿|取消|算了|上次|去年|前年|以前|从前|曾经|昨天|前天|'
+    r'朋友|同事|家人|亲戚|他们|她们|别人|老板|客户|孩子|爸妈|父母|'
     r'会议|开会|出差|上班|值班|班|隔离|签证|转机|预算|费用|价格|酒店|住宿|机票|航班|工作|培训|考试|学习|休假|请假|'
     r"\b(?:not|no|never|neither|nor|without|cancel\w*|forget|last|previous\w*|ago|friend|friends|colleague\w*|boss|client\w*|"
     r"meeting\w*|work|working|conference|business|quarantine|isolation|visa|layover|budget|cost|price|hotel|flight|training|exam|"
@@ -431,8 +432,11 @@ def _duration_quote(text,days):
     if not(plain or _ZH_BEFORE.search(before[-6:])or _ZH_AFTER.match(tail)or _EN_BEFORE.search(before[-16:])or _EN_AFTER.match(tail)):
         return None
     if not plain:
-        if not(PLAN_REQUEST.match(text)or _ZH_REQUEST.match(text)or OPEN_PLAN.match(text)):return None
-        if _CLAUSE_VETO.search(_clause_of(text,match.start(),match.end())):return None
+        clause=_clause_of(text,match.start(),match.end())
+        # The count must sit in the clause that is itself the plan request ("帮我规划一个北京2天的行程"), not in a later
+        # clause about someone's stay elsewhere, a leg of the trip, or something that is not travel (third review round).
+        if not(PLAN_REQUEST.match(clause)or _ZH_REQUEST.match(clause)or OPEN_PLAN.match(clause)):return None
+        if _CLAUSE_VETO.search(clause):return None
     return match[0]
 
 
