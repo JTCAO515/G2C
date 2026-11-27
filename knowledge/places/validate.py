@@ -14,6 +14,7 @@ from pathlib import Path
 import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import devpack  # noqa: E402
 import generate  # noqa: E402
 import placelib  # noqa: E402
 
@@ -80,12 +81,14 @@ def main(argv=()):
             return 1
         for path in generate.write():
             print(f'wrote {path}')
+        pack = devpack.write()
+        print(f'wrote {pack}' if pack else 'no pending candidates: no development pack')
     else:
         docs, problems = validate()
-        out_of_date = generate.stale()
-        for path in out_of_date:
-            print(f'{path} is out of date; run python3 -B knowledge/places/validate.py --write', file=sys.stderr)
-        if problems or out_of_date:
+        for path in generate.stale():
+            problems.append(f'{path} is out of date; run python3 -B knowledge/places/validate.py --write')
+        problems += devpack.stale()
+        if problems:
             print('\n'.join(f'FAIL: {p}' for p in problems), file=sys.stderr)
             return 1
     print(f'PASS: {sum(len(d["places"]) for d in docs)} places in {len(docs)} city files, copies identical')
