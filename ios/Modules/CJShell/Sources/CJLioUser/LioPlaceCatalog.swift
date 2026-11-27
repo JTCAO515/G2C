@@ -153,10 +153,17 @@ enum LioPlaceToolsFeature {
 /// The Stay tool's filters. A hotel with no value for a filter that is set is left out (a "500–1000" search should
 /// not list hotels whose price we do not know).
 struct LioStayFilter: Equatable, Sendable {
+    struct City: Identifiable, Equatable, Sendable {
+        let id: String
+        let zh: String
+        let en: String
+    }
+
     /// The six cities the library covers, in the order the chips show them.
-    static let cities: [(id: String, zh: String, en: String)] = [
-        ("beijing", "北京", "Beijing"), ("shanghai", "上海", "Shanghai"), ("guangzhou", "广州", "Guangzhou"),
-        ("shenzhen", "深圳", "Shenzhen"), ("chengdu", "成都", "Chengdu"), ("chongqing", "重庆", "Chongqing"),
+    static let cities: [City] = [
+        City(id: "beijing", zh: "北京", en: "Beijing"), City(id: "shanghai", zh: "上海", en: "Shanghai"),
+        City(id: "guangzhou", zh: "广州", en: "Guangzhou"), City(id: "shenzhen", zh: "深圳", en: "Shenzhen"),
+        City(id: "chengdu", zh: "成都", en: "Chengdu"), City(id: "chongqing", zh: "重庆", en: "Chongqing"),
     ]
 
     var city: String?
