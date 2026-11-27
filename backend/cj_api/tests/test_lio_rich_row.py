@@ -7,7 +7,8 @@ import unittest
 from unittest import mock
 
 from cj_api.lio_dialogue_routes import RICH_VERSION, _message
-from cj_message import lio_entities as ent
+from cj_message import lio_cards, lio_entities as ent
+from cj_message.lio_followups import Destination
 from cj_message.lio_context import LioFollowups, LioLayout
 from cj_message.lio_followups import VERSION as FOLLOWUPS_VERSION
 from test_lio_entities import APPROVED, DOC
@@ -31,6 +32,55 @@ def stored(answer=ANSWER):
 
 def row(declared, *effects, text=ANSWER):
     return _message(item(), state(text, *effects), declared=declared)
+
+
+TAXI_BUTTON = dict(tool='taxi', parameters={}, label='打车')
+PAY_BUTTON = dict(tool='payment-guide', parameters={}, label='打开支付开通指南')
+PALACE = Destination('故宫博物院', '116.397026,39.918058', '景山前街4号', 'The Palace Museum')
+
+
+def buttons(*actions, chips=()):
+    import time
+    return LioFollowups(dict(actions=list(actions), chips=list(chips), issued_at=int(time.time()))).effect()
+
+
+class Cards(unittest.TestCase):
+    def setUp(self):
+        patcher = mock.patch.dict(os.environ, {'CJ_LIO_ANSWER_RICH': 'on'})
+        patcher.start()
+        self.addCleanup(patcher.stop)
+        self.metro = lio_cards.effect(lio_cards.build('北京地铁', 'zh', library_city='beijing'), 1)
+        self.taxi = lio_cards.effect(lio_cards.build('打车去故宫', 'zh', destination=PALACE, taxi_topic=True), 1)
+
+    def test_cards_ride_in_rich_for_a_declared_poll_only(self):
+        rich = row('rich', SPLIT, self.metro, CHIPS)['rich']
+        self.assertEqual([c['type'] for c in rich['cards']], ['metro'])
+        self.assertNotIn('rich', row(True, SPLIT, self.metro, CHIPS))
+        self.assertNotIn('rich', row(False, SPLIT, self.metro, CHIPS))
+        self.assertEqual(row(True, SPLIT, self.metro, CHIPS), row(True, SPLIT, CHIPS))
+
+    def test_a_taxi_card_replaces_the_taxi_button_and_nothing_else_changes(self):
+        both = buttons(TAXI_BUTTON, PAY_BUTTON)
+        rich_row = row('rich', SPLIT, self.taxi, both)
+        self.assertEqual([c['type'] for c in rich_row['rich']['cards']], ['taxi'])
+        self.assertEqual([a['tool'] for a in rich_row['followups']['actions']], ['payment-guide'])
+        self.assertEqual([a['tool'] for a in row(True, SPLIT, both)['followups']['actions']], ['taxi', 'payment-guide'])   # followups.1 row
+        only = row('rich', SPLIT, self.taxi, buttons(TAXI_BUTTON))
+        self.assertNotIn('followups', only)                       # the taxi button was all there was
+        with_chip = row('rich', SPLIT, self.taxi, buttons(TAXI_BUTTON, chips=[dict(label='打车怎么付款', ticket='a' * 43)]))
+        self.assertEqual(with_chip['followups'], dict(version='LIO-answer-followups.1', chips=[dict(label='打车怎么付款', ticket='a' * 43)]))
+
+    def test_a_row_with_a_trip_card_carries_no_tool_cards(self):
+        planned = _message(item(), state(ANSWER, SPLIT, self.metro, CHIPS), trip={'trip_id': 'trip:a'}, declared='rich')
+        self.assertNotIn('rich', planned)
+
+    def test_entities_and_cards_together_and_bad_card_records(self):
+        os.environ.update(CJ_LIO_ENTITIES='on')
+        with mock.patch.object(ent, 'approved_ids', lambda: frozenset(APPROVED)):
+            both = row('rich', SPLIT, ent.effect(ANSWER, ent.link(ANSWER, [DOC])), self.metro, CHIPS)['rich']
+        self.assertEqual(sorted(k for k in both if k != 'version'), ['cards', 'entities'])
+        for bad in ('lio_cards:oops', 'lio_cards:{}', 'lio_cards:null'):
+            self.assertNotIn('rich', row('rich', SPLIT, bad, CHIPS))
 
 
 class Rows(unittest.TestCase):
