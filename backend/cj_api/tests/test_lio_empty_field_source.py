@@ -322,6 +322,9 @@ class WishItems(unittest.TestCase):
         items = [dict(item) for item in keep]
         self.assertEqual(_drop_wish_items(items), 0)
         self.assertEqual(items, keep)
+        for request in ('帮我安排好北京两天的行程：第一天故宫和景山，第二天颐和园。', '日期还没确定，第一天故宫', '帮我确认一下路线，第一天故宫'):
+            with self.subTest(request=request):         # a request word in a whole-sentence quote must not keep a wish (the P0 would be back)
+                self.assertEqual(_drop_wish_items([wish('故宫', request)]), 1)
         for plain in ('第一天故宫和景山', '第二天颐和园', '想去故宫转转', 'I want to see the Palace Museum on day 1',
                       '第一天上午故宫', '下午逛景山', 'Day 2 Jinli and the old street'):
             with self.subTest(plain=plain):
