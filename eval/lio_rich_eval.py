@@ -16,6 +16,7 @@ the linker; precision and the other two are real gates. When the reviewed librar
 import argparse
 import json
 from pathlib import Path
+import re
 import sys
 import time
 
@@ -48,7 +49,7 @@ def dev_docs(path=DEV_PACK):
 def entity_metrics(cases, docs):
     """Precision and recall of `lio_entities.link` over the annotated answers; `docs` maps city id to its document."""
     from cj_message import lio_entities as ent
-    produced = correct = expected = found = 0
+    produced = correct = strict_correct = expected = found = 0
     rows = []
     for case in cases:
         city = ent.city_for_adcode(case['adcode'])
@@ -59,10 +60,13 @@ def entity_metrics(cases, docs):
         hit = [link for link in links if link in right]
         produced += len(links)
         correct += len(hit)
+        strict_correct += len([link for link in links if link in want])
         expected += len(want)
         found += len([w for w in want if w in links])
         rows.append(dict(id=case['id'], produced=links, missed=[w for w in want if w not in links], wrong=[l for l in links if l not in right]))
+    # `precision` counts an annotated acceptable link (a defensible extra) as right; `strict_precision` only the expected ones.
     return dict(precision=round(correct / produced, 4) if produced else 1.0, recall=round(found / expected, 4) if expected else 1.0,
+                strict_precision=round(strict_correct / produced, 4) if produced else 1.0, acceptable_extra=correct - strict_correct,
                 produced=produced, correct=correct, expected=expected, found=found, rows=rows)
 
 
@@ -76,13 +80,22 @@ def question_bank(paths=(ANSWER_QUALITY_CASES, FOLLOWUP_CASES)):
     return bank
 
 
+_NOISE = re.compile(r'[\W_]+')
+
+
+def _key(text):
+    """A chip or question reduced to its words (case, spaces and punctuation gone), so a near copy compares equal."""
+    return _NOISE.sub('', text).casefold()
+
+
 def followup_metrics(bank):
-    """Share of normal answers whose chips are two or three, distinct, and not the question itself."""
+    """Share of normal answers whose chips are two or three, distinct, and not the question itself (near copies count)."""
     from cj_message import lio_followups as fu
     bad = []
     for cid, question, locale in bank:
         chips = fu.chips_for(question, locale)
-        if not (fu.MIN_CHIPS <= len(chips) <= fu.MAX_CHIPS) or len(set(chips)) != len(chips) or question.strip() in chips:
+        if (not (fu.MIN_CHIPS <= len(chips) <= fu.MAX_CHIPS) or len({_key(c) for c in chips}) != len(chips)
+                or _key(question) in {_key(c) for c in chips}):
             bad.append(cid)
     return dict(coverage=round(1 - len(bad) / len(bank), 4) if bank else 1.0, n=len(bank), uncovered=bad)
 
@@ -114,7 +127,8 @@ def run(library='dev', cases_path=CASES, docs=None):
     followups = followup_metrics(question_bank())
     tool_cards = card_metrics(value['cards'])
     report = dict(version=VERSION, library=library, note=DEV_LIBRARY_NOTE if library == 'dev' else '', generated=int(time.time()),
-                  entity_precision=entities['precision'], entity_recall=entities['recall'], followup_coverage=followups['coverage'],
+                  entity_precision=entities['precision'], entity_strict_precision=entities['strict_precision'],
+                  entity_recall=entities['recall'], followup_coverage=followups['coverage'],
                   card_accuracy=tool_cards['accuracy'], targets=TARGETS,
                   entities=entities, followups=followups, cards=tool_cards)
     report['missed'] = [name for name, target in TARGETS.items() if report[name] < target]

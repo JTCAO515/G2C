@@ -11,10 +11,10 @@ holds only human-approved places, and holds none until the first review is merge
 linker returns nothing.
 """
 from hashlib import sha256
-from functools import lru_cache
 import json
 import os
 import re
+import time
 import unicodedata
 
 ENTITIES_EFFECT = 'lio_entities:'
@@ -22,13 +22,15 @@ LIBRARY_VERSION = 'g2c-places.1'
 MAX_ENTITIES = 20
 SPAN = (2, 32)
 MAX_ANSWER_SCALARS = 200000
+MAX_LINK_SCALARS = 20000   # an answer is a few thousand characters; the linker does not scan more than this
 MIN_NAME = {'zh': 2, 'en': 4}
 _PLACE_ID = re.compile(r'pl_[a-z]{2}_[a-z0-9]+(?:_[a-z0-9]+)*')
 _MARKDOWN = set('*_`[]()<>#|\\~!')
 # A Chinese match followed by one of these is a different place (王府井站 is a station).
 ZH_STOP_SUFFIXES = ('号线', '机场', '大道', '胡同', '路', '街', '站', '区', '市', '县', '镇', '村', '口')
 EN_STOP_SUFFIXES = (' station', ' road', ' street', ' avenue', ' line', ' district', ' airport')
-_SKIP = re.compile(r'```.*?```|`[^`\n]*`|\[[^\]\n]*\]\([^)\n]*\)|https?://\S+', re.S)
+# The bounded runs keep a line of many unclosed `[` linear (each one scans at most 300 / 500 characters, not to the line end).
+_SKIP = re.compile(r'```.*?```|`[^`\n]*`|\[[^\]\n]{0,300}\]\([^)\n]{0,500}\)|https?://\S+', re.S)
 _HAS_HAN = re.compile(r'[㐀-鿿]')
 _ASCII_WORD = re.compile(r'[A-Za-z0-9]')
 
@@ -125,7 +127,7 @@ def link(answer, docs):
     only the first time it appears, at most MAX_ENTITIES. Fewer links rather than a wrong one: a doubtful
     match is skipped.
     """
-    if type(answer) is not str or not answer or len(answer) > MAX_ANSWER_SCALARS:
+    if type(answer) is not str or not answer or len(answer) > MAX_LINK_SCALARS:
         return []
     folded = _fold(answer)
     skipped = [m.span() for m in _SKIP.finditer(answer)]
@@ -208,19 +210,36 @@ def library_docs(city):
         return []
 
 
-@lru_cache(maxsize=1)
+_APPROVED = {'ids': None, 'until': 0.0}
+RETRY_SECONDS = 30.0   # a library that could not be read completely is read again after this long, not for the life of the process
+
+
 def approved_ids():
-    """Every approved place id of the library as a frozenset (the read-side check)."""
+    """Every approved place id of the library as a frozenset (the read-side check).
+
+    A complete read is kept for the life of the process. A read where any city document could not be loaded (a
+    missing or damaged file, a library that is empty today) is kept only RETRY_SECONDS, so a temporary failure
+    does not leave the process without entities until it restarts."""
+    now = time.monotonic()
+    if _APPROVED['ids'] is not None and now < _APPROVED['until']:
+        return _APPROVED['ids']
     from cj_fact.places import CITIES, load_city
     from cj_fact.policy import FactFailure
-    found = set()
+    found, complete = set(), True
     for city in CITIES:
         try:
             doc = load_city(city)
         except FactFailure:
+            complete = False
             continue
         found.update(place['id'] for place in doc['places'] if _approved(place))
-    return frozenset(found)
+    _APPROVED['ids'], _APPROVED['until'] = frozenset(found), (float('inf') if complete else now + RETRY_SECONDS)
+    return _APPROVED['ids']
+
+
+def forget_approved_ids():
+    """Drop the kept read (tests, and a library that was just replaced)."""
+    _APPROVED['ids'], _APPROVED['until'] = None, 0.0
 
 
 def entity_effect(answer, adcode, docs=None):

@@ -15,6 +15,9 @@ public struct LioSavedMemoryView: View {
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.lioMemorySuggestions) private var suggestions
     @Environment(\.lioCloseMemory) private var close
+    /// #2010: set when a plan's label asked for one memory; tried once, when the list has loaded.
+    @Environment(\.lioOpenMemoryItem) private var requestedItem
+    @State private var triedRequestedItem: String?
 
     public init(host: TypedMemoryContainerHost, language: ShellLanguage) {
         self.host = host
@@ -121,6 +124,7 @@ public struct LioSavedMemoryView: View {
                 }
             }
         }
+        .onChange(of: loadedItemIDs, initial: true) { _, ids in openRequestedItem(loaded: ids) }
         .onAppear {
             surface = host.enterSurface()
         }
@@ -142,6 +146,22 @@ public struct LioSavedMemoryView: View {
                     stoppedMemory = true
                 }
             }
+        }
+    }
+
+    /// The saved items the list has read; nil until it has.
+    private var loadedItemIDs: [String]? {
+        guard case .loaded(let items) = host.items else { return nil }
+        return items.filter { isSaved($0) }.map { $0.item.value.command.item_id }
+    }
+
+    /// A memory the label named opens at its own page when it is still in the list; one that was stopped or deleted
+    /// since (or is not on the first page) leaves the list showing, with no message.
+    private func openRequestedItem(loaded: [String]?) {
+        guard let requestedItem, triedRequestedItem != requestedItem, loaded != nil else { return }
+        triedRequestedItem = requestedItem
+        if case .item(let id) = LioMemoryOpening.target(itemID: requestedItem, loaded: loaded) {
+            path = [Data(id.utf8)]
         }
     }
 

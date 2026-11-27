@@ -17,6 +17,8 @@ import json
 import os
 import re
 
+from psycopg import Error as DatabaseError
+
 from .domain import Unavailable
 from .title_projection import derive_title, valid_title
 
@@ -75,11 +77,45 @@ def parse_used(effect_value):
         return None
 
 
+def _one(tx, item_id):
+    """The title of one item, or None. Each item runs under its own SAVEPOINT: a database error on one item rolls back to
+    it and leaves the later items readable (without it the whole transaction is aborted and every later query fails)."""
+    tx.cur.execute('SAVEPOINT cj_titles_item')
+    try:
+        title = _title(tx, item_id)
+    except DatabaseError:
+        tx.cur.execute('ROLLBACK TO SAVEPOINT cj_titles_item')      # if this fails too the read fails and `used` is left out
+        return None
+    except (Unavailable, ValueError, TypeError, KeyError):
+        return None
+    tx.cur.execute('RELEASE SAVEPOINT cj_titles_item')
+    return title
+
+
+def _title(tx, item_id):
+    item = tx.detail(item_id)
+    if item is None or item.status != 'active':
+        return None
+    command = item.command
+    tx.cur.execute('SELECT approved_input,confirmed,semantic_resolved FROM cj_memory_source WHERE scope=%s AND '
+                   'source_id=%s AND version=%s AND authorized AND active AND expires_at>clock_timestamp()',
+                   (tx.scope, command.source_id, command.source_version))
+    row = tx.cur.fetchone()
+    if row is None or bytes(row[0]) != command.raw or not (row[1] and row[2]):
+        return None
+    title = derive_title(command)
+    return title if title and valid_title(command.text, title) and len(title) <= 40 else None
+
+
 def memory_titles(repository, item_ids):
     """`{item_id: title}` for the ids that are active and whose source is valid now; at most MAX_USED ids are read.
 
     `repository` is the account's own memory repository (its scope and role); nothing here crosses accounts. Any
-    failure of one item leaves that item out; a failure to open the read raises, and the caller leaves `used` out.
+    failure of one item (a database error included: each item has its own SAVEPOINT) leaves that item out; a failure
+    to open the read raises, and the caller leaves `used` out.
+
+    It reads items and sources only and does not check `cj_memory_scope.active` (the write path's `lock_scope()` does):
+    a deactivated scope is not refused here, so a caller that must honor it checks it first.
     """
     ids = list(dict.fromkeys(i for i in item_ids if type(i) is str))[:MAX_USED]
     titles = {}
@@ -87,20 +123,7 @@ def memory_titles(repository, item_ids):
         return titles
     with repository.transaction() as tx:
         for item_id in ids:
-            try:
-                item = tx.detail(item_id)
-                if item is None or item.status != 'active':
-                    continue
-                command = item.command
-                tx.cur.execute('SELECT approved_input,confirmed,semantic_resolved FROM cj_memory_source WHERE scope=%s AND '
-                               'source_id=%s AND version=%s AND authorized AND active AND expires_at>clock_timestamp()',
-                               (tx.scope, command.source_id, command.source_version))
-                row = tx.cur.fetchone()
-                if row is None or bytes(row[0]) != command.raw or not (row[1] and row[2]):
-                    continue
-                title = derive_title(command)
-                if title and valid_title(command.text, title) and len(title) <= 40:
-                    titles[item_id] = title
-            except (Unavailable, ValueError, TypeError, KeyError):
-                continue
+            title = _one(tx, item_id)
+            if title is not None:
+                titles[item_id] = title
     return titles

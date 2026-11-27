@@ -86,6 +86,19 @@ class Build(unittest.TestCase):
             self.assertIn(f'LioTool("{tool}")', registry)
 
 
+class WorkerEnvironment(unittest.TestCase):
+    def test_the_city_table_imports_in_a_fresh_process_with_nothing_but_the_environment_set(self):
+        """`lio_cards._cities` imports `cj_api.lio_transport` lazily in the worker; if that import ever needed more than the
+        worker has, no card would be built and nothing would say so (#2075). A fresh interpreter, no switch, no test set-up."""
+        import subprocess
+        code = 'from cj_message import lio_cards; cities = lio_cards._cities(); print(len(cities), all(c in cities for c in lio_cards.METRO_CITIES))'
+        env = {key: value for key, value in os.environ.items() if not key.startswith('CJ_LIO_')}
+        done = subprocess.run([sys.executable, '-I', '-c', code], capture_output=True, text=True, env=dict(env, PYTHONPATH=os.pathsep.join(sys.path)),
+                              timeout=60)
+        self.assertEqual(done.returncode, 0, done.stderr[-600:])
+        self.assertEqual(done.stdout.split(), ['12', 'True'])
+
+
 class Stored(unittest.TestCase):
     def test_wire_returns_the_cards_in_table_order_one_per_type(self):
         built = cards.build('北京地铁，北京到上海高铁，美元汇率', 'zh', library_city='beijing')
@@ -110,6 +123,10 @@ class Stored(unittest.TestCase):
             self.assertIsNone(cards.wire(cards.effect([broken], 1)), field)
         half = json.loads(json.dumps(card)); del half['open']['parameters']['lng']
         self.assertIsNone(cards.wire(cards.effect([half], 1)))
+        for field in ('destination', 'lat', 'lng'):            # stored values were stripped when built: a padded one is damaged
+            padded = json.loads(json.dumps(card)); padded['open']['parameters'][field] = ' ' + padded['open']['parameters'][field] + ' '
+            self.assertIsNone(cards.wire(cards.effect([padded], 1)), field)
+        self.assertEqual(cards.wire(cards.effect([card], 1)), [card])
 
     def test_a_damaged_record_reads_as_nothing_and_never_raises(self):
         for value in ('lio_cards:', 'lio_cards:oops', 'lio_cards:[]', 'lio_cards:{}', 'lio_cards:{"cards":1,"issued_at":1}',
