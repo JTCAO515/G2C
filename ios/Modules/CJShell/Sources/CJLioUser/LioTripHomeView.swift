@@ -26,6 +26,11 @@ struct LioTripHome: View {
     @State private var previewNationality = ""
     /// Set by Debug previews only.
     private let keepsSettingsInMemory: Bool
+    /// #1979: G4's words under the six steps (items, tips, status lines). Nil when the bundled file fails its checks;
+    /// the rows then show as they did before.
+    private let todoContent: LioTodoContent?
+    /// Sends a chip's sentence to Lio and opens the chat. Chips are left out while the host does not give one.
+    private let askLio: ((String) -> Void)?
     /// #1995: `G2CTripCanvasEnabled`. Off, nothing on this page changes.
     private let canvasEnabled: Bool
     private let canvasStore: LioTripCanvasStore?
@@ -47,6 +52,8 @@ struct LioTripHome: View {
     @State private var confirmsEnd = false
     @State private var shownDone: Set<LioTripStage> = []
     @State private var showsPast = false
+    /// The step rows whose words are open (#1979).
+    @State private var expandedSteps: Set<String> = []
     /// What to do once the sheet that asked a question has closed (#1979).
     @State private var after: After?
 
@@ -61,8 +68,11 @@ struct LioTripHome: View {
          savedPlans: LioSavedPlansModel? = nil, tools: LioTripHomeTools,
          showAllTrips: @escaping () -> Void, openChat: @escaping () -> Void,
          fixedNow: Date? = nil, timeZone: TimeZone = .current, model: LioTripHomeModel? = nil,
-         keepsSettingsInMemory: Bool = false, canvasEnabled: Bool = LioTripCanvasFeature.enabledInBuild) {
+         keepsSettingsInMemory: Bool = false, canvasEnabled: Bool = LioTripCanvasFeature.enabledInBuild,
+         todoContent: LioTodoContent? = LioTodoContent.bundled(), askLio: ((String) -> Void)? = nil) {
         self.language = language
+        self.todoContent = todoContent
+        self.askLio = askLio
         self.keepsSettingsInMemory = keepsSettingsInMemory
         self.canvasEnabled = canvasEnabled
         canvasStore = canvasEnabled ? LioTripCanvasStore(tripHome: store) : nil
@@ -479,26 +489,29 @@ struct LioTripHome: View {
         let layout = typeSize.isAccessibilitySize
             ? AnyLayout(VStackLayout(alignment: .leading, spacing: LioTheme.Spacing.xs))
             : AnyLayout(HStackLayout(alignment: .top, spacing: LioTheme.Spacing.sm))
-        return layout {
-            HStack(alignment: .top, spacing: LioTheme.Spacing.sm) {
-                tickControl(task)
-                taskText(task)
-            }
-            if !typeSize.isAccessibilitySize { Spacer(minLength: 0) }
-            if task.hasGo {
-                Button { open(task) } label: {
-                    Text(task.isDone ? language.text("View", "查看") : LioTripHomeCopy.go(language))
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(task.isDone ? LioTheme.inkSecondary : LioTheme.vermilion)
-                        .padding(.horizontal, LioTheme.Spacing.sm)
-                        .frame(minWidth: 44, minHeight: 44)
-                        .background(LioTheme.surfaceSunken, in: Capsule())
+        return VStack(alignment: .leading, spacing: LioTheme.Spacing.xs) {
+            layout {
+                HStack(alignment: .top, spacing: LioTheme.Spacing.sm) {
+                    tickControl(task)
+                    taskText(task)
                 }
-                .buttonStyle(.plain)
-                .accessibilityLabel((task.isDone ? language.text("View: ", "查看：") : language.text("Go: ", "去办："))
-                                    + LioTripHomeCopy.title(task, language))
-                .accessibilityIdentifier("lio.trip-home.go.\(task.key)")
+                if !typeSize.isAccessibilitySize { Spacer(minLength: 0) }
+                if task.hasGo {
+                    Button { open(task) } label: {
+                        Text(task.isDone ? language.text("View", "查看") : LioTripHomeCopy.go(language))
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(task.isDone ? LioTheme.inkSecondary : LioTheme.vermilion)
+                            .padding(.horizontal, LioTheme.Spacing.sm)
+                            .frame(minWidth: 44, minHeight: 44)
+                            .background(LioTheme.surfaceSunken, in: Capsule())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel((task.isDone ? language.text("View: ", "查看：") : language.text("Go: ", "去办："))
+                                        + LioTripHomeCopy.title(task, language))
+                    .accessibilityIdentifier("lio.trip-home.go.\(task.key)")
+                }
             }
+            stepWords(task)
         }
         .padding(LioTheme.Spacing.sm)
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -585,6 +598,118 @@ struct LioTripHome: View {
                 }
                 .foregroundStyle(LioTheme.vermilion)
                 .accessibilityIdentifier("lio.trip-home.source.\(key).\(index)")
+            }
+        }
+    }
+
+    // MARK: - The words under a step (#1979, G4)
+
+    /// "Details" under a step's row opens G4's items for it, today's ones only (`LioTodoContent.visibleItems`), then
+    /// the sentences the traveller can send to Lio. The row itself, its tick and its "Go" are unchanged.
+    @ViewBuilder private func stepWords(_ task: LioTripTask) -> some View {
+        if let step = todoContent?.step(forTaskKey: task.key) {
+            let context = todoContext
+            let items = LioTodoContent.visibleItems(in: step, context)
+            let chips = askLio == nil ? [] : step.chips
+            if !items.isEmpty || !chips.isEmpty {
+                let open = expandedSteps.contains(task.key)
+                Button {
+                    if open { expandedSteps.remove(task.key) } else { expandedSteps.insert(task.key) }
+                } label: {
+                    Label(open ? language.text("Hide details", "收起详情") : language.text("Details", "详情"),
+                          systemImage: open ? "chevron.up" : "chevron.down")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(LioTheme.inkSecondary)
+                        .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(language.text("Details: ", "详情：") + LioTripHomeCopy.title(task, language))
+                .accessibilityValue(open ? language.text("Expanded", "已展开") : language.text("Collapsed", "已收起"))
+                .accessibilityIdentifier("lio.trip-home.steps.toggle.\(task.key)")
+                if open {
+                    VStack(alignment: .leading, spacing: LioTheme.Spacing.sm) {
+                        if let line = LioTodoContent.stateLine(in: step, done: task.isDone, context) {
+                            Text(line.text(language))
+                                .font(.footnote).foregroundStyle(LioTheme.inkSecondary)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                        if let note = LioTodoContent.note(in: step, context) {
+                            Text(note.text(language))
+                                .font(.footnote).foregroundStyle(LioTheme.inkSecondary)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                        ForEach(items) { item in stepItem(item) }
+                        if !chips.isEmpty { stepChips(chips, key: task.key) }
+                    }
+                    .accessibilityIdentifier("lio.trip-home.steps.content.\(task.key)")
+                }
+            }
+        }
+    }
+
+    /// What the filter reads about this traveller and the day. The clock is the page's own, so a pinned preview
+    /// and the real phone agree with the rest of the page. No arrival hub is confirmed anywhere yet, so the hub
+    /// buttons stay out.
+    private var todoContext: LioTodoContext {
+        LioTodoContext(now: fixedNow ?? .now, cityID: model.profile?.cityID)
+    }
+
+    /// One of the question sentences of a step, in the page's language, or nil to keep the page's own wording.
+    private func todoPrompt(_ name: String, step number: Int) -> String? {
+        guard let steps = todoContent?.steps, steps.indices.contains(number - 1) else { return nil }
+        return LioTodoContent.prompt(name, in: steps[number - 1], todoContext)?.text(language)
+    }
+
+    private func stepItem(_ item: LioTodoContent.VisibleItem) -> some View {
+        VStack(alignment: .leading, spacing: LioTheme.Spacing.xxs) {
+            Rectangle().fill(LioTheme.hairline).frame(height: 1).accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: LioTheme.Spacing.xxs) {
+                Text(item.title.text(language))
+                    .font(.subheadline.weight(.semibold)).foregroundStyle(LioTheme.ink)
+                Text(item.body.text(language))
+                    .font(.footnote).foregroundStyle(LioTheme.inkSecondary)
+                if let tip = item.tip {
+                    Text(tip.text(language))
+                        .font(.footnote).foregroundStyle(LioTheme.inkSecondary)
+                }
+            }
+            .fixedSize(horizontal: false, vertical: true)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.top, LioTheme.Spacing.xs)
+            .accessibilityElement(children: .combine)
+            if let button = item.button {
+                Link(destination: button.destination) {
+                    Label(button.text.text(language), systemImage: "arrow.up.right.square")
+                        .font(.subheadline.weight(.semibold))
+                        .multilineTextAlignment(.leading)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .frame(minHeight: 44, alignment: .leading)
+                        .contentShape(Rectangle())
+                }
+                .foregroundStyle(LioTheme.vermilion)
+                .accessibilityIdentifier("lio.trip-home.steps.button.\(item.id)")
+            }
+        }
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("lio.trip-home.steps.item.\(item.id)")
+    }
+
+    private func stepChips(_ chips: [LioTodoContent.Chip], key: String) -> some View {
+        LioChipFlow(spacing: LioTheme.Spacing.xs) {
+            ForEach(Array(chips.enumerated()), id: \.offset) { index, chip in
+                let sentence = chip.text.text(language)
+                Button { askLio?(sentence) } label: {
+                    Text(sentence)
+                        .font(.subheadline).foregroundStyle(LioTheme.ink)
+                        .multilineTextAlignment(.leading)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .padding(.horizontal, LioTheme.Spacing.sm)
+                        .frame(minHeight: 44)
+                        .background(LioTheme.surfaceSunken, in: RoundedRectangle(cornerRadius: LioTheme.Radius.small))
+                }
+                .buttonStyle(.plain)
+                .accessibilityIdentifier("lio.trip-home.steps.chip.\(key).\(index)")
             }
         }
     }
@@ -799,7 +924,9 @@ struct LioTripHome: View {
                     }
             }
         case .arrival:
-            LioTripArrivalAsk(language: language, profile: model.profile) { day, number in
+            LioTripArrivalAsk(language: language, profile: model.profile,
+                              dayQuestion: todoPrompt("date", step: 2),
+                              numberQuestion: todoPrompt("flight_or_train", step: 2)) { day, number in
                 model.updateOrStart { profile in
                     profile.arrival = day
                     profile.arrivalNumber = number

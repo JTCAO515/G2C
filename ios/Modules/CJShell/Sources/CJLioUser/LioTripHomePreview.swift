@@ -157,7 +157,8 @@ extension LioTripHomePreview {
         return LioTripHome(language: language, store: nil, plans: scene == .none ? [] : [plan(language)],
                            tools: tools(scene, language), showAllTrips: {}, openChat: openChat,
                            fixedNow: now(scene), timeZone: beijing,
-                           model: LioTripHomeModel(store: nil, initial: snapshot(scene)), keepsSettingsInMemory: true)
+                           model: LioTripHomeModel(store: nil, initial: snapshot(scene)), keepsSettingsInMemory: true,
+                           askLio: { _ in openChat() })
     }
 }
 #endif

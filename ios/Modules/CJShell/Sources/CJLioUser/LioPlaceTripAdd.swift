@@ -28,3 +28,32 @@ extension LioTripCanvasStore {
         }
     }
 }
+
+extension LioPlaceTripAdd {
+    /// What the Stay and Explore tools show as "added": the place is on the "Want to go" list, now or already.
+    var isOnWantToGoList: Bool { self == .added || self == .alreadyThere }
+
+    /// Today, by the clock in China, where the trip happens.
+    @Sendable static func todayInChina() -> LioTripDay { LioTripDay(date: Date(), timeZone: LioTripChecklist.beijing) }
+
+    /// The host's "Add to trip" (#2057, #2004, #2005), one rule for the place card and the tool pages: nil unless the
+    /// canvas is on in this build (`canvasOn`) and the phone has a trip folder (`store`), so the button is not shown;
+    /// otherwise adds to the canvas of the current plan, read when the button is tapped.
+    @MainActor
+    static func adder(canvasOn: Bool, store: LioTripCanvasStore?, plans: [LioPlanSummary],
+                      today: @escaping @Sendable () -> LioTripDay = LioPlaceTripAdd.todayInChina) -> (@MainActor @Sendable (LioPlace) -> LioPlaceTripAdd)? {
+        guard canvasOn, let store else { return nil }
+        return { place in
+            store.addWish(place, plan: LioTripChecklist.currentPlan(profile: nil, plans: plans, today: today()))
+        }
+    }
+
+    /// The tool pages' `lioAddPlaceToTrip`: the same add, answered as "did the place end up on the list" (a failed
+    /// write says no, so no "Added" notice).
+    @MainActor
+    static func toolAdder(canvasOn: Bool, store: LioTripCanvasStore?, plans: [LioPlanSummary],
+                          today: @escaping @Sendable () -> LioTripDay = LioPlaceTripAdd.todayInChina) -> (@MainActor (LioPlace) -> Bool)? {
+        guard let add = adder(canvasOn: canvasOn, store: store, plans: plans, today: today) else { return nil }
+        return { (place: LioPlace) -> Bool in add(place).isOnWantToGoList }
+    }
+}
