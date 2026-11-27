@@ -3,8 +3,8 @@ import Foundation
 /// #1996 / #1995: the trip canvas (T-2) to the trip map's input (T-3).
 ///
 /// Days are numbered across the whole trip in the order the timeline shows them (day 1 is the first day of the first
-/// city segment), and a day keeps its colour by that position, so the map and the timeline agree. A point's number is
-/// its place in its day, the same as in the timeline. The "want to go" inbox is not on a day, so it is not on the map.
+/// city segment), and a day takes its colour from that number. A point's number is its place in its day. (The
+/// timeline itself shows only "Day N" and does not use the map colours or pin numbers yet.) The "want to go" inbox is not on a day, so it is not on the map.
 /// The way between two neighbouring points becomes the label of that leg ("Transit 25 min"). Coordinates go through
 /// unchanged (GCJ-02, see LioTripMapModel.swift).
 extension LioTripMapInput {

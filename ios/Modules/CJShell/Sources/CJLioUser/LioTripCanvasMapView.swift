@@ -11,9 +11,13 @@ struct LioTripCanvasMapView<Layer: LioTripMapLayer>: View {
 
     private var input: LioTripMapInput { LioTripMapInput(canvas: canvas, language: language) }
 
-    private var selectedName: String? {
-        canvas.segments.flatMap(\.days).flatMap(\.points).first { $0.id == selected }?.name(language)
+    /// The name of the point with `id` in `canvas`, or nil when there is no such point (or no selection).
+    static func name(ofPoint id: String?, in canvas: LioTripCanvas, language: LioLanguage) -> String? {
+        guard let id else { return nil }
+        return canvas.segments.flatMap(\.days).flatMap(\.points).first { $0.id == id }?.name(language)
     }
+
+    private var selectedName: String? { Self.name(ofPoint: selected, in: canvas, language: language) }
 
     var body: some View {
         VStack(alignment: .leading, spacing: LioTheme.Spacing.sm) {

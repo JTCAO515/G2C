@@ -84,12 +84,41 @@ import Testing
         }
     }
 
-    @Test func theMapPageTakesAnyLayerAndOnlyPlacedPointsArePins() {
+    @Test func onlyPlacedPointsArePinsAndTheRestAreListed() {
         let canvas = LioTripCanvas(plan: LioTripCanvasTests.plan())
-        let page = LioTripCanvasMapView(canvas: canvas, language: .english, layer: RecordingLayer())
-        #expect(page.canvas == canvas)
         let scene = LioTripMapScene(input(canvas), language: .english)
         #expect(scene.pins.count == 2)                                                // a and b have positions; c is listed below
         #expect(scene.unplaced.map(\.pointID).contains("c"))
+    }
+
+    @Test func theMapPageTakesAnyLayerAndKeepsTheCanvas() {
+        let canvas = LioTripCanvas(plan: LioTripCanvasTests.plan())
+        let page = LioTripCanvasMapView(canvas: canvas, language: .english, layer: RecordingLayer())
+        #expect(page.canvas == canvas)
+        #expect(page.language == .english)
+    }
+
+    @Test func aTappedPointIsNamedInTheReaderLanguageAndAnUnknownOneIsNot() {
+        let canvas = LioTripCanvas(plan: LioTripCanvasTests.plan())
+        typealias Page = LioTripCanvasMapView<RecordingLayer>
+        let first = canvas.segments.flatMap(\.days).flatMap(\.points)[0]
+        #expect(Page.name(ofPoint: first.id, in: canvas, language: .english) == first.name(.english))
+        #expect(Page.name(ofPoint: first.id, in: canvas, language: .chinese) == first.name(.chinese))
+        #expect(Page.name(ofPoint: "no-such-point", in: canvas, language: .english) == nil)
+        #expect(Page.name(ofPoint: nil, in: canvas, language: .english) == nil)
+    }
+
+    @Test func notANumberAndOutOfRangeCoordinatesAreNotPins() {
+        var canvas = LioTripCanvas(emptyTripID: "local")
+        func point(_ id: String, _ lat: Double, _ lng: Double) -> LioTripCanvas.Point {
+            .init(id: id, placeID: nil, nameZH: id, nameEN: id, address: nil,
+                  coordinate: .init(latitude: lat, longitude: lng), time: nil, kind: .sight, origin: .user)
+        }
+        canvas.segments[0].days = [.init(id: "d", date: nil, theme: "", area: "", points: [
+            point("nan", .nan, 116), point("inf", .infinity, 116), point("lng", 39, 500), point("ok", 39.9, 116.4),
+        ])]
+        let scene = LioTripMapScene(input(canvas), language: .english)
+        #expect(scene.pins.map(\.id) == ["ok"])
+        #expect(Set(scene.unplaced.map(\.pointID)) == ["nan", "inf", "lng"])
     }
 }
