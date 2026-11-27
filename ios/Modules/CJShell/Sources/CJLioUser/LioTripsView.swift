@@ -94,7 +94,7 @@ struct LioItineraryCard<Actions: View>: View {
 }
 
 /// Lays chips out left to right and starts a new line when the next one no longer fits.
-private struct LioChipFlow: Layout {
+struct LioChipFlow: Layout {
     var spacing: CGFloat
 
     func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
