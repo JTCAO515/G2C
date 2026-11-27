@@ -15,7 +15,8 @@ from cj_agent.run_timing import accepted
 from cj_run.display_snapshot import SnapshotTooLarge
 
 from cj_message.lio_followups import VERSION as FOLLOWUPS_VERSION, wire_followups
-from cj_message.lio_entities import ENTITIES_EFFECT, approved_ids, rich_enabled, wire as wire_entities
+from cj_message import lio_entities
+from cj_message.lio_entities import ENTITIES_EFFECT
 
 from .local_lio_planning import ITINERARY_PREVIEW_VERSION,read_itinerary_preview
 from .lio_weather import CITY_EFFECT,reference as city_weather_reference
@@ -127,11 +128,11 @@ def _rich(answer, entities):
     a bad or missing part is left out, `rich` never fails the page. Parts are added here as their tickets land
     (entities D-1 #1989; cards D-2 #1990; receipt T-1 #1994; memory M-1/M-3)."""
     try:
-        if not rich_enabled():
+        if not lio_entities.rich_enabled():
             return None   # off: a rich declaration reads exactly like followups.1, not a 400
         value = {}
         if entities is not None:
-            rows = wire_entities(entities, answer, approved_ids().__contains__)
+            rows = lio_entities.wire(entities, answer, lio_entities.approved_ids().__contains__)
             if rows:
                 value['entities'] = rows
         if not value:

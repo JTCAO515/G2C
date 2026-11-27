@@ -27,7 +27,7 @@ DOC = dict(version='g2c-places.1', city='beijing', places=[
     place('pl_bj_wangfujing', '王府井', 'Wangfujing', ['王府井大街']),
     place('pl_bj_tiantan', '天坛公园', 'Temple of Heaven', ['天坛']),
     place('pl_bj_old', '老地方', 'Old Place', status='retired'),
-    place('pl_bj_short', '井', 'Jing'),                 # too short to match by name
+    place('pl_bj_short', '井', 'Jin'),                 # too short to match by name
     place('pl_bj_md', '星*号', 'Star*Place'),            # a Markdown character: never matched
 ])
 APPROVED = {p['id'] for p in DOC['places'] if p['review']['status'] == 'approved'}
@@ -69,7 +69,7 @@ class Linker(unittest.TestCase):
             self.assertEqual(items(answer), [], answer)
 
     def test_retired_unapproved_short_and_markdown_names_are_never_linked(self):
-        self.assertEqual(items('老地方 Old Place 很好。星*号 Star*Place 井 Jing'), [])
+        self.assertEqual(items('老地方 Old Place 很好。星*号 Star*Place 井 Jin'), [])
         unreviewed = dict(DOC, places=[place('pl_bj_new', '新地方', 'New Place', status='pending')])
         self.assertEqual(items('新地方 New Place', (unreviewed,)), [])
 
@@ -121,7 +121,6 @@ class Effect(unittest.TestCase):
             'lio_entities:' + json.dumps(dict(good, items='x')),
             'lio_entities:' + json.dumps(dict(good, items=[[0, 1, 'pl_bj_gugong']])),            # one scalar
             'lio_entities:' + json.dumps(dict(good, items=[[3, 5, 'PL_BJ_GUGONG']])),
-            'lio_entities:' + json.dumps(dict(good, items=[[3, 5, 'pl_bj_gugong'], [4, 6, 'pl_bj_jingshan']])),   # overlap
             'lio_entities:' + json.dumps(dict(good, items=[[3.0, 5, 'pl_bj_gugong']])),
             'lio_entities:' + json.dumps(dict(good, items=[[True, 5, 'pl_bj_gugong']])),
             'lio_entities:' + json.dumps(dict(good, extra=1)),
@@ -131,6 +130,12 @@ class Effect(unittest.TestCase):
         for value in (None, 5, b'x'):
             self.assertIsNone(ent.wire(value, answer, lambda pid: True))
         self.assertIsNone(ent.wire(ent.effect(answer, items(answer)), None, lambda pid: True))
+
+    def test_an_overlapping_entry_is_dropped_alone(self):
+        answer = '先去故宫。'
+        crossed = 'lio_entities:' + json.dumps(dict(answer_sha256=ent.answer_sha256(answer), places='g2c-places.1',
+                                                   items=[[3, 5, 'pl_bj_gugong'], [4, 5, 'pl_bj_jingshan']]))
+        self.assertEqual([r['place_id'] for r in ent.wire(crossed, answer, lambda pid: True)], ['pl_bj_gugong'])
 
     def test_read_checks_use_the_same_span_rules_as_the_writer(self):
         answer = '王府井站很近，也去天坛。'

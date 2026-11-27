@@ -190,7 +190,7 @@ def wire(effect_value, answer, is_approved):
             seen.add(place_id)
             last_end = end
         return rows or None
-    except (ValueError, TypeError, RecursionError):
+    except Exception:   # a stored value of any shape reads as nothing; the row still goes out
         return None
 
 
