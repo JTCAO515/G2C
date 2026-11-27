@@ -1,3 +1,4 @@
+import CJMessageHTTP
 import Foundation
 import Observation
 import SwiftUI
@@ -45,6 +46,19 @@ enum LioConsentFeature {
         /// Whether content may be sent to Alibaba Cloud Model Studio, and when that last changed.
         let aiProcessing: Bool
         let aiChangedAt: Date
+        /// #1999: whether Lio may offer to remember preferences. Absent until the traveller has been asked once. It lives
+        /// in this file, the account's one consent file, so it is kept and erased with the other choices.
+        var memory: Memory? = nil
+
+        struct Memory: Codable, Equatable {
+            let state: LioMemoryConsentWire.State
+            let changedAt: Date
+            /// The `request_id` of the write that carries this choice to the server; a retry sends the same one.
+            let requestID: String
+            let textVersion: String
+            /// The server has answered this choice. Until then the choice is only on this device.
+            let synced: Bool
+        }
     }
 
     /// The saved choices, or nil. A damaged or newer file reads as no choice: the page is shown again.
@@ -122,12 +136,85 @@ final class LioConsent {
     @discardableResult
     func setAIProcessing(_ on: Bool, at date: Date = .now, isCurrent: @MainActor () -> Bool = { true }) -> Bool {
         guard isCurrent(), let record else { return false }
-        let new = LioConsentStore.Record(version: 1, storageAgreedAt: record.storageAgreedAt, aiProcessing: on, aiChangedAt: date)
+        let new = LioConsentStore.Record(version: 1, storageAgreedAt: record.storageAgreedAt, aiProcessing: on, aiChangedAt: date,
+                                         memory: record.memory)
         do { try store?.save(new) } catch { return false }
         self.record = new
         revision += 1
         return true
     }
+
+    // MARK: memory (#1999)
+
+    /// The traveller's choice about memory suggestions on this device. `undecided` until they have been asked once.
+    var memoryChoice: LioMemoryChoice {
+        switch record?.memory?.state {
+        case .granted?: .granted
+        case .withdrawn?: .withdrawn
+        case nil: .undecided
+        }
+    }
+
+    /// The choice the server has not answered yet, to be written with exactly these values; nil when it has.
+    var memoryUnsynced: LioMemoryConsentWire.Request? {
+        guard let memory = record?.memory, !memory.synced else { return nil }
+        return LioMemoryConsentWire.Request(state: memory.state, textVersion: memory.textVersion, requestID: memory.requestID)
+    }
+
+    /// What the chat does with memory suggestions under an answer (see `LioMemoryCandidateGate`).
+    var memoryCandidateGate: LioMemoryCandidateGate {
+        guard storageAgreed else { return .hide }
+        switch memoryChoice {
+        case .granted: return .show
+        case .withdrawn: return .hide
+        // AI processing is what generates suggestions: while it is off nothing is asked (docs/privacy §3.3).
+        case .undecided: return aiProcessing ? .ask : .hide
+        }
+    }
+
+    /// Records the answer to the one question, or a later change under Me → Privacy, before it takes effect: a choice
+    /// that could not be saved never looks made. Every change is a new user action with its own `request_id`; choosing
+    /// what is already chosen changes nothing. The write to the server follows (`LioMemoryConsentSync`); until it
+    /// succeeds the choice is on this device only, and a withdrawal already stops the suggestions here.
+    @discardableResult
+    func setMemory(_ granted: Bool, requestID: String = LioMemoryConsentSync.newRequestID(), at date: Date = .now,
+                   isCurrent: @MainActor () -> Bool = { true }) -> Bool {
+        guard isCurrent(), let record else { return false }
+        let state: LioMemoryConsentWire.State = granted ? .granted : .withdrawn
+        if record.memory?.state == state { return true }
+        let memory = LioConsentStore.Record.Memory(state: state, changedAt: date, requestID: requestID,
+                                                   textVersion: LioMemoryConsentCopy.textVersion, synced: false)
+        return replace(memory)
+    }
+
+    /// The server answered the write with this `request_id`. A later choice has another id and stays unsynced.
+    func markMemorySynced(requestID: String) {
+        guard let memory = record?.memory, memory.requestID == requestID, !memory.synced else { return }
+        _ = replace(LioConsentStore.Record.Memory(state: memory.state, changedAt: memory.changedAt, requestID: memory.requestID,
+                                                  textVersion: memory.textVersion, synced: true))
+    }
+
+    private func replace(_ memory: LioConsentStore.Record.Memory) -> Bool {
+        guard let record else { return false }
+        let new = LioConsentStore.Record(version: 1, storageAgreedAt: record.storageAgreedAt, aiProcessing: record.aiProcessing,
+                                         aiChangedAt: record.aiChangedAt, memory: memory)
+        do { try store?.save(new) } catch { return false }
+        self.record = new
+        revision += 1
+        return true
+    }
+}
+
+enum LioMemoryChoice: Equatable { case undecided, granted, withdrawn }
+
+/// What the chat does with the memory suggestions that come with an answer.
+enum LioMemoryCandidateGate: Equatable {
+    /// Shown as buttons under the answer.
+    case show
+    /// Not shown yet: the question "let Lio remember your preferences?" comes first.
+    case ask
+    /// Not shown, and nothing is asked.
+    case hide
 }
 
 private struct LioConsentKey: EnvironmentKey {
@@ -155,4 +242,11 @@ extension EnvironmentValues {
 extension Optional where Wrapped == LioConsent {
     /// Whether content may go to the AI model: always when the build does not ask for consent.
     @MainActor var allowsAIProcessing: Bool { self?.aiProcessing ?? true }
+
+    /// What to do with memory suggestions (#1999). With the memory flag off, or in a build that keeps no consent, nothing
+    /// is asked and nothing is withheld, as before.
+    @MainActor func memoryCandidateGate(featureOn: Bool) -> LioMemoryCandidateGate {
+        guard featureOn, let consent = self else { return .show }
+        return consent.memoryCandidateGate
+    }
 }

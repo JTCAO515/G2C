@@ -37,6 +37,10 @@ public struct LioHome<MenuContent: View>: View {
     private let chatLibrary: LioChatLibrary?
     private let tripLibrary: LioTripLibrary?
     private let memoryActions: LioMemoryActionsClient?
+    /// #1999: carries the traveller's memory choice to the server. Nil where the host has no signed Lio client.
+    private let memoryConsent: LioMemoryConsentClient?
+    /// #1999: whether this build asks before showing memory suggestions (`G2CMemoryConsentEnabled`); off means as before.
+    private let memoryConsentOn = LioMemoryConsentFeature.enabledInBuild
     private let savedMemory: AnyView?
     private let recordedMap: (@MainActor (StructuredTripDocument) -> AnyView)?
     @State private var conversation: LioConversation
@@ -123,6 +127,13 @@ public struct LioHome<MenuContent: View>: View {
         let session: UUID?
         let ready: Bool
     }
+    /// What starts (or restarts) the write of the memory choice to the server (#1999).
+    private struct MemoryConsentWrite: Equatable {
+        let active: Bool
+        let session: UUID?
+        let ready: Bool
+        let request: String?
+    }
     private struct TripObservation: Equatable {
         let active: Bool
         let card: LioTripCard?
@@ -149,6 +160,7 @@ public struct LioHome<MenuContent: View>: View {
                 tripLibrary: LioTripLibrary? = nil,
                 tripHistory: LioTripHistoryClient? = nil,
                 memoryActions: LioMemoryActionsClient? = nil,
+                memoryConsent: LioMemoryConsentClient? = nil,
                 savedMemory: AnyView? = nil,
                 recordedMap: (@MainActor (StructuredTripDocument) -> AnyView)? = nil,
                 session: LioSessionAvailability? = nil,
@@ -221,6 +233,7 @@ public struct LioHome<MenuContent: View>: View {
         self.chatLibrary = chatLibrary
         self.tripLibrary = tripLibrary
         self.memoryActions = memoryActions
+        self.memoryConsent = memoryConsent
         self.savedMemory = savedMemory
         self.recordedMap = recordedMap
         _conversation = State(initialValue: LioConversation(service: service))
@@ -243,9 +256,23 @@ public struct LioHome<MenuContent: View>: View {
         return LioTripCard(turnID: turn.id, itinerary: itinerary)
     }
 
+    /// #1999: shown as buttons, asked about first, or not shown (withdrawn). Always `.show` with the flag off.
+    private var memoryGate: LioMemoryCandidateGate { consent.memoryCandidateGate(featureOn: memoryConsentOn) }
+
+    /// The turn that gets the one-time question: the newest answer that has a suggestion waiting.
+    private var memoryAskTurnID: Data? {
+        conversation.turns.last(where: { turn in turn.memoryTags.contains { !handledTags.contains($0) } })?.id
+    }
+
+    /// At most two suggestions under an answer (LIO-answer-rich.1); the cap only applies with the flag on.
+    private func visibleMemoryTags(_ turn: LioTurn) -> [LioMemoryWire.Tag] {
+        let waiting = turn.memoryTags.filter { !handledTags.contains($0) }
+        return memoryConsentOn ? Array(waiting.prefix(2)) : waiting
+    }
+
     private var memorySuggestions: [String] {
         guard memoryActions != nil, session?.available != false, !restoringChat,
-              conversation.timelineFailure == nil else { return [] }
+              conversation.timelineFailure == nil, memoryGate == .show else { return [] }
         return conversation.turns.reversed().flatMap { turn in
             turn.memoryTags.filter { !handledTags.contains($0) }.map(\.text)
         }
@@ -462,6 +489,12 @@ public struct LioHome<MenuContent: View>: View {
                 LioDiagnosticLog.shared.record(error: error, stage: .localRecord)
             }
             if let pending { memoryPending = pending }
+        }
+        .task(id: MemoryConsentWrite(active: scenePhase == .active, session: session?.revision,
+                                     ready: session?.available != false, request: consent?.memoryUnsynced?.requestID)) {
+            guard memoryConsentOn, scenePhase == .active, session?.available != false, let consent,
+                  consent.memoryUnsynced != nil else { return }
+            _ = await LioMemoryConsentSync.run(consent: consent, client: memoryConsent, isCurrent: toolsSessionIsCurrent)
         }
         .task(id: memoryPending && scenePhase == .active && session?.available != false) {
             // Wait for the session after returning from the background, like the resume check above (#1450).
@@ -1146,7 +1179,7 @@ public struct LioHome<MenuContent: View>: View {
 
     private func chooseMemory(_ choice: LioMemoryWire.Choice, tag: LioMemoryWire.Tag, turnID: Data,
                               client: LioMemoryActionsClient) async {
-        guard !memoryBusy, !memoryPending, !handledTags.contains(tag) else { return }
+        guard !memoryBusy, !memoryPending, !handledTags.contains(tag), memoryGate == .show else { return }
         memoryBusy = true
         defer { memoryBusy = false }
         memoryNotice = nil
@@ -1164,6 +1197,16 @@ public struct LioHome<MenuContent: View>: View {
         } catch {
             showMemoryFeedback(.saveUnavailable)
         }
+    }
+
+    /// The answer to the one-time question (#1999). It is saved on this device before it takes effect; the server is told
+    /// by the write task. "Not now" is an answer too: the account has chosen, and nothing is asked again.
+    private func answerMemoryQuestion(_ granted: Bool) {
+        guard let consent, consent.setMemory(granted, isCurrent: toolsSessionIsCurrent) else {
+            memoryNotice = LioMemoryConsentCopy.settingFailed(language)
+            return
+        }
+        memoryNotice = nil
     }
 
     private func awaitMemoryChoice(_ client: LioMemoryActionsClient) async {
@@ -1298,7 +1341,12 @@ public struct LioHome<MenuContent: View>: View {
                 LioAnswerFooter(language: language, showsDisclosure: showsAIDisclosure, feedback: feedbackControl(turn))
             }
             if let memoryActions {
-                ForEach(turn.memoryTags.filter { !handledTags.contains($0) }) { tag in
+                if memoryGate == .ask, turn.id == memoryAskTurnID {
+                    LioMemoryConsentCard(language: language,
+                                         turnOn: { answerMemoryQuestion(true) },
+                                         notNow: { answerMemoryQuestion(false) })
+                }
+                ForEach(memoryGate == .show ? visibleMemoryTags(turn) : []) { tag in
                     memorySuggestion(tag, turnID: turn.id, client: memoryActions)
                         .lioEntrance(.rise, active: entering.contains(LioEntranceKey(turn: turn.id, part: .memory))
                             && !seenMemoryTags.contains(tag) && scenePhase == .active)

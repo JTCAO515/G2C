@@ -143,6 +143,7 @@ struct LioPrivacyView: View {
     @State private var confirmingOff = false
     @State private var confirmingOn = false
     @State private var couldNotSave = false
+    @State private var couldNotSaveMemory = false
     @Environment(\.lioConsentSessionIsCurrent) private var sessionIsCurrent
 
     var body: some View {
@@ -169,6 +170,7 @@ struct LioPrivacyView: View {
                 .padding(.vertical, 4)
             }
             .lioRow()
+            if LioMemoryConsentFeature.enabledInBuild { memorySection }
         }
         .lioPage()
         .navigationTitle(LioConsentCopy.privacyTitle(language))
@@ -184,10 +186,47 @@ struct LioPrivacyView: View {
         .alert(language.text("Could not save your choice. Try again.", "没能保存你的选择，请再试一次。"), isPresented: $couldNotSave) {
             Button(language.text("OK", "好")) {}
         }
+        .alert(LioMemoryConsentCopy.settingFailed(language), isPresented: $couldNotSaveMemory) {
+            Button(language.text("OK", "好")) {}
+        }
     }
 
     private func change(to on: Bool) {
         if !consent.setAIProcessing(on, isCurrent: sessionIsCurrent) { couldNotSave = true }
+    }
+
+    /// #1999: whether Lio may offer to remember preferences. Turning it off needs no confirmation (withdrawing is never
+    /// harder than agreeing): suggestions stop showing at once, and the choice follows to the server.
+    private var memorySection: some View {
+        let on = consent.memoryChoice == .granted
+        return Section {
+            VStack(alignment: .leading, spacing: LioTheme.Spacing.xs) {
+                Text(LioMemoryConsentCopy.settingTitle(language)).font(.headline).foregroundStyle(LioTheme.ink)
+                Text(on ? LioMemoryConsentCopy.settingOnDetail(language) : LioMemoryConsentCopy.settingOffDetail(language))
+                    .font(.subheadline).foregroundStyle(LioTheme.inkSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .accessibilityIdentifier("lio.privacy.memory-detail")
+                if consent.memoryUnsynced != nil {
+                    Text(LioMemoryConsentCopy.syncing(language))
+                        .font(.footnote).foregroundStyle(LioTheme.inkSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .accessibilityIdentifier("lio.privacy.memory-syncing")
+                }
+                Button {
+                    if !consent.setMemory(!on, isCurrent: sessionIsCurrent) { couldNotSaveMemory = true }
+                } label: {
+                    Text(on ? LioMemoryConsentCopy.turnOff(language) : LioMemoryConsentCopy.turnOn(language))
+                        .font(.body.weight(.semibold))
+                        .foregroundStyle(LioTheme.vermilion)
+                        .frame(minHeight: 44, alignment: .leading)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityIdentifier("lio.privacy.memory-toggle")
+            }
+            .padding(.vertical, 4)
+        }
+        .lioRow()
     }
 }
 

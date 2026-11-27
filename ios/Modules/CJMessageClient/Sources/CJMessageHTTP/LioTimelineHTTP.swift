@@ -437,6 +437,35 @@ public final class LioTimelineHTTP {
         return try await json(response, body, limit: 65_536)
     }
 
+    /// The account's memory consent (#1999). 200 is a receipt; a refusal retrying cannot change is reported as such;
+    /// everything else (503, no answer, a body that is not the contract's) throws, and the caller retries later.
+    func submitMemoryConsent(_ request: LioMemoryConsentWire.Request) async throws -> LioMemoryConsentClient.Outcome {
+        observe(.memoryChoice)
+        let token = try await bearer()
+        let (response, body) = try await transport.sendLioMemoryConsent(request, bearer: token)
+        observe(.memoryChoice, response)
+        return try await memoryConsentOutcome(response, body)
+    }
+
+    func readMemoryConsent() async throws -> LioMemoryConsentClient.Outcome {
+        observe(.memoryChoice)
+        let token = try await bearer()
+        let (response, body) = try await transport.readLioMemoryConsent(bearer: token)
+        observe(.memoryChoice, response)
+        return try await memoryConsentOutcome(response, body)
+    }
+
+    private func memoryConsentOutcome(_ response: HTTPResponse, _ body: HTTPBody?) async throws -> LioMemoryConsentClient.Outcome {
+        switch response.status.code {
+        case 200:
+            return .accepted(try LioMemoryConsentWire.decodeReceipt(try await json(response, body, limit: 65_536)))
+        case 400, 401, 403, 409:
+            return .refused(status: response.status.code)
+        default:
+            throw MessageHTTPFailure.exchangeUnknown
+        }
+    }
+
     private func bearer() async throws -> String {
         guard let token = try await credentials.bearer(for: scope, lease: lease),
               !token.isEmpty, !token.contains(","), !token.contains(where: \.isWhitespace) else {

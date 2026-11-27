@@ -96,6 +96,10 @@
     {
       "setting": "G2C_TRIP_CANVAS_ENABLED",
       "plist": "G2CTripCanvasEnabled"
+    },
+    {
+      "setting": "G2C_MEMORY_CONSENT_ENABLED",
+      "plist": "G2CMemoryConsentEnabled"
     }
   ],
   "release": {
