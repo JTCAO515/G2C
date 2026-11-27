@@ -115,6 +115,59 @@ class Consent(unittest.TestCase):
         self.assertEqual(LioMemoryCards(SimpleNamespace(), None, None).used_titles('s', ['a']), {})
 
 
+class PlanRow(unittest.TestCase):
+    """#2100: a v3 calendar row of a poll that declared LIO-answer-rich.1 carries `rich.memory.used` and nothing else."""
+
+    def setUp(self):
+        patcher = mock.patch.dict(os.environ, {'CJ_LIO_ANSWER_RICH': 'on'})
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
+    def row(self, *effects, declared='plan-memory', titles=None, status='completed'):
+        shown = {'a': '节奏慢', 'b': 'Quiet hotels'} if titles is None else titles
+        record = state(*effects)
+        record.status = status
+        return _message(item(), record, declared=declared, used_titles=lambda ids: shown)
+
+    def test_the_row_has_only_the_memory_used_part_and_none_of_the_v2_extras(self):
+        row = self.row(SPLIT, effect(['a', 'b']))
+        self.assertEqual(row['rich'], dict(version=RICH_VERSION, memory=dict(used=[dict(item_id='a', title='节奏慢'), dict(item_id='b', title='Quiet hotels')], used_total=2)))
+        for key in ('layout', 'followups'):
+            self.assertNotIn(key, row)                                       # a v3 row never grew these
+        undeclared = _message(item(), state(SPLIT, effect(['a', 'b'])), declared=False)
+        self.assertEqual({k: v for k, v in row.items() if k != 'rich'}, undeclared)
+
+    def test_no_rich_when_nothing_was_used_or_the_switch_is_off_or_the_row_is_not_finished(self):
+        self.assertNotIn('rich', self.row(SPLIT))
+        self.assertNotIn('rich', self.row(SPLIT, effect(['a']), titles={}))
+        self.assertNotIn('rich', self.row(SPLIT, effect(['a']), status='running'))
+        with mock.patch.dict(os.environ, {'CJ_LIO_ANSWER_RICH': 'off'}):
+            self.assertNotIn('rich', self.row(SPLIT, effect(['a'])))
+            self.assertEqual(self.row(SPLIT, effect(['a'])), _message(item(), state(SPLIT, effect(['a'])), declared=False))
+
+    def test_a_row_without_the_declaration_is_unchanged(self):
+        self.assertEqual(self.row(SPLIT, effect(['a']), declared=False), _message(item(), state(SPLIT, effect(['a'])), declared=False))
+
+    def test_the_route_takes_rich_on_v3_and_refuses_every_other_declaration_there(self):
+        from fastapi import FastAPI
+        from fastapi.testclient import TestClient
+        from cj_api.lio_dialogue_routes import register_lio_dialogue_routes
+        from cj_message.lio_followups import VERSION as FOLLOWUPS_VERSION
+        page = SimpleNamespace(messages=(), conversation_id='lio-c', next_before=None, requires_new_lio=False)
+        context = SimpleNamespace(scope='scope', lio_timeline=lambda *args, **kwargs: page)
+        boundary = SimpleNamespace(with_history_context=lambda token, project: project(context))
+        app = FastAPI()
+        register_lio_dialogue_routes(app, boundary, None, None, prepare_scope=None, calendar_cards=object(), calendar_boundary=boundary)
+        http, headers = TestClient(app), {'Authorization': 'Bearer t'}
+        base = http.get('/v3/lio/timeline', headers=headers)
+        ok = http.get('/v3/lio/timeline?accepts=' + RICH_VERSION, headers=headers)
+        self.assertEqual((ok.status_code, ok.json()), (200, base.json()))
+        for query in ('accepts=' + FOLLOWUPS_VERSION, 'accepts=', 'accepts=LIO-answer-rich.2', 'accepts=' + RICH_VERSION + '&accepts=' + RICH_VERSION,
+                      'accepts=' + FOLLOWUPS_VERSION + ',' + RICH_VERSION):
+            self.assertEqual(http.get('/v3/lio/timeline?' + query, headers=headers).status_code, 400, query)
+        self.assertEqual(http.get('/v1/lio/timeline?accepts=' + RICH_VERSION, headers=headers).status_code, 400)
+
+
 class Reader(unittest.TestCase):
     """The titles reader `lio_candidates` mounts is bound to the one scope the roster admitted (#2077)."""
 
