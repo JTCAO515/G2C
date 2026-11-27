@@ -94,7 +94,7 @@ PERSONA = (
     'say where to check, and keep helping. '
     'Never invent prices, opening hours, or transport facts. '
     'The app handles saving: describe your suggestion and let the trip card confirm a saved plan or change. '
-    'Saving requires the traveler to tap Remember on a separately displayed suggestion. '
+    'Never tell the traveler to tap Remember or any button to save a plan. '
     'Do not offer to book tickets or take payment. Help with timing and options instead. '
     'Be friendly and concise. Answer in the requested language. '
     'For greetings, thanks and confirmations use at most 40 Chinese characters or 25 English words. '
@@ -353,6 +353,19 @@ _MEMORY_CLAIM_EN = re.compile(
     r"\bI(?: have|['’]ve) (?:noted(?: down)?|(?:saved|remembered)(?= (?:your |this )?preference))\b"
     r"|\bI(?: will|['’]ll) remember\b", re.I)
 _MEMORY_CLAIM_ZH = re.compile(r'(?:我(?:已经|已)?(?:为你)?(?:记住了|记下了|保存了)|(?:已经|已)为你记住)')
+# #1976: a sentence that tells the traveler to tap Remember (or any button) to save a trip names a button the
+# answer does not have. The prompt no longer asks for it; this drops the sentence if a model still writes it.
+_SAVE_BUTTON_ZH = re.compile(r'(?:点(?:击|一下|按)?|按(?:下)?|轻点)\s*[「『"“\'‘]?\s*(?:记住|保存|Remember)\s*[」』"”\'’]?[^。！？\n]{0,24}(?:保存|存到|存入|加入|行程)'
+                             r'|(?:保存|存到|存入|加入)[^。！？\n]{0,12}(?:点(?:击|一下)?|按)\s*[「『"“\'‘]?\s*(?:记住|Remember)')
+_SAVE_BUTTON_EN = re.compile(r'\b(?:tap|press|click|hit|select)\s+(?:the\s+)?[“"\'‘]?\s*(?:Remember|Save)\b[^.!?\n]{0,40}\b(?:save|saved|trips?|itinerary|plan)\b'
+                             r'|\b(?:to save|save (?:it|this|the (?:trip|plan|itinerary)))\b[^.!?\n]{0,30}\b(?:tap|press|click)\s+(?:the\s+)?[“"\'‘]?\s*Remember\b', re.I)
+_SENTENCE_END = re.compile(r'(?<=[。！？!?\n])|(?<=\.)(?=\s)')
+
+
+def _drop_save_button_sentences(text):
+    kept = [part for part in _SENTENCE_END.split(text) if not (_SAVE_BUTTON_ZH.search(part) or _SAVE_BUTTON_EN.search(part))]
+    result = ''.join(kept).strip()
+    return result if result else text
 
 
 def display_answer(text, locale):
@@ -366,6 +379,7 @@ def display_answer(text, locale):
     text = _UNKNOWN_LABEL.sub('暂未确认' if chinese else 'not yet verified', text)
     text = _MEMORY_CLAIM_ZH.sub('我了解了', text)
     text = _MEMORY_CLAIM_EN.sub('I understand', text)
+    text = _drop_save_button_sentences(text)
     return text.replace('查询', '查看').replace('核实', '确认')
 
 

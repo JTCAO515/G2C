@@ -4,6 +4,7 @@ import os
 from unittest.mock import patch
 
 from cj_agent.worker import RunWorker
+from cj_message.lio_followups import FollowupHint, SAVE_CHIP
 from cj_message.lio_context import FOLLOWUPS_EFFECT, LAYOUT_EFFECT, LioDestination, LioDestinationUnclear, LioLayout, LioOriginal
 from cj_run.core import Binding, Service
 from cj_run.fixture import MemoryRepository
@@ -156,3 +157,43 @@ def test_a_later_unclear_map_result_cancels_the_destination_whatever_the_order()
     for places in ((PALACE, unclear), (unclear, PALACE), (PALACE, unclear, PALACE), (unclear,)):
         button = taxi_params(run('怎么打车去故宫', '可以打车。', 'split', destinations=places)[1])
         assert (button['label'], button['parameters']) == ('打车', {}), places
+
+
+TICKETS = ['g' * 43, 'h' * 43, 'i' * 43]
+
+
+def test_every_normal_split_answer_offers_chips_from_the_table():
+    # #1978: no payment or taxi topic any more still means two or three chips (a food question here)
+    status, state = run('成都有什么好吃的', '火锅。\n\n再试试串串。', 'split', issue=TICKETS)
+    assert status == 'completed'
+    (_, labels), = run.last_messages.issued
+    assert 2 <= len(labels) <= 3 and 'actions' in payload(state) and payload(state)['actions'] == []
+    assert [chip['label'] for chip in payload(state)['chips']] == labels
+
+
+def test_a_plan_answer_offers_the_save_chip_and_nothing_else_is_a_button():
+    status, state = run('帮我规划北京三天行程', '第一天故宫。\n\n第二天长城。', 'split', issue=TICKETS)
+    (_, labels), = run.last_messages.issued
+    assert SAVE_CHIP[0] in labels and payload(state)['actions'] == []
+    status, state = run('Plan a 3-day trip in Beijing', 'Day 1.\n\nDay 2.', 'split', locale='en', issue=TICKETS)
+    assert SAVE_CHIP[1] in run.last_messages.issued[0][1]
+
+
+class HintTools(Tools):
+    def answer(self, worker, binding, inputs, **kwargs):
+        yield LioLayout('split')
+        yield FollowupHint('dates')
+        yield self.text
+
+
+def test_the_missing_fact_the_answer_asks_about_gets_answer_chips_first():
+    runs = Service(MemoryRepository(), lambda _: True)
+    messages = Messages('我想去北京玩', TICKETS)
+    worker = RunWorker(scope='scope', messages=messages, runs=runs, provider=None, tools=HintTools('split', '好的。\n\n大概哪几天去？'),
+                       drafts=Drafts(), lio_original=lambda binding: LioOriginal('zh', None))
+    outcome, = worker.process()
+    assert outcome.status == 'completed'
+    (_, labels), = messages.issued
+    assert labels[:2] == ['我 12 月 5 日到', '还没定哪天到']
+    # the hint is not text: the answer is exactly what the model wrote
+    assert runs.snapshot(Binding('scope', 'chat', 'g', 'm', 'r', 1)).text == '好的。\n\n大概哪几天去？'
