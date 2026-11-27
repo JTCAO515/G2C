@@ -82,7 +82,7 @@ LIBRARY_NONNULL = {
     'food': ('subcategory', 'address_zh', *INTRO),
     'shopping': ('subcategory', 'address_zh', *INTRO),
     'hotel': ('subcategory', 'address_zh', 'price_band', 'accepts_foreigners', *INTRO),
-    'hub': ('hub_type', 'code'),
+    'hub': ('hub_type',),
 }
 
 
@@ -136,8 +136,9 @@ def integer(value, where, low=0, high=None, nullable=True):
     _require(type(value) is int and value >= low and (high is None or value <= high), f'{where}: integer {low}..{high}')
 
 
-def url(value, where, nullable=False, official=True):
-    """A plain https page. `official` also refuses the travel, review and aggregator hosts."""
+def url(value, where, nullable=False, official=True, allow_http=False):
+    """A plain https page (http too when `allow_http`: reference-only links nobody opens, such as an older
+    government site that has no https). `official` also refuses the travel, review and aggregator hosts."""
     if value is None and nullable:
         return None
     text(value, where)
@@ -146,8 +147,8 @@ def url(value, where, nullable=False, official=True):
         port = parts.port
     except ValueError:
         raise Invalid(f'{where}: not a URL') from None
-    _require(parts.scheme == 'https' and bool(parts.hostname) and port is None and not parts.username
-             and not parts.password and not parts.fragment and ' ' not in value, f'{where}: a plain https URL')
+    _require(parts.scheme in (('https', 'http') if allow_http else ('https',)) and bool(parts.hostname) and port is None and not parts.username
+             and not parts.password and not parts.fragment and ' ' not in value, f'{where}: a plain {"http(s)" if allow_http else "https"} URL')
     if official:
         host = '.' + parts.hostname.lower().rstrip('.')  # a trailing dot is the same host
         for bad in THIRD_PARTY_HOSTS:
@@ -164,12 +165,12 @@ def text_list(value, where, nullable=False, unique=True):
     _require(not unique or len({i.casefold() for i in items}) == len(items), f'{where}: duplicates')
 
 
-def url_list(value, where, nullable=False, minimum=0):
+def url_list(value, where, nullable=False, minimum=0, allow_http=False):
     if value is None and nullable:
         return
     _require(type(value) is list and len(value) >= minimum, f'{where}: a list of at least {minimum}')
     for i, item in enumerate(value):
-        url(item, f'{where}[{i}]')
+        url(item, f'{where}[{i}]', allow_http=allow_http)
     _require(len(set(value)) == len(value), f'{where}: duplicates')
 
 
@@ -195,7 +196,7 @@ def foreigner_signals(value, where):
     if _object(value, ('english_signage', 'foreign_cards', 'english_service', 'evidence'), where, nullable=True):
         for key in ('english_signage', 'foreign_cards', 'english_service'):
             boolean(value[key], f'{where}.{key}')
-        url_list(value['evidence'], f'{where}.evidence', nullable=True)
+        url_list(value['evidence'], f'{where}.evidence', nullable=True, allow_http=True)
         known = any(value[k] is not None for k in ('english_signage', 'foreign_cards', 'english_service'))
         _require(not known or value['evidence'], f'{where}: a stated signal needs an evidence URL')
 
@@ -211,6 +212,16 @@ def ticket(value, where):
                  f'{where}.closed_weekdays: ISO weekday numbers 1 (Monday) to 7 (Sunday) or null')
         text(value['booking_channel_zh'], f'{where}.booking_channel_zh', nullable=True)
         url(value['booking_url'], f'{where}.booking_url', nullable=True)
+
+
+def foreign_service(value, where):
+    """Hotel: what makes it ready for foreign guests (C8's `foreign_service`, as Codex delivers it)."""
+    keys = ('english_front_desk', 'foreign_guest_share', 'foreign_guest_experience', 'international_brand', 'evidence_zh', 'evidence')
+    if _object(value, keys, where, nullable=True):
+        boolean(value['english_front_desk'], f'{where}.english_front_desk')
+        for key in ('foreign_guest_share', 'foreign_guest_experience', 'international_brand', 'evidence_zh'):
+            text(value[key], f'{where}.{key}', nullable=True)
+        url_list(value['evidence'], f'{where}.evidence', nullable=True, allow_http=True)
 
 
 def terminals(value, where):
@@ -273,7 +284,7 @@ def external_signals(value, where):
 def _check_fields(entry, category, where):
     """Type-check every field that is present (null is allowed unless a rule below says otherwise)."""
     names = ('name_zh', 'name_en', 'address_zh', 'address_en', 'district_zh', 'hours_zh', 'best_time_zh',
-             'cuisine_zh', 'foreign_service', 'notes', 'subcategory', 'code')
+             'cuisine_zh', 'notes', 'subcategory', 'code')
     for key in names:
         if key in entry:
             text(entry[key], f'{where}.{key}', nullable=key not in ('name_zh', 'name_en'))
@@ -295,6 +306,8 @@ def _check_fields(entry, category, where):
         ticket(entry['ticket'], f'{where}.ticket')
     if 'external_signals' in entry:
         external_signals(entry['external_signals'], f'{where}.external_signals')
+    if 'foreign_service' in entry:
+        foreign_service(entry['foreign_service'], f'{where}.foreign_service')
     if 'terminals' in entry:
         terminals(entry['terminals'], f'{where}.terminals')
     for key in ('to_city_zh', 'to_city_en', 'foreigner_tips_zh', 'foreigner_tips_en'):
@@ -324,7 +337,7 @@ def _check_fields(entry, category, where):
     if 'checked_on' in entry:
         day(entry['checked_on'], f'{where}.checked_on')
     if 'sources' in entry:
-        url_list(entry['sources'], f'{where}.sources', minimum=1)
+        url_list(entry['sources'], f'{where}.sources', minimum=1, allow_http=True)
 
 
 def _check_identity(entry, where):
@@ -347,12 +360,15 @@ def check_draft(entry, where='entry'):
         category = entry['category']
         allowed = set(fields_for(category, library=False))
         for key in sorted(set(entry) - allowed):
+            if entry[key] is None:  # Codex repeats C1's whole field list for every category; a null extra says nothing
+                continue
             warnings.append(f'{where}: unknown field {key!r} is dropped on import')
         for key in ('lat', 'lng', 'latitude', 'longitude', 'location', 'gcj02', 'wgs84', 'coordinates'):
             _require(key not in entry, f'{where}: a draft must not carry coordinates ({key}); the importer adds them from Amap')
         _check_fields({k: v for k, v in entry.items() if k in allowed}, category, where)
         if category == 'hub':
-            _require(entry.get('hub_type') in HUB_TYPES and entry.get('code'), f'{where}: hub_type and code are required')
+            _require(entry.get('hub_type') in HUB_TYPES, f'{where}: hub_type is required')
+            _require(entry.get('hub_type') == 'rail' or entry.get('code'), f'{where}: an airport needs its code')
         else:
             _require(entry.get('subcategory'), f'{where}: subcategory is required')
         if category == 'hotel':

@@ -50,7 +50,8 @@ C8_HOTEL = {
     'id': 'pl_bj_hotel_demo', 'city': 'beijing', 'category': 'hotel', 'subcategory': 'international_brand',
     'tier': 'main', 'name_zh': '北京示例酒店', 'name_en': 'Beijing Demo Hotel', 'aliases_zh': [], 'aliases_en': [],
     'address_zh': '北京市朝阳区示例路1号', 'star': 5, 'price_band': '>2000', 'accepts_foreigners': True,
-    'foreign_service': '英文前台，长期接待外籍客人',
+    'foreign_service': {'english_front_desk': True, 'foreign_guest_share': None, 'foreign_guest_experience': '长期接待外籍客人',
+                        'international_brand': None, 'evidence_zh': '官网英文页列出英文前台。', 'evidence': ['https://www.example-hotel.com.cn/en/']},
     'foreigner_signals': {'english_signage': True, 'foreign_cards': True, 'english_service': True,
                           'evidence': ['https://www.example-hotel.com.cn/en/']},
     'intro_short_zh': '朝阳区的国际品牌酒店。', 'intro_short_en': 'An international-brand hotel in Chaoyang.',
@@ -98,6 +99,11 @@ def test_codex_samples_are_valid_drafts(draft):
     assert placelib.check_draft(draft) == ([], [])
 
 
+def test_a_null_field_from_another_category_is_dropped_silently():
+    assert placelib.check_draft({**C8_HOTEL, 'ticket': None, 'visit_minutes': None, 'best_time_zh': None}) == ([], [])
+    assert placelib.check_draft({**C8_HOTEL, 'visit_minutes': 90})[1]
+
+
 def test_draft_with_unknown_field_is_kept_with_a_warning():
     errors, warnings = placelib.check_draft({**C1, 'mood': 'calm'})
     assert errors == [] and any('mood' in w for w in warnings)
@@ -112,7 +118,7 @@ def test_draft_with_unknown_field_is_kept_with_a_warning():
     lambda e: e.update(category='museum'),
     lambda e: e.update(subcategory='castle'),
     lambda e: e.update(sources=[]),
-    lambda e: e.update(sources=['http://www.dpm.org.cn/']),
+    lambda e: e.update(official_url='http://www.dpm.org.cn/'),          # user-facing links must be https
     lambda e: e.update(sources=['https://www.tripadvisor.com/Attraction_Review-1']),
     lambda e: e.update(hours_source='https://www.mafengwo.cn/poi/1.html'),
     lambda e: e.update(sources=['https://www.ctrip.com./x']),          # trailing dot is the same host
@@ -145,7 +151,27 @@ def test_hotel_draft_must_accept_foreigners_with_evidence():
 
 def test_hub_draft_needs_type_and_code():
     assert placelib.check_draft({**C7, 'hub_type': 'port'})[0]
-    assert placelib.check_draft({**C7, 'code': None})[0]
+    assert placelib.check_draft({**C7, 'code': None})[0]                           # an airport needs its code
+    assert placelib.check_draft({**C7, 'hub_type': 'rail', 'code': None}) == ([], [])  # a railway station has none
+
+
+def test_http_is_accepted_for_reference_sources_but_not_for_user_facing_links():
+    old_site = 'http://wglj.gz.gov.cn/mdjl/cjwt/jdjq/content/post_10878687.html'
+    assert placelib.check_draft({**C1, 'sources': [old_site]}) == ([], [])
+    assert placelib.check_draft({**C1, 'foreigner_signals': {**C1['foreigner_signals'], 'evidence': [old_site]}}) == ([], [])
+    assert placelib.check_draft({**C1, 'official_url': old_site})[0]
+    assert placelib.check_draft({**C1, 'hours_source': old_site})[0]
+    assert placelib.check_draft({**C1, 'ticket': {**C1['ticket'], 'booking_url': old_site}})[0]
+    assert placelib.check_draft({**C1, 'sources': ['ftp://example.org/x']})[0]
+
+
+def test_hotel_foreign_service_is_the_structured_object_codex_delivers():
+    assert placelib.check_draft({**C8_HOTEL, 'foreign_service': {'english_front_desk': None, 'foreign_guest_share': None,
+                                'foreign_guest_experience': None, 'international_brand': 'Marriott Bonvoy',
+                                'evidence_zh': '官网列出。', 'evidence': ['https://www.marriott.com/en-us/hotels/x/']}}) == ([], [])
+    assert placelib.check_draft({**C8_HOTEL, 'foreign_service': '英文前台'})[0]                 # the old free-text shape
+    assert placelib.check_draft({**C8_HOTEL, 'foreign_service': {'english_front_desk': 'yes'}})[0]
+    assert placelib.check_draft({**C8_HOTEL, 'foreign_service': None}) == ([], [])
 
 
 def test_a_malformed_entry_is_an_error_not_a_crash():
