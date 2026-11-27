@@ -9,7 +9,7 @@
 | `<城市>.v1.json` | **唯一数据源**。城市取 `beijing shanghai guangzhou shenzhen chengdu chongqing`。只放人审通过的条目 |
 | `placelib.py` | 字段规则（草稿和库两种形态） |
 | `validate.py` | 校验全部城市文件，并比对副本；`--write` 规范化源文件并重写副本 |
-| `generate.py` | 生成服务端副本和 App 精简版；`validate.py` 调用，也可单独运行 |
+| `generate.py` | 生成服务端副本、App 精简版和大交通枢纽副本；`validate.py` 调用，也可单独运行 |
 | `import/import_drafts.py`、`import/amap.py`、`score.py` | 导入 Codex 草稿、高德补坐标、打分、审核表（#1986） |
 | `candidates/<城市>.cand.json` | 候选（待审、已决定的都在这里；不是库） |
 | `review/<城市>.review.csv`、`.md` | 给 JT 的审核表 |
@@ -19,6 +19,7 @@
 生成物（不要手改）：
 - 服务端副本 `backend/fact/cj_fact/places_<城市>.v1.json`，与源文件**逐字节一致**，读取入口 `cj_fact.places`（`load_city`、`by_id`、`by_category`、`match_name`）。
 - App 精简版 `ios/Modules/CJShell/Sources/CJLioUser/Resources/LioPlaces.v1.json`：只有 id、城市、类别、`kind`、等级、排名、中英名、别名、GCJ-02 坐标、amap_id、酒店的 `price_band` / `star` / `accepts_foreigners`（其他类别为 null，「住」按它们筛选并与高德结果取交集）、一句话简介、缩略图文件名。App 在问服务端之前就能显示的就这些。
+- 大交通页的枢纽副本 `ios/Modules/CJShell/Sources/CJLioUser/Resources/LioTransportHubs.v1.json`（TL-4，#2007 约定）：库里**审核通过**的机场和火车站，形状是 `{version: "g2c-transport-hubs.1", status: "approved", places: [...]}`，每条 `id, city, hub_type, name_zh, name_en, code, terminals[{name, note_zh, note_en}], to_city_zh/en, foreigner_tips_zh/en, official_url, checked_on`（库里的原值，snake_case）；机场在前、火车站在后，同类按名次。机场没有 3 位大写 `code` 会在生成时就报错（App 会整包拒载）。库里**还没有**审核通过的枢纽时不生成，大交通线手工维护的草稿（`status: draft`）原样留着；一旦有了，生成的文件接管这个路径，之后再出现 `status: approved` 却没有审核通过的枢纽支撑，算过期、`--write` 删除。App 怎么接入（草稿开关换成已审核包、`Package.swift` 资源声明）放 58.2。`terminals` 里的 `note_en` 是可选字段（C7 草稿只有中文说明）。
 - CI：`backend/tests/test_places_pipeline.py` 与 `backend/fact/tests/test_places_copy.py`。数据改了却没重新生成，`python` job 失败。App 副本也在 Python job 里比对（只改 `knowledge/` 的 PR 不跑 Swift job）。
 - 一个城市文件被删除时，它的副本也算过期，`--write` 会一并删掉。
 
