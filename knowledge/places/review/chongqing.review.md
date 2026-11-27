@@ -1,23 +1,42 @@
 # chongqing 收录审核（2026-11-27）
 
-共 130 条待审，按批次排列，每批可一天审完。决定写在 CSV 的 decision 列：accept、reject 或 edit（edit 在 note 里写要改什么）。
+共 156 条待审，按批次排列，每批可一天审完。决定写在 CSV 的 decision 列：accept、reject 或 edit（edit 在 note 里写要改什么）。
 
 ## 第 1 批
 
 ### 欣厨（重庆） · Niccolo Kitchen, Chongqing  `pl_cq_niccolo_kitchen_cq`
-- food/western · main · 分数 49 · 两江新区
+- food/western · main · 分数 51 · 两江新区
 - 高德：未查询
 - 简介：一道披萨或意面，都能搭成一顿托斯卡纳风味的饭。 / Tuscan-inspired pizza and pasta in an open-kitchen dining room.
 - 开放时间：午餐12:00–14:00；晚餐18:00–22:30
 - 来源：https://www.niccolohotels.com/en/niccolo-chongqing/dining/niccolo-kitchen
 - [ ] accept　[ ] reject　[ ] edit：
 
-### 重庆尼依格罗酒店 · Niccolo Chongqing  `pl_cq_niyigeluo`
-- hotel/hotel · main · 分数 48 · 区未知
+### 重庆磁器口古镇智选假日酒店 · Holiday Inn Express Chongqing Ciqikou Ancient Town  `pl_cq_ciqikou_hiex`
+- hotel/hotel · main · 分数 49 · 沙坪坝区
 - 高德：未查询
-- 简介：位于江北嘴的尼依格罗酒店。 / A Niccolo hotel in Jiangbeizui.
+- 简介：石井坡一带可游磁器口，酒店公示可刷外卡。 / A Ciqikou-area stay with card acceptance listed by IHG.
+- 开放时间：—
+- 来源：https://www.ihg.com/holidayinnexpress/hotels/us/en/chongqing/ckgck/hoteldetail
+- 提醒：pl_cq_ciqikou_hiex: unknown field 'hotel_class' is dropped on import
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 重庆朝天门英迪格酒店 · Hotel Indigo Chongqing Chaotianmen  `pl_cq_chaotianmen_yingdige`
+- hotel/hotel · main · 分数 48 · 渝中区
+- 高德：未查询
+- 简介：朝天门接圣街，酒店可看两江交汇并列有英语服务。 / A Raffles City hotel with views of the river confluence and English listed.
+- 开放时间：—
+- 来源：https://www.ihg.com/hotelindigo/hotels/us/en/chongqing/ckggq/hoteldetail
+- 提醒：pl_cq_chaotianmen_yingdige: unknown field 'hotel_class' is dropped on import
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 重庆尼依格罗酒店 · Niccolo Chongqing  `pl_cq_niyigeluo`
+- hotel/hotel · main · 分数 48 · 两江新区
+- 高德：未查询
+- 简介：重庆IFS一号楼的酒店，官网列出护照入住。 / Stay in Chongqing IFS, with passport check-in confirmed by the hotel.
 - 开放时间：—
 - 来源：https://www.niccolohotels.com/en/niccolo-chongqing
+- 提醒：pl_cq_niyigeluo: unknown field 'hotel_class' is dropped on import
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 重庆江北国际机场 · Chongqing Jiangbei International Airport  `pl_cq_ckg`
@@ -84,12 +103,30 @@
 - 来源：https://whlyw.cq.gov.cn/hdjl_221/xzzq/202601/t20260106_15295212.html
 - [ ] accept　[ ] reject　[ ] edit：
 
+### 如家·neo（重庆南坪万达广场店） · Home Inn neo — Nanping Wanda Plaza  `pl_cq_rujia_neo_nanping`
+- hotel/hotel · main · 分数 36 · 南岸区
+- 高德：未查询
+- 简介：南岸南坪住处，坐轨道3号线可到重庆北站。 / A south-bank stay with everyday amenities and access to Line 3.
+- 开放时间：—
+- 来源：https://www.bthhotels.com/hotel/023048
+- 提醒：pl_cq_rujia_neo_nanping: unknown field 'hotel_class' is dropped on import
+- [ ] accept　[ ] reject　[ ] edit：
+
 ### 重庆站 · Chongqing Railway Station  `pl_cq_chongqingzhan`
 - hub/rail · main · 分数 34 · 区未知
 - 高德：未查询
 - 简介：— / —
 - 开放时间：—
 - 来源：https://jtj.cq.gov.cn/sy_240/bmdt/202505/t20250526_14656238.html
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 如家·neo（重庆解放碑洪崖洞店） · Home Inn neo — Jiefangbei / Hongyadong  `pl_cq_rujia_neo_hongyadong`
+- hotel/hotel · main · 分数 34 · 渝中区
+- 高德：未查询
+- 简介：把洪崖洞与解放碑夜游排进同一晚，回店方便。 / A central Chongqing address for an evening at Hongyadong and Jiefangbei.
+- 开放时间：—
+- 来源：https://www.bthhotels.com/hotel/023007
+- 提醒：pl_cq_rujia_neo_hongyadong: unknown field 'hotel_class' is dropped on import
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 重庆中国三峡博物馆 · China Three Gorges Museum  `pl_cq_sanxia_bowuguan`
@@ -100,52 +137,237 @@
 - 来源：https://whlyw.cq.gov.cn/hdjl_221/xzzq/202601/t20260106_15295212.html
 - [ ] accept　[ ] reject　[ ] edit：
 
-### 重庆来福士洲际酒店 · InterContinental Chongqing Raffles City  `pl_cq_laifushizhouji`
-- hotel/hotel · main · 分数 28 · 渝中区
+### SKLP（新光里+） · SKLP Chongqing  `pl_cq_sklp_xinguangli_cq`
+- shopping/mall · main · 分数 34 · 两江新区
 - 高德：未查询
-- 简介：可作为朝天门和两江交汇处一带的住宿。 / A hotel for exploring Chaotianmen near the meeting of the two rivers.
+- 简介：在嘉州一带可逛运动服饰、设计生活店与高层休闲空间。 / Browse sportswear, design shops and leisure spaces in the Jiazhou area.
+- 开放时间：—
+- 来源：https://www.ljxq.gov.cn/bm/qsww/zwxx/dt/202607/t20260707_15803613.html
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 重庆来福士洲际酒店 · InterContinental Chongqing Raffles City  `pl_cq_laifushizhouji`
+- hotel/hotel · main · 分数 31 · 渝中区
+- 高德：未查询
+- 简介：朝天门广场的来福士酒店，可看长江与嘉陵江。 / A Raffles City stay at Chaotianmen Square for a two-river itinerary.
 - 开放时间：—
 - 来源：https://www.ihg.com/intercontinental/hotels/cn/zh/chongqing/chghb/hoteldetail
+- 提醒：pl_cq_laifushizhouji: unknown field 'hotel_class' is dropped on import
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 重庆Moxy酒店 · Moxy Chongqing  `pl_cq_moxyjiudian`
+- hotel/hotel · main · 分数 31 · 渝中区
+- 高德：未查询
+- 简介：八一路的Moxy，适合把解放碑和街巷小吃放在一起。 / A Bayi Road base for exploring Jiefangbei, with English listed by the hotel.
+- 开放时间：—
+- 来源：https://www.marriott.com/en-us/hotels/ckgox-moxy-chongqing/overview/
+- 提醒：pl_cq_moxyjiudian: unknown field 'hotel_class' is dropped on import
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 重庆南岸万豪万枫酒店 · Fairfield by Marriott Chongqing Nan’an District  `pl_cq_nananwanfeng`
+- hotel/hotel · main · 分数 31 · 南岸区
+- 高德：未查询
+- 简介：南岸江南大道的万枫，官网列出工贸地铁站。 / A south-bank Fairfield with Gongmao station listed for metro trips.
+- 开放时间：—
+- 来源：https://www.marriott.com/en-us/hotels/ckgfn-fairfield-chongqing-nanan-district/overview/
+- 提醒：pl_cq_nananwanfeng: unknown field 'hotel_class' is dropped on import
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 重庆来福士购物中心 · Raffles City Chongqing  `pl_cq_raffles_chongqing_shops`
+- shopping/mall · main · 分数 30 · 渝中区
+- 高德：未查询
+- 简介：游完朝天门两江江岸，可进商场逛店和用餐。 / Browse shops and take a meal break after visiting the Chaotianmen waterfront.
+- 开放时间：—
+- 来源：https://www.capitaland.com/cn/zh/find-a-property/global-property-listing/retail/raffles-city-chongqi.html
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 重庆光环购物公园 · The Ring Chongqing  `pl_cq_the_ring_cq_shops`
+- shopping/mall · main · 分数 30 · 两江新区
+- 高德：未查询
+- 简介：适合把商场购物和室内绿植空间安排在一起。 / Combine shopping with a look at the mall's indoor planted spaces.
+- 开放时间：—
+- 来源：https://www.cq.gov.cn/ywdt/zwhd/qxdt/202604/t20260430_15647790.html
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 重庆北站福朋喜来登酒店 · Four Points by Sheraton Chongqing North Railway Station  `pl_cq_beizhanfupeng`
+- hotel/hotel · main · 分数 29 · 两江新区
+- 高德：未查询
+- 简介：重庆北站行程可考虑这家，门店列有中英文服务。 / A rail-focused option that lists Chongqing North Railway Station for arrival.
+- 开放时间：—
+- 来源：https://www.marriott.com/en-us/hotels/ckgnu-four-points-chongqing-north-railway-station/overview/
+- 提醒：pl_cq_beizhanfupeng: unknown field 'hotel_class' is dropped on import
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 重庆江北嘴希尔顿花园酒店 · Hilton Garden Inn Chongqing Jiangbeizui  `pl_cq_jiangbeizuixierdun`
+- hotel/hotel · main · 分数 29 · 两江新区
+- 高德：未查询
+- 简介：江北嘴力帆中心的希尔顿花园，可据酒店英文页抵达。 / A Jiangbeizui hotel with English arrival directions to Lifan Center.
+- 开放时间：—
+- 来源：https://www.hilton.com.cn/zh-cn/hotels/ckgjzgi-hilton-garden-inn-chongqing-jiangbeizui
+- 提醒：pl_cq_jiangbeizuixierdun: unknown field 'hotel_class' is dropped on import
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 重庆解放碑威斯汀酒店 · The Westin Chongqing Liberation Square  `pl_cq_jiefangbeiweisiting`
+- hotel/hotel · main · 分数 29 · 渝中区
+- 高德：未查询
+- 简介：解放碑附近，出行可查小什字或临江门站。 / A central Yuzhong stay with two subway options listed by Marriott.
+- 开放时间：—
+- 来源：https://www.marriott.com/en-us/hotels/ckgwi-the-westin-chongqing-liberation-square/overview/
+- 提醒：pl_cq_jiefangbeiweisiting: unknown field 'hotel_class' is dropped on import
+- [ ] accept　[ ] reject　[ ] edit：
+
+## 第 2 批
+
+### 重庆康莱德酒店 · Conrad Chongqing  `pl_cq_kanglaide`
+- hotel/hotel · main · 分数 29 · 南岸区
+- 高德：未查询
+- 简介：南坪西路的康莱德，高层用餐可看山城。 / A Nanping stay with high-floor dining overlooking Chongqing.
+- 开放时间：—
+- 来源：https://www.hilton.com.cn/zh-cn/hotels/ckgcici-conrad-chongqing
+- 提醒：pl_cq_kanglaide: unknown field 'hotel_class' is dropped on import
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 8楼餐厅（解放碑） · Kitchen on 8, Jiefangbei  `pl_cq_kitchen_on8_jfb`
+- food/western · main · 分数 29 · 渝中区
+- 高德：未查询
+- 简介：解放碑旁的开放式餐厅，能选本地和国际菜。 / An open-kitchen restaurant near Jiefangbei with local and international dishes.
+- 开放时间：单点每日06:30–22:30
+- 来源：https://www.hyatt.com/hyatt-regency/en-US/ckgro-hyatt-regency-metropolitan-chongqing/dining
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 重庆礼嘉白云湖酒店，希尔顿格芮精选 · Chongqing Lijia Baiyun Lake Hotel, Curio Collection by Hilton  `pl_cq_lijiabaiyunhu`
+- hotel/hotel · main · 分数 29 · 两江新区
+- 高德：未查询
+- 简介：礼嘉白云湖公园中的酒店，可留时间在湖边散步。 / A park stay on the Lijia Peninsula, near Baiyun Lake.
+- 开放时间：—
+- 来源：https://www.hilton.com.cn/zh-cn/hotels/ckgqqqq-chongqing-lijia-baiyun-lake-hotel-curio-collection-by-hilton
+- 提醒：pl_cq_lijiabaiyunhu: unknown field 'hotel_class' is dropped on import
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 重庆丽晶酒店 · Regent Chongqing  `pl_cq_lijing`
-- hotel/hotel · main · 分数 28 · 区未知
+- hotel/hotel · main · 分数 29 · 两江新区
 - 高德：未查询
-- 简介：在江北嘴一带停留时可考虑这家丽晶。 / A Regent hotel in Jiangbeizui.
+- 简介：金沙门路的丽晶，可把江北嘴河岸放进散步行程。 / A Jinshamen Road base across the rivers from central Chongqing.
 - 开放时间：—
 - 来源：https://www.ihg.com/regent/hotels/cn/zh/chongqing/ckgrh/hoteldetail
+- 提醒：pl_cq_lijing: unknown field 'hotel_class' is dropped on import
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 咖啡厅（观音桥凯悦） · Market Café, Guanyinqiao  `pl_cq_market_cafe_guanyin`
+- food/western · main · 分数 29 · 两江新区
+- 高德：未查询
+- 简介：同行者口味不同时，可在一间餐厅选不同菜式。 / An international buffet for travelers looking for different dishes at one table.
+- 开放时间：周六、周日午餐12:00–14:30；周五至周日晚餐17:30–21:30
+- 来源：https://www.hyatt.com/hyatt-regency/en-US/chong-hyatt-regency-chongqing/dining
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 重庆万豪酒店 · Chongqing Marriott Hotel  `pl_cq_nanbinluwanhao`
+- hotel/hotel · main · 分数 29 · 南岸区
+- 高德：未查询
+- 简介：南岸烟雨路的万豪，适合把南滨片区排进多日游。 / A Nan'an address for a trip focused on Chongqing's south bank.
+- 开放时间：—
+- 来源：https://www.marriott.com/en-us/hotels/ckgmc-chongqing-marriott-hotel/overview/
+- 提醒：pl_cq_nanbinluwanhao: unknown field 'hotel_class' is dropped on import
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 罗宾斯牛排馆 · Robin's Grill  `pl_cq_robins_grill_cq`
+- food/western · main · 分数 29 · 两江新区
+- 高德：未查询
+- 简介：喜欢牛排或铁板料理时，可以在江边安排此处用餐。 / A riverfront dining option for steak and teppanyaki.
+- 开放时间：午餐11:30–14:30（14:00截止点单）；晚餐17:30–21:30（21:00截止点单）
+- 来源：https://www.ihg.com/regent/hotels/cn/zh/chongqing/ckgrh/hoteldetail/dining
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 洲至奢选重庆TFT酒店 · TFT Chongqing, Vignette Collection  `pl_cq_tftjiudian`
-- hotel/hotel · main · 分数 28 · 区未知
+- hotel/hotel · main · 分数 29 · 两江新区
 - 高德：未查询
-- 简介：东升门路的一家洲际旗下酒店。 / An IHG hotel on Dongshengmen Road.
+- 简介：江北嘴东升门路的高层酒店，可看都市天际线。 / A Jiangbeizui high-floor hotel on Dongshengmen Road.
 - 开放时间：—
 - 来源：https://www.ihg.com/vignettecollection/hotels/cn/zh/chongqing/ckgjh/hoteldetail
+- 提醒：pl_cq_tftjiudian: unknown field 'hotel_class' is dropped on import
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 望峰居 · The Peak  `pl_cq_the_peak_cq`
-- food/western · main · 分数 28 · 南岸区
+- food/western · main · 分数 29 · 南岸区
 - 高德：未查询
 - 简介：南坪的高层餐厅，能单点，也有分时段的自助餐。 / A high-floor restaurant in Nanping with à la carte and buffet service.
 - 开放时间：单点06:30–22:00；周四至周日自助晚餐17:30–21:30
 - 来源：https://www.hilton.com/en-gb/hotels/ckgcici-conrad-chongqing/dining/
 - [ ] accept　[ ] reject　[ ] edit：
 
+### 重庆希尔顿酒店 · Hilton Chongqing  `pl_cq_xierdun`
+- hotel/hotel · main · 分数 29 · 渝中区
+- 高德：未查询
+- 简介：两路口的希尔顿，可安排大田湾和宋庆龄旧居。 / A Lianglukou base for Datianwan and an outing around historic Yuzhong.
+- 开放时间：—
+- 来源：https://www.hilton.com.cn/zh-cn/hotels/ckghihi-hilton-chongqing
+- 提醒：pl_cq_xierdun: unknown field 'hotel_class' is dropped on import
+- [ ] accept　[ ] reject　[ ] edit：
+
 ### 渝呈 · YU  `pl_cq_yu_chongqing`
-- food/local_cuisine · main · 分数 28 · 南岸区
+- food/local_cuisine · main · 分数 29 · 南岸区
 - 高德：未查询
 - 简介：在南坪高层用餐，可安排川菜与甜点。 / A high-floor Nanping restaurant for Sichuan dishes and desserts.
 - 开放时间：午餐11:30–14:30；晚餐17:30–21:30
 - 来源：https://www.hilton.com/en-gb/hotels/ckgcici-conrad-chongqing/dining/
 - [ ] accept　[ ] reject　[ ] edit：
 
-### 重庆北站福朋喜来登酒店 · Four Points by Sheraton Chongqing North Railway Station  `pl_cq_beizhanfupeng`
-- hotel/hotel · main · 分数 26 · 区未知
+### 重庆渝中半岛福朋喜来登酒店 · Four Points by Sheraton Chongqing Yuzhong Peninsula  `pl_cq_yuzhongfupeng`
+- hotel/hotel · main · 分数 29 · 渝中区
 - 高德：未查询
-- 简介：可作为重庆北站周边的住宿选项。 / An overnight option around Chongqing North Railway Station.
+- 简介：中山三路的门店，万豪列明英语与中文。 / A Yuzhong Peninsula option on Zhongshan 3rd Road, with English listed.
 - 开放时间：—
-- 来源：https://www.marriott.com/en-us/hotels/ckgnu-four-points-chongqing-north-railway-station/overview/
+- 来源：https://www.marriott.com/en-us/hotels/ckgyp-four-points-chongqing-yuzhong-peninsula/overview/
+- 提醒：pl_cq_yuzhongfupeng: unknown field 'hotel_class' is dropped on import
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 丛岩寺站农贸市场 · Congyansi Station Produce Market  `pl_cq_congyansi_rail_market`
+- shopping/market · main · 分数 28 · 两江新区
+- 高德：未查询
+- 简介：可在轨道站旁看买菜小摊，适合顺路了解社区日常。 / Produce stalls by a rail transit stop offer a look at local daily shopping.
+- 开放时间：—
+- 来源：https://zfcxjw.cq.gov.cn/zwxx_166/zwyw/202608/t20260827_15989274.html
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 重庆万象城 · The MixC Chongqing  `pl_cq_cq_mixc_retail`
+- shopping/mall · main · 分数 28 · 九龙坡区
+- 高德：未查询
+- 简介：在谢家湾找一站式服装、配饰及生活零售。 / One stop for fashion, accessories and everyday shopping in Xiejiawan.
+- 开放时间：—
+- 来源：https://cq.gov.cn/ywdt/zwhd/bmdt/202411/t20241106_13774850.html
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 重庆IFS购物中心 · Chongqing IFS  `pl_cq_ifs_chongqing_retail`
+- shopping/mall · main · 分数 28 · 两江新区
+- 高德：未查询
+- 简介：江北嘴游览途中，可进室内商场看时装和设计零售。 / An indoor shopping stop for fashion and design in Jiangbeizui.
+- 开放时间：—
+- 来源：https://www.wharfholdings.com/en/our-businesses/china-investment-properties
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 龙湖重庆时代天街 · Longfor Chongqing Times Paradise Walk  `pl_cq_times_paradise_walk_cq`
+- shopping/mall · main · 分数 28 · 渝中区
+- 高德：未查询
+- 简介：在大坪可用半天逛服饰、生活零售和多栋商场。 / Leave time to browse fashion and everyday shops across several Daping mall buildings.
+- 开放时间：—
+- 来源：https://www.longfor.com/space/operations.html
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 宜必思重庆解放碑步行街酒店 · ibis Chongqing Jiefangbei Pedestrian Street Hotel  `pl_cq_yibisi_jiefangbeibuxingjie`
+- hotel/hotel · main · 分数 28 · 渝中区
+- 高德：未查询
+- 简介：解放碑步行街上的经济型客房，可用临江门站。 / A Jiefangbei ibis with Linjiangmen and Xiaoshizi metro options.
+- 开放时间：—
+- 来源：https://all.accor.com/hotel/B583/index.en.shtml
+- 提醒：pl_cq_yibisi_jiefangbeibuxingjie: unknown field 'hotel_class' is dropped on import
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 宜必思重庆江北机场双龙大道酒店 · ibis Chongqing Jiangbei Airport Shuanglong Avenue Hotel  `pl_cq_yibisi_shuanglong`
+- hotel/hotel · main · 分数 28 · 渝北区
+- 高德：未查询
+- 简介：双龙大道的经济型酒店，可提前向店方约机场接驳。 / A Shuanglong Avenue ibis with airport pickup by arrangement.
+- 开放时间：—
+- 来源：https://all.accor.com/hotel/B7L0/index.en.shtml
+- 提醒：pl_cq_yibisi_shuanglong: unknown field 'hotel_class' is dropped on import
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 璧山区清真美食店 · Bishan Qingzhen Restaurant  `pl_cq_bishan_qingzhen_biquan`
@@ -156,78 +378,36 @@
 - 来源：https://scjgj.cq.gov.cn/zz/bsq/zfxxgkml/spypjglyjczwgkzl/xzsp/spxkxx/202608/t20260807_15905736.html
 - [ ] accept　[ ] reject　[ ] edit：
 
-### 重庆江北希尔顿逸林酒店 · DoubleTree by Hilton Hotel Chongqing North  `pl_cq_jiangbeiyilin`
-- hotel/hotel · main · 分数 26 · 江北区
+### 长嘉汇购物公园 · Changjiahui Shopping Park  `pl_cq_changjiahui_retail_cq`
+- shopping/mall · main · 分数 26 · 南岸区
 - 高德：未查询
-- 简介：在观音桥一带游览的住宿候选。 / A hotel in the Guanyinqiao area.
+- 简介：在弹子石和南滨路的行程间，可留一站逛店歇脚。 / Take a shopping break between Danzishi and the Nanbin Road waterfront.
 - 开放时间：—
-- 来源：https://www.hilton.com.cn/zh-cn/hotels/ckgjbdi-doubletree-by-hilton-hotel-chongqing-north
+- 来源：https://www.cq.gov.cn/ywdt/zwhd/qxdt/202602/t20260214_15445478.html
 - [ ] accept　[ ] reject　[ ] edit：
 
-### 重庆JW万豪酒店 · JW Marriott Hotel Chongqing  `pl_cq_jiefangbeiwanhao`
-- hotel/hotel · main · 分数 26 · 区未知
+### 陈昌银麻花（磁器口正街） · Chen Changyin Mahua, Ciqikou  `pl_cq_chenchangyin_ciqikou_shop`
+- shopping/time_honored_brand · main · 分数 26 · 沙坪坝区
 - 高德：未查询
-- 简介：在解放碑一带住一晚的候选。 / A hotel option in the Jiefangbei area.
+- 简介：在磁器口找陈昌银牌，挑重庆传统麻花和包装礼盒。 / Look for the Chen Changyin name for Chongqing fried twists and gift boxes.
 - 开放时间：—
-- 来源：https://www.marriott.com/en-us/hotels/ckgjw-jw-marriott-hotel-chongqing/overview/
+- 来源：https://jda.cq.gov.cn/web/article/web/content_1462768985577107456.html
 - [ ] accept　[ ] reject　[ ] edit：
 
-### 重庆解放碑威斯汀酒店 · The Westin Chongqing Liberation Square  `pl_cq_jiefangbeiweisiting`
-- hotel/hotel · main · 分数 26 · 区未知
+### 重庆百货大楼（解放碑） · Chongqing Department Store, Jiefangbei  `pl_cq_chongqing_department_jfb`
+- shopping/time_honored_brand · main · 分数 26 · 渝中区
 - 高德：未查询
-- 简介：在解放碑周边步行游览的一处住处。 / A Westin hotel for exploring Jiefangbei on foot.
+- 简介：逛解放碑时进老百货，可看服饰、钟表和日用零售。 / A long-running department store for fashion, watches and everyday goods.
 - 开放时间：—
-- 来源：https://www.marriott.com/en-us/hotels/ckgwi-the-westin-chongqing-liberation-square/overview/
+- 来源：https://travel.cnr.cn/dsywzl/20260106/t20260106_527484364.shtml
 - [ ] accept　[ ] reject　[ ] edit：
 
-### 重庆开元名都臻品之选酒店 · MajesTang Hotel, Chongqing, a Tribute Portfolio Hotel  `pl_cq_kaiyuanmingdu`
-- hotel/hotel · main · 分数 26 · 区未知
+### 龙湖重庆北城天街 · Longfor Chongqing North Paradise Walk  `pl_cq_north_paradise_walk_cq`
+- shopping/mall · main · 分数 26 · 两江新区
 - 高德：未查询
-- 简介：重庆的臻品之选酒店，有品牌官网预订入口。 / A Tribute Portfolio hotel in Chongqing with direct booking.
+- 简介：在观音桥逛时装时，可挑一栋购物馆慢慢走。 / Choose a section of North Paradise Walk for fashion shopping in Guanyinqiao.
 - 开放时间：—
-- 来源：https://www.marriott.com/en-us/hotels/ckggb-majestang-hotel-chongqing-a-tribute-portfolio-hotel/overview/
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 重庆康莱德酒店 · Conrad Chongqing  `pl_cq_kanglaide`
-- hotel/hotel · main · 分数 26 · 区未知
-- 高德：未查询
-- 简介：重庆的康莱德酒店，可查各类房型。 / The Conrad property in Chongqing offers online room options.
-- 开放时间：—
-- 来源：https://www.hilton.com.cn/zh-cn/hotels/ckgcici-conrad-chongqing
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 重庆两江新区高科希尔顿酒店 · Hilton Chongqing Liangjiang New Area  `pl_cq_liangjiangxierdun`
-- hotel/hotel · main · 分数 26 · 区未知
-- 高德：未查询
-- 简介：在两江新区停留的一处住宿候选。 / A Hilton hotel in Liangjiang New Area.
-- 开放时间：—
-- 来源：https://www.hilton.com.cn/zh-cn/hotels/ckgcchi-hilton-chongqing-liangjiang-new-area
-- [ ] accept　[ ] reject　[ ] edit：
-
-## 第 2 批
-
-### 重庆礼嘉白云湖酒店，希尔顿格芮精选 · Chongqing Lijia Baiyun Lake Hotel, Curio Collection by Hilton  `pl_cq_lijiabaiyunhu`
-- hotel/hotel · main · 分数 26 · 区未知
-- 高德：未查询
-- 简介：礼嘉白云湖一带的希尔顿格芮精选酒店。 / A Curio Collection hotel near Lijia Baiyun Lake.
-- 开放时间：—
-- 来源：https://www.hilton.com.cn/zh-cn/hotels/ckgqqqq-chongqing-lijia-baiyun-lake-hotel-curio-collection-by-hilton
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 重庆Moxy酒店 · Moxy Chongqing  `pl_cq_moxyjiudian`
-- hotel/hotel · main · 分数 26 · 区未知
-- 高德：未查询
-- 简介：在重庆停留的一处 Moxy 住宿候选。 / A Moxy hotel for a stay in Chongqing.
-- 开放时间：—
-- 来源：https://www.marriott.com/en-us/hotels/ckgox-moxy-chongqing/overview/
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 重庆万豪酒店 · Chongqing Marriott Hotel  `pl_cq_nanbinluwanhao`
-- hotel/hotel · main · 分数 26 · 区未知
-- 高德：未查询
-- 简介：可作为南滨路一带的住宿选择。 / A Marriott hotel in the Nanbin Road area.
-- 开放时间：—
-- 来源：https://www.marriott.com/en-us/hotels/ckgmc-chongqing-marriott-hotel/overview/
+- 来源：https://www.longfor.com/detail/220_74cadfd2becf343f7f8e4d2117b094bf.html
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 万州慈云寺素香斋 · Suxiang Dining Hall, Wanzhou Ciyun Temple  `pl_cq_suxiangzhai_wanzhou`
@@ -238,6 +418,16 @@
 - 来源：https://www.wzcys.cn/about/
 - [ ] accept　[ ] reject　[ ] edit：
 
+### 宏帆望海花都 · Hongfan Wanghai Flower Market  `pl_cq_wanghai_flower_market`
+- shopping/market · main · 分数 26 · 两江新区
+- 高德：未查询
+- 简介：可比较鲜花、盆栽和园艺摊位，适合想看重庆花市的人。 / Compare cut flowers, potted plants and gardening stalls at a Chongqing flower market.
+- 开放时间：—
+- 来源：https://ljxq.gov.cn/zwxx/ljyw/202602/t20260209_15399691.html
+- [ ] accept　[ ] reject　[ ] edit：
+
+## 第 3 批
+
 ### 万州站 · Wanzhou Railway Station  `pl_cq_wanzhouzhan`
 - hub/rail · main · 分数 26 · 区未知
 - 高德：未查询
@@ -246,20 +436,12 @@
 - 来源：https://www.wz.gov.cn/zwxx_266/jdtp/202602/t20260203_15374523.html
 - [ ] accept　[ ] reject　[ ] edit：
 
-### 重庆希尔顿酒店 · Hilton Chongqing  `pl_cq_xierdun`
-- hotel/hotel · main · 分数 26 · 区未知
+### 学田湾大阳沟市场 · Xuetianwan Dayanggou Market  `pl_cq_xuetianwan_dayanggou`
+- shopping/market · main · 分数 26 · 渝中区
 - 高德：未查询
-- 简介：在重庆中心城区安排住宿时可考虑。 / A Hilton hotel in central Chongqing.
+- 简介：看居民买菜和干货，可把它安排在渝中的日常街巷行程里。 / See residents shop for produce and dried goods in the Xuetianwan neighborhood.
 - 开放时间：—
-- 来源：https://www.hilton.com.cn/zh-cn/hotels/ckghihi-hilton-chongqing
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 重庆渝中半岛福朋喜来登酒店 · Four Points by Sheraton Chongqing Yuzhong Peninsula  `pl_cq_yuzhongfupeng`
-- hotel/hotel · main · 分数 26 · 区未知
-- 高德：未查询
-- 简介：可作为在渝中半岛游览时的住宿点。 / A Four Points hotel on the Yuzhong peninsula.
-- 开放时间：—
-- 来源：https://www.marriott.com/en-us/hotels/ckgyp-four-points-chongqing-yuzhong-peninsula/overview/
+- 来源：https://sww.cq.gov.cn/zwgk_247/zfxxgkml/qtfdxx/tzgg/202512/t20251226_15274727.html
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 白鹤梁水下博物馆 · Baiheliang Underwater Museum  `pl_cq_baiheliang`
@@ -294,14 +476,6 @@
 - 来源：https://www.cq.gov.cn/igixmj/gkzxft/202512/tInterview_21689.html
 - [ ] accept　[ ] reject　[ ] edit：
 
-### 8楼餐厅（解放碑） · Kitchen on 8, Jiefangbei  `pl_cq_kitchen_on8_jfb`
-- food/western · main · 分数 23 · 渝中区
-- 高德：未查询
-- 简介：解放碑旁的开放式餐厅，能选本地和国际菜。 / An open-kitchen restaurant near Jiefangbei with local and international dishes.
-- 开放时间：单点每日06:30–22:30
-- 来源：https://www.hyatt.com/hyatt-regency/en-US/ckgro-hyatt-regency-metropolitan-chongqing/dining
-- [ ] accept　[ ] reject　[ ] edit：
-
 ### 龙门浩老街 · Longmenhao Old Street  `pl_cq_longmenhao`
 - attraction/street · main · 分数 23 · 南岸区
 - 高德：未查询
@@ -310,28 +484,20 @@
 - 来源：https://www.cqna.gov.cn/bm/qcgj/sy/dt_59966/202503/t20250317_14411210.html
 - [ ] accept　[ ] reject　[ ] edit：
 
-### 咖啡厅（观音桥凯悦） · Market Café, Guanyinqiao  `pl_cq_market_cafe_guanyin`
-- food/western · main · 分数 23 · 两江新区
-- 高德：未查询
-- 简介：同行者口味不同时，可在一间餐厅选不同菜式。 / An international buffet for travelers looking for different dishes at one table.
-- 开放时间：周六、周日午餐12:00–14:30；周五至周日晚餐17:30–21:30
-- 来源：https://www.hyatt.com/hyatt-regency/en-US/chong-hyatt-regency-chongqing/dining
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 罗宾斯牛排馆 · Robin's Grill  `pl_cq_robins_grill_cq`
-- food/western · main · 分数 23 · 两江新区
-- 高德：未查询
-- 简介：喜欢牛排或铁板料理时，可以在江边安排此处用餐。 / A riverfront dining option for steak and teppanyaki.
-- 开放时间：午餐11:30–14:30（14:00截止点单）；晚餐17:30–21:30（21:00截止点单）
-- 来源：https://www.ihg.com/regent/hotels/cn/zh/chongqing/ckgrh/hoteldetail/dining
-- [ ] accept　[ ] reject　[ ] edit：
-
 ### 武隆喀斯特旅游区 · Wulong Karst Scenic Area  `pl_cq_wulong_kasite`
 - attraction/park · main · 分数 23 · 武隆区
 - 高德：未查询
 - 简介：到武隆看天生石桥与喀斯特峡谷 / Explore natural rock bridges and karst valleys in Wulong.
 - 开放时间：—
 - 来源：https://whlyw.cq.gov.cn/hdjl_221/xzzq/202601/t20260106_15295212.html
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 安心菜场（加州店） · Anxin Produce Market, Jiazhou  `pl_cq_anxin_jiazhou`
+- shopping/market · main · 分数 21 · 两江新区
+- 高德：未查询
+- 简介：想体验当地买菜，可在加州片区看看生鲜与小摊。 / Browse fresh groceries and small vendors in the Jiazhou neighborhood.
+- 开放时间：—
+- 来源：https://nyncw.cq.gov.cn/zwxx_161/qxlb/202504/t20250415_14522984.html
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 阿蓬记黔江鸡杂（总店） · Apengji Qianjiang Chicken Giblets, Main Branch  `pl_cq_apeng_qianjiang`
@@ -406,8 +572,6 @@
 - 来源：https://whlyw.cq.gov.cn/zwxx_221/bmdt/tzgg/202602/t20260212_15436601.html
 - [ ] accept　[ ] reject　[ ] edit：
 
-## 第 3 批
-
 ### 黄明康酒家 · Huang Mingkang Restaurant  `pl_cq_huangmingkang`
 - food/local_cuisine · main · 分数 21 · 南岸区
 - 高德：未查询
@@ -448,6 +612,14 @@
 - 来源：https://whlyw.cq.gov.cn/zwxx_221/bmdt/tzgg/202602/t20260212_15436601.html
 - [ ] accept　[ ] reject　[ ] edit：
 
+### 龙塔帝怡菜市场 · Longta Diyi Produce Market  `pl_cq_longta_diyi_market`
+- shopping/market · main · 分数 21 · 两江新区
+- 高德：未查询
+- 简介：在龙塔街区看看本地居民如何挑选当日生鲜。 / A neighborhood market for seeing what locals buy fresh in Longta.
+- 开放时间：—
+- 来源：https://sww.cq.gov.cn/zwgk_247/zfxxgkml/qtfdxx/tzgg/202512/t20251226_15274727.html
+- [ ] accept　[ ] reject　[ ] edit：
+
 ### 茅溪卤菜热卤家常馆 · Maoxi Warm Braised Dishes  `pl_cq_maoxi_luwei`
 - food/local_cuisine · main · 分数 21 · 两江新区
 - 高德：未查询
@@ -455,6 +627,8 @@
 - 开放时间：—
 - 来源：https://whlyw.cq.gov.cn/zwxx_221/bmdt/tzgg/202602/t20260212_15436601.html
 - [ ] accept　[ ] reject　[ ] edit：
+
+## 第 4 批
 
 ### 民仓餐馆（观音桥） · Mincang Restaurant, Guanyinqiao  `pl_cq_mincang_guanyinqiao`
 - food/local_cuisine · main · 分数 21 · 两江新区
@@ -608,8 +782,6 @@
 - 来源：https://www.cqyz.gov.cn/zjyz/lyyz/rmdkd/202210/t20221011_11179145.html
 - [ ] accept　[ ] reject　[ ] edit：
 
-## 第 4 批
-
 ### 鹅岭公园 · Eling Park  `pl_cq_eling_gongyuan`
 - attraction/park · main · 分数 18 · 渝中区
 - 高德：未查询
@@ -657,6 +829,8 @@
 - 开放时间：—
 - 来源：https://whlyw.cq.gov.cn/hdjl_221/xzzq/202601/t20260115_15320860.html
 - [ ] accept　[ ] reject　[ ] edit：
+
+## 第 5 批
 
 ### 重庆动物园 · Chongqing Zoo  `pl_cq_chongqing_dongwuyuan`
 - attraction/experience · main · 分数 12 · 九龙坡区
@@ -810,8 +984,6 @@
 - 来源：https://whlyw.cq.gov.cn/hdjl_221/xzzq/202601/t20260106_15295212.html
 - [ ] accept　[ ] reject　[ ] edit：
 
-## 第 5 批
-
 ### 万盛黑山谷 · Wansheng Black Valley  `pl_cq_heishangu`
 - attraction/park · main · 分数 10 · 万盛经开区
 - 高德：未查询
@@ -852,6 +1024,61 @@
 - 来源：https://sww.cq.gov.cn/zwgk_247/zfxxgkml/qtfdxx/tzgg/202511/t20251124_15183087.html
 - [ ] accept　[ ] reject　[ ] edit：
 
+### 重庆江北希尔顿逸林酒店 · DoubleTree by Hilton Hotel Chongqing North  `pl_cq_jiangbeiyilin`
+- hotel/hotel · backup · 分数 31 · 江北区
+- 高德：未查询
+- 简介：在观音桥北城天街附近，适合把逛店和用餐排在一起。 / A Guanyinqiao stay for the shops and restaurants of Paradise Walk.
+- 开放时间：—
+- 来源：https://www.hilton.com.cn/zh-cn/hotels/ckgjbdi-doubletree-by-hilton-hotel-chongqing-north
+- 提醒：pl_cq_jiangbeiyilin: unknown field 'hotel_class' is dropped on import
+- [ ] accept　[ ] reject　[ ] edit：
+
+## 第 6 批
+
+### 重庆开元名都臻品之选酒店 · MajesTang Hotel, Chongqing, a Tribute Portfolio Hotel  `pl_cq_kaiyuanmingdu`
+- hotel/hotel · backup · 分数 31 · 渝中区
+- 高德：未查询
+- 简介：渝中民族路1号，官网列小什字为地铁选择。 / A Minzu Road hotel with Xiaoshizi listed for metro access.
+- 开放时间：—
+- 来源：https://www.marriott.com/en-us/hotels/ckggb-majestang-hotel-chongqing-a-tribute-portfolio-hotel/overview/
+- 提醒：pl_cq_kaiyuanmingdu: unknown field 'hotel_class' is dropped on import
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 重庆两江新区高科希尔顿酒店 · Hilton Chongqing Liangjiang New Area  `pl_cq_liangjiangxierdun`
+- hotel/hotel · backup · 分数 31 · 两江新区
+- 高德：未查询
+- 简介：财富东路的希尔顿，可安排园博园或两江新区购物。 / A Liangjiang stay for a separate outing to Chongqing Garden Expo Park.
+- 开放时间：—
+- 来源：https://www.hilton.com.cn/zh-cn/hotels/ckgcchi-hilton-chongqing-liangjiang-new-area
+- 提醒：pl_cq_liangjiangxierdun: unknown field 'hotel_class' is dropped on import
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 重庆富力艾美酒店 · Le Méridien Chongqing, Nan'an  `pl_cq_nananailimei`
+- hotel/hotel · backup · 分数 31 · 南岸区
+- 高德：未查询
+- 简介：江南大道的艾美，可查南坪站和地铁3号线。 / A Nanping stay with Line 3 directions from Marriott.
+- 开放时间：—
+- 来源：https://www.marriott.com/en-us/hotels/ckgmd-le-meridien-chongqing-nanan/overview/
+- 提醒：pl_cq_nananailimei: unknown field 'hotel_class' is dropped on import
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 重庆JW万豪酒店 · JW Marriott Hotel Chongqing  `pl_cq_jiefangbeiwanhao`
+- hotel/hotel · backup · 分数 29 · 区未知
+- 高德：未查询
+- 简介：民生路的JW万豪，适合留时间在渝中半岛步行。 / A Minsheng Road stay in Yuzhong, with an indoor pool for a break.
+- 开放时间：—
+- 来源：https://www.marriott.com/en-us/hotels/ckgjw-jw-marriott-hotel-chongqing/overview/
+- 提醒：pl_cq_jiefangbeiwanhao: unknown field 'hotel_class' is dropped on import
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 龙湖重庆金沙天街 · Longfor Chongqing Jinsha Paradise Walk  `pl_cq_jinsha_paradise_walk_cq`
+- shopping/mall · backup · 分数 28 · 沙坪坝区
+- 高德：未查询
+- 简介：到沙坪坝站附近换乘时，可在商场逛店或吃饭。 / A mall for a meal or shopping near Shapingba's railway and metro hub.
+- 开放时间：—
+- 来源：https://www.longfor.com/detail/220_5416f4c9a4a6ed71610405d776e6d40a.html
+- [ ] accept　[ ] reject　[ ] edit：
+
 ### 重庆嘉发希尔顿逸林酒店 · DoubleTree by Hilton Hotel Chongqing - Nan'an  `pl_cq_jiafayilin`
 - hotel/hotel · backup · 分数 26 · 南岸区
 - 高德：未查询
@@ -860,28 +1087,20 @@
 - 来源：https://www.hilton.com.cn/zh-cn/hotels/ckgnadi-doubletree-by-hilton-hotel-chongqing--nanan
 - [ ] accept　[ ] reject　[ ] edit：
 
-### 重庆江北嘴希尔顿花园酒店 · Hilton Garden Inn Chongqing Jiangbeizui  `pl_cq_jiangbeizuixierdun`
-- hotel/hotel · backup · 分数 26 · 区未知
+### 加合夏布（夏布小镇） · Jiahe Xiabu, Rongchang Xiabu Town  `pl_cq_jiahe_xiabu_store`
+- shopping/boutique · backup · 分数 26 · 荣昌区
 - 高德：未查询
-- 简介：在江北嘴一带停留可考虑。 / A hotel option in Jiangbeizui.
+- 简介：喜欢织物工艺，可在夏布小镇看苎麻布手作。 / See ramie cloth and local textile crafts at a shop in Xiabu Town.
 - 开放时间：—
-- 来源：https://www.hilton.com.cn/zh-cn/hotels/ckgjzgi-hilton-garden-inn-chongqing-jiangbeizui
+- 来源：https://www.rongchang.gov.cn/zwxx/bmjz/202504/t20250429_14571083.html
 - [ ] accept　[ ] reject　[ ] edit：
 
-### 重庆富力艾美酒店 · Le Méridien Chongqing, Nan'an  `pl_cq_nananailimei`
-- hotel/hotel · backup · 分数 26 · 区未知
+### MINISO LAND（解放碑店） · MINISO LAND, Jiefangbei  `pl_cq_miniso_land_jiefangbei`
+- shopping/boutique · backup · 分数 26 · 渝中区
 - 高德：未查询
-- 简介：南岸区的艾美酒店。 / A Le Méridien hotel in Nan'an.
+- 简介：想逛玩偶、盲盒和角色周边，可在解放碑走到这家店。 / Browse toys, blind boxes and character goods near Jiefangbei.
 - 开放时间：—
-- 来源：https://www.marriott.com/en-us/hotels/ckgmd-le-meridien-chongqing-nanan/overview/
-- [ ] accept　[ ] reject　[ ] edit：
-
-### 重庆南岸万豪万枫酒店 · Fairfield by Marriott Chongqing Nan’an District  `pl_cq_nananwanfeng`
-- hotel/hotel · backup · 分数 26 · 区未知
-- 高德：未查询
-- 简介：南岸区的万枫酒店。 / A Fairfield hotel in Nan'an.
-- 开放时间：—
-- 来源：https://www.marriott.com/en-us/hotels/ckgfn-fairfield-chongqing-nanan-district/overview/
+- 来源：https://paper.people.com.cn/rmrb/pc/attachement/202512/31/ec069756-8900-40e2-9933-09be583f3f5d.pdf
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 重庆喜来登大酒店 · Sheraton Chongqing Hotel  `pl_cq_nananxilaideng`
@@ -890,6 +1109,14 @@
 - 简介：在南岸寻找江边住宿的一处候选。 / A Sheraton option in Nan'an.
 - 开放时间：—
 - 来源：https://www.marriott.com/en-us/hotels/ckgsi-sheraton-chongqing-hotel/overview/
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 龙湖重庆龙兴天街 · Longfor Chongqing Longxing Paradise Walk  `pl_cq_longxing_paradise_walk_cq`
+- shopping/mall · backup · 分数 23 · 两江新区
+- 高德：未查询
+- 简介：去龙盛新城可把逛店、电影和吃饭安排在同一站。 / Combine shopping, a film and a meal at this Longxing mall by Line 4.
+- 开放时间：—
+- 来源：https://www.longfor.com/detail/220_038ad08d71a32fa67710eb3c865058d6.html
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 陈立蹄花 · Chen Li Pork Trotters  `pl_cq_chen_tihua_hechuan`
@@ -922,6 +1149,14 @@
 - 简介：经过涪陵兴华中路时可停下来吃一碗本地面。 / A quick stop for a local bowl of noodles on Xinghua Middle Road.
 - 开放时间：—
 - 来源：https://whlyw.cq.gov.cn/zwxx_221/bmdt/tzgg/202602/t20260212_15436601.html
+- [ ] accept　[ ] reject　[ ] edit：
+
+### 荣昌折扇传承体验馆 · Rongchang Folding Fan Heritage Center  `pl_cq_rongchang_folding_fans`
+- shopping/boutique · backup · 分数 21 · 荣昌区
+- 高德：未查询
+- 简介：在荣昌了解折扇做法，也可看馆里的成品展销。 / Learn how Rongchang fans are made and browse finished pieces for sale.
+- 开放时间：—
+- 来源：https://www.rongchang.gov.cn/zwxx/rcdt/202506/t20250624_14740368.html
 - [ ] accept　[ ] reject　[ ] edit：
 
 ### 小渔沱手工米粉 · Xiaoyutuo Handmade Rice Noodles  `pl_cq_small_yutuo_rice`
@@ -1004,6 +1239,8 @@
 - 来源：https://whlyw.cq.gov.cn/hdjl_221/xzzq/202601/t20260106_15295212.html
 - [ ] accept　[ ] reject　[ ] edit：
 
+## 第 7 批
+
 ### 金刀峡 · Jindao Gorge  `pl_cq_jindaoxia`
 - attraction/park · backup · 分数 12 · 北碚区
 - 高德：未查询
@@ -1011,8 +1248,6 @@
 - 开放时间：—
 - 来源：https://whlyw.cq.gov.cn/hdjl_221/xzzq/202601/t20260106_15295212.html
 - [ ] accept　[ ] reject　[ ] edit：
-
-## 第 6 批
 
 ### 重庆缙云山景区 · Jinyun Mountain Scenic Area  `pl_cq_jinyunshan`
 - attraction/park · backup · 分数 12 · 北碚区

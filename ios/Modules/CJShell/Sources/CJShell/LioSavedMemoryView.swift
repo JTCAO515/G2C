@@ -3,7 +3,6 @@ import CJLioUser
 import CJMemoryClient
 import CJRunClient
 import SwiftUI
-import UIKit
 
 public struct LioSavedMemoryView: View {
     let host: TypedMemoryContainerHost
@@ -12,7 +11,6 @@ public struct LioSavedMemoryView: View {
     @State private var path: [Data] = []
     @State private var deletion: LioMemoryDeletionRoute?
     @State private var stoppedMemory = false
-    @ScaledMetric(relativeTo: .headline) private var previewHeight = previewLineHeight * 3
     @Environment(\.dynamicTypeSize) private var typeSize
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.lioMemorySuggestions) private var suggestions
@@ -26,90 +24,74 @@ public struct LioSavedMemoryView: View {
     public var body: some View {
         let listSurface = path.isEmpty ? surface : nil
         NavigationStack(path: $path) {
-            GeometryReader { page in
-                VStack(alignment: .leading, spacing: 0) {
-                    Text(language.text("Memory", "记忆"))
-                        .font(LioTheme.display(.largeTitle))
-                        .foregroundStyle(LioTheme.ink)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .accessibilityAddTraits(.isHeader)
-                        .padding(.horizontal, 16)
-                        .padding(.top, 12)
-                        .padding(.bottom, 8)
-                    ScrollView {
-                        VStack(alignment: .leading, spacing: 20) {
+            VStack(alignment: .leading, spacing: 0) {
+                Text(LioMemoryCopy.pageTitle(language))
+                    .font(LioTheme.display(.largeTitle))
+                    .foregroundStyle(LioTheme.ink)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .accessibilityAddTraits(.isHeader)
+                    .accessibilityIdentifier("lio.memory.title")
+                    .padding(.horizontal, 16)
+                    .padding(.top, 12)
+                    .padding(.bottom, 8)
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 20) {
+                        switch host.items {
+                        case .unconfigured, .loading:
                             if !suggestions.isEmpty { memorySuggestions }
-                            switch host.items {
-                            case .unconfigured, .loading:
-                                ProgressView()
-                            case .failed:
-                                Text(
-                                    language.text(
-                                        "Couldn’t show your memories. Pull down to try again.",
-                                        "暂时看不到你的记忆，下拉再试一次。"))
-                            case .loaded(let items):
-                                let saved = items.filter { isSaved($0) }
-                                if saved.isEmpty && !host.hasMore {
-                                    VStack(spacing: 16) {
-                                        LioPortrait(size: 80)
-                                        Text(
-                                            language.text(
-                                                "Things you ask Lio to remember appear here.", "你让 Lio 记住的内容会出现在这里。"
-                                            )
-                                        )
-                                        .font(LioTheme.display(.title3))
-                                        .multilineTextAlignment(.center)
-                                    }
-                                    .padding(.vertical, 40)
-                                    .frame(maxWidth: .infinity)
-                                }
-                                LazyVGrid(
-                                    columns: Array(
-                                        repeating: GridItem(.flexible(), spacing: 12, alignment: .top),
-                                        count: typeSize.isAccessibilitySize ? 1 : 2),
-                                    spacing: typeSize.isAccessibilitySize ? 0 : 12
-                                ) {
-                                    memoryCards(saved, pageHeight: page.size.height)
-                                }
+                            ProgressView()
+                        case .failed:
+                            if !suggestions.isEmpty { memorySuggestions }
+                            Text(
+                                language.text(
+                                    "Couldn’t show your memories. Pull down to try again.",
+                                    "暂时看不到你的记忆，下拉再试一次。"))
+                        case .loaded(let items):
+                            let saved = items.filter { isSaved($0) }
+                            if !saved.isEmpty || host.hasMore { memoryIntro }
+                            if !suggestions.isEmpty { memorySuggestions }
+                            if saved.isEmpty && !host.hasMore { emptyMemory }
+                            ForEach(LioMemoryGrouping.groups(saved) { $0.item.value.command.slot }) { group in
+                                memoryGroup(group)
                             }
                         }
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, typeSize.isAccessibilitySize ? 0 : 16)
-                        .frame(maxWidth: .infinity, alignment: .leading)
                     }
-                    .clipped()
-                    .refreshable { await host.loadItems(surface: surface) }
-                    if case .loaded = host.items, host.hasMore {
-                        Button {
-                            let current = surface
-                            Task { await host.loadItems(surface: current, more: true) }
-                        } label: {
-                            Text(language.text("More memories", "更多记忆"))
-                                .font(.headline)
-                                .foregroundStyle(LioTheme.ink)
-                                .padding(.horizontal, LioTheme.Spacing.sm)
-                                .frame(minHeight: 44)
-                                .background(LioTheme.surfaceSunken, in: RoundedRectangle(cornerRadius: LioTheme.Radius.small))
-                                .contentShape(Rectangle())
-                        }
-                        .buttonStyle(.plain)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 8)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, typeSize.isAccessibilitySize ? 8 : 16)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .clipped()
+                .refreshable { await host.loadItems(surface: surface) }
+                if case .loaded = host.items, host.hasMore {
+                    Button {
+                        let current = surface
+                        Task { await host.loadItems(surface: current, more: true) }
+                    } label: {
+                        Text(language.text("More memories", "更多记忆"))
+                            .font(.headline)
+                            .foregroundStyle(LioTheme.ink)
+                            .padding(.horizontal, LioTheme.Spacing.sm)
+                            .frame(minHeight: 44)
+                            .background(LioTheme.surfaceSunken, in: RoundedRectangle(cornerRadius: LioTheme.Radius.small))
+                            .contentShape(Rectangle())
                     }
-                    if let model = host.erasurePresentation, model.original != nil || !model.originals.isEmpty {
-                        Button {
-                            deletion = .history
-                        } label: {
-                            Text(language.text("Memory deletions", "记忆删除记录"))
-                                .foregroundStyle(LioTheme.ink)
-                                .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
-                                .contentShape(Rectangle())
-                        }
-                        .disabled(model.state.isBusy)
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 8)
+                    .buttonStyle(.plain)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 8)
+                }
+                if let model = host.erasurePresentation, model.original != nil || !model.originals.isEmpty {
+                    Button {
+                        deletion = .history
+                    } label: {
+                        Text(language.text("Memory deletions", "记忆删除记录"))
+                            .foregroundStyle(LioTheme.ink)
+                            .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                            .contentShape(Rectangle())
                     }
+                    .disabled(model.state.isBusy)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 8)
                 }
             }
             .lioPage()
@@ -163,6 +145,79 @@ public struct LioSavedMemoryView: View {
         }
     }
 
+    /// What the page is for, and the note that answers say when they use a memory. Text only.
+    private var memoryIntro: some View {
+        VStack(alignment: .leading, spacing: LioTheme.Spacing.xxs) {
+            Text(LioMemoryCopy.pageDescription(language))
+                .accessibilityIdentifier("lio.memory.intro")
+            Text(LioMemoryCopy.usageNote(language))
+                .accessibilityIdentifier("lio.memory.usage-note")
+        }
+        .font(.subheadline)
+        .foregroundStyle(LioTheme.inkSecondary)
+        .fixedSize(horizontal: false, vertical: true)
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    /// Nothing saved yet: say what Lio remembers and how to make it happen, with sentences the service accepts.
+    private var emptyMemory: some View {
+        let shape = RoundedRectangle(cornerRadius: LioTheme.Radius.card)
+        let examples = LioMemoryCopy.examples(language)
+        return VStack(alignment: .leading, spacing: LioTheme.Spacing.md) {
+            VStack(spacing: LioTheme.Spacing.sm) {
+                LioPortrait(size: 80)
+                Text(LioMemoryCopy.emptyTitle(language))
+                    .font(LioTheme.display(.title3))
+                    .multilineTextAlignment(.center)
+                    .accessibilityAddTraits(.isHeader)
+                    .accessibilityIdentifier("lio.memory.empty.title")
+                Text(LioMemoryCopy.emptyDescription(language))
+                    .font(.body)
+                    .foregroundStyle(LioTheme.inkSecondary)
+                    .multilineTextAlignment(.center)
+                    .accessibilityIdentifier("lio.memory.empty.description")
+            }
+            .frame(maxWidth: .infinity)
+            .fixedSize(horizontal: false, vertical: true)
+            VStack(alignment: .leading, spacing: LioTheme.Spacing.xxs) {
+                Text(LioMemoryCopy.remembersHeading(language))
+                    .font(.headline)
+                    .accessibilityAddTraits(.isHeader)
+                Text(LioMemoryCopy.remembers(language))
+                    .foregroundStyle(LioTheme.inkSecondary)
+                    .accessibilityIdentifier("lio.memory.empty.remembers")
+            }
+            VStack(alignment: .leading, spacing: LioTheme.Spacing.xs) {
+                Text(LioMemoryCopy.examplesHeading(language))
+                    .font(.headline)
+                    .accessibilityAddTraits(.isHeader)
+                ForEach(examples.indices, id: \.self) { index in
+                    Text(verbatim: "“\(examples[index])”")
+                        .font(LioTheme.display(.body))
+                        .padding(LioTheme.Spacing.sm)
+                        .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                        .background(LioTheme.surfaceSunken, in: RoundedRectangle(cornerRadius: LioTheme.Radius.small))
+                        .accessibilityIdentifier("lio.memory.empty.example.\(index)")
+                }
+                Text(LioMemoryCopy.examplesTip(language))
+                    .font(.subheadline)
+                    .foregroundStyle(LioTheme.inkSecondary)
+                    .accessibilityIdentifier("lio.memory.empty.tip")
+            }
+            Text(LioMemoryCopy.usageNote(language))
+                .font(.subheadline)
+                .foregroundStyle(LioTheme.inkSecondary)
+                .accessibilityIdentifier("lio.memory.usage-note")
+        }
+        .foregroundStyle(LioTheme.ink)
+        .fixedSize(horizontal: false, vertical: true)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(LioTheme.Spacing.md)
+        .background(LioTheme.surface, in: shape)
+        .overlay { shape.stroke(LioTheme.hairline, lineWidth: 1).allowsHitTesting(false) }
+        .accessibilityIdentifier("lio.memory.empty")
+    }
+
     private var memorySuggestions: some View {
         let shape = RoundedRectangle(cornerRadius: LioTheme.Radius.card)
         return VStack(alignment: .leading, spacing: LioTheme.Spacing.xs) {
@@ -187,65 +242,40 @@ public struct LioSavedMemoryView: View {
         .overlay { shape.stroke(LioTheme.hairline, lineWidth: 1).allowsHitTesting(false) }
     }
 
-    private func memoryCards(_ saved: [TypedMemoryRead], pageHeight: CGFloat) -> some View {
-        ForEach(saved.indices, id: \.self) { index in
-            let item = saved[index].item.value
-            let displayText: String = saved[index].item.title ?? item.command.text
-            let accessibilityText = memoryAccessibilityLabel(saved[index])
-            let id = Data(item.command.item_id.utf8)
-            let deactivated = item.status == .disabled
-            let card = NavigationLink(value: id) {
-                VStack(alignment: .leading, spacing: 12) {
-                    HStack(spacing: 4) {
-                        Image(systemName: memorySymbol(saved[index]))
-                            .font(.title3)
-                            .foregroundStyle(LioTheme.gold)
-                        Spacer(minLength: 4)
-                        if deactivated {
-                            Text(language.text("Deactivated", "已停用"))
-                                .accessibilityIdentifier("lio.memory.deactivated.\(item.command.item_id)")
-                                .font(.subheadline)
-                                .fontWeight(.semibold)
-                                .fixedSize(horizontal: false, vertical: true)
-                                .foregroundStyle(LioTheme.inkSecondary)
-                                .padding(.horizontal, 8)
-                                .padding(.vertical, 4)
-                                .background(LioTheme.surfaceSunken, in: RoundedRectangle(cornerRadius: LioTheme.Radius.small))
-                                .id(typeSize)
-                        }
-                    }
-                    ScrollView(.vertical) {
-                        Text(displayText)
-                            .font(LioTheme.display(.headline))
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-                    .scrollIndicators(.hidden)
-                    .scrollDisabled(true)
-                    .frame(height: previewHeight)
-                    .clipped()
-                    .allowsHitTesting(false)
-                    Spacer(minLength: 0)
-                }
-                .foregroundStyle(LioTheme.ink)
-                .padding(12)
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-                .background(LioTheme.surface, in: RoundedRectangle(cornerRadius: LioTheme.Radius.card))
-                .overlay { RoundedRectangle(cornerRadius: LioTheme.Radius.card).stroke(LioTheme.hairline, lineWidth: 1) }
-                .contentShape(RoundedRectangle(cornerRadius: LioTheme.Radius.card))
+    private func memoryGroup(_ group: LioMemoryGroup<TypedMemoryRead>) -> some View {
+        VStack(alignment: .leading, spacing: LioTheme.Spacing.xs) {
+            HStack(spacing: LioTheme.Spacing.xs) {
+                Image(systemName: group.category.symbol)
+                    .foregroundStyle(LioTheme.gold)
+                    .accessibilityHidden(true)
+                Text(group.category.title(language))
+                    .font(LioTheme.display(.title3))
+                    .foregroundStyle(LioTheme.ink)
+                    .fixedSize(horizontal: false, vertical: true)
             }
-            .buttonStyle(.plain)
-            .aspectRatio(1, contentMode: .fit)
-            .accessibilityLabel(accessibilityText)
-            .accessibilityValue(item.command.text)
-            .accessibilityIdentifier("lio.memory.card.\(item.command.item_id)")
-            VStack(spacing: 0) {
-                card
-                Spacer(minLength: 0)
+            .accessibilityElement(children: .combine)
+            .accessibilityAddTraits(.isHeader)
+            .accessibilityIdentifier("lio.memory.group.\(group.category.rawValue)")
+            ForEach(group.items.indices, id: \.self) { index in
+                memoryRow(group.items[index])
             }
-            .padding(.vertical, typeSize.isAccessibilitySize ? 16 : 0)
-            .frame(height: typeSize.isAccessibilitySize ? pageHeight : nil)
         }
+    }
+
+    private func memoryRow(_ read: TypedMemoryRead) -> some View {
+        let item = read.item.value
+        let summary = LioMemoryCopy.summary(recordedAt: item.recorded_at, longTerm: read.item.scope == .longTerm,
+                                            language: language)
+        return NavigationLink(value: Data(item.command.item_id.utf8)) {
+            LioMemoryRowLabel(symbol: memorySymbol(read), heading: read.item.title ?? item.command.text,
+                              text: item.command.text, summary: summary, itemID: item.command.item_id,
+                              deactivated: item.status == .disabled, language: language)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(memoryAccessibilityLabel(read))
+        .accessibilityValue(item.command.text)
+        .accessibilityHint(summary)
+        .accessibilityIdentifier("lio.memory.card.\(item.command.item_id)")
     }
 
     private func memoryAccessibilityLabel(_ read: TypedMemoryRead) -> String {
@@ -282,11 +312,70 @@ public struct LioSavedMemoryView: View {
     }
 }
 
-private let previewLineHeight: CGFloat = {
-    let font = UIFont.preferredFont(forTextStyle: .headline,
-                                   compatibleWith: UITraitCollection(preferredContentSizeCategory: .large))
-    return UIFont(descriptor: font.fontDescriptor.withDesign(.serif)!, size: 0).lineHeight
-}()
+/// One saved memory in the list: its short title (or the whole text), the text, where it came from, and whether
+/// Lio is using it. The row is at least 44 pt tall and grows with Dynamic Type.
+private struct LioMemoryRowLabel: View {
+    let symbol: String
+    let heading: String
+    let text: String
+    let summary: String
+    let itemID: String
+    let deactivated: Bool
+    let language: ShellLanguage
+
+    var body: some View {
+        let shape = RoundedRectangle(cornerRadius: LioTheme.Radius.card)
+        HStack(alignment: .top, spacing: LioTheme.Spacing.sm) {
+            Image(systemName: symbol)
+                .font(.title3)
+                .foregroundStyle(LioTheme.gold)
+                .accessibilityHidden(true)
+            texts
+            Image(systemName: "chevron.forward")
+                .font(.footnote.weight(.semibold))
+                .foregroundStyle(LioTheme.inkSecondary)
+                .accessibilityHidden(true)
+                .frame(minHeight: 44)
+        }
+        .foregroundStyle(LioTheme.ink)
+        .padding(LioTheme.Spacing.sm)
+        .frame(maxWidth: .infinity, minHeight: 44, alignment: .topLeading)
+        .background(LioTheme.surface, in: shape)
+        .overlay { shape.stroke(LioTheme.hairline, lineWidth: 1) }
+        .contentShape(shape)
+    }
+
+    private var texts: some View {
+        VStack(alignment: .leading, spacing: LioTheme.Spacing.xxs) {
+            Text(heading)
+                .font(LioTheme.display(.headline))
+                .frame(maxWidth: .infinity, alignment: .leading)
+            if heading != text {
+                Text(text)
+                    .font(.subheadline)
+                    .foregroundStyle(LioTheme.inkSecondary)
+                    .lineLimit(3)
+            }
+            Text(summary)
+                .font(.footnote)
+                .foregroundStyle(LioTheme.inkSecondary)
+                .accessibilityIdentifier("lio.memory.source.\(itemID)")
+            if deactivated { deactivatedBadge }
+        }
+        .fixedSize(horizontal: false, vertical: true)
+    }
+
+    private var deactivatedBadge: some View {
+        Text(language.text("Deactivated", "已停用"))
+            .accessibilityIdentifier("lio.memory.deactivated.\(itemID)")
+            .font(.subheadline)
+            .fontWeight(.semibold)
+            .foregroundStyle(LioTheme.inkSecondary)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            .background(LioTheme.surfaceSunken, in: RoundedRectangle(cornerRadius: LioTheme.Radius.small))
+    }
+}
 
 private func isSaved(_ read: TypedMemoryRead) -> Bool {
     let item = read.item.value
@@ -380,6 +469,7 @@ private struct LioSavedMemoryDetail: View {
                     .textCase(nil)
                     .accessibilityAddTraits(.isHeader)
             }
+            provenance
         }
         .scrollDismissesKeyboard(.interactively)
         .lioPage()
@@ -404,6 +494,28 @@ private struct LioSavedMemoryDetail: View {
         .task(id: Data(itemID.utf8)) { await load() }
         .refreshable {
             if !saving && draft == nil { await load() }
+        }
+    }
+
+    /// Where this memory came from and how answers mention it. Text only; nothing is read from the service.
+    @ViewBuilder private var provenance: some View {
+        if draft == nil, case .loaded(let entry) = host.detail, let entry, isSaved(entry) {
+            Section {
+                provenanceLines(entry)
+                    .font(.footnote)
+                    .foregroundStyle(LioTheme.inkSecondary)
+                    .lioRow()
+            }
+        }
+    }
+
+    private func provenanceLines(_ entry: TypedMemoryRead) -> some View {
+        Group {
+            Text(LioMemoryCopy.summary(recordedAt: entry.item.value.recorded_at,
+                                       longTerm: entry.item.scope == .longTerm, language: language))
+                .accessibilityIdentifier("lio.memory.detail.source")
+            Text(LioMemoryCopy.usageNote(language))
+                .accessibilityIdentifier("lio.memory.detail.usage-note")
         }
     }
 
