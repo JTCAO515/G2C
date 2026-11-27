@@ -93,6 +93,7 @@ def main():
         tests += "\n" + (HERE / "LioTaxiUITests.swift").read_text()
         tests += "\n" + (HERE / "LioHotelUITests.swift").read_text()
         tests += "\n" + (HERE / "LioToolsLocalSupportUITests.swift").read_text()
+        tests += "\n" + (HERE / "LioToolsPlaceToolsUITests.swift").read_text()
         if "testDebugDialUsesTheConfiguredNumberWithoutCalling" in (args.case or []):
             number = os.environ.get("G2C_LOCAL_SUPPORT_TEST_PHONE", "")
             if len(number) != 11 or not number.isascii() or not number.isdecimal():
@@ -146,6 +147,8 @@ def main():
         '            LioChatHistoryFixture(shell: shell)\n'
         '        } else if ProcessInfo.processInfo.arguments.contains("--lio-journey-acceptance") {\n'
         '            LioJourneyFixture(shell: shell)\n'
+        '        } else if ProcessInfo.processInfo.arguments.contains("--lio-place-tools-acceptance") {\n'
+        '            LioPlaceToolsFixture(chinese: UserDefaults.standard.string(forKey: "cj.ui.language.v1") == "zh-Hans", dark: UserDefaults.standard.string(forKey: "lio.ui.appearance.v1") == "dark")\n'
         '        } else if ProcessInfo.processInfo.arguments.contains("--lio-currency-acceptance") {\n'
         '            LioCurrencyFixture(chinese: UserDefaults.standard.string(forKey: "cj.ui.language.v1") == "zh-Hans", dark: UserDefaults.standard.string(forKey: "lio.ui.appearance.v1") == "dark")\n'
         '        } else if ProcessInfo.processInfo.arguments.contains("--lio-timeline-acceptance") {\n'
@@ -154,7 +157,7 @@ def main():
     )
     fixtures = ("LioPositionPersistenceFixture.swift", "LioRootActivationFailureFixture.swift", "LioReadFailureFixture.swift", "LioScrollFixture.swift", "LioTimelineFixture.swift", "LioJourneyFixture.swift",
                 "LioMemoryJourneyFixture.swift", "LioChatHistoryFixture.swift", "LioSessionRecoveryFixture.swift",
-                "LioScenePrivacyFixture.swift", "LioExplorationQuestionsFixture.swift", "LioExplorationReplyFixture.swift", "LioRichItineraryFixture.swift", "LioExplorationReadFixture.swift", "LioThinkingFixture.swift", "LioExplorationHomeFixture.swift", "LioCalendarWireFixture.swift", "LioStreamingFixture.swift", "LioCurrencyFixture.swift")
+                "LioScenePrivacyFixture.swift", "LioExplorationQuestionsFixture.swift", "LioExplorationReplyFixture.swift", "LioRichItineraryFixture.swift", "LioExplorationReadFixture.swift", "LioThinkingFixture.swift", "LioExplorationHomeFixture.swift", "LioCalendarWireFixture.swift", "LioStreamingFixture.swift", "LioCurrencyFixture.swift", "LioPlaceToolsFixture.swift")
     beta_source = (ROOT / "ios/App/DemoBetaApp.swift").read_text()
     branch_start = beta_source.index("                LioSessionRecoveryView(language:")
     branch_end = beta_source.index("            } else {", branch_start)
