@@ -87,6 +87,19 @@ class Sensitive(unittest.TestCase):
             with self.subTest(slot=slot, text=text):
                 self.assertFalse(writes(slot, text))
 
+    def test_english_health_words_added_in_2105_are_caught_on_their_own(self):
+        # #2105 (#2103 review P3): the word list catches these itself, so the slot-form gate is not the only thing that stops them.
+        for text in ('I have a stomach ulcer', 'My stomach hurts a lot', 'I have insomnia', 'I sleep badly', 'I cannot sleep well',
+                     "I can't sleep on trains", 'I use walkers', 'Dad uses a rollator', 'I get dizzy easily', 'I have migraines',
+                     'I have hearing loss', 'I wear a hearing aid', 'She is colour-blind', 'I have gout', 'He has colitis',
+                     'I get acid reflux', 'I have gastritis', 'I had a panic attack', 'I have PTSD', 'I have an eating disorder', 'I have osteoporosis'):
+            with self.subTest(text=text):
+                self.assertTrue(sensitive(text))
+        for text in ('I like the sleeper train', 'I prefer a quiet hotel with good sleep quality', 'I enjoy walking tours',
+                     'I like a dizzying skyline view', 'I love gastronomy tours', 'I like gastropubs', 'I like stomach-friendly local noodles', 'I like spicy food', 'I like museums'):
+            with self.subTest(text=text):
+                self.assertFalse(sensitive(text))
+
     def test_non_text_is_treated_as_sensitive(self):
         for value in (None, 7, b'x', ['a']):
             self.assertTrue(sensitive(value))
