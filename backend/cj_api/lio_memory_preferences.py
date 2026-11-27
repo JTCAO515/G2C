@@ -66,10 +66,18 @@ _SENSITIVE = re.compile(
     r'透析|手术|康复|医疗|医生|就医|诊断|低糖|无糖|忌口|'
     r'宗教|信仰|信教|教徒|穆斯林|回教|伊斯兰|清真|斋月|开斋|礼拜|祷告|祈祷|佛教|佛祖|拜佛|信佛|基督|天主|耶稣|教会|犹太|印度教|锡克|道教|'
     r'不吃猪|不吃牛|不吃荤|吃素|素食|斋戒|洁食|'
+    r'(?:吃|守|持)斋|斋饭|斋期|视力|听力|晕车|晕船|近视|散光|\boperations?\b|recover(?:ing|y)|\blent\b|\bcane\b|(?<!fast )(?<!slow )(?<!avid )(?<!keen )(?<!johnnie )\bwalker\b|\bfasting\b|'
+    r'有孕|孕在身|身体不好|身体不太好|腿(?:脚)?(?:不好|不便|疼|痛|有问题)|膝(?:盖)?(?:不好|疼|痛|有问题)|腰(?:不好|疼|痛|有问题)|关节|痛风|溃疡|高血糖|心脏|化疗|头疼|头痛|耳聋|聋哑|失聪|失明|全盲|盲童|无障碍|自闭|多动症|'
+    r'念经|诵经|礼佛|佛门|拜拜(?!肉)|安息日|耆那|周五不吃肉|斋日|'
+    r'chemo|arthritis|\bdeaf\b|\bblind\b(?! (?:tasting|date|box))|\bautis|\badhd\b|accessib(?!le (?:price|pric|cost|fare))|\bbad (?:back|knee|knees|leg|legs)\b|can.?t (?:climb|walk)|shabbat|\bjain\b|pescatarian|on fridays|\bkosher\b|'
     r'allerg|asthma|diabet|hypertension|blood pressure|heart (?:disease|condition)|cancer|chronic|disease|illness|medical|'
     r'medicat|medicine|prescription|\bpills?\b|diagnos|disabilit|disabled|wheelchair|mobility|walking (?:aid|stick)|crutch|'
     r'pregnan|nursing mother|breastfeed|depress|anxiety disorder|mental health|epilep|dialysis|surgery|injur|'
     r'gluten|celiac|lactose|intoleran|'
+    r'\bulcers?\b|stomach (?:ache|pain|problem|trouble|issue|upset|hurts?|condition)|\bgastr(?!onom|opub)|\bibs\b|crohn|colitis|reflux|\bgout\b|'
+    r'insomnia|sleep (?:apnea|problem|disorder|badly|issue)|can.?t sleep|cannot sleep|migraine|vertigo|\bdizz(?:y|iness)\b|nausea|\bnauseous\b|'
+    r'hearing (?:loss|aid|impair)|vision (?:loss|impair)|poor eyesight|glaucoma|cataract|colou?r.?blind|'
+    r'bipolar|schizophren|\bptsd\b|panic attack|eating disorder|osteopor|\bwalkers\b|rollator|'
     r'religio|faith|muslim|islam|halal|ramadan|fasting|prayer|\bpray|church|mosque|synagogue|buddhis|christian|'
     r'catholic|jewish|kosher|hindu|\bsikh|taoist|no pork|(?:don.?t|do not|never) eat (?:pork|beef)|vegetarian|vegan',
     re.IGNORECASE)
@@ -97,13 +105,16 @@ def _value(form, text):
 
 
 def allows_pilot_preference_write(command):
+    # #2038 (decided 2026-11-28, privacy first): every slot, the two older ones included, takes a write only when the
+    # text is a supported statement of that slot (`_value`), and never when it is sensitive. Text that is not a health or
+    # faith word but has nothing to do with the slot ("my stomach hurts" in diet.spicy) is not written: one missed
+    # preference costs a tap, a wrong one costs trust.
     if sensitive(command.text):
         return False
-    if command.slot in _EXISTING_SLOTS:
-        return True
     form = _FORMS.get(command.slot)
-    return (form is not None and command.kind == 'preference'
-            and _value(form, command.text) is not None)
+    if form is None or _value(form, command.text) is None:
+        return False
+    return command.slot in _EXISTING_SLOTS or command.kind == 'preference'
 
 
 def explicit_pilot_preference(text, slots):

@@ -2608,6 +2608,86 @@ import CryptoKit
         }
     }
 
+    /// #1747: with `G2CConsentEnabled` (Debug: `--lio-consent-preview`) the first page comes before anything else: three
+    /// answers, none preselected; declining stays on the page and offers the policy and Leave; "keep AI processing off"
+    /// goes in with the AI features stopped (the notice shows, Send is disabled); Me → Privacy turns it back on.
+    /// Without the flag no page appears.
+    func testFirstLaunchConsentAndTheAIProcessingChoiceInBothLanguages() throws {
+        continueAfterFailure = false
+        for language in ["en", "zh-Hans"] {
+            let en = language == "en"
+            let launch = { (flag: Bool) -> XCUIApplication in
+                let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
+                app.launchArguments = ["--lio-preview", "-cj.ui.language.v1", language] + (flag ? ["--lio-consent-preview"] : [])
+                app.launch()
+                return app
+            }
+            // Flag off: the home screen as before, no page, nothing withheld.
+            let plain = launch(false)
+            XCTAssertTrue(plain.buttons["lio.menu"].waitForExistence(timeout: 12))
+            XCTAssertFalse(plain.staticTexts["lio.consent.title"].exists)
+            XCTAssertFalse(plain.staticTexts["lio.consent.ai-off"].exists)
+            plain.terminate()
+
+            let app = launch(true)
+            defer { app.terminate() }
+            let title = app.staticTexts["lio.consent.title"]
+            XCTAssertTrue(title.waitForExistence(timeout: 12), app.debugDescription)
+            XCTAssertEqual(title.label, en ? "How your data is handled" : "先看看你的数据怎么处理")
+            for index in 0..<6 { XCTAssertTrue(app.descendants(matching: .any)["lio.consent.item.\(index)"].exists) }
+            let agreeAI = app.buttons["lio.consent.agree-ai"], agree = app.buttons["lio.consent.agree"], decline = app.buttons["lio.consent.decline"]
+            for _ in 0..<6 where !decline.isHittable { app.swipeUp() }
+            XCTAssertTrue(agreeAI.exists && agree.exists && decline.exists)
+            XCTAssertEqual(agreeAI.label, en ? "Agree and turn on AI processing" : "同意，并开启 AI 处理")
+            XCTAssertEqual(agree.label, en ? "Agree, but keep AI processing off" : "同意，暂不开启 AI 处理")
+            let shot = XCTAttachment(screenshot: app.screenshot()); shot.name = "consent-\(language)"; shot.lifetime = .keepAlways; add(shot)
+
+            // Declining stays on the page.
+            decline.tap()
+            let declined = app.staticTexts["lio.consent.declined"]
+            XCTAssertTrue(declined.waitForExistence(timeout: 4))
+            for _ in 0..<6 where !app.buttons["lio.consent.leave"].isHittable { app.swipeUp() }
+            XCTAssertTrue(app.buttons["lio.consent.policy"].exists && app.buttons["lio.consent.leave"].exists)
+            XCTAssertTrue(title.exists, "still on the consent page")
+            app.buttons["lio.consent.back"].tap()
+            for _ in 0..<6 where !agree.isHittable { app.swipeUp() }
+
+            // Agree with AI processing off: in, with the AI features stopped.
+            agree.tap()
+            XCTAssertTrue(app.buttons["lio.menu"].waitForExistence(timeout: 8))
+            XCTAssertFalse(title.exists)
+            let off = app.descendants(matching: .any)["lio.consent.ai-off"]
+            XCTAssertTrue(off.waitForExistence(timeout: 4), "the notice where chat stopped")
+            XCTAssertEqual(off.label, en ? "AI processing is off. You can turn it back on under Me → Privacy."
+                                         : "已关闭 AI 处理，可在「我的」→「隐私」里重新开启。")
+            XCTAssertFalse(app.buttons["lio.send"].isEnabled, "Send is stopped")
+
+            // Me → Privacy turns it on again, after one confirmation.
+            app.tabBars.buttons[en ? "Me" : "我的"].tap()
+            let privacy = app.buttons["lio.me.privacy"]
+            XCTAssertTrue(privacy.waitForExistence(timeout: 6))
+            privacy.tap()
+            let toggle = app.buttons["lio.privacy.ai-toggle"]
+            XCTAssertTrue(toggle.waitForExistence(timeout: 6))
+            XCTAssertEqual(toggle.label, en ? "Turn on" : "开启")
+            toggle.tap()
+            let alert = app.alerts.firstMatch
+            XCTAssertTrue(alert.waitForExistence(timeout: 4))
+            XCTAssertEqual(alert.label, en ? "Once on, your chats and translation content are sent to Alibaba Cloud Model Studio in Beijing, mainland China, for processing."
+                                           : "开启后，你的对话和翻译内容会发到中国大陆北京的阿里云百炼处理。")
+            alert.buttons[en ? "Turn on" : "开启"].tap()
+            expectation(for: NSPredicate(format: "label == %@", en ? "Turn off AI processing" : "关闭 AI 处理"), evaluatedWith: toggle)
+            waitForExpectations(timeout: 6)
+            toggle.tap()
+            XCTAssertTrue(app.alerts.firstMatch.waitForExistence(timeout: 4))
+            app.alerts.firstMatch.buttons[en ? "Cancel" : "取消"].tap()
+            XCTAssertEqual(toggle.label, en ? "Turn off AI processing" : "关闭 AI 处理", "cancel keeps it on")
+            app.tabBars.buttons[en ? "Chat" : "聊天"].tap()
+            XCTAssertTrue(app.buttons["lio.menu"].waitForExistence(timeout: 6))
+            XCTAssertFalse(app.descendants(matching: .any)["lio.consent.ai-off"].exists, "the notice is gone")
+        }
+    }
+
     /// #1727: with `G2CAnswerLayoutEnabled` (Debug: `--lio-answer-layout-preview`, a fixture that sends nothing) the
     /// answer is two bubbles cut at the first blank line, with the server's buttons under them; a button opens its tool.
     /// Without the flag the same answer is one bubble and no buttons.
@@ -2675,6 +2755,91 @@ import CryptoKit
                     XCTAssertTrue(app.alerts.firstMatch.label == (en ? "This tool isn't in this version yet." : "这个版本还没有这个工具。"))
                 }
             }
+        }
+    }
+
+    /// #1991: with `G2CAnswerRichEnabled` (Debug: `--lio-answer-rich-preview`, a fixture that sends nothing) the places an
+    /// answer names are tappable words in either bubble. A tap opens a card in place (a popover, not a full screen) with
+    /// the names, the one-line intro and the buttons that can work; "See more" opens the place page.
+    func testPlaceWordsOpenACardInPlaceAndSeeMoreOpensThePlacePage() throws {
+        continueAfterFailure = false
+        for language in ["en", "zh-Hans"] {
+            let en = language == "en"
+            let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
+            app.launchArguments = ["--lio-preview", "-cj.ui.language.v1", language,
+                                   "--lio-answer-layout-preview", "--lio-answer-rich-preview"]
+            app.launch()
+            defer { app.terminate() }
+            XCTAssertTrue(app.buttons["lio.menu"].waitForExistence(timeout: 12))
+            app.buttons["lio.example.0"].tap()
+            let composer = app.descendants(matching: .any).matching(identifier: "lio.composer").firstMatch
+            let starter = composer.value as? String ?? ""
+            composer.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: starter.count)
+                              + (en ? "Tell me about the Palace Museum" : "介绍一下故宫"))
+            app.buttons["lio.send"].tap()
+            let first = app.staticTexts["lio.answer"], second = app.staticTexts["lio.answer.2"]
+            XCTAssertTrue(first.waitForExistence(timeout: 8))
+            XCTAssertTrue(second.waitForExistence(timeout: 12), "the second bubble")
+            let palace = app.links[en ? "The Palace Museum" : "故宫博物院"]
+            XCTAssertTrue(palace.waitForExistence(timeout: 12), app.debugDescription)
+            XCTAssertTrue(app.links[en ? "Jingshan Park" : "景山公园"].exists, "every place of the first bubble")
+            XCTAssertTrue(app.links[en ? "Temple of Heaven" : "天坛公园"].exists, "and the second bubble's")
+            palace.tap()
+            let card = app.staticTexts["lio.place.bubble.name"]
+            XCTAssertTrue(card.waitForExistence(timeout: 6), app.debugDescription)
+            XCTAssertEqual(app.staticTexts["lio.place.bubble.name"].label, en ? "The Palace Museum" : "故宫博物院")
+            XCTAssertEqual(app.staticTexts["lio.place.bubble.name.other"].label, en ? "故宫博物院" : "The Palace Museum")
+            XCTAssertTrue(app.buttons["lio.place.bubble.driver"].exists && app.buttons["lio.place.bubble.navigate"].exists)
+            XCTAssertGreaterThanOrEqual(app.buttons["lio.place.bubble.driver"].frame.height, 44)
+            XCTAssertTrue(app.buttons["lio.menu"].exists || app.tabBars.firstMatch.exists, "the chat is still there behind a card in place")
+            let shot = XCTAttachment(screenshot: app.screenshot())
+            shot.name = "place-bubble-\(language)"; shot.lifetime = .keepAlways; add(shot)
+            let more = app.buttons["lio.place.bubble.more"]
+            XCTAssertEqual(more.label, en ? "See more" : "更多")
+            more.tap()
+            XCTAssertTrue(app.staticTexts["lio.place.name"].waitForExistence(timeout: 8), "the place page")
+            app.buttons["lio.place.bubble.page.close"].tap()
+            XCTAssertTrue(palace.waitForExistence(timeout: 6))
+        }
+    }
+
+    /// #1993: with `G2CAnswerRichEnabled` (Debug: `--lio-answer-rich-preview`, a fixture that sends nothing) the server's
+    /// tool cards sit under the answer. A card whose tool this build shows opens it; one whose tool it does not show
+    /// says "not in this version" and is not a button.
+    func testToolCardsOpenTheirToolOrSayNotInThisVersion() throws {
+        continueAfterFailure = false
+        for language in ["en", "zh-Hans"] {
+            let en = language == "en"
+            let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
+            app.launchArguments = ["--lio-preview", "-cj.ui.language.v1", language, "--lio-tools-preview",
+                                   "--lio-answer-layout-preview", "--lio-answer-rich-preview"]
+            app.launch()
+            defer { app.terminate() }
+            XCTAssertTrue(app.buttons["lio.menu"].waitForExistence(timeout: 12))
+            app.buttons["lio.example.0"].tap()
+            let composer = app.descendants(matching: .any).matching(identifier: "lio.composer").firstMatch
+            let starter = composer.value as? String ?? ""
+            composer.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: starter.count)
+                              + (en ? "Tell me about the Palace Museum" : "介绍一下故宫"))
+            app.buttons["lio.send"].tap()
+            let metro = app.buttons["lio.answer.card.metro"]
+            XCTAssertTrue(metro.waitForExistence(timeout: 14), app.debugDescription)
+            XCTAssertTrue(metro.label.contains(en ? "Metro map" : "看地铁线路") && metro.label.contains(en ? "Beijing" : "北京"), metro.label)
+            XCTAssertGreaterThanOrEqual(metro.frame.height, 44)
+            let notHere = en ? "This tool isn't in this version yet." : "这个版本还没有这个工具。"
+            for kind in ["taxi", "currency"] {
+                let card = app.descendants(matching: .any)["lio.answer.card.\(kind)"]
+                XCTAssertTrue(card.exists, kind)
+                XCTAssertTrue(card.label.contains(notHere), "\(kind): \(card.label)")
+                XCTAssertFalse(app.buttons["lio.answer.card.\(kind)"].exists, "\(kind) is not a button here")
+            }
+            let currency = app.descendants(matching: .any)["lio.answer.card.currency"]
+            XCTAssertTrue(currency.label.contains(en ? "Reference rate" : "参考汇率") && currency.label.contains("2026-11-26"), currency.label)
+            let shot = XCTAttachment(screenshot: app.screenshot())
+            shot.name = "tool-cards-\(language)"; shot.lifetime = .keepAlways; add(shot)
+            metro.tap()
+            let tools = app.tabBars.buttons[en ? "Tools" : "工具"]
+            XCTAssertTrue(tools.waitForExistence(timeout: 6) && tools.isSelected, "the card opened its tool")
         }
     }
 

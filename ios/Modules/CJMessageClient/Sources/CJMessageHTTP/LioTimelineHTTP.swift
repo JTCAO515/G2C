@@ -25,6 +25,7 @@ public final class LioTimelineHTTP {
     private let firstChatRecovery: MessageRecovery?
     private var firstChatInFlight = false
     private var defaultCalendarConversationID: String?
+    private var richDeclaration = LioAnswerRichDeclaration()
 
     /// Request kinds named only for on-device problem notes.
     public enum RequestKind: Sendable, Equatable, CaseIterable {
@@ -301,16 +302,31 @@ public final class LioTimelineHTTP {
     }
 
     /// `declaresAnswerLayout` adds `accepts=LIO-answer-followups.1` to a v2 read (#1727); without it the request is
-    /// exactly what it was before.
+    /// exactly what it was before. `declaresAnswerRich` asks for `LIO-answer-rich.1` instead (#1991). A server that
+    /// does not know it answers 400: the same page is then read once more with followups.1, and rich is not tried
+    /// again for 15 minutes (kept in memory only, so a restart tries it at once).
     public func timeline(conversationID: String? = nil, before: String? = nil,
                          version: LioTimelineWire.Version = .v1,
-                         declaresAnswerLayout: Bool = false) async throws -> LioTimelineWire.Page {
+                         declaresAnswerLayout: Bool = false,
+                         declaresAnswerRich: Bool = false) async throws -> LioTimelineWire.Page {
         observe(.timeline)
         let token = try await bearer()
-        let (response, body) = try await transport.readLio(conversationID: conversationID, before: before, bearer: token, version: version,
-            declaresAnswerLayout: declaresAnswerLayout,
-            observedResponse: { [self] response in if !Task.isCancelled { observe(.timeline, response) } })
+        let observed: @MainActor @Sendable (HTTPResponse) -> Void = { [self] response in
+            if !Task.isCancelled { observe(.timeline, response) }
+        }
+        // Rich includes followups.1, so a build that asks for rich at least declares that.
+        let layout = declaresAnswerLayout || declaresAnswerRich
+        var rich = declaresAnswerRich && version == .v2 && richDeclaration.allows(at: Date())
+        var (response, body) = try await transport.readLio(conversationID: conversationID, before: before, bearer: token,
+            version: version, declaresAnswerLayout: layout, declaresAnswerRich: rich, observedResponse: observed)
         observe(.timeline, response)
+        if rich, response.status.code == 400 {
+            richDeclaration.refused(at: Date())
+            rich = false
+            (response, body) = try await transport.readLio(conversationID: conversationID, before: before, bearer: token,
+                version: version, declaresAnswerLayout: layout, declaresAnswerRich: false, observedResponse: observed)
+            observe(.timeline, response)
+        }
         guard response.status.code == 200 else { throw MessageHTTPFailure.invalidResponse }
         let bytes = try await json(response, body, limit: 4_500_000)
         let page = try LioTimelineWire.decodePage(bytes, for: conversationID, version: version)
@@ -435,6 +451,35 @@ public final class LioTimelineHTTP {
         observe(.memoryChoice, response)
         guard response.status.code == 200 else { throw MessageHTTPFailure.exchangeUnknown }
         return try await json(response, body, limit: 65_536)
+    }
+
+    /// The account's memory consent (#1999). 200 is a receipt; a refusal retrying cannot change is reported as such;
+    /// everything else (503, no answer, a body that is not the contract's) throws, and the caller retries later.
+    func submitMemoryConsent(_ request: LioMemoryConsentWire.Request) async throws -> LioMemoryConsentClient.Outcome {
+        observe(.memoryChoice)
+        let token = try await bearer()
+        let (response, body) = try await transport.sendLioMemoryConsent(request, bearer: token)
+        observe(.memoryChoice, response)
+        return try await memoryConsentOutcome(response, body)
+    }
+
+    func readMemoryConsent() async throws -> LioMemoryConsentClient.Outcome {
+        observe(.memoryChoice)
+        let token = try await bearer()
+        let (response, body) = try await transport.readLioMemoryConsent(bearer: token)
+        observe(.memoryChoice, response)
+        return try await memoryConsentOutcome(response, body)
+    }
+
+    private func memoryConsentOutcome(_ response: HTTPResponse, _ body: HTTPBody?) async throws -> LioMemoryConsentClient.Outcome {
+        switch response.status.code {
+        case 200:
+            return .accepted(try LioMemoryConsentWire.decodeReceipt(try await json(response, body, limit: 65_536)))
+        case 400, 401, 403, 409:
+            return .refused(status: response.status.code)
+        default:
+            throw MessageHTTPFailure.exchangeUnknown
+        }
     }
 
     private func bearer() async throws -> String {

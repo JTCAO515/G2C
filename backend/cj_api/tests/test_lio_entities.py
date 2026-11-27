@@ -64,6 +64,17 @@ class Linker(unittest.TestCase):
         for answer in ('看[故宫的介绍](https://example.com/故宫)吧', '用 `故宫` 这个词', '```\n故宫\n```', '见 https://example.com/jingshan景山公园 页面'):
             self.assertEqual(items(answer), [], answer)
 
+    def test_a_long_run_of_unclosed_brackets_is_linear_and_an_overlong_answer_is_not_scanned(self):
+        import time
+        for filler in ('[', '[a', '```', '`x'):
+            answer = filler * (ent.MAX_LINK_SCALARS // len(filler)) + '故宫'
+            started = time.monotonic()
+            items(answer)
+            self.assertLess(time.monotonic() - started, 0.4, repr(filler))   # before the bound: about 0.9 s for '['
+        self.assertEqual(items('故宫' + '。' * ent.MAX_LINK_SCALARS), [])                       # over the linker's own limit
+        self.assertEqual(len(items('故宫' + '。' * (ent.MAX_LINK_SCALARS - 3))), 1)             # just under it
+        self.assertEqual(items('看[' + '故宫' * 100 + '](https://example.com/x)吧'), [])         # a long link text is still skipped
+
     def test_a_stop_suffix_means_a_different_place(self):
         for answer in ('王府井站很近。', '故宫路很堵。', '天坛区域不错', 'Wangfujing Station is near.', '天坛机场不存在'):
             self.assertEqual(items(answer), [], answer)
@@ -143,6 +154,40 @@ class Effect(unittest.TestCase):
                                                   items=[[0, 3, 'pl_bj_wangfujing'], [8, 10, 'pl_bj_tiantan']]))
         rows = ent.wire(forged, answer, lambda pid: True)
         self.assertEqual([r['place_id'] for r in rows], ['pl_bj_tiantan'])      # the station is dropped on read
+
+
+class ApprovedIds(unittest.TestCase):
+    """`approved_ids` keeps a complete read, and keeps an incomplete one only briefly (#2074)."""
+
+    def setUp(self):
+        ent.forget_approved_ids()
+        self.addCleanup(ent.forget_approved_ids)
+
+    def test_a_temporary_read_failure_is_not_kept_for_the_life_of_the_process(self):
+        from cj_fact import places
+        from cj_fact.policy import FactFailure
+        calls = []
+
+        def load(city, path=None):
+            calls.append(city)
+            if not unreadable:
+                return DOC
+            raise FactFailure('places_missing')
+
+        unreadable = True
+        with mock.patch.object(places, 'load_city', load), mock.patch.object(ent.time, 'monotonic', side_effect=lambda: clock[0]):
+            clock = [100.0]
+            self.assertEqual(ent.approved_ids(), frozenset())
+            first = len(calls)
+            self.assertEqual(ent.approved_ids(), frozenset())                       # within the retry window: not read again
+            self.assertEqual(len(calls), first)
+            unreadable = False
+            clock[0] += ent.RETRY_SECONDS + 1
+            self.assertEqual(ent.approved_ids(), APPROVED)                          # the library is back: seen again
+            second = len(calls)
+            clock[0] += 10 ** 6
+            self.assertEqual(ent.approved_ids(), APPROVED)                          # a complete read stays for the process
+            self.assertEqual(len(calls), second)
 
 
 class Switches(unittest.TestCase):

@@ -21,11 +21,11 @@ def test_the_gates_that_do_not_depend_on_the_unreviewed_aliases(report):
 def test_recall_on_the_development_pack_is_measured_and_not_below_the_baseline(report):
     # The pack has almost no aliases, so this is a measurement of that gap; the 2026-11-27 baseline is 0.849.
     # Reviewed aliases only raise it: a fall means the linker got worse.
-    assert report['entity_recall'] >= 0.80, [row for row in report['entities']['rows'] if row['missed']]
+    assert report['entity_recall'] >= rich.TARGETS['entity_recall'], [row for row in report['entities']['rows'] if row['missed']]
 
 
 def test_the_report_has_every_number_the_acceptance_needs(report):
-    for key in ('entity_precision', 'entity_recall', 'followup_coverage', 'card_accuracy', 'targets', 'missed'):
+    for key in ('entity_precision', 'entity_strict_precision', 'entity_recall', 'followup_coverage', 'card_accuracy', 'targets', 'missed'):
         assert key in report
     assert report['entities']['expected'] >= 40 and report['followups']['n'] >= 30 and report['cards']['n'] >= 20
 
@@ -53,3 +53,21 @@ def test_the_command_line_prints_a_report_and_strict_fails_on_a_missed_target(ca
     assert json.loads(capsys.readouterr().out)['version'] == rich.VERSION
     monkeypatch.setitem(rich.TARGETS, 'entity_recall', 1.01)
     assert rich.main(['--strict']) == 1
+
+
+def test_an_acceptable_extra_counts_for_precision_but_not_for_strict_precision():
+    docs = rich.dev_docs()
+    cases = [dict(id='a', adcode='110000', answer='先去故宫博物院。', expected=[], acceptable=[['故宫博物院', 'pl_bj_gugong']]),
+             dict(id='b', adcode='110000', answer='先去故宫博物院。', expected=[['故宫博物院', 'pl_bj_gugong']], acceptable=[])]
+    result = rich.entity_metrics(cases, docs)
+    assert (result['produced'], result['correct'], result['acceptable_extra']) == (2, 2, 1)
+    assert result['precision'] == 1.0 and result['strict_precision'] == 0.5
+
+
+def test_a_chip_that_is_a_near_copy_of_the_question_or_of_another_chip_is_not_covered(monkeypatch):
+    from cj_message import lio_followups as fu
+    monkeypatch.setattr(fu, 'chips_for', lambda question, locale: ['怎么去故宫', '怎么去故宫?', '看地铁'])
+    assert rich.followup_metrics([('c1', 'x', 'zh')])['uncovered'] == ['c1']                       # two chips differ only by punctuation
+    monkeypatch.setattr(fu, 'chips_for', lambda question, locale: ['How do I get there?', 'Metro map', 'Opening hours'])
+    assert rich.followup_metrics([('c2', 'how do i get there', 'en')])['uncovered'] == ['c2']      # the question, case and mark aside
+    assert rich.followup_metrics([('c3', 'Is it open?', 'en')])['uncovered'] == []

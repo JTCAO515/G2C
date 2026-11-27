@@ -19,6 +19,7 @@ struct LioToolsView: View {
     @Environment(\.lioRoadbookDirectory) private var roadbookDirectory
     @Environment(\.lioSavedPlans) private var savedPlans
     @Environment(\.lioMenuService) private var menuService
+    @Environment(\.lioConsent) private var consent
     @Environment(\.lioToolServices) private var services
     @Environment(LioRouter.self) private var router: LioRouter?
     /// Pages open when no router is present (previews).
@@ -38,6 +39,7 @@ struct LioToolsView: View {
         context.roadbookDirectory = roadbookDirectory
         context.savedPlans = savedPlans
         context.menuService = menuService
+        context.aiProcessingAllowed = consent.allowsAIProcessing
         return context
     }
 

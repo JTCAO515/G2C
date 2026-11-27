@@ -16,6 +16,8 @@ from cj_run.display_snapshot import SnapshotTooLarge
 
 from cj_message.lio_followups import VERSION as FOLLOWUPS_VERSION, wire_followups
 from cj_message import lio_cards, lio_entities, lio_rich_receipt
+from .lio_memory_prompt import PROMPT_EFFECT
+from cj_memory.titles import USED_EFFECT, parse_used
 from cj_message.lio_entities import ENTITIES_EFFECT
 
 from .local_lio_planning import ITINERARY_PREVIEW_VERSION,read_itinerary_preview
@@ -40,7 +42,7 @@ def _failure(status):
     return _json({'failure': 'quota' if status == 429 else 'unavailable'}, status)
 
 
-def _message(item, state, *, expired=False, trip=None, memory=None, identity=True, declared=False, receipt=None):
+def _message(item, state, *, expired=False, trip=None, memory=None, identity=True, declared=False, receipt=None, prompt_open=None, used_titles=None):
     failure = None
     locale = answer_locale(item.text, item.locale)
     if trip is not None:
@@ -65,6 +67,8 @@ def _message(item, state, *, expired=False, trip=None, memory=None, identity=Tru
     followups = None
     entities = None
     cards = None
+    prompt = False
+    used = None
     amap_weather = False
     weather_city = None
     activity = None
@@ -77,6 +81,10 @@ def _message(item, state, *, expired=False, trip=None, memory=None, identity=Tru
                 amap_weather |= citation['title'] in ('高德天气', 'Amap Weather') and citation['url'] is None
             elif effect.startswith(LAYOUT_EFFECT):
                 layout = effect.removeprefix(LAYOUT_EFFECT)
+            elif effect.startswith(USED_EFFECT):
+                used = effect
+            elif effect == PROMPT_EFFECT:
+                prompt = True
             elif effect.startswith(lio_cards.CARDS_EFFECT):
                 cards = effect
             elif effect.startswith(ENTITIES_EFFECT):
@@ -124,7 +132,9 @@ def _message(item, state, *, expired=False, trip=None, memory=None, identity=Tru
             # Entities and cards need a finished answer; the save receipt also rides a failed row, because a save
             # that committed before the answer failed still needs its undo (contract).
             finished = status == 'completed' and bool(answer)
-            rich = _rich(answer, entities if finished else None, cards if finished and trip is None else None, receipt)
+            rich = _rich(answer, entities if finished else None, cards if finished and trip is None else None, receipt,
+                         prompt=prompt_open if finished and prompt else None,
+                         used=(used, used_titles) if finished and used is not None and used_titles is not None else None)
             if rich is not None:
                 row['rich'] = rich
                 # The one difference from the followups.1 row: a taxi card replaces the taxi button.
@@ -140,7 +150,7 @@ def _message(item, state, *, expired=False, trip=None, memory=None, identity=Tru
     return row
 
 
-def _rich(answer, entities, cards=None, receipt=None):
+def _rich(answer, entities, cards=None, receipt=None, prompt=None, used=None):
     """`rich` for a row of a poll that declared LIO-answer-rich.1, or None. Every part fails alone and quietly:
     a bad or missing part is left out, `rich` never fails the page. Parts are added here as their tickets land
     (entities D-1 #1989; cards D-2 #1990; receipt T-1 #1994; memory M-1/M-3)."""
@@ -156,6 +166,20 @@ def _rich(answer, entities, cards=None, receipt=None):
             rows = lio_cards.wire(cards)
             if rows:
                 value['cards'] = rows
+        memory = {}
+        if prompt is not None and prompt():   # only after the rich switch said yes: no extra read while it is off
+            memory['prompt'] = 'consent'
+        if used is not None:
+            parsed = parse_used(used[0])
+            titles = used[1](parsed[0]) if parsed is not None else {}
+            rows = [dict(item_id=i, title=titles[i]) for i in (parsed[0] if parsed else [])
+                    if type(titles.get(i)) is str and 0 < len(titles[i]) <= 40 and '\n' not in titles[i]]
+            if rows:
+                # the traveler may have taken some back since: the count never claims more than is still shown
+                memory['used'] = rows
+                memory['used_total'] = len(rows) if len(rows) < len(parsed[0]) else max(parsed[1], len(rows))
+        if memory:
+            value['memory'] = memory
         if receipt is not None:
             checked = lio_rich_receipt.wire(receipt)
             if checked is not None:
@@ -170,6 +194,38 @@ def _rich(answer, entities, cards=None, receipt=None):
         return value if len(value) > 1 else None
     except Exception:
         return None
+
+
+def _used_titles(memory_cards, context):
+    """A lookup of the titles of the memories a row used, run only for a row that carries the used effect; any failure
+    is no titles. One read per row at most (three ids)."""
+    allowed = []
+
+    def lookup(item_ids):
+        try:
+            titles = getattr(memory_cards, 'used_titles', None)
+            if titles is None:
+                return {}
+            if not allowed:   # the consent state is read once for the whole page
+                allowed.append(bool(memory_cards.used_allowed(context.scope)))
+            return titles(context.scope, item_ids, checked=True) if allowed[0] else {}
+        except Exception:
+            return {}
+    return lookup
+
+
+def _prompt_open(memory_cards, context):
+    """A check, run only for a row that carries the prompt marker, that the account still has no consent record and
+    the consent switch is on: the prompt is a hint to ask once, never consent, and it is not sent to an account that chose."""
+    memo = []
+
+    def check():
+        if not memo:   # one read for the whole page
+            from .lio_memory_consent import consent_required
+            from .lio_memory_prompt import never_chosen
+            memo.append(consent_required() and never_chosen(getattr(memory_cards, 'consent', None), context.scope))
+        return memo[0]
+    return check
 
 
 def _receipt(reader, context, binding, state):
@@ -205,7 +261,9 @@ def _timeline(boundary, resolve_runs, trip_cards, memory_cards, token, conversat
                 memory = (memory_cards.project(context, token, item.message_id, binding.run_id)
                           if memory_cards is not None and state is not None and state.status == 'completed' else None)
                 messages.append(_message(item, state, expired=expired, trip=trip, memory=memory, declared=declared,
-                                         receipt=_receipt(receipt_reader, context, binding, state) if declared == 'rich' else None))
+                                         receipt=_receipt(receipt_reader, context, binding, state) if declared == 'rich' else None,
+                                         prompt_open=_prompt_open(memory_cards, context) if declared == 'rich' else None,
+                                         used_titles=_used_titles(memory_cards, context) if declared == 'rich' else None))
         version = 'LIO-timeline.3' if calendar else 'LIO-timeline.2' if multiple else TIMELINE_VERSION
         response = _json(dict(version=version, conversation_id=page.conversation_id,
                               messages=messages, next_before=page.next_before))

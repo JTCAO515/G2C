@@ -97,6 +97,11 @@ class _Stopped(Exception):
         self.state = state
 
 
+# An optional effect that fails is logged and left out of the answer (#1989, #1990, #1999, #2001); a run that was stopped,
+# denied, or whose lease or budget is unknown is not 'an optional effect failing': those go on to the run's own handlers.
+_NEVER_SWALLOWED = (_Stopped, Denied, LeaseUnavailable, BudgetUnknown)
+
+
 @dataclass(frozen=True)
 class Outcome:
     message_id: str
@@ -620,6 +625,8 @@ class RunWorker:
                     linked = entity_effect(state.text, getattr(city, 'adcode', None))
                     if linked is not None:
                         state = self._event(binding, state, 'effect_committed', linked)
+                except _NEVER_SWALLOWED:
+                    raise
                 except Exception as error:
                     logging.getLogger('cj_usage.audit').info('LIO_ENTITIES_UNAVAILABLE run_id=%s error=%s', binding.run_id, type(error).__name__)
                 # #1990 (D-2): tool cards from a fixed table and this turn's own results. Off unless CJ_LIO_CARDS=on.
@@ -630,6 +637,8 @@ class RunWorker:
                                         taxi_topic='taxi' in question_topics(text), now=time.time())
                     if drawn is not None:
                         state = self._event(binding, state, 'effect_committed', drawn)
+                except _NEVER_SWALLOWED:
+                    raise
                 except Exception as error:
                     logging.getLogger('cj_usage.audit').info('LIO_CARDS_UNAVAILABLE run_id=%s error=%s', binding.run_id, type(error).__name__)
             if split_layout and (answered or state.text).strip():
@@ -643,11 +652,36 @@ class RunWorker:
                 if labels and hasattr(self.messages, 'issue_lio_chips'):
                     try:
                         tickets = self.messages.issue_lio_chips(binding.message_id, labels)
+                    except _NEVER_SWALLOWED:
+                        raise
                     except Exception as error:
                         logging.getLogger('cj_usage.audit').info('LIO_CHIPS_UNAVAILABLE run_id=%s error=%s', binding.run_id, type(error).__name__)
                 if actions or tickets:
                     state = self._event(binding, state, 'effect_committed',
                                         LioFollowups(followups_payload(actions, zip(labels, tickets) if tickets else ())).effect())
+            if split_layout and state.text.strip() and self.memory_run is not None:
+                # #2001 (M-3): the ids of the memories this turn really gave the model (the server's own payload, never the
+                # model's claim); ids and a count only. Off unless CJ_LIO_MEMORY_USED=on; a failure never touches the answer.
+                try:
+                    from cj_memory.titles import used_effect
+                    used = used_effect(self.memory_run)
+                    if used is not None:
+                        state = self._event(binding, state, 'effect_committed', used)
+                except _NEVER_SWALLOWED:
+                    raise
+                except Exception as error:
+                    logging.getLogger('cj_usage.audit').info('LIO_MEMORY_USED_UNAVAILABLE run_id=%s error=%s', binding.run_id, type(error).__name__)
+            if split_layout and state.text.strip() and self.lio_memory is not None and hasattr(self.lio_memory, 'consent_prompt'):
+                # #1999 (M-1): the one-time "may Lio remember your preferences?" marker; code only, no model, nothing stored
+                # about the preference. A failure here never touches the answer.
+                try:
+                    marker = self.lio_memory.consent_prompt(binding, text)
+                    if marker is not None:
+                        state = self._event(binding, state, 'effect_committed', marker)
+                except _NEVER_SWALLOWED:
+                    raise
+                except Exception as error:
+                    logging.getLogger('cj_usage.audit').info('LIO_MEMORY_PROMPT_UNAVAILABLE run_id=%s error=%s', binding.run_id, type(error).__name__)
             if self.drafts is not None and command['creation_intent'] == 'consider_trip':
                 phase='draft'
                 state, proposal_id = self._draft(binding, state, text, stored)

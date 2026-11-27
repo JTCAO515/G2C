@@ -58,6 +58,10 @@
       "plist": "G2CMenuOrderEnabled"
     },
     {
+      "setting": "G2C_PLACE_TOOLS_ENABLED",
+      "plist": "G2CPlaceToolsEnabled"
+    },
+    {
       "setting": "G2C_TRIP_HOME_ENABLED",
       "plist": "G2CTripHomeEnabled"
     },
@@ -86,12 +90,32 @@
       "plist": "G2CTripBusinessEnabled"
     },
     {
+      "setting": "G2C_CONSENT_ENABLED",
+      "plist": "G2CConsentEnabled"
+    },
+    {
       "setting": "G2C_CHAT_TRIP_PLACES_ENABLED",
       "plist": "G2CChatTripPlacesEnabled"
     },
     {
       "setting": "G2C_TRIP_CANVAS_ENABLED",
       "plist": "G2CTripCanvasEnabled"
+    },
+    {
+      "setting": "G2C_ANSWER_RICH_ENABLED",
+      "plist": "G2CAnswerRichEnabled"
+    },
+    {
+      "setting": "G2C_MEMORY_CONSENT_ENABLED",
+      "plist": "G2CMemoryConsentEnabled"
+    },
+    {
+      "setting": "G2C_MEMORY_NOTE_ENABLED",
+      "plist": "G2CMemoryNoteEnabled"
+    },
+    {
+      "setting": "G2C_TRIP_MEMORY_LABEL_ENABLED",
+      "plist": "G2CTripMemoryLabelEnabled"
     }
   ],
   "release": {

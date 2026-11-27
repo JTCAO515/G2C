@@ -118,6 +118,8 @@ struct LioToolEntry: Sendable {
     var arguments: [String] = ProcessInfo.processInfo.arguments
     #if os(iOS)
     var enabled = true
+    /// #1747: false when the traveller turned AI processing off; tools that send content to the model show that instead.
+    var aiProcessingAllowed = true
     var sessionIsCurrent: @MainActor () -> Bool = { true }
     var translationHistory: LioTranslationHistory?
     var translationRelay: LioRelayTranslationClient?
@@ -194,10 +196,14 @@ enum LioToolRegistry {
         LioToolEntry(.translation, symbol: "character.bubble",
                      name: ("Translation", "翻译"), summary: ("Type, speak or snap a photo", "打字、说话或拍照翻译")) { context, _ in
             #if os(iOS)
-            LioTextTranslationView(language: context.language, history: context.translationHistory,
-                                   enabled: context.enabled, isCurrent: {
-                UIApplication.shared.applicationState != .background && context.sessionIsCurrent()
-            }, relay: context.translationRelay)
+            if context.aiProcessingAllowed {
+                LioTextTranslationView(language: context.language, history: context.translationHistory,
+                                       enabled: context.enabled, isCurrent: {
+                    UIApplication.shared.applicationState != .background && context.sessionIsCurrent()
+                }, relay: context.translationRelay)
+            } else {
+                LioAIOffNotice(language: context.language)
+            }
             #endif
         },
         LioToolEntry(.taxi, symbol: "car.fill",
@@ -236,7 +242,10 @@ enum LioToolRegistry {
                      name: ("Stay", "住"), summary: ("Find hotels by city and dates", "按城市和日期找酒店"),
                      gate: .availability { $0.hotels }, parameters: ["city"]) { context, route in
             #if os(iOS)
-            if let finder = context.hotelSearch {
+            if LioPlaceToolsFeature.enabledInBuild {
+                // #2004: only the hotels we have collected; the old search stays behind the switch being off.
+                LioStayView(language: context.language)
+            } else if let finder = context.hotelSearch {
                 let (profile, today) = context.travelProfile()
                 let search = profile.hotelSearch(routeCity: route["city"], today: today)
                 LioHotelOffersView(language: context.language, finder: finder, city: search.city,
@@ -286,7 +295,10 @@ enum LioToolRegistry {
                      name: ("Nearby", "附近"), summary: ("Food, sights and shops around you", "身边的美食和景点"),
                      gate: .availability { $0.nearby }, placement: .routeOnly) { context, _ in
             #if os(iOS)
-            if let nearbyService = context.nearbyService {
+            if let nearbyService = context.nearbyService, LioPlaceToolsFeature.enabledInBuild {
+                // #2005: nearby places that are also in our place library; booking and menus open from there.
+                LioExploreView(language: context.language, service: nearbyService)
+            } else if let nearbyService = context.nearbyService {
                 // Essentials have their own card (#1980); this one is food, sights and shops.
                 LioNearbyView(language: context.language, service: nearbyService, group: LioNearbyPlace.essentialsEnabled ? .leisure : .all)
             }
@@ -311,7 +323,9 @@ enum LioToolRegistry {
                      name: ("Menu Helper", "点餐"), summary: ("Snap a menu, order in Chinese", "拍菜单，用中文点菜"),
                      gate: .availability { $0.menuOrder }, placement: .routeOnly) { context, _ in
             #if os(iOS)
-            if let menuService = context.menuService {
+            if !context.aiProcessingAllowed {
+                LioAIOffNotice(language: context.language)
+            } else if let menuService = context.menuService {
                 // Server memory is not read by Tools; the show-card allergies saved on this device are ticked (#1739).
                 LioMenuOrderView(language: context.language, service: menuService, memoryNotes: nil,
                                  needs: context.travelProfile().profile.menuNeeds)
@@ -384,8 +398,10 @@ extension LioToolContext {
         available.currency = currencyRelay != nil
         available.nearby = nearbyService != nil
         available.convenience = nearbyService != nil && LioNearbyPlace.essentialsEnabled
-        available.hotels = hotelSearch != nil
-        available.roadbook = LioRoadbookFeature.enabled(infoValue: info("G2CRoadbookEnabled"))
+        // The place library's Stay page (#2004) needs no search service, so its card shows when the switch is on.
+        available.hotels = hotelSearch != nil || LioPlaceToolsFeature.enabledInBuild
+        available.roadbook = LioRoadbookFeature.shownInTools(roadbookInfo: info("G2CRoadbookEnabled"),
+                                                             canvasInfo: info(LioTripCanvasFeature.infoKey))
         available.transport = LioTransportService.fromBuild() != nil
         available.menuOrder = menuService != nil
         available.returnHotel = LioReturnHotelTools.shownInTools

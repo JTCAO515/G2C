@@ -20,7 +20,7 @@ def source_context(root, destination,revision='HEAD'):
         mode,kind,oid=metadata.split()
         path=Path(raw_path.decode())
         if (mode not in (b'100644',b'100755') or kind!=b'blob'
-                or any(part.startswith('.') or part in ('evidence','private-pg','tests') for part in path.parts)
+                or any(part.startswith('.') or part in ('evidence','private-pg','tests','release-tools') for part in path.parts)
                 or path.suffix not in ('.py','.sql','.json','.md','.toml','.lock','.yaml','.conf','.Dockerfile')
                     and path.name!='Dockerfile'):
             continue
