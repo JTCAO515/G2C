@@ -78,6 +78,10 @@
       "plist": "G2CAnswerLayoutEnabled"
     },
     {
+      "setting": "G2C_TRIP_BUSINESS_ENABLED",
+      "plist": "G2CTripBusinessEnabled"
+    },
+    {
       "setting": "G2C_CONSENT_ENABLED",
       "plist": "G2CConsentEnabled"
     }

@@ -317,12 +317,14 @@ enum LioToolRegistry {
         },
         // #1742: one tool for everything shown to someone. It took over the Phrase Cards card and slot; phrases and
         // help cards are always there, the cards with the traveller's details follow `G2CShowCardEnabled`.
+        // `section=business` lands on the Business section (#1765: the trip home's meeting item).
         LioToolEntry(.showCards, symbol: "person.text.rectangle",
                      name: ("Show Cards", "出示卡"),
-                     summary: ("Phrases and help cards in large Chinese", "常用语和求助，给对方看")) { context, _ in
+                     summary: ("Phrases and help cards in large Chinese", "常用语和求助，给对方看"),
+                     parameters: [LioShowCardSection.routeKey]) { context, route in
             #if os(iOS)
             LioShowCardTool.page(language: context.language, roadbookDirectory: context.roadbookDirectory,
-                                 isCurrent: context.sessionIsCurrent)
+                                 isCurrent: context.sessionIsCurrent, section: LioShowCardSection(route: route))
             #endif
         },
     ]

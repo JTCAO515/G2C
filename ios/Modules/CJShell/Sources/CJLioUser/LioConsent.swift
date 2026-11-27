@@ -30,12 +30,12 @@ enum LioConsentFeature {
     }
 
     let directory: URL
-    private let isCurrent: @MainActor () -> Bool
     private var file: URL { directory.appendingPathComponent(Self.fileName) }
 
-    public init(directory: URL, isCurrent: @escaping @MainActor () -> Bool) {
+    /// The folder belongs to one account, so the store needs no notion of the current session: a change is checked
+    /// against the session that asks for it (`LioConsent`), not against whoever built the home screen.
+    public init(directory: URL) {
         self.directory = directory
-        self.isCurrent = isCurrent
     }
 
     struct Record: Codable, Equatable {
@@ -49,7 +49,6 @@ enum LioConsentFeature {
 
     /// The saved choices, or nil. A damaged or newer file reads as no choice: the page is shown again.
     func load() throws -> Record? {
-        guard isCurrent() else { throw CancellationError() }
         let data: Data
         do {
             data = try Data(contentsOf: file)
@@ -61,7 +60,6 @@ enum LioConsentFeature {
     }
 
     func save(_ record: Record) throws {
-        guard isCurrent() else { throw CancellationError() }
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true,
                                                 attributes: [.posixPermissions: 0o700])
         var storedDirectory = directory
@@ -77,7 +75,6 @@ enum LioConsentFeature {
     }
 
     func clear() throws {
-        guard isCurrent() else { throw CancellationError() }
         do {
             try FileManager.default.removeItem(at: file)
         } catch let error as CocoaError where error.code == .fileNoSuchFile {
@@ -86,31 +83,33 @@ enum LioConsentFeature {
     }
 }
 
-/// The current account's consent. Until the traveller has agreed to the data storage nothing is allowed; AI
-/// processing is a separate choice that can be changed at any time. A change is recorded before it takes effect, so
-/// a choice that could not be saved never looks made.
+/// The account's consent, read from its own folder once when the home screen is made. Until the traveller has agreed
+/// to the data storage nothing is allowed; AI processing is a separate choice that can be changed at any time.
+/// What is allowed does not depend on whether the app is paused or offline (the folder is this account's, and signing
+/// out or switching accounts ends the home screen that holds this). A change is recorded before it takes effect, so a
+/// choice that could not be saved never looks made, and it is only made for a session that is still current: that
+/// check is passed in by the caller at the moment of the change, from the home screen's latest state.
 @MainActor @Observable
 final class LioConsent {
     @ObservationIgnored private let store: LioConsentStore?
-    @ObservationIgnored private let isCurrent: @MainActor () -> Bool
     private var record: LioConsentStore.Record?
     private(set) var revision = 0
 
     /// `store` nil keeps the choices in memory for this session only (previews).
-    init(store: LioConsentStore?, isCurrent: @escaping @MainActor () -> Bool) {
+    init(store: LioConsentStore?) {
         self.store = store
-        self.isCurrent = isCurrent
         record = (try? store?.load()) ?? nil
     }
 
     /// The traveller has agreed to the data storage, so the app may be used.
-    var storageAgreed: Bool { record != nil && isCurrent() }
+    var storageAgreed: Bool { record != nil }
     /// Content may be sent to Alibaba Cloud Model Studio. False until the first page was answered.
-    var aiProcessing: Bool { storageAgreed && record?.aiProcessing == true }
+    var aiProcessing: Bool { record?.aiProcessing == true }
 
-    /// The first page: agree to the storage, and choose AI processing. False (nothing changes) when it can't be saved.
+    /// The first page: agree to the storage, and choose AI processing. False (nothing changes) when the session is no
+    /// longer current or it can't be saved.
     @discardableResult
-    func agree(aiProcessing: Bool, at date: Date = .now) -> Bool {
+    func agree(aiProcessing: Bool, at date: Date = .now, isCurrent: @MainActor () -> Bool = { true }) -> Bool {
         guard isCurrent() else { return false }
         let new = LioConsentStore.Record(version: 1, storageAgreedAt: date, aiProcessing: aiProcessing, aiChangedAt: date)
         do { try store?.save(new) } catch { return false }
@@ -121,7 +120,7 @@ final class LioConsent {
 
     /// Turns AI processing on or off (Me → Privacy). False when the first page has not been answered or it can't be saved.
     @discardableResult
-    func setAIProcessing(_ on: Bool, at date: Date = .now) -> Bool {
+    func setAIProcessing(_ on: Bool, at date: Date = .now, isCurrent: @MainActor () -> Bool = { true }) -> Bool {
         guard isCurrent(), let record else { return false }
         let new = LioConsentStore.Record(version: 1, storageAgreedAt: record.storageAgreedAt, aiProcessing: on, aiChangedAt: date)
         do { try store?.save(new) } catch { return false }
@@ -135,11 +134,21 @@ private struct LioConsentKey: EnvironmentKey {
     static let defaultValue: LioConsent? = nil
 }
 
+private struct LioConsentSessionKey: EnvironmentKey {
+    static let defaultValue: @MainActor () -> Bool = { true }
+}
+
 extension EnvironmentValues {
     /// The account's consent (#1747); nil when the build does not ask for it, which means nothing is withheld.
     var lioConsent: LioConsent? {
         get { self[LioConsentKey.self] }
         set { self[LioConsentKey.self] = newValue }
+    }
+
+    /// Whether the signed-in session is still the current one, from the home screen's latest state (#1747).
+    var lioConsentSessionIsCurrent: @MainActor () -> Bool {
+        get { self[LioConsentSessionKey.self] }
+        set { self[LioConsentSessionKey.self] = newValue }
     }
 }
 

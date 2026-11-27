@@ -11,6 +11,7 @@ struct LioConsentView: View {
     @State private var declined = false
     @State private var couldNotSave = false
     @Environment(\.openURL) private var openURL
+    @Environment(\.lioConsentSessionIsCurrent) private var sessionIsCurrent
 
     private static let policy = URL(string: "https://go2china.space/privacy")!
 
@@ -98,7 +99,7 @@ struct LioConsentView: View {
     }
 
     private func answer(ai: Bool) {
-        if !consent.agree(aiProcessing: ai) { couldNotSave = true }
+        if !consent.agree(aiProcessing: ai, isCurrent: sessionIsCurrent) { couldNotSave = true }
     }
 
     private func filled(_ title: String, id: String, action: @escaping () -> Void) -> some View {
@@ -142,6 +143,7 @@ struct LioPrivacyView: View {
     @State private var confirmingOff = false
     @State private var confirmingOn = false
     @State private var couldNotSave = false
+    @Environment(\.lioConsentSessionIsCurrent) private var sessionIsCurrent
 
     var body: some View {
         List {
@@ -185,7 +187,7 @@ struct LioPrivacyView: View {
     }
 
     private func change(to on: Bool) {
-        if !consent.setAIProcessing(on) { couldNotSave = true }
+        if !consent.setAIProcessing(on, isCurrent: sessionIsCurrent) { couldNotSave = true }
     }
 }
 

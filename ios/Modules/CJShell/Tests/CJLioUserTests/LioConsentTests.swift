@@ -9,7 +9,7 @@ struct LioConsentTests {
     private final class Session { var current = true }
 
     private func store(_ root: URL, _ session: Session) -> LioConsentStore {
-        LioConsentStore(directory: LioConsentStore.storageDirectory(inMessageDirectory: root), isCurrent: { session.current })
+        LioConsentStore(directory: LioConsentStore.storageDirectory(inMessageDirectory: root))
     }
 
     private func temporaryRoot() throws -> URL {
@@ -35,7 +35,7 @@ struct LioConsentTests {
     }
 
     @Test func nothingIsAllowedUntilTheFirstPageIsAnswered() throws {
-        let consent = LioConsent(store: nil, isCurrent: { true })
+        let consent = LioConsent(store: nil)
         #expect(!consent.storageAgreed && !consent.aiProcessing)
         #expect(!consent.setAIProcessing(true), "no switch before the page")
         #expect(!consent.aiProcessing)
@@ -48,11 +48,11 @@ struct LioConsentTests {
         let root = try temporaryRoot()
         defer { try? FileManager.default.removeItem(at: root) }
         let session = Session()
-        let consent = LioConsent(store: store(root, session), isCurrent: { session.current })
+        let consent = LioConsent(store: store(root, session))
         #expect(consent.agree(aiProcessing: ai))
         #expect(consent.storageAgreed && consent.aiProcessing == ai)
         // Kept on this device: a new instance (a new launch) reads the same.
-        let again = LioConsent(store: store(root, session), isCurrent: { session.current })
+        let again = LioConsent(store: store(root, session))
         #expect(again.storageAgreed && again.aiProcessing == ai)
     }
 
@@ -60,12 +60,12 @@ struct LioConsentTests {
         let root = try temporaryRoot()
         defer { try? FileManager.default.removeItem(at: root) }
         let session = Session()
-        let consent = LioConsent(store: store(root, session), isCurrent: { session.current })
+        let consent = LioConsent(store: store(root, session))
         #expect(consent.agree(aiProcessing: true))
         let revision = consent.revision
         #expect(consent.setAIProcessing(false))
         #expect(!consent.aiProcessing && consent.storageAgreed && consent.revision > revision)
-        #expect(!LioConsent(store: store(root, session), isCurrent: { session.current }).aiProcessing, "kept")
+        #expect(!LioConsent(store: store(root, session)).aiProcessing, "kept")
         #expect(consent.setAIProcessing(true))
         #expect(consent.aiProcessing)
     }
@@ -76,7 +76,7 @@ struct LioConsentTests {
         // A file where the folder should be: the write fails.
         try Data("x".utf8).write(to: LioConsentStore.storageDirectory(inMessageDirectory: root))
         let session = Session()
-        let consent = LioConsent(store: store(root, session), isCurrent: { session.current })
+        let consent = LioConsent(store: store(root, session))
         #expect(!consent.agree(aiProcessing: true))
         #expect(!consent.storageAgreed && !consent.aiProcessing)
     }
@@ -85,23 +85,43 @@ struct LioConsentTests {
         let rootA = try temporaryRoot(), rootB = try temporaryRoot()
         defer { try? FileManager.default.removeItem(at: rootA); try? FileManager.default.removeItem(at: rootB) }
         let session = Session()
-        #expect(LioConsent(store: store(rootA, session), isCurrent: { session.current }).agree(aiProcessing: true))
-        let other = LioConsent(store: store(rootB, session), isCurrent: { session.current })
+        #expect(LioConsent(store: store(rootA, session)).agree(aiProcessing: true))
+        let other = LioConsent(store: store(rootB, session))
         #expect(!other.storageAgreed, "another account has not agreed")
     }
 
-    @Test func anAccountThatIsNoLongerCurrentAllowsNothingAndChangesNothing() throws {
+    /// The review's P1: the app going to the background builds a new session for the same account without rebuilding
+    /// the home screen. What is allowed must not depend on the session the screen was first made with, and a change must
+    /// be judged by the session that asks for it.
+    @Test func whatIsAllowedDoesNotDependOnAStaleSessionAndAChangeUsesTheLatestOne() throws {
         let root = try temporaryRoot()
         defer { try? FileManager.default.removeItem(at: root) }
-        let session = Session()
-        let consent = LioConsent(store: store(root, session), isCurrent: { session.current })
-        #expect(consent.agree(aiProcessing: true))
-        session.current = false
-        #expect(!consent.storageAgreed && !consent.aiProcessing)
-        #expect(!consent.agree(aiProcessing: false))
-        #expect(!consent.setAIProcessing(false))
-        #expect(throws: CancellationError.self) { try store(root, session).load() }
-        #expect(throws: CancellationError.self) { try store(root, session).clear() }
+        let first = Session(), later = Session()
+        let consent = LioConsent(store: store(root, first))
+        let agreed = consent.agree(aiProcessing: true, isCurrent: { first.current })
+        #expect(agreed)
+        // The first session ends (background); the account is the same, so nothing is withdrawn and the page stays gone.
+        first.current = false
+        #expect(consent.storageAgreed && consent.aiProcessing)
+        // A change made from the new session works; one from the ended session does not.
+        let fromEnded = consent.setAIProcessing(false, isCurrent: { first.current })
+        #expect(!fromEnded)
+        #expect(consent.aiProcessing)
+        let fromLater = consent.setAIProcessing(false, isCurrent: { later.current })
+        #expect(fromLater)
+        #expect(!consent.aiProcessing && consent.storageAgreed)
+        let fresh = LioConsent(store: store(root, first))
+        #expect(fresh.storageAgreed && !fresh.aiProcessing, "kept")
+    }
+
+    @Test func aChangeFromASessionThatIsNotCurrentIsRefusedAndNothingIsWritten() throws {
+        let root = try temporaryRoot()
+        defer { try? FileManager.default.removeItem(at: root) }
+        let consent = LioConsent(store: store(root, Session()))
+        let refused = consent.agree(aiProcessing: true, isCurrent: { false })
+        #expect(!refused)
+        #expect(!consent.storageAgreed)
+        #expect(!FileManager.default.fileExists(atPath: LioConsentStore.storageDirectory(inMessageDirectory: root).path))
     }
 
     @Test func aDamagedOrNewerFileReadsAsNoChoiceSoThePageComesBack() throws {
@@ -112,9 +132,9 @@ struct LioConsentTests {
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         let file = directory.appendingPathComponent(LioConsentStore.fileName)
         try Data("not json".utf8).write(to: file)
-        #expect(!LioConsent(store: store(root, session), isCurrent: { true }).storageAgreed)
+        #expect(!LioConsent(store: store(root, session)).storageAgreed)
         try Data(#"{"version":2,"storageAgreedAt":0,"aiProcessing":true,"aiChangedAt":0}"#.utf8).write(to: file)
-        #expect(!LioConsent(store: store(root, session), isCurrent: { true }).storageAgreed)
+        #expect(!LioConsent(store: store(root, session)).storageAgreed)
     }
 
     @Test func folderNamesStayStableForAccountCleanup() {

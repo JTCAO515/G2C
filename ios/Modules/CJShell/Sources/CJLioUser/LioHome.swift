@@ -203,9 +203,7 @@ public struct LioHome<MenuContent: View>: View {
                                         isCurrent: toolsSessionIsCurrent)
             }, isCurrent: toolsSessionIsCurrent) : nil)
         _consent = State(initialValue: LioConsentFeature.enabledInBuild ? LioConsent(
-            store: messageDirectory.map {
-                LioConsentStore(directory: LioConsentStore.storageDirectory(inMessageDirectory: $0), isCurrent: toolsSessionIsCurrent)
-            }, isCurrent: toolsSessionIsCurrent) : nil)
+            store: messageDirectory.map { LioConsentStore(directory: LioConsentStore.storageDirectory(inMessageDirectory: $0)) }) : nil)
         _savedPlans = State(initialValue: LioSavedPlansModel(store: plans))
         self.toolsSessionIsCurrent = toolsSessionIsCurrent
         self.answerFeedback = LioAnswerFeedbackFeature.enabledInBuild ? answerFeedback : nil
@@ -308,6 +306,9 @@ public struct LioHome<MenuContent: View>: View {
         .environment(\.lioTaxiEntry, taxiEntry)
         .environment(\.lioLocationConsent, locationConsent)
         .environment(\.lioConsent, consent)
+        // The latest check, not the one from when this screen was first made: the app going to the background and
+        // coming back builds a new session for the same account without rebuilding this screen.
+        .environment(\.lioConsentSessionIsCurrent, toolsSessionIsCurrent)
         .environment(\.lioNearbyService, nearbyService)
         .environment(\.lioMetroNearby, metroNearby)
         .environment(\.lioHotelFinder, hotelRelay.map { .internalBeta(relay: $0) })
@@ -1560,7 +1561,7 @@ public struct LioHome<MenuContent: View>: View {
                 .buttonStyle(.bordered)
                 .accessibilityIdentifier("lio.failure.problems")
             }
-            if failure == .unfinished {
+            if failure == .unfinished, consent.allowsAIProcessing {
                 Button(language.text("Ask again", "重新问")) {
                     followsAnswer = true
                     conversation.askAgain(turn.id)
