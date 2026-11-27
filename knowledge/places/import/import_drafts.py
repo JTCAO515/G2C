@@ -24,6 +24,7 @@ import io
 import json
 import os
 from pathlib import Path
+import re
 import sys
 
 HERE = Path(__file__).resolve().parent
@@ -36,7 +37,10 @@ import score as scoring  # noqa: E402
 VERSION = 'g2c-places-candidates.1'
 DEFAULT_OUT = placelib.PLACES_DIR / 'candidates'
 DEFAULT_REVIEW = placelib.PLACES_DIR / 'review'
-SOURCES = (('C1', '*.json'), ('C7', 'hubs.json'), ('C8', '*.json'))
+# Draft files by folder: C1 `<city>.json`, C7 `hubs.json`, C8 `<city>-food|shopping|hotel.json`. Anything else in
+# those folders (a manifest, Codex's `intro-rewrite-sources.json` side file) is not a list of places.
+SOURCES = (('C1', r'(beijing|shanghai|guangzhou|shenzhen|chengdu|chongqing)\.json'), ('C7', r'hubs\.json'),
+           ('C8', r'(beijing|shanghai|guangzhou|shenzhen|chengdu|chongqing)-(food|shopping|hotel)\.json'))
 SKIP = {'manifest.json'}
 AMAP_LABEL = {'exact': '名称一致', 'close': '名称相近', 'weak': '只是第一条结果，请核对', 'address-only': '只按地址定位',
               'none': '高德没找到', 'not-run': '未查询', 'error': '查询出错'}
@@ -60,8 +64,8 @@ def read_inbox(inbox):
     """([(source name, entry)], [file problems]) for every draft file found."""
     entries, problems = [], []
     for folder, pattern in SOURCES:
-        for path in sorted((Path(inbox) / folder).glob(pattern)):
-            if path.name in SKIP or path.name.startswith('.'):
+        for path in sorted((Path(inbox) / folder).glob('*.json')):
+            if path.name in SKIP or path.name.startswith('.') or re.fullmatch(pattern, path.name) is None:
                 continue
             name = f'{folder}/{path.name}'
             try:
@@ -83,7 +87,7 @@ def load_library_ids(library_dir):
     return ids
 
 
-def process(inbox, today, fetch=None, use_external=False, library_dir=placelib.PLACES_DIR, existing=None):
+def process(inbox, today, fetch=None, use_external=False, library_dir=placelib.PLACES_DIR, existing=None, keep_signals=False):
     """Return ({city: [candidate]}, [rejected], [notes]). `fetch` None means no Amap lookups."""
     existing = existing or {}
     entries, rejected = read_inbox(inbox)
@@ -121,7 +125,7 @@ def process(inbox, today, fetch=None, use_external=False, library_dir=placelib.P
         names.setdefault(key, ident)
         by_city.setdefault(draft['city'], []).append({
             'id': ident, 'source_file': source, 'status': 'pending', 'draft': draft,
-            'external_signals': signals, 'location': location, 'amap': info,
+            'external_signals': signals if (keep_signals or use_external) else [], 'location': location, 'amap': info,
             'score': scoring.score(draft, info['status'], signals, use_external), 'flags': flags,
         })
     for city, items in by_city.items():  # pending entries that disappeared from the inbox stay
@@ -251,6 +255,8 @@ def main(argv=None):
     parser.add_argument('--live', action='store_true', help='look places up on Amap (needs the key in the environment)')
     parser.add_argument('--key-env', default='CJ_AMAP_WEB_KEY')
     parser.add_argument('--cache', help='directory for Amap answers (default: <inbox>/.amap-cache); never committed')
+    parser.add_argument('--keep-external-signals', action='store_true',
+                        help='keep Tripadvisor-style numbers in the candidate files (default: dropped; the repository is public and their terms are not settled)')
     parser.add_argument('--use-external-signals', action='store_true',
                         help='let Tripadvisor-style ranks count in the score (only after the terms decision)')
     args = parser.parse_args(argv)
@@ -264,7 +270,8 @@ def main(argv=None):
         fetch = amap.make_fetch(key, cache_dir=args.cache or Path(args.inbox) / '.amap-cache')
     existing = load_existing(args.out)
     try:
-        by_city, rejected, notes = process(args.inbox, args.today, fetch, args.use_external_signals, existing=existing)
+        by_city, rejected, notes = process(args.inbox, args.today, fetch, args.use_external_signals, existing=existing,
+                                            keep_signals=args.keep_external_signals)
     except amap.AmapError as error:
         print(f'FAIL: {error}', file=sys.stderr)
         return 1
