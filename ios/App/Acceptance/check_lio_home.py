@@ -147,13 +147,15 @@ def main():
         '            LioChatHistoryFixture(shell: shell)\n'
         '        } else if ProcessInfo.processInfo.arguments.contains("--lio-journey-acceptance") {\n'
         '            LioJourneyFixture(shell: shell)\n'
+        '        } else if ProcessInfo.processInfo.arguments.contains("--lio-currency-acceptance") {\n'
+        '            LioCurrencyFixture(chinese: UserDefaults.standard.string(forKey: "cj.ui.language.v1") == "zh-Hans", dark: UserDefaults.standard.string(forKey: "lio.ui.appearance.v1") == "dark")\n'
         '        } else if ProcessInfo.processInfo.arguments.contains("--lio-timeline-acceptance") {\n'
         '            LioTimelineFixture(shell: shell, exerciseResend: ProcessInfo.processInfo.arguments.contains("--lio-resend-acceptance"))\n'
         '        } else ' + preview.lstrip()
     )
     fixtures = ("LioPositionPersistenceFixture.swift", "LioRootActivationFailureFixture.swift", "LioReadFailureFixture.swift", "LioScrollFixture.swift", "LioTimelineFixture.swift", "LioJourneyFixture.swift",
                 "LioMemoryJourneyFixture.swift", "LioChatHistoryFixture.swift", "LioSessionRecoveryFixture.swift",
-                "LioScenePrivacyFixture.swift", "LioExplorationQuestionsFixture.swift", "LioExplorationReplyFixture.swift", "LioRichItineraryFixture.swift", "LioExplorationReadFixture.swift", "LioThinkingFixture.swift", "LioExplorationHomeFixture.swift", "LioCalendarWireFixture.swift", "LioStreamingFixture.swift")
+                "LioScenePrivacyFixture.swift", "LioExplorationQuestionsFixture.swift", "LioExplorationReplyFixture.swift", "LioRichItineraryFixture.swift", "LioExplorationReadFixture.swift", "LioThinkingFixture.swift", "LioExplorationHomeFixture.swift", "LioCalendarWireFixture.swift", "LioStreamingFixture.swift", "LioCurrencyFixture.swift")
     beta_source = (ROOT / "ios/App/DemoBetaApp.swift").read_text()
     branch_start = beta_source.index("                LioSessionRecoveryView(language:")
     branch_end = beta_source.index("            } else {", branch_start)
