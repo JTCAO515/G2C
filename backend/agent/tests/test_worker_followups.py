@@ -407,3 +407,55 @@ def test_a_broken_memory_run_never_fails_the_answer():
     from types import SimpleNamespace
     state = _used_run(SimpleNamespace(payload=object(), snapshot=None, hold=_hold))
     assert not any(e.startswith('lio_memory_used:') for e in state.effects)
+
+
+# --- #2066: a stop or a denied run is not "an optional effect failing" ------------------------------------------
+
+import pytest
+
+from cj_needs.revision_lease import LeaseUnavailable
+from cj_run.core import Denied
+from cj_usage.local_provider_exit import BudgetUnknown
+
+_EFFECT_HOOKS = {
+    'entities': 'cj_message.lio_entities.entity_effect',
+    'cards': 'cj_message.lio_cards.card_effect',
+    'used': 'cj_memory.titles.used_effect',
+}
+
+
+def _hooked_run(hook, error):
+    """A split answer with every optional effect reachable; `hook` names the one that raises `error`."""
+    from types import SimpleNamespace
+    runs = Service(MemoryRepository(), lambda _: True)
+    chips_error = error if hook == 'chips' else None
+    messages = Messages('推荐酒店', chips_error if chips_error is not None else TICKETS)
+    memory = PromptMemory('lio_memory_prompt:consent')
+    if hook == 'prompt':
+        memory.consent_prompt = lambda binding, question: (_ for _ in ()).throw(error)
+    worker = RunWorker(scope='scope', messages=messages, runs=runs, provider=None,
+                       tools=MemoryTools(_memory_run(['s1'], [('s1', 'mem-1')]), '好的。\n\n推荐这几家。'), drafts=Drafts(),
+                       lio_memory=memory, lio_original=lambda binding: LioOriginal('zh', None))
+    worker.lio_city_context = SimpleNamespace(adcode='110000')
+    patches = [patch(_EFFECT_HOOKS[hook], side_effect=error)] if hook in _EFFECT_HOOKS else []
+    env = {'CJ_LIO_ENTITIES': 'on', 'CJ_LIO_CARDS': 'on', 'CJ_LIO_MEMORY_USED': 'on'}
+    with patch.dict(os.environ, env):
+        for item in patches:
+            item.start()
+        try:
+            outcome, = worker.process()
+        finally:
+            for item in patches:
+                item.stop()
+    return outcome
+
+
+@pytest.mark.parametrize('hook', ['entities', 'cards', 'chips', 'used', 'prompt'])
+def test_an_ordinary_failure_of_an_optional_effect_leaves_the_answer_completed(hook):
+    assert _hooked_run(hook, RuntimeError('boom')).status == 'completed'
+
+
+@pytest.mark.parametrize('hook', ['entities', 'cards', 'chips', 'used', 'prompt'])
+@pytest.mark.parametrize('error', [LeaseUnavailable('lease'), BudgetUnknown('budget'), Denied('denied')])
+def test_a_lease_budget_or_denial_failure_is_not_swallowed_by_an_optional_effect(hook, error):
+    assert _hooked_run(hook, error).status != 'completed'

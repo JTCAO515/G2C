@@ -48,6 +48,58 @@ class Sensitive(unittest.TestCase):
         for text in ('我想去故宫', 'Where is the Temple of Heaven?', '我喜欢吃辣', 'I like spicy food', '我不吃辣', 'I prefer quiet entrances'):
             self.assertFalse(sensitive(text), text)
 
+    def test_the_words_that_were_too_wide_no_longer_block_ordinary_travel_talk(self):
+        # #2083: each is a word that used to block a turn only because it contained or resembled a health or faith word.
+        for text in ('The tour operator was very helpful and the cooperation was great', 'I am a fast walker, I like museums',
+                     '我喜欢吃拜拜肉', 'I like accessible prices', 'I enjoy a blind tasting of local food', 'Johnnie Walker tasting', 'a slow walker like me', '我喜欢博物馆，不太喜欢盲目跟团'):
+            with self.subTest(text=text):
+                self.assertFalse(sensitive(text))
+
+    def test_the_narrowed_words_still_catch_the_real_meaning(self):
+        for text in ('I am recovering after an operation', 'I need a walker, I like museums', 'I use a walker', '我去拜拜，喜欢慢节奏',
+                     'I need accessibility features', 'I need a wheelchair accessible hotel', 'I am blind and like museums',
+                     'My cousin is a blind traveler',
+                     # found by the red-line review of #2099: these must stay blocked
+                     'I rely on a walker', 'my mom relies on her walker', 'grandma has a walker', 'bring a walker for my dad',
+                     'walker needed', 'I cannot go without a walker', 'I have a blind spot in my left eye', 'I need an accessible ticket',
+                     'an accessible rate for a room'):
+            with self.subTest(text=text):
+                self.assertTrue(sensitive(text))
+
+    def test_words_added_for_the_gaps_the_review_found(self):
+        for text in ('我有聋哑朋友同行', '我朋友失聪，喜欢博物馆', '我是佛门弟子', '我家人全盲，喜欢安静的酒店', '我孩子是盲童', 'I have gout and arthritis'):
+            with self.subTest(text=text):
+                self.assertTrue(sensitive(text))
+
+    def test_the_older_slots_take_only_their_own_statements(self):
+        # #2038 (decided 2026-11-28, privacy first): diet.spicy and quiet.entrance need a supported statement of the slot too.
+        # Body-condition talk that is not on the sensitive list must still not be written into them.
+        def writes(slot, text):
+            return allows_pilot_preference_write(SimpleNamespace(slot=slot, kind='preference', text=text))
+        for slot, text in (('diet.spicy', '我不吃辣'), ('diet.spicy', 'I like mild food'), ('diet.spicy', '请记住，我不吃辣。'),
+                           ('quiet.entrance', 'I prefer using quieter entrances at attractions.'), ('quiet.entrance', '走安静的入口进景点')):
+            with self.subTest(slot=slot, text=text):
+                self.assertTrue(writes(slot, text))
+        for slot, text in (('diet.spicy', 'my stomach hurts a lot'), ('diet.spicy', '我最近肚子不舒服'), ('diet.spicy', 'I sleep badly'),
+                           ('quiet.entrance', 'my knees feel weak lately'), ('quiet.entrance', '我睡不好觉'),
+                           ('quiet.entrance', 'Use a different quiet entrance.'), ('diet.spicy', '我不吃辣，因为我有胃病'),
+                           ('travel.pace', 'my stomach hurts a lot')):
+            with self.subTest(slot=slot, text=text):
+                self.assertFalse(writes(slot, text))
+
+    def test_english_health_words_added_in_2105_are_caught_on_their_own(self):
+        # #2105 (#2103 review P3): the word list catches these itself, so the slot-form gate is not the only thing that stops them.
+        for text in ('I have a stomach ulcer', 'My stomach hurts a lot', 'I have insomnia', 'I sleep badly', 'I cannot sleep well',
+                     "I can't sleep on trains", 'I use walkers', 'Dad uses a rollator', 'I get dizzy easily', 'I have migraines',
+                     'I have hearing loss', 'I wear a hearing aid', 'She is colour-blind', 'I have gout', 'He has colitis',
+                     'I get acid reflux', 'I have gastritis', 'I had a panic attack', 'I have PTSD', 'I have an eating disorder', 'I have osteoporosis'):
+            with self.subTest(text=text):
+                self.assertTrue(sensitive(text))
+        for text in ('I like the sleeper train', 'I prefer a quiet hotel with good sleep quality', 'I enjoy walking tours',
+                     'I like a dizzying skyline view', 'I love gastronomy tours', 'I like gastropubs', 'I like stomach-friendly local noodles', 'I like spicy food', 'I like museums'):
+            with self.subTest(text=text):
+                self.assertFalse(sensitive(text))
+
     def test_non_text_is_treated_as_sensitive(self):
         for value in (None, 7, b'x', ['a']):
             self.assertTrue(sensitive(value))

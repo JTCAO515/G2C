@@ -94,12 +94,19 @@ class LioContextSource(ContextSource):
         return reference
 
 
+def lio_autosave(original):
+    """ADR-0012 switch for the Lio writes derived from the host's context publisher: the host sets
+    ``lio_autosave = True`` on it for an account on the list; anything else is off (None)."""
+    return True if getattr(original, 'lio_autosave', None) is True else None
+
+
 class LioPlanPublisher(ContextPublisher):
     def __init__(self, original, confirmation, original_needs, check_lio_original, *, draft_guidance=''):
         if type(confirmation) is not ConfirmationSigner:
             raise ValueError('Lio planning requires the original Trip signer')
         repository = Repository(original.repository.connect, original.repository.scope,
                                 confirmation, structured=True)
+        repository.autosave = lio_autosave(original)
         super().__init__(repository, LioContextSource(original.source, original_needs), original.clock)
         self.check_lio_original = check_lio_original
         self.draft_guidance = draft_guidance

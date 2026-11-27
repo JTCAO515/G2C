@@ -120,6 +120,10 @@
     {
       "setting": "G2C_AUTOSAVE_UNDO_ENABLED",
       "plist": "G2CAutosaveUndoEnabled"
+    },
+    {
+      "setting": "G2C_TRIP_MEMORY_LABEL_ENABLED",
+      "plist": "G2CTripMemoryLabelEnabled"
     }
   ],
   "release": {

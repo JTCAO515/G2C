@@ -20,6 +20,7 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from cryptography.hazmat.primitives.serialization import Encoding,NoEncryption,PrivateFormat,PublicFormat
 from fastapi.testclient import TestClient
 from cj_api.local_app import ISSUER,LocalDatabase,create_local_app,scope_for
+from cj_api.supabase_test_database import discard_session
 from cj_api.local_worker_context import checker_for
 from cj_agent.provider import FakeProvider, ProviderFailed, ProviderUnknown
 from cj_api.local_run_context import load_run_context
@@ -264,6 +265,28 @@ def chained(target):
     return target in (53,54,55) or target>=59
 
 
+AUTOSAVE_DOWN_REFUSED=[]
+
+
+def clear_autosave_audit(db):
+    """Inside a rolled-back check transaction only: 0061 down refuses while Trip origin/commit rows exist.
+    When such rows are present this first proves that refusal on the real migration (coordinator
+    2026-11-27: clearing must not hide the new protection), then clears them so the older down scripts
+    below it reach their own original-data refusal, which is what these checks assert."""
+    if db.execute("SELECT to_regclass('public.cj_trip_commit_time')").fetchone()[0] is not None:
+        tables=('cj_trip_commit_time','cj_trip_item_tombstone','cj_trip_item_origin')
+        if any(db.execute(f'SELECT count(*) FROM public.{table}').fetchone()[0] for table in tables):
+            try:
+                with db.transaction():migrate.down(db,migrate.load(),60)
+            except psycopg.errors.RaiseException as exc:
+                assert 'trip_autosave down refused: retained private data' in str(exc)
+            else:raise AssertionError('0061 down dropped retained Trip origin or commit records')
+            assert migrate.applied(db)[-1]>=61
+            AUTOSAVE_DOWN_REFUSED.append(True)
+        for table in tables:
+            db.execute(f'DELETE FROM public.{table}')
+
+
 def after59_migrations(root,migrations):
     """The real chain through 0060 once main has it; until then a synthetic one-table 0060 for this check only."""
     if migrations[-1]['version']>=60:return migrations[:60]
@@ -415,6 +438,23 @@ def check_schema53_resume(control,backups,operator,schema_root,*,target=53):
     print(f'PASS original schema{target} rollback/export/latest/release/marker interruptions reconciled without replay')
 
 
+def check_schema59_in_public(operator):
+    """0056-0058 are frozen unqualified (applied as-is in Hong Kong); under the production operator
+    session the Demo upgrade's migration search_path must still put every 0056-0059 object in public."""
+    with operator() as (db,_):
+        assert db.execute('SHOW search_path').fetchone()[0]=='pg_catalog, public, pg_temp'
+        for name in demo_schema.ROLLBACK59_TABLES:
+            assert db.execute("SELECT n.nspname FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace "
+                              "WHERE c.relname=%s",(name,)).fetchall()==[('public',)],name
+        assert db.execute("SELECT count(*) FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace "
+                          "WHERE n.nspname='pg_catalog' AND (c.relname LIKE 'cj_%' OR c.relname LIKE 'service_%')").fetchone()==(0,)
+        assert db.execute("SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace "
+                          "WHERE n.nspname='pg_catalog' AND p.proname LIKE 'cj_%'").fetchone()==(0,)
+        assert db.execute("SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace "
+                          "WHERE n.nspname='public' AND p.proname LIKE 'cj_service_%'").fetchone()[0]>0
+    print('PASS schema59 objects from frozen unqualified 0056-0058 land in public under the HK operator session')
+
+
 def check_schema59_rollback(operator):
     """Runbook rollback 59 -> 55: the read-only emptiness check, then the committed down chain."""
     with operator() as (db,_):
@@ -479,6 +519,11 @@ def verify_upgrade(root, blueprint, target):
         @contextmanager
         def operator():
             with psycopg.connect(**config,autocommit=True) as db:
+                # The HK operator session (prepare_hk_socket_session) resets to the production search_path
+                # pg_catalog, public, pg_temp: an unqualified CREATE would land in pg_catalog and fail there
+                # (first59 apply, 2026-11-27). The local cluster default (search_path=public) hid it.
+                discard_session(db)
+                assert db.execute('SHOW search_path').fetchone()[0]=='pg_catalog, public, pg_temp'
                 yield db,config
 
         with patch.dict(os.environ,env),patch.object(checkpoint,'operator',operator),                patch.object(staging,'PG17',pg_suites.bindir()):
@@ -577,6 +622,7 @@ def verify_upgrade(root, blueprint, target):
             else:
                 raise AssertionError('schema upgrade accepted a second application')
             if target==59:
+                check_schema59_in_public(operator)
                 check_schema59_rollback(operator)
             if target>=60:
                 check_single_rollback(operator,target)
@@ -1155,6 +1201,7 @@ def check_lio(api, database, auth, other, headers, conninfo, memory):
     with psycopg.connect(**conninfo) as db:
         try:
             with db.transaction():
+                clear_autosave_audit(db)
                 migrate.down(db, migrate.load(), 50)
         except psycopg.errors.RaiseException as exc:
             assert 'Lio dialogue originals must be preserved' in str(exc)
@@ -2266,6 +2313,7 @@ def exercise(root,conninfo):
                     (scope_for(ISSUER,SUBJECT),rows[0][0])).fetchone()==(1,)
                 try:
                     with db.transaction():
+                        clear_autosave_audit(db)
                         migrate.down(db,migrate.load(),49)
                 except psycopg.errors.RaiseException as exc:
                     assert 'demo dialogue originals must be preserved' in str(exc)
@@ -2329,6 +2377,7 @@ def exercise(root,conninfo):
                 assert db.execute('SELECT count(*) FROM public.cj_message_receipt WHERE scope=%s AND demo_question_day=%s',(scope,quota_day)).fetchone()==(400,)
                 try:
                     with db.transaction():
+                        clear_autosave_audit(db)
                         migrate.down(db,migrate.load(),51)
                 except psycopg.errors.RaiseException as exc:
                     assert 'Demo quota rollback would invalidate admitted originals' in str(exc)
@@ -2364,8 +2413,9 @@ if __name__=='__main__':
         with pg_suites.cluster('demo',port=55649,role='cj_demo_init',root=root/'pg',socket=root/'s') as conninfo:
             with psycopg.connect(**conninfo,autocommit=True) as connection:
                 migrations=migrate.load();migrate.up(connection,migrations,migrations[-1]['version'])
-            for version in (50,51,52,53,54,55,59,60):
-                chain=after59_migrations(root,migrations) if version>=60 else migrations[:version]
+            # Every single step after the 59 chain on main (0060 #1973, 0061 #1994, ...) is rehearsed from N-1.
+            for version in (50,51,52,53,54,55,59,*range(60,max(60,migrations[-1]['version'])+1)):
+                chain=after59_migrations(root,migrations) if version==60 else migrations[:version]
                 with patch.object(migrate,'load',return_value=chain):
                     with pg_suites.cluster('old-blueprint',port=55651,role='cj_demo_blueprint',
                             root=root/'old-blueprint',socket=root/'old-blueprint-s') as previous:
@@ -2373,3 +2423,6 @@ if __name__=='__main__':
                             migrate.up(connection,chain,version)
                         verify_upgrade(root/f'upgrade-{version}',previous,version)
             exercise(root,conninfo)
+            if migrations[-1]['version']>=61:
+                assert AUTOSAVE_DOWN_REFUSED,'no rehearsal held Trip autosave rows when proving the 0061 down refusal'
+                print('PASS 0061 down refused while Trip origin or commit records exist')

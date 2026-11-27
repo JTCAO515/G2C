@@ -105,6 +105,8 @@ struct LioTurn: Identifiable {
     var cards: [LioTimelineWire.Card] = []
     /// #2001: the line "based on what you asked me to remember" under the answer.
     var memoryNote: LioMemoryUsedNote?
+    /// #2010: the saved memories this plan was based on (empty unless the build asked for rich answers).
+    var memoryUsed: LioTimelineWire.MemoryUsed?
     /// #1994: what the automatic save of this answer did.
     var tripReceipt: LioTimelineWire.TripReceipt?
     var fromTimeline = false
@@ -132,6 +134,20 @@ final class LioConversation {
             guard let trip = turn.itinerary, seen.insert(trip.id).inserted else { return nil }
             return trip
         }.reversed())
+    }
+    /// #2010: the plan, with the memories its answer was based on when this chat's row for that trip said so. A plan
+    /// the chat has no row for (opened from Trips), or a row without memories, keeps what the plan already had; with the
+    /// label switch off the plan is returned as it is, so nothing new is ever stored.
+    func carryingMemoryUsed(_ plan: LioPlanSummary, enabled: Bool = LioTripMemoryLabelFeature.enabledInBuild) -> LioPlanSummary {
+        guard enabled else { return plan }
+        let used = turns.last { turn in
+            guard turn.memoryUsed != nil else { return false }
+            return turn.itinerary?.id == plan.tripID || turn.exploration?.trip.map { LioPlanSummary($0).tripID } == plan.tripID
+        }?.memoryUsed
+        guard let used else { return plan }
+        var carried = plan
+        carried.memoryUsed = used
+        return carried
     }
     private(set) var pending: LioQuestion?
     private(set) var nextBefore: String?
@@ -369,6 +385,6 @@ final class LioConversation {
                        sources: row.sources, itinerary: row.itinerary, memoryTags: row.memoryTags,
                        exploration: row.exploration, layout: row.layout, followups: row.followups, chips: row.chips,
                        places: row.places, memoryPrompt: row.memoryPrompt, cards: row.cards,
-                       memoryNote: row.memoryNote, tripReceipt: row.tripReceipt, fromTimeline: true)
+                       memoryNote: row.memoryNote, memoryUsed: row.memoryUsed, tripReceipt: row.tripReceipt, fromTimeline: true)
     }
 }

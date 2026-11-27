@@ -344,6 +344,11 @@ def _worker_for_scope(database,model,auth_dir,scope,checker, *, memory_configura
         from cj_message.lio_context import original_for, selected_lio_original_for
         lio_original = partial(selected_lio_original_for if national_planning else original_for, database)
         if lio_confirmation is not None:
+            # ADR-0012 (#1994): CJ_LIO_TRIP_AUTOSAVE=on and this account in the answer-layout list; every Lio
+            # write publisher derived from `drafts` reads it. Off: attribute absent, today's behaviour.
+            from cj_api.lio_trip_autosave import autosave_for
+            if autosave_for(scope) is True:
+                drafts.lio_autosave = True
             from cj_api.local_lio_edit import LioEdit
             from cj_api.local_lio_planning import LioPlanning, LioPlanSave
             if national_planning:

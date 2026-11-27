@@ -9,13 +9,20 @@ import SwiftUI
 /// number is optional.
 struct LioTripArrivalAsk: View {
     let language: LioLanguage
+    /// G4's wording for the two questions (`LioTodoContent`), already in the page's language; nil keeps the page's own.
+    /// They are long lines, so they sit on the page where they wrap, not in the navigation bar or a field.
+    let dayQuestion: String?
+    let numberQuestion: String?
     let save: (LioTripDay, String?) -> Void
     @Environment(\.dismiss) private var dismiss
     @State private var day: Date
     @State private var number: String
 
-    init(language: LioLanguage, profile: LioTripProfile?, save: @escaping (LioTripDay, String?) -> Void) {
+    init(language: LioLanguage, profile: LioTripProfile?, dayQuestion: String? = nil, numberQuestion: String? = nil,
+         save: @escaping (LioTripDay, String?) -> Void) {
         self.language = language
+        self.dayQuestion = dayQuestion
+        self.numberQuestion = numberQuestion
         self.save = save
         // Nothing is saved until the traveller taps Save, so a suggested day (two weeks out) is only a starting point.
         _day = State(initialValue: (profile?.arrival ?? LioTripDay(date: .now).adding(days: 14)).start())
@@ -27,15 +34,35 @@ struct LioTripArrivalAsk: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: LioTheme.Spacing.md) {
                     VStack(alignment: .leading, spacing: LioTheme.Spacing.xs) {
+                        if let dayQuestion {
+                            Text(dayQuestion).font(.headline).foregroundStyle(LioTheme.ink)
+                                .fixedSize(horizontal: false, vertical: true)
+                                .accessibilityAddTraits(.isHeader)
+                                .accessibilityIdentifier("lio.trip-home.ask.arrival.day-question")
+                        }
                         DatePicker(language.text("Arrival day", "到达日期"), selection: $day, displayedComponents: .date)
                             .frame(minHeight: 44)
                             .accessibilityIdentifier("lio.trip-home.ask.arrival.day")
-                        TextField(language.text("Flight or train number (optional)", "航班号或车次（选填）"), text: $number)
-                            .textInputAutocapitalization(.characters)
-                            .autocorrectionDisabled()
-                            .submitLabel(.done)
-                            .frame(minHeight: 44)
-                            .accessibilityIdentifier("lio.trip-home.ask.arrival.number")
+                        if let numberQuestion {
+                            Text(numberQuestion).font(.headline).foregroundStyle(LioTheme.ink)
+                                .fixedSize(horizontal: false, vertical: true)
+                                .padding(.top, LioTheme.Spacing.xs)
+                                .accessibilityIdentifier("lio.trip-home.ask.arrival.number-question")
+                            TextField("CA1234", text: $number)
+                                .textInputAutocapitalization(.characters)
+                                .autocorrectionDisabled()
+                                .submitLabel(.done)
+                                .frame(minHeight: 44)
+                                .accessibilityLabel(numberQuestion)
+                                .accessibilityIdentifier("lio.trip-home.ask.arrival.number")
+                        } else {
+                            TextField(language.text("Flight or train number (optional)", "航班号或车次（选填）"), text: $number)
+                                .textInputAutocapitalization(.characters)
+                                .autocorrectionDisabled()
+                                .submitLabel(.done)
+                                .frame(minHeight: 44)
+                                .accessibilityIdentifier("lio.trip-home.ask.arrival.number")
+                        }
                     }
                     .padding(LioTheme.Spacing.md)
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -56,7 +83,8 @@ struct LioTripArrivalAsk: View {
                 .background(LioTheme.paper)
                 .accessibilityIdentifier("lio.trip-home.ask.arrival.save")
             }
-            .navigationTitle(language.text("When do you arrive?", "哪天到中国？"))
+            // With G4's question on the page the bar needs no title of its own.
+            .navigationTitle(dayQuestion == nil ? language.text("When do you arrive?", "哪天到中国？") : "")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
