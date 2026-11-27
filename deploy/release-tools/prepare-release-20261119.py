@@ -17,7 +17,7 @@ from deploy.hk.application_release_host import require_source_abi
 
 CODE = Path(__file__).resolve().parent
 # Private state (gates, evidence, logs, tokens) stays outside the repository; see README.md.
-STATE = Path(os.environ.get('G2C_RELEASE_STATE', '~/.local/share/g2c/b-server-smoke-20261118')).expanduser()
+STATE = Path(os.environ.get('G2C_RELEASE_STATE', '~/.local/share/g2c/b-server-smoke-20261118')).expanduser().resolve()
 OPS=runpy.run_path(str(CODE / 'hk-operator.py'))
 RELATED=(1170,1174,1177,1178,1181,1184,1201,1207,1211,1213,1214,1215,1216,1221,1222,1223,1226)
 

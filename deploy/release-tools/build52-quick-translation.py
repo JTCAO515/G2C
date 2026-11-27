@@ -20,7 +20,7 @@ from deploy.hk.plugin_roster import generate_plugin_subjects
 
 CODE = Path(__file__).resolve().parent
 # Private state (gates, evidence, logs, tokens) stays outside the repository; see README.md.
-STATE = Path(os.environ.get('G2C_RELEASE_STATE', '~/.local/share/g2c/b-server-smoke-20261118')).expanduser()
+STATE = Path(os.environ.get('G2C_RELEASE_STATE', '~/.local/share/g2c/b-server-smoke-20261118')).expanduser().resolve()
 SAMPLES = STATE.parent/'b1048-m1-deploy-20261116/A1124-198-shortcode-samples-20261117'
 PLAN = STATE/'translation-supplement-20261123-fixtures/build52-translation-plan.json'
 PLAN_SHA = 'fb882be12056777f16977f44025cb36d0719fa5400085b675c71a82d9b05a624'

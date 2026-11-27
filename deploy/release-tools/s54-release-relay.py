@@ -14,7 +14,7 @@ from urllib.parse import urlsplit
 
 CODE = Path(__file__).resolve().parent
 # Private state (gates, evidence, logs, tokens) stays outside the repository; see README.md.
-STATE = Path(os.environ.get('G2C_RELEASE_STATE', '~/.local/share/g2c/b-server-smoke-20261118')).expanduser()
+STATE = Path(os.environ.get('G2C_RELEASE_STATE', '~/.local/share/g2c/b-server-smoke-20261118')).expanduser().resolve()
 PREFIX=b'G2C_RELEASE_GITHUB_GET '
 HOST='''import base64, hashlib, io, json, runpy, sys
 from pathlib import Path

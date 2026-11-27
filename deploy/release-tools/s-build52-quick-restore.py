@@ -9,7 +9,7 @@ import sys
 
 CODE = Path(__file__).resolve().parent
 # Private state (gates, evidence, logs, tokens) stays outside the repository; see README.md.
-STATE = Path(os.environ.get('G2C_RELEASE_STATE', '~/.local/share/g2c/b-server-smoke-20261118')).expanduser()
+STATE = Path(os.environ.get('G2C_RELEASE_STATE', '~/.local/share/g2c/b-server-smoke-20261118')).expanduser().resolve()
 OPERATOR = CODE / 'hk-operator.py'
 RUNNER = CODE / 's-build52-quick.py'
 

@@ -33,6 +33,9 @@
   ```
   这类脚本包括 pre-cutover、batch smoke、drain、quick-restore、s55、verify。
 - 所有命令都在沙箱外运行，因为要用到 SSH 和本机状态目录。
+- **工具检出必须干净，并且正好是 main 上已审的提交**：开跑前执行 `git -C <tools> status --porcelain`，输出必须为空；再确认 `git -C <tools> rev-parse HEAD` 是已合并的提交。脚本之间已经不再互相核对哈希，这一步就是对应的保证。
+- `G2C_RELEASE_STATE` 会解析成绝对路径，**不能放在任何 git 工作树里**，否则证据和令牌可能被误提交。
+- 通过 `s54-release-transport.py` 启动时，传给 relay 的哈希是当场从 relay 文件算出来的，所以 relay 的自校验在这条路径上只能保证「本次运行全程用的是同一份字节」。relay 的内容是否正确，靠上一条的干净检出来保证。
 
 ## 普通应用发布（L 发布，schema 不变）的顺序
 

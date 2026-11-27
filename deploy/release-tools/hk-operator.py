@@ -12,7 +12,7 @@ import sys
 
 CODE = Path(__file__).resolve().parent
 # Private state (gates, evidence, logs, tokens) stays outside the repository; see README.md.
-STATE = Path(os.environ.get('G2C_RELEASE_STATE', '~/.local/share/g2c/b-server-smoke-20261118')).expanduser()
+STATE = Path(os.environ.get('G2C_RELEASE_STATE', '~/.local/share/g2c/b-server-smoke-20261118')).expanduser().resolve()
 OLD = '2e5560cf3c794df4aff48c8431e8424330580e10'
 NEW = '7f8dbe9617833a4af4900f21499a6db5616d5eb6'
 OLD_IMAGE = 'sha256:0ad586bea92662028112887ba37351fb307a06717cb84e17a507039c727feeba'
