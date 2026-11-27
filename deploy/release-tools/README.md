@@ -65,6 +65,8 @@
 - `step-gate.sh` 和 `step-ledger.sh` 是 gate 和账本锚点的模板，每次发布要改目录名和镜像 ID。
 - gate 的时间必须写成 `2026-11-27T17:00:00.000000+00:00` 这种格式，写成 `Z` 结尾会报 `ValueError`。
 - 回滚：先跑 `--check-rollback <target>`。新表里有一行数据就停下，转 JT。
+- **日备镜像跟着前移**：每日备份跑 `backup.image` 钉住的 operator 镜像。step 程序的 preflight 会检查新 operator 的迁移数正好等于目标 schema，并且日备没有在运行；切换时和选择器在同一阶段把 `backup.image` 改成新 operator，旧值留在本次目录的 `backup.image.before`。回滚到上一级 schema 时，要把它一起还原。2026-11-28 第三步升到 61 后，日备还钉在只认 55 的镜像上，03:00 的日备失败，停服 45 分钟。
+- `deploy/hk/daily-backup.sh`：只要它停过 api 和 worker，不管导出失败、发布核对失败、原备份容器还在运行，还是被 systemd 超时杀掉，都会把原本在运行的服务拉回来，并发 `ALERT …`。
 
 ## ABI 策略换代
 

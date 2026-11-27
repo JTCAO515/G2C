@@ -60,24 +60,59 @@ fi
 api_before=$(compose ps -q --status running api)
 worker_before=$(compose ps -q --status running worker)
 
-if compose stop api worker &&
-    backup_compose run --rm --no-deps backup; then
+# Every run that stops api/worker brings back the ones that were running before it, whatever
+# happens next: a failed export, a failed release check, a backup container that is still active,
+# or systemd's TimeoutStartSec killing this script. The 2026-11-28 03:00 run stopped both, failed
+# with a backup image that predated the live schema, then kept them stopped for 45 minutes because
+# the release check ran with the same image. The application still refuses to serve on an
+# unverified release by itself, so starting it is never the unsafe step.
+stopped=
+resumed=
+resume_running() {
     set --
     if [ -n "$api_before" ]; then set -- "$@" api; fi
     if [ -n "$worker_before" ]; then set -- "$@" worker; fi
     # An operator may have intentionally stopped either service before the backup.
-    if [ "$#" -gt 0 ]; then compose up -d --no-deps "$@"; fi
+    if [ "$#" -gt 0 ] && ! compose up -d --no-deps "$@"; then
+        printf '%s\n' 'ALERT beta_backup_source_resume_failed' >&2
+        return 1
+    fi
+    resumed=yes
+}
+on_exit() {
+    status=$?
+    trap - EXIT
+    if [ -n "$stopped" ] && [ -z "$resumed" ]; then
+        printf '%s\n' 'ALERT beta_backup_interrupted_resuming_source' >&2
+        resume_running || true
+    fi
+    exit "$status"
+}
+trap on_exit EXIT
+trap 'exit 143' TERM INT HUP
+
+stopped=yes
+if compose stop api worker &&
+    backup_compose run --rm --no-deps backup; then
+    resume_running || exit 1
 else
     backup_status=$?
-    # Restore only the pair that the timer interrupted, and only when the
-    # original backup is no longer active and the signed source release is current.
-    if [ -n "$api_before" ] && [ -n "$worker_before" ] &&
-        active_backup=$(compose --profile operator ps --all -q --status running --status restarting --status paused backup) &&
-        [ -z "$active_backup" ] &&
-        backup_compose run --rm --no-deps -T --entrypoint python backup -B -m deploy.hk.backup --check-release; then
-        if ! compose up -d --no-deps api worker; then
-            printf '%s\n' 'ALERT beta_backup_source_resume_failed' >&2
-        fi
+    # Let the original backup container finish first (bounded), so the source is not reopened
+    # under a running export; past the bound the source is reopened anyway, with an alert.
+    waited=0
+    # Bounded well inside the unit's TimeoutStartSec=900 together with the export itself.
+    limit=${CJ_BACKUP_ACTIVE_WAIT_SECONDS:-300}
+    while active_backup=$(compose --profile operator ps --all -q --status running --status restarting --status paused backup) &&
+        [ -n "$active_backup" ] && [ "$waited" -lt "$limit" ]; do
+        sleep 5
+        waited=$((waited + 5))
+    done
+    if [ -n "${active_backup:-}" ]; then
+        printf '%s\n' 'ALERT beta_backup_still_active_resuming_source' >&2
     fi
+    if ! backup_compose run --rm --no-deps -T --entrypoint python backup -B -m deploy.hk.backup --check-release; then
+        printf '%s\n' 'ALERT beta_backup_source_release_unverified_resuming_source' >&2
+    fi
+    resume_running || true
     exit "$backup_status"
 fi

@@ -16,7 +16,7 @@ ingress closes leaves API/worker stopped for reconciliation: it never starts the
 on TARGET and never rewinds data. Source CI, reviews, the release range and hk-verify are
 checked before the gate is written; the gate pins the exact images that hk-verify compared.
 """
-import fcntl,hashlib,json,os,re,subprocess,sys,time
+import fcntl,hashlib,json,os,re,stat,subprocess,sys,time
 from datetime import datetime,timezone
 from pathlib import Path
 
@@ -165,6 +165,20 @@ def main(arguments=None):
     old_image=gate['previous_image_id'];new_image=gate['image_id']
     before=proof(old_image)
     if not idle(before)or before['ledger']!=gate['ledger']:raise ValueError('empty original financial anchor required')
+    # The daily backup runs a pinned operator image (backup.image). A schema step must move that pin to
+    # the new operator in the same cutover: on 2026-11-28 the first 03:00 backup after 60 -> 61 still ran
+    # an operator that knew 55, failed, and left the service stopped for 45 minutes.
+    backup_pin=ROOT/'backup.image'
+    pinned_versions=int(run(gate['operator_image_id'],
+        "from deploy.hk import checkpoint;print(len(checkpoint.versions()))").decode().strip())
+    if pinned_versions!=TARGET:raise ValueError('new operator image must know exactly schema %d'%TARGET)
+    def backup_idle():
+        state=subprocess.run(['systemctl','is-active','g2c-beta-backup.service'],stdout=subprocess.PIPE,
+            universal_newlines=True).stdout.strip()
+        # Only a known idle state passes; anything else, including an unreadable state, refuses.
+        if state not in ('inactive','failed'):
+            raise ValueError('daily backup must be idle (state %r); retry after it finishes'%state)
+    backup_idle()
     window();unchanged()
     print(json.dumps(dict(stage='STEP%d_PREFLIGHT_PASS'%TARGET,ledger=before['ledger'],source=SOURCE)),flush=True)
     if '--apply'not in args:return
@@ -172,7 +186,7 @@ def main(arguments=None):
         original_selector_sha256=hashlib.sha256(selector).hexdigest(),configuration_sha256=static))
     closed=False
     try:
-        unchanged();window();closed=True;command(base+['stop','-t','20','api'])
+        backup_idle();unchanged();window();closed=True;command(base+['stop','-t','20','api'])
         drained=proof(old_image);save('drained.json',drained)
         if not idle(drained)or drained['ledger']!=before['ledger']:raise ValueError('new original during ingress close')
         unchanged();window();command(base+['stop','-t','20','worker']);window();unchanged()
@@ -206,6 +220,24 @@ def main(arguments=None):
         with os.fdopen(fd,'wb')as f:f.write(updated.encode());f.flush();os.fsync(f.fileno())
         os.chown(str(temporary),metadata.st_uid,metadata.st_gid);unchanged();window();temporary.replace(p)
         expected_selector=updated.encode()
+        if backup_pin.exists() or backup_pin.is_symlink():
+            # Move the daily-backup pin to the new operator together with the selectors; keep the old one.
+            pin_meta=backup_pin.lstat()
+            if not stat.S_ISREG(pin_meta.st_mode):raise ValueError('regular backup image pin required')
+            previous_pin=backup_pin.read_bytes()
+            fd=os.open(str(directory/'backup.image.before'),os.O_WRONLY|os.O_CREAT|os.O_EXCL|os.O_NOFOLLOW,0o600)
+            with os.fdopen(fd,'wb')as f:f.write(previous_pin);f.flush();os.fsync(f.fileno())
+            pin=('g2c-beta-operator:'+SOURCE+' '+gate['operator_image_id']+'\n').encode()
+            pending=directory/'backup.image.pending'
+            fd=os.open(str(pending),os.O_WRONLY|os.O_CREAT|os.O_EXCL|os.O_NOFOLLOW,pin_meta.st_mode&0o777)
+            with os.fdopen(fd,'wb')as f:f.write(pin);f.flush();os.fsync(f.fileno())
+            os.chown(str(pending),pin_meta.st_uid,pin_meta.st_gid);pending.replace(backup_pin)
+            # daily_backup_image.py reads the relative path backup.image: run it from ROOT, and an empty
+            # selection (file not found) is a failure, never a match (#2121 review P1).
+            selected=subprocess.check_output(['python3','-B',str(ROOT/'deploy/hk/daily_backup_image.py')],
+                cwd=str(ROOT),stderr=subprocess.PIPE,timeout=60).strip()
+            if not selected or selected!=pin.strip():raise ValueError('daily backup pin readback differs')
+            save('backup-image.json',dict(before=previous_pin.decode().strip(),after=pin.decode().strip()))
         directory_fd=os.open(str(ROOT),os.O_RDONLY|os.O_DIRECTORY)
         try:os.fsync(directory_fd)
         finally:os.close(directory_fd)

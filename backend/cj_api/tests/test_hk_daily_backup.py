@@ -20,8 +20,13 @@ case "$*" in
         if [ "$ACTIVE_BACKUP" = yes ]; then echo original-backup-id; fi ;;
     *" stop api worker") echo stop >> "$TRACE"; exit "$STOP" ;;
     *" --check-release") echo verify >> "$TRACE"; exit "$VERIFY" ;;
-    *" run --rm --no-deps backup") echo backup >> "$TRACE"; exit "$BACKUP" ;;
+    *" run --rm --no-deps backup")
+        echo backup >> "$TRACE"
+        if [ "$BACKUP" = term ]; then kill -TERM "$PPID"; sleep 1; exit 1; fi
+        exit "$BACKUP" ;;
     *" up -d --no-deps api worker") echo resume >> "$TRACE"; exit "$RESUME" ;;
+    *" up -d --no-deps api") echo resume-api >> "$TRACE"; exit "$RESUME" ;;
+    *" up -d --no-deps worker") echo resume-worker >> "$TRACE"; exit "$RESUME" ;;
     *) exit 99 ;;
 esac
 """
@@ -40,7 +45,8 @@ class DailyBackupRestartTests(unittest.TestCase):
             trace = root / 'trace'
             env = dict(os.environ, PATH=str(root)+':/usr/bin:/bin', TEST_ROOT=str(root),
                        TRACE=str(trace), API_RUNNING='yes', WORKER_RUNNING='yes',
-                       ACTIVE_BACKUP='no', STOP='0', BACKUP='0', VERIFY='0', RESUME='0')
+                       ACTIVE_BACKUP='no', STOP='0', BACKUP='0', VERIFY='0', RESUME='0',
+                       CJ_BACKUP_ACTIVE_WAIT_SECONDS='0')
             env.update(settings)
             result = subprocess.run(['/bin/sh', '-c', source], env=env, capture_output=True,
                                     text=True, timeout=10)
@@ -56,22 +62,32 @@ class DailyBackupRestartTests(unittest.TestCase):
         self.assertEqual(result.returncode, 42)
         self.assertEqual(calls, ['api-status', 'worker-status', 'stop', 'backup', 'backup-status', 'verify', 'resume'])
 
-    def test_failed_backup_stays_stopped_without_current_release(self):
+    def test_failed_backup_resumes_even_without_current_release_and_alerts(self):
+        # 2026-11-28 03:00: the release check failed with the same stale image and the source stayed down.
         result, calls = self.run_controller(BACKUP='42', VERIFY='1')
         self.assertEqual(result.returncode, 42)
-        self.assertEqual(calls, ['api-status', 'worker-status', 'stop', 'backup', 'backup-status', 'verify'])
+        self.assertEqual(calls, ['api-status', 'worker-status', 'stop', 'backup', 'backup-status', 'verify', 'resume'])
+        self.assertIn('ALERT beta_backup_source_release_unverified_resuming_source', result.stderr)
 
-    def test_failed_backup_does_not_reopen_an_already_stopped_pair(self):
+    def test_failed_backup_reopens_only_the_service_that_was_running(self):
         result, calls = self.run_controller(BACKUP='42', WORKER_RUNNING='no')
         self.assertEqual(result.returncode, 42)
-        self.assertEqual(calls, ['api-status', 'worker-status', 'stop', 'backup'])
+        self.assertEqual(calls, ['api-status', 'worker-status', 'stop', 'backup', 'backup-status', 'verify', 'resume-api'])
 
-    def test_failed_command_keeps_source_stopped_if_original_backup_is_active(self):
+    def test_failed_backup_never_reopens_a_pair_that_was_already_stopped(self):
+        result, calls = self.run_controller(BACKUP='42', API_RUNNING='no', WORKER_RUNNING='no')
+        self.assertEqual(result.returncode, 42)
+        self.assertNotIn('resume', calls)
+        self.assertNotIn('resume-api', calls)
+        self.assertNotIn('resume-worker', calls)
+
+    def test_still_active_original_backup_is_waited_for_then_source_resumes_with_alert(self):
         result, calls = self.run_controller(BACKUP='42', ACTIVE_BACKUP='yes')
         self.assertEqual(result.returncode, 42)
-        self.assertEqual(calls, ['api-status', 'worker-status', 'stop', 'backup', 'backup-status'])
+        self.assertEqual(calls, ['api-status', 'worker-status', 'stop', 'backup', 'backup-status', 'verify', 'resume'])
+        self.assertIn('ALERT beta_backup_still_active_resuming_source', result.stderr)
 
-    def test_partial_stop_failure_checks_release_without_attempting_backup(self):
+    def test_partial_stop_failure_checks_release_and_resumes_without_attempting_backup(self):
         result, calls = self.run_controller(STOP='43')
         self.assertEqual(result.returncode, 43)
         self.assertEqual(calls, ['api-status', 'worker-status', 'stop', 'backup-status', 'verify', 'resume'])
@@ -79,9 +95,22 @@ class DailyBackupRestartTests(unittest.TestCase):
     def test_restart_failure_reports_alert_and_retains_backup_failure(self):
         result, calls = self.run_controller(BACKUP='42', RESUME='44')
         self.assertEqual(result.returncode, 42)
-        self.assertEqual(calls.count('resume'), 1)
+        # One attempt in the failure branch and one retry from the exit trap; the backup failure is kept.
+        self.assertEqual(calls.count('resume'), 2)
         self.assertIn('ALERT beta_backup_source_resume_failed', result.stderr)
 
+    def test_success_with_failed_restart_alerts_retries_once_and_fails(self):
+        result, calls = self.run_controller(RESUME='44')
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(calls.count('resume'), 2)
+        self.assertIn('ALERT beta_backup_source_resume_failed', result.stderr)
+
+    def test_terminated_run_still_resumes_the_source(self):
+        # systemd TimeoutStartSec sends TERM to the controller while the backup is running.
+        result, calls = self.run_controller(BACKUP='term')
+        self.assertEqual(result.returncode, 143)
+        self.assertEqual(calls[-1], 'resume')
+        self.assertIn('ALERT beta_backup_interrupted_resuming_source', result.stderr)
 
 if __name__ == '__main__':
     unittest.main()
