@@ -407,6 +407,38 @@ def test_no_approved_hub_means_no_hubs_copy_and_the_transport_lines_draft_is_lef
     assert lay.hubs_path.read_text(encoding='utf-8') == draft
 
 
+@pytest.mark.parametrize('content', ['{ not json', '[]', '{"version": "g2c-transport-hubs.1"}', '"approved"'])
+def test_a_file_at_the_hubs_path_that_is_not_a_generated_pack_is_never_removed(tmp_path, content):
+    lay = _hub_layout(tmp_path)
+    lay.hubs_path.parent.mkdir(parents=True)
+    lay.hubs_path.write_text(content, encoding='utf-8')
+    write_city(tmp_path, city_doc(library_entry(C1)))
+    generate.write(lay)                                                                  # the other copies are made, this file is not touched
+    assert lay.hubs_path.read_text(encoding='utf-8') == content and generate.stale(lay) == []
+
+
+def test_the_generated_pack_takes_over_the_draft_and_orders_cities_the_way_the_app_does(tmp_path):
+    lay = _hub_layout(tmp_path)
+    lay.hubs_path.parent.mkdir(parents=True)
+    lay.hubs_path.write_text('{"version": "g2c-transport-hubs.1", "status": "draft", "places": []}', encoding='utf-8')
+    shanghai = library_entry({**C7, 'id': 'pl_sh_pvg', 'city': 'shanghai', 'code': 'PVG', 'name_zh': '浦东', 'name_en': 'Pudong'},
+                             location={**library_entry(C1)['location'], 'gcj02': {'lat': 31.1443, 'lng': 121.8083}})
+    write_city(tmp_path, city_doc(shanghai, city='shanghai'))
+    write_city(tmp_path, city_doc(library_entry(C7)))
+    assert lay.hubs_path in generate.stale(lay)                                     # the draft is now behind the library
+    generate.write(lay)
+    doc = json.loads(lay.hubs_path.read_text(encoding='utf-8'))
+    assert doc['status'] == 'approved' and [p['id'] for p in doc['places']] == ['pl_bj_pek', 'pl_sh_pvg']   # Beijing before Shanghai
+
+
+def test_a_hubs_copy_the_app_would_refuse_for_its_size_is_not_written(tmp_path, monkeypatch):
+    lay = _hub_layout(tmp_path)
+    write_city(tmp_path, city_doc(library_entry(C7)))
+    monkeypatch.setattr(generate, 'HUBS_MAXIMUM_BYTES', 100)
+    with pytest.raises(placelib.Invalid):
+        generate.expected(lay)
+
+
 def test_an_approved_hubs_copy_without_an_approved_hub_behind_it_is_stale_and_removed(tmp_path):
     lay = _hub_layout(tmp_path)
     write_city(tmp_path, city_doc(library_entry(C1), library_entry(C7)))

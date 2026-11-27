@@ -96,10 +96,11 @@ def render_hubs(docs):
     return text
 
 
-def _is_draft_hubs(path):
-    """True for the transport line's hand-kept draft pack (anything else at that path is a stale generated copy)."""
+def _is_generated_hubs(path):
+    """True only for a pack this script made (it parses and says `approved`); a draft, a hand edit that does not parse
+    or anything else at that path is the transport line's and is never reported as stale or removed."""
     try:
-        return json.loads(path.read_text(encoding='utf-8')).get('status') == 'draft'
+        return json.loads(path.read_text(encoding='utf-8')).get('status') == 'approved'
     except (OSError, ValueError, AttributeError):
         return False
 
@@ -136,8 +137,8 @@ def stale(layout=LAYOUT, thumbs=None):
                  if server_copy(layout, city).is_file() and server_copy(layout, city) not in want]
     if layout.app_path.is_file() and layout.app_path not in want:
         leftovers.append(layout.app_path)
-    if layout.hubs_path and layout.hubs_path.is_file() and layout.hubs_path not in want and not _is_draft_hubs(layout.hubs_path):
-        leftovers.append(layout.hubs_path)      # an approved pack with no approved hub behind it
+    if layout.hubs_path and layout.hubs_path.is_file() and layout.hubs_path not in want and _is_generated_hubs(layout.hubs_path):
+        leftovers.append(layout.hubs_path)      # a generated pack with no approved hub behind it
     return bad + leftovers
 
 
