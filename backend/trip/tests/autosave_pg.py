@@ -334,8 +334,8 @@ def main(config, conninfo):
         conn.rollback()
         conn.execute('INSERT INTO cj_trip_withdrawal(scope,trip_id,withdrawn_version,undo_action_id,created_at) '
                      "VALUES(%s,'trip-wd',2,'wd-1','2000-01-01')", (scope,))
-        assert conn.execute('SELECT created_at>clock_timestamp()-interval %s FROM cj_trip_withdrawal WHERE scope=%s',
-                            ('1 minute', scope)).fetchone() == (True,)   # DB clock, never the caller's value
+        assert conn.execute("SELECT created_at>clock_timestamp()-interval '1 minute' FROM cj_trip_withdrawal WHERE scope=%s",
+                            (scope,)).fetchone() == (True,)   # DB clock, never the caller's value
     before = (repo.detail('trip-wd'), rows('cj_trip_receipt'), rows('cj_trip_item_origin'), rows('cj_trip_commit_time'))
     for basis, content in ((USER_EDIT, document(retext('item-1', 'mine'))), (LIO_PLAN, document(add('item-w'))),
                            (LIO_UNDO, document()), (WITHDRAW_BASIS, document())):

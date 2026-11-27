@@ -339,7 +339,7 @@ def exercise(root,conninfo):
             assert (again_receipt['trip_id'],again_receipt['committed_version'],again_receipt['undo']['kind'])==(fresh['trip_id'],1,'withdraw_created')
             print('PASS #1994 part 3: after the withdrawal the next Lio plan in the conversation creates a new Trip '
                   '(the withdrawn Trip stays at version 2)',flush=True)
-        def calendar_undo_v4(api,headers,cid):
+        def calendar_undo_v4(api,headers,cid,autosave_env):
             """#2051 P2-2: a structured.3 Trip of a LIO-message.3 calendar conversation is undone through the v4 route
             (LIO-trip-undo.4 -> the existing calendar undo). structured.1 is refused by every undo entry and its receipt
             reads unavailable (unit test); structured.2 is the legacy conversation above."""
@@ -354,7 +354,7 @@ def exercise(root,conninfo):
             target=dict(trip_id=trip_id,expected_version=version,original_hash=sha256(current).hexdigest(),content_version='structured.3',
                         restore_version=version-1,restore_hash=sha256(previous).hexdigest(),restore_content_version='structured.3')
             body=json.dumps(dict(version='LIO-trip-undo.4',action_id='calendar-v4-undo',conversation_id=cid,target=target)).encode()
-            with TestClient(undo_application({})) as undo_api:
+            with TestClient(undo_application(autosave_env)) as undo_api,patch.dict(os.environ,autosave_env):
                 count=len(wire)
                 done=undo_api.post('/v4/lio/trip-undos',headers=headers,content=body)
                 assert done.status_code==200 and done.json()['committed'] is True,done.text
@@ -502,7 +502,7 @@ def exercise(root,conninfo):
             if autosave_env:
                 autosave_undo(api,headers,legacy_cid,original_trip,edit_text,autosave_env)
                 autosave_withdraw(api,headers,legacy_text,autosave_env)
-                calendar_undo_v4(api,headers,cid)
+                calendar_undo_v4(api,headers,cid,autosave_env)
             fixture_days=3;fixture_pace=None;fixture_start=None
         # The native v3 host must keep C's original confirmation verifier;
         # having reached an authenticated model draft cannot grant a save.
