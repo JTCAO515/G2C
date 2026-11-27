@@ -427,7 +427,7 @@
    }
   },
   {
-   "name": "first save of a new trip: undo removes it, first automatic save",
+   "name": "first save of a new trip: undo withdraws it, first automatic save",
    "answer": "a7",
    "rich": {
     "version": "LIO-answer-rich.1",
@@ -455,7 +455,7 @@
      },
      "undo": {
       "state": "available",
-      "kind": "remove_created",
+      "kind": "withdraw_created",
       "action_id": "undo-114b97123ea4b9ac35e69d3f8fd0ea64056a4c28",
       "until": "2026-11-28T03:04:05.678+00:00",
       "target": {
@@ -2961,7 +2961,7 @@
    }
   },
   {
-   "name": "remove_created for a later version",
+   "name": "withdraw_created for a later version",
    "answer": "a7",
    "rich": {
     "version": "LIO-answer-rich.1",
@@ -2989,7 +2989,7 @@
      },
      "undo": {
       "state": "available",
-      "kind": "remove_created",
+      "kind": "withdraw_created",
       "action_id": "undo-114b97123ea4b9ac35e69d3f8fd0ea64056a4c28",
       "until": "2026-11-28T03:04:05.678+00:00",
       "target": {
@@ -3003,7 +3003,7 @@
    }
   },
   {
-   "name": "remove_created target says version 2",
+   "name": "withdraw_created target says version 2",
    "answer": "a7",
    "rich": {
     "version": "LIO-answer-rich.1",
@@ -3031,7 +3031,7 @@
      },
      "undo": {
       "state": "available",
-      "kind": "remove_created",
+      "kind": "withdraw_created",
       "action_id": "undo-114b97123ea4b9ac35e69d3f8fd0ea64056a4c28",
       "until": "2026-11-28T03:04:05.678+00:00",
       "target": {
@@ -3045,7 +3045,7 @@
    }
   },
   {
-   "name": "remove_created target with restore fields",
+   "name": "withdraw_created target with restore fields",
    "answer": "a7",
    "rich": {
     "version": "LIO-answer-rich.1",
@@ -3073,7 +3073,7 @@
      },
      "undo": {
       "state": "available",
-      "kind": "remove_created",
+      "kind": "withdraw_created",
       "action_id": "undo-114b97123ea4b9ac35e69d3f8fd0ea64056a4c28",
       "until": "2026-11-28T03:04:05.678+00:00",
       "target": {
@@ -3090,7 +3090,7 @@
    }
   },
   {
-   "name": "remove_created target without the hash",
+   "name": "withdraw_created target without the hash",
    "answer": "a7",
    "rich": {
     "version": "LIO-answer-rich.1",
@@ -3118,7 +3118,7 @@
      },
      "undo": {
       "state": "available",
-      "kind": "remove_created",
+      "kind": "withdraw_created",
       "action_id": "undo-114b97123ea4b9ac35e69d3f8fd0ea64056a4c28",
       "until": "2026-11-28T03:04:05.678+00:00",
       "target": {
@@ -3173,7 +3173,7 @@
    }
   },
   {
-   "name": "remove_created without its kind",
+   "name": "withdraw_created without its kind",
    "answer": "a7",
    "rich": {
     "version": "LIO-answer-rich.1",

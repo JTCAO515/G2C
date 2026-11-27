@@ -150,7 +150,7 @@ def _receipt(row):
                 raise ValueError('undo action id is derived from the save action id')
             if (target['trip_id'], target['expected_version']) != (row['trip_id'], row['committed_version']):
                 raise ValueError('undo target must be the committed version')
-            if kind == 'remove_created':
+            if kind == 'withdraw_created':
                 if row['committed_version'] != 1:
                     raise ValueError('only the save that created the trip is undone by removing it')
             else:

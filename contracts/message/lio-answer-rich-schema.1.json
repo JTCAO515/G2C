@@ -666,7 +666,7 @@
                       "const": "available"
                     },
                     "kind": {
-                      "const": "remove_created"
+                      "const": "withdraw_created"
                     },
                     "action_id": {
                       "type": "string",
