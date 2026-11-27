@@ -272,12 +272,23 @@ class InvalidDiscussionAnswer(ProviderUnknown):
 
 def discuss(worker, binding, state, locale, turns, references, *, day_count=None, planning_window=None, introduction=None, destination=None):
     messages = [{'role': 'user', 'content': turn.text} for turn in turns]
+    remembered = False
     if worker.memory_run is not None:
         current = worker.memory_run.messages(turns[-1].text)
+        from cj_message import lio_plan_memory
+        if lio_plan_memory.enabled():
+            # #2010 (M-5): only memory this account may use, without health or religion items, plus one guidance sentence.
+            from .lio_memory_consent import consent_required
+            lio_memory = getattr(worker, 'lio_memory', None)
+            allowed = not consent_required() or (lio_memory is not None and lio_memory.plan_memory_allowed(binding.scope))
+            current_messages, remembered = lio_plan_memory.shape(current[:-1], allowed)
+            current = [*current_messages, current[-1]]
         messages = [*current[:-1], *messages]
     if worker.message_context is not None:
         messages = worker.message_context.answer_messages(binding, messages)
     system = answer_prompt(locale, turns[-1].text, detailed=True) + DISCUSSION_PROMPT
+    if remembered:
+        system += lio_plan_memory.GUIDANCE
     preview_requested = (day_count is not None and 1 <= day_count <= DISCUSSION_MAX_PREVIEW_DAYS
                          and planning_window is None and introduction is None)
     if day_count is not None:
@@ -356,6 +367,16 @@ def discuss(worker, binding, state, locale, turns, references, *, day_count=None
     state = worker._event(binding, state, 'text_delta', shown)
     if preview is not None:
         state = worker._event(binding, state, 'effect_committed', _itinerary_preview_effect(shown, preview[1]))
+    if remembered:
+        # M-3 for a plan reply: the ids of the memories this plan really received (items the filter kept), ids and a count only.
+        try:
+            from cj_api.lio_memory_preferences import sensitive
+            from cj_memory.titles import used_effect
+            used = used_effect(worker.memory_run, keep=lambda command: not sensitive(command.text))
+            if used is not None:
+                state = worker._event(binding, state, 'effect_committed', used)
+        except Exception as error:
+            logging.getLogger('cj_usage.audit').info('LIO_PLAN_MEMORY_USED_UNAVAILABLE run_id=%s error=%s', binding.run_id, type(error).__name__)
     state = worker._event(binding, state, 'effect_committed', DISCUSSION)
     return worker._event(binding, state, 'completed')
 
