@@ -16,6 +16,8 @@ struct LioTimelineTurn: Sendable {
     let chips: [LioTimelineWire.Chip]
     /// Places the server named in the answer (LIO-answer-rich.1, #1991), checked against the text and the App's library.
     let places: [LioPlaceSpan]
+    /// Tool cards under the answer (LIO-answer-rich.1, #1993).
+    let cards: [LioTimelineWire.Card]
 
     var isActive: Bool {
         switch status {
@@ -36,6 +38,7 @@ struct LioTimelineTurn: Sendable {
         chips = message.chips
         places = richEnabled
             ? LioPlaceMentions.resolve(answer: message.answer, entities: message.rich?.entities ?? [], in: repository) : []
+        cards = richEnabled ? message.rich?.cards ?? [] : []
         memoryTags = message.memoryTags.filter { LioPublicDisplay.permitsText($0.text) }
         sources = Self.projectSources(message.sources.map { ($0.title, $0.link) }, messageID: message.id)
         status = Self.status(message.state, activity: message.activity, answer: message.answer)
@@ -50,6 +53,7 @@ struct LioTimelineTurn: Sendable {
         followups = []
         chips = []
         places = []
+        cards = []
         // Native calendar/rich summaries keep their actual type and binding in exploration.trip.
         itinerary = nil
         memoryTags = message.memoryTags.filter { LioPublicDisplay.permitsText($0.text) }

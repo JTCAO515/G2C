@@ -303,9 +303,65 @@ public enum LioTimelineWire {
         /// Places named in the answer, in order of position. Only the shape is checked here (the range's size, the id's
         /// form); whether a range fits the answer text is checked where the text is (`LioPlaceMentions`).
         public let entities: [Entity]
+        /// Tool cards (#1993): at most one of each type, in the contract's order.
+        public let cards: [Card]
 
-        public init(entities: [Entity] = []) { self.entities = entities }
+        public init(entities: [Entity] = [], cards: [Card] = []) { self.entities = entities; self.cards = cards }
     }
+
+    /// A city as a card names it (`{id, zh, en}`), for display only.
+    public struct CardCity: Sendable, Equatable {
+        public let id: String
+        public let zh: String
+        public let en: String
+        public init(id: String, zh: String, en: String) { self.id = id; self.zh = zh; self.en = en }
+    }
+
+    /// One tool card of LIO-answer-rich.1: its type, what the card shows (`detail`) and what a tap opens (`parameters`
+    /// for the type's own tool). Parameters and detail come from the server only. The label is not kept: the App
+    /// words each card itself, in its own language, from the type.
+    public struct Card: Sendable, Equatable {
+        public enum Kind: String, Sendable, CaseIterable {
+            case taxi, metro, transport, currency
+
+            /// The tool a card of this type opens (the contract's table).
+            public var tool: String {
+                switch self {
+                case .taxi: "taxi"
+                case .metro: "metro-guide"
+                case .transport: "transport"
+                case .currency: "currency"
+                }
+            }
+
+            /// The only labels the server may send for the type, and the words the App shows for it.
+            public var labels: (en: String, zh: String) {
+                switch self {
+                case .taxi: ("Taxi there", "打车去这里")
+                case .metro: ("Metro map", "看地铁线路")
+                case .transport: ("Trains & flights", "查火车和航班")
+                case .currency: ("Convert currency", "汇率换算")
+                }
+            }
+        }
+
+        public enum Detail: Sendable, Equatable {
+            case none
+            case metro(city: CardCity)
+            case transport(from: CardCity, to: CardCity)
+            /// `cnyPerUnit` and `asOf` come together or not at all.
+            case currency(quote: String, cnyPerUnit: String?, asOf: String?)
+        }
+
+        public let kind: Kind
+        public let parameters: [String: String]
+        public let detail: Detail
+        public init(kind: Kind, parameters: [String: String] = [:], detail: Detail = .none) {
+            self.kind = kind; self.parameters = parameters; self.detail = detail
+        }
+    }
+
+    static let maximumCards = 3
 
     /// One place in the answer text: the half-open range `[start, end)` counted in Unicode scalar values over the
     /// row's complete `answer`, and the place's id in the places library.
@@ -389,22 +445,125 @@ public enum LioTimelineWire {
         // A layout the App does not know is read as no layout: the row is still shown as before.
         let shown = (state == .completed && layout == .split) ? validFollowups(wire.followups) : ([], [])
         // `rich` only rides on a completed row that has an answer; anywhere else it is ignored.
-        let rich = (state == .completed && !wire.answer.isEmpty) ? validRich(wire.rich) : nil
+        var rich = (state == .completed && !wire.answer.isEmpty) ? validRich(wire.rich) : nil
+        // A plan reply carries no cards (contract: `cards` needs `trip = null`).
+        if trip != nil, let kept = rich { rich = kept.entities.isEmpty ? nil : Rich(entities: kept.entities) }
         return Message(id: wire.messageID, question: wire.text, answer: wire.answer, state: state,
                        activity: wire.activity, sources: sources, trip: trip, memoryTags: tags,
                        layout: layout, followups: shown.0, chips: shown.1, rich: rich)
     }
 
-    /// An entity that fails its rule is dropped on its own; a list over its limit is dropped whole; another version
-    /// of `rich` is ignored; nothing left means no `rich`.
+    /// Each part is read on its own. An entity or card that fails its rule is dropped alone; a list over its limit is
+    /// dropped whole; another version of `rich` is ignored; nothing left means no `rich`.
     private static func validRich(_ wire: Snapshot.Row.RichWire?) -> Rich? {
-        guard let wire, wire.version == answerRichVersion, let items = wire.entities, items.count <= maximumEntities else { return nil }
-        let entities = items.compactMap { item -> Entity? in
-            guard let item = item.value, item.type == "place", item.start >= 0, item.end <= maximumEntityEnd,
-                  (2...32).contains(item.end - item.start), validPlaceID(item.placeID) else { return nil }
-            return Entity(start: item.start, end: item.end, placeID: item.placeID)
+        guard let wire, wire.version == answerRichVersion else { return nil }
+        var entities: [Entity] = []
+        if let items = wire.entities, items.count <= maximumEntities {
+            entities = items.compactMap { item -> Entity? in
+                guard let item = item.value, item.type == "place", item.start >= 0, item.end <= maximumEntityEnd,
+                      (2...32).contains(item.end - item.start), validPlaceID(item.placeID) else { return nil }
+                return Entity(start: item.start, end: item.end, placeID: item.placeID)
+            }
         }
-        return entities.isEmpty ? nil : Rich(entities: entities)
+        var cards: [Card] = []
+        if let items = wire.cards, items.count <= maximumCards {
+            var seen = Set<Card.Kind>()
+            cards = items.compactMap { $0.value.flatMap(validCard) }.filter { seen.insert($0.kind).inserted }
+            cards.sort { (Card.Kind.allCases.firstIndex(of: $0.kind) ?? 0) < (Card.Kind.allCases.firstIndex(of: $1.kind) ?? 0) }
+        }
+        return entities.isEmpty && cards.isEmpty ? nil : Rich(entities: entities, cards: cards)
+    }
+
+    /// The contract's card rules, as far as the App can see them: a known type; the type's own tool and a label from
+    /// the table; parameters that pass the same checks as a button's and are the ones the type has; the display data
+    /// the type needs. A card that fails any rule is dropped on its own.
+    private static func validCard(_ wire: Snapshot.Row.CardWire) -> Card? {
+        guard let kind = Card.Kind(rawValue: wire.type), wire.open.tool == kind.tool,
+              wire.label == kind.labels.en || wire.label == kind.labels.zh else { return nil }
+        let parameters = wire.open.parameters
+        guard parameters.count <= 8,
+              parameters.allSatisfy({ validToken($0.key, limit: 64) && validText($0.value, limit: 200) }),
+              (try? JSONSerialization.data(withJSONObject: parameters).count).map({ $0 <= 600 }) == true else { return nil }
+        let data = wire.data
+        switch kind {
+        case .taxi:
+            let allowed: Set<String> = ["destination", "lat", "lng", "address", "destinationEN"]
+            guard Set(parameters.keys).isSubset(of: allowed) else { return nil }
+            let together = ["destination", "lat", "lng"].map { parameters[$0] != nil }
+            guard together.allSatisfy({ $0 }) || !together.contains(true) else { return nil }
+            // A coordinate that is not a plain decimal is a bad parameter; one outside China is no destination: only the
+            // taxi page opens.
+            guard let lat = parameters["lat"], let lng = parameters["lng"] else { return Card(kind: .taxi) }
+            guard let latitude = coordinate(lat), let longitude = coordinate(lng) else { return nil }
+            guard (3.0...54.0).contains(latitude), (73.0...136.0).contains(longitude) else { return Card(kind: .taxi) }
+            return Card(kind: .taxi, parameters: parameters)
+        case .metro:
+            guard parameters.isEmpty, let city = data?.city.flatMap(validCity) else { return nil }
+            return Card(kind: .metro, detail: .metro(city: city))
+        case .transport:
+            guard Set(parameters.keys) == ["from", "to"], let from = parameters["from"], let to = parameters["to"],
+                  from != to, validToken(from, limit: 64), validToken(to, limit: 64),
+                  let fromCity = data?.from.flatMap(validCity), let toCity = data?.to.flatMap(validCity),
+                  fromCity.id == from, toCity.id == to else { return nil }
+            return Card(kind: .transport, parameters: parameters, detail: .transport(from: fromCity, to: toCity))
+        case .currency:
+            guard parameters.isEmpty else { return nil }
+            guard let data else { return Card(kind: .currency) }
+            guard let detail = currencyDetail(data) else { return nil }
+            return Card(kind: .currency, detail: detail)
+        }
+    }
+
+    private static let currencyQuotes: Set<String> = ["USD", "EUR", "GBP", "JPY", "KRW", "HKD", "AUD", "CAD", "SGD", "THB"]
+
+    /// `quote` one of the table; the rate and its date together or neither. Anything else is a card that fails.
+    private static func currencyDetail(_ data: Snapshot.Row.CardWire.DataWire) -> Card.Detail? {
+        guard let quote = data.quote, currencyQuotes.contains(quote) else { return nil }
+        switch (data.cnyPerUnit, data.asOf) {
+        case (nil, nil): return .currency(quote: quote, cnyPerUnit: nil, asOf: nil)
+        case (let rate?, let day?) where validRate(rate) && validDay(day):
+            return .currency(quote: quote, cnyPerUnit: rate, asOf: day)
+        default: return nil
+        }
+    }
+
+    /// `^(0|[1-9][0-9]{0,3})(\.[0-9]{1,6})?$` and above zero.
+    static func validRate(_ value: String) -> Bool {
+        let parts = value.split(separator: ".", omittingEmptySubsequences: false)
+        guard (1...2).contains(parts.count), let whole = parts.first, (1...4).contains(whole.count),
+              whole.utf8.allSatisfy({ (48...57).contains($0) }), whole == "0" || whole.first != "0" else { return false }
+        if parts.count == 2 {
+            guard (1...6).contains(parts[1].count), parts[1].utf8.allSatisfy({ (48...57).contains($0) }) else { return false }
+        }
+        return value.utf8.contains { (49...57).contains($0) }
+    }
+
+    /// `YYYY-MM-DD`, a real calendar day.
+    static func validDay(_ value: String) -> Bool {
+        let parts = value.split(separator: "-", omittingEmptySubsequences: false)
+        guard parts.count == 3, parts[0].count == 4, parts[1].count == 2, parts[2].count == 2,
+              value.utf8.allSatisfy({ $0 == 45 || (48...57).contains($0) }),
+              let year = Int(parts[0]), let month = Int(parts[1]), let day = Int(parts[2]), (1...12).contains(month), day >= 1
+        else { return false }
+        let days = [31, year % 4 == 0 && (year % 100 != 0 || year % 400 == 0) ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+        return day <= days[month - 1]
+    }
+
+    /// A plain decimal with at most 6 decimals (GCJ-02 coordinates as the contract writes them).
+    private static func coordinate(_ value: String) -> Double? {
+        let parts = value.split(separator: ".", omittingEmptySubsequences: false)
+        guard (1...2).contains(parts.count) else { return nil }
+        let whole = parts[0].hasPrefix("-") ? parts[0].dropFirst() : parts[0]
+        guard !whole.isEmpty, whole.utf8.allSatisfy({ (48...57).contains($0) }) else { return nil }
+        if parts.count == 2 {
+            guard (1...6).contains(parts[1].count), parts[1].utf8.allSatisfy({ (48...57).contains($0) }) else { return nil }
+        }
+        return Double(value).flatMap { $0.isFinite ? $0 : nil }
+    }
+
+    private static func validCity(_ wire: Snapshot.Row.CardWire.CityWire) -> CardCity? {
+        guard validToken(wire.id, limit: 64), validText(wire.zh, limit: 40), validText(wire.en, limit: 40) else { return nil }
+        return CardCity(id: wire.id, zh: wire.zh, en: wire.en)
     }
 
     /// `^pl_[a-z]{2}_[a-z0-9]+(_[a-z0-9]+)*$`, at most 64 characters.
@@ -520,6 +679,11 @@ public enum LioTimelineWire {
             struct RichWire: Decodable {
                 let version: String
                 let entities: [LossyEntity]?
+                let cards: [LossyCard]?
+                struct LossyCard: Decodable {
+                    let value: CardWire?
+                    init(from decoder: Decoder) throws { value = try? CardWire(from: decoder) }
+                }
                 struct EntityWire: Decodable {
                     let type: String
                     let start: Int
@@ -535,8 +699,47 @@ public enum LioTimelineWire {
                     let c = try decoder.container(keyedBy: CodingKeys.self)
                     version = try c.decode(String.self, forKey: .version)
                     entities = (try? c.decodeIfPresent([LossyEntity].self, forKey: .entities)) ?? nil
+                    cards = (try? c.decodeIfPresent([LossyCard].self, forKey: .cards)) ?? nil
                 }
-                enum CodingKeys: String, CodingKey { case version, entities }
+                enum CodingKeys: String, CodingKey { case version, entities, cards }
+            }
+            struct CardWire: Decodable {
+                let type: String
+                let label: String
+                struct Open: Decodable {
+                    let tool: String
+                    let parameters: [String: String]
+                }
+                let open: Open
+                struct CityWire: Decodable { let id: String; let zh: String; let en: String }
+                /// Display data. Each field is read on its own: one that is missing or of the wrong type is nil.
+                struct DataWire: Decodable {
+                    let city: CityWire?
+                    let from: CityWire?
+                    let to: CityWire?
+                    let quote: String?
+                    let cnyPerUnit: String?
+                    let asOf: String?
+                    enum CodingKeys: String, CodingKey { case city, from, to, quote, cnyPerUnit = "cny_per_unit", asOf = "as_of" }
+                    init(from decoder: Decoder) throws {
+                        let c = try decoder.container(keyedBy: CodingKeys.self)
+                        city = (try? c.decodeIfPresent(CityWire.self, forKey: .city)) ?? nil
+                        from = (try? c.decodeIfPresent(CityWire.self, forKey: .from)) ?? nil
+                        to = (try? c.decodeIfPresent(CityWire.self, forKey: .to)) ?? nil
+                        quote = (try? c.decodeIfPresent(String.self, forKey: .quote)) ?? nil
+                        cnyPerUnit = (try? c.decodeIfPresent(String.self, forKey: .cnyPerUnit)) ?? nil
+                        asOf = (try? c.decodeIfPresent(String.self, forKey: .asOf)) ?? nil
+                    }
+                }
+                let data: DataWire?
+                enum CodingKeys: String, CodingKey { case type, label, open, data }
+                init(from decoder: Decoder) throws {
+                    let c = try decoder.container(keyedBy: CodingKeys.self)
+                    type = try c.decode(String.self, forKey: .type)
+                    label = try c.decode(String.self, forKey: .label)
+                    open = try c.decode(Open.self, forKey: .open)
+                    data = (try? c.decodeIfPresent(DataWire.self, forKey: .data)) ?? nil
+                }
             }
             struct Followups: Decodable {
                 let version: String
