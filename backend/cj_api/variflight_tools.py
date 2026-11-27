@@ -137,13 +137,15 @@ def _take(row, aliases):
 
 
 def _flight(row):
-    identifier = _take(row, ('flightNo', 'flightNumber', 'flightnum', 'fnum'))
+    # The live getFlightStatus row (HK diagnostic 2026-11-28) spells its fields in PascalCase (FlightNo,
+    # FlightDepcode, FlightDeptimePlanDate, BoardGate, ...); the camelCase aliases stay for getFlightList.
+    identifier = _take(row, ('flightNo', 'flightNumber', 'flightnum', 'fnum', 'FlightNo'))
     if not re.fullmatch(NUMBER, _public_text(identifier)):
         raise ValueError('invalid flight identifier')
     result = {'flight_number': identifier}
     for field, aliases in (
-        ('departure', ('departure', 'dep', 'flightDepcode', 'depAirportCode')),
-        ('arrival', ('arrival', 'arr', 'flightArrcode', 'arrAirportCode')),
+        ('departure', ('departure', 'dep', 'flightDepcode', 'depAirportCode', 'FlightDepcode')),
+        ('arrival', ('arrival', 'arr', 'flightArrcode', 'arrAirportCode', 'FlightArrcode')),
     ):
         if (value := _take(row, aliases)) is not None:
             if not re.fullmatch(AIRPORT, _public_text(value)):
@@ -152,21 +154,21 @@ def _flight(row):
     if type(row.get('isShare')) is int and row['isShare'] in (0, 1):
         result['codeshare'] = row['isShare'] == 1
     for field, aliases in (
-        ('status', ('status', 'flightStatus')),
-        ('planned_departure', ('plannedDeparture', 'scheduledDeparture', 'flightDeptimePlan', 'departurePlanTime')),
-        ('planned_arrival', ('plannedArrival', 'scheduledArrival', 'flightArrtimePlan', 'arrivalPlanTime')),
-        ('actual_departure', ('actualDeparture', 'flightDeptimeAct', 'departureActualTime')),
-        ('actual_arrival', ('actualArrival', 'flightArrtimeAct', 'arrivalActualTime')),
-        ('departure_terminal', ('departureTerminal', 'flightDepTerminal')),
-        ('arrival_terminal', ('arrivalTerminal', 'flightArrTerminal')),
-        ('gate', ('gate', 'boardingGate')),
-        ('check_in_counter', ('checkInCounter', 'checkinCounter', 'checkinTable')),
-        ('baggage_carousel', ('baggageCarousel', 'baggageClaim', 'baggageTurntable')),
-        ('airline_name_zh', ('airlineNameZh', 'airlineCnName')),
+        ('status', ('status', 'flightStatus', 'FlightState')),
+        ('planned_departure', ('plannedDeparture', 'scheduledDeparture', 'flightDeptimePlan', 'departurePlanTime', 'FlightDeptimePlanDate')),
+        ('planned_arrival', ('plannedArrival', 'scheduledArrival', 'flightArrtimePlan', 'arrivalPlanTime', 'FlightArrtimePlanDate')),
+        ('actual_departure', ('actualDeparture', 'flightDeptimeAct', 'departureActualTime', 'FlightDeptimeDate')),
+        ('actual_arrival', ('actualArrival', 'flightArrtimeAct', 'arrivalActualTime', 'FlightArrtimeDate')),
+        ('departure_terminal', ('departureTerminal', 'flightDepTerminal', 'FlightDepTerminal')),
+        ('arrival_terminal', ('arrivalTerminal', 'flightArrTerminal', 'FlightArrTerminal')),
+        ('gate', ('gate', 'boardingGate', 'BoardGate')),
+        ('check_in_counter', ('checkInCounter', 'checkinCounter', 'checkinTable', 'CheckinTable')),
+        ('baggage_carousel', ('baggageCarousel', 'baggageClaim', 'baggageTurntable', 'BaggageID')),
+        ('airline_name_zh', ('airlineNameZh', 'airlineCnName', 'FlightCompany')),
         ('airline_name_en', ('airlineNameEn', 'airlineName')),
-        ('departure_airport_name_zh', ('departureAirportNameZh', 'depAirport')),
+        ('departure_airport_name_zh', ('departureAirportNameZh', 'depAirport', 'FlightDepAirport')),
         ('departure_airport_name_en', ('departureAirportNameEn',)),
-        ('arrival_airport_name_zh', ('arrivalAirportNameZh', 'arrAirport')),
+        ('arrival_airport_name_zh', ('arrivalAirportNameZh', 'arrAirport', 'FlightArrAirport')),
         ('arrival_airport_name_en', ('arrivalAirportNameEn',)),
     ):
         if (value := _take(row, aliases)) is not None:
