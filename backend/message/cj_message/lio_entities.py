@@ -22,13 +22,15 @@ LIBRARY_VERSION = 'g2c-places.1'
 MAX_ENTITIES = 20
 SPAN = (2, 32)
 MAX_ANSWER_SCALARS = 200000
+MAX_LINK_SCALARS = 20000   # an answer is a few thousand characters; the linker does not scan more than this
 MIN_NAME = {'zh': 2, 'en': 4}
 _PLACE_ID = re.compile(r'pl_[a-z]{2}_[a-z0-9]+(?:_[a-z0-9]+)*')
 _MARKDOWN = set('*_`[]()<>#|\\~!')
 # A Chinese match followed by one of these is a different place (王府井站 is a station).
 ZH_STOP_SUFFIXES = ('号线', '机场', '大道', '胡同', '路', '街', '站', '区', '市', '县', '镇', '村', '口')
 EN_STOP_SUFFIXES = (' station', ' road', ' street', ' avenue', ' line', ' district', ' airport')
-_SKIP = re.compile(r'```.*?```|`[^`\n]*`|\[[^\]\n]*\]\([^)\n]*\)|https?://\S+', re.S)
+# The bounded runs keep a line of many unclosed `[` linear (each one scans at most 300 / 500 characters, not to the line end).
+_SKIP = re.compile(r'```.*?```|`[^`\n]*`|\[[^\]\n]{0,300}\]\([^)\n]{0,500}\)|https?://\S+', re.S)
 _HAS_HAN = re.compile(r'[㐀-鿿]')
 _ASCII_WORD = re.compile(r'[A-Za-z0-9]')
 
@@ -125,7 +127,7 @@ def link(answer, docs):
     only the first time it appears, at most MAX_ENTITIES. Fewer links rather than a wrong one: a doubtful
     match is skipped.
     """
-    if type(answer) is not str or not answer or len(answer) > MAX_ANSWER_SCALARS:
+    if type(answer) is not str or not answer or len(answer) > MAX_LINK_SCALARS:
         return []
     folded = _fold(answer)
     skipped = [m.span() for m in _SKIP.finditer(answer)]

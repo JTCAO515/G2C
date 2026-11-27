@@ -370,10 +370,11 @@ def _memory_run(source_ids, items):
                            snapshot=SimpleNamespace(items=tuple(SimpleNamespace(command=SimpleNamespace(source_id=s, item_id=i)) for s, i in items)))
 
 
-def _used_run(memory_run, switch=True):
+def _used_run(memory_run, switch=True, lio_memory=None):
     runs = Service(MemoryRepository(), lambda _: True)
     worker = RunWorker(scope='scope', messages=Messages('推荐酒店', TICKETS), runs=runs, provider=None,
-                       tools=MemoryTools(memory_run, '好的。\n\n推荐这几家。'), drafts=Drafts(), lio_original=lambda binding: LioOriginal('zh', None))
+                       tools=MemoryTools(memory_run, '好的。\n\n推荐这几家。'), drafts=Drafts(), lio_memory=lio_memory,
+                       lio_original=lambda binding: LioOriginal('zh', None))
     with patch.dict(os.environ, {'CJ_LIO_MEMORY_USED': 'on'} if switch else {}):
         outcome, = worker.process()
     assert outcome.status == 'completed'
@@ -385,6 +386,13 @@ def test_the_used_ids_are_written_after_the_followups_with_the_switch_on():
     assert state.effects[-1] == 'lio_memory_used:{"item_ids":["mem-1","mem-2"],"total":2}'
     assert state.effects[-2].startswith(FOLLOWUPS_EFFECT)
     # contract order: followups, then used, then the consent prompt marker
+
+
+def test_the_effect_order_is_followups_then_used_then_the_consent_prompt():
+    state = _used_run(_memory_run(['s1'], [('s1', 'mem-1')]), lio_memory=PromptMemory('lio_memory_prompt:consent'))
+    kinds = [e.split(':', 1)[0] for e in state.effects]
+    assert kinds[-3:] == ['lio_followups', 'lio_memory_used', 'lio_memory_prompt'], kinds
+    assert state.effects[-1] == 'lio_memory_prompt:consent'
 
 
 def test_nothing_is_written_with_the_switch_off_no_run_or_nothing_used():

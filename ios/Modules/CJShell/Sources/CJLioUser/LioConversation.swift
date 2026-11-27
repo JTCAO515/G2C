@@ -103,6 +103,8 @@ struct LioTurn: Identifiable {
     var memoryPrompt = false
     /// #1993: tool cards under the answer (empty unless the build asked for them).
     var cards: [LioTimelineWire.Card] = []
+    /// #2001: the line "based on what you asked me to remember" under the answer.
+    var memoryNote: LioMemoryUsedNote?
     var fromTimeline = false
     var readFailure: LioRequestProblem?
     var id: Data { question.id }
@@ -364,6 +366,7 @@ final class LioConversation {
         return LioTurn(question: question, status: row.status, answer: row.answer,
                        sources: row.sources, itinerary: row.itinerary, memoryTags: row.memoryTags,
                        exploration: row.exploration, layout: row.layout, followups: row.followups, chips: row.chips,
-                       places: row.places, memoryPrompt: row.memoryPrompt, cards: row.cards, fromTimeline: true)
+                       places: row.places, memoryPrompt: row.memoryPrompt, cards: row.cards,
+                       memoryNote: row.memoryNote, fromTimeline: true)
     }
 }
