@@ -5,13 +5,24 @@ import Foundation
 struct LioPlacePresentation {
     let place: LioPlace
     let language: LioLanguage
+    /// True when the place was read from the unreviewed development pack (Debug builds only, see
+    /// `LioPlaceRepository.isDevelopmentData`). The page then says so.
+    let developmentData: Bool
 
-    init(_ place: LioPlace, language: LioLanguage) {
+    init(_ place: LioPlace, language: LioLanguage, developmentData: Bool = false) {
         self.place = place
         self.language = language
+        self.developmentData = developmentData
     }
 
     private func copy(_ key: LioPlaceCopy) -> String { key.text(language) }
+
+    // MARK: Development data
+
+    /// "Dev data" / "开发数据" for a place from the development pack; nil for any other place.
+    var developmentLabel: String? { developmentData ? copy(.devData) : nil }
+    /// What the label means, read out with it by VoiceOver.
+    var developmentNote: String? { developmentData ? copy(.devDataNote) : nil }
 
     // MARK: Names and kind
 

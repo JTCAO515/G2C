@@ -1,0 +1,930 @@
+{
+ "version": "LIO-rich-eval-cases.1",
+ "purpose": "Q-1 (#2011): annotated answers for the entity linker. `expected` lists every link a correct linker may make (surface, place_id); a produced link not listed counts against precision, a listed one not produced against recall. The ids are those of the development pack (knowledge/places/dev), which nobody has reviewed: when the reviewed library lands, regenerate the ids, not the method.",
+ "entities": [
+  {
+   "id": "bj-1-zh",
+   "city": "beijing",
+   "adcode": "110000",
+   "locale": "zh",
+   "answer": "第一天上午去**故宫博物院**，下午逛景山公园，晚上去南锣鼓巷吃点小吃。\n\n故宫周一闭馆，记得提前在官网预约。",
+   "expected": [
+    [
+     "故宫博物院",
+     "pl_bj_gugong"
+    ],
+    [
+     "景山公园",
+     "pl_bj_jingshan"
+    ],
+    [
+     "南锣鼓巷",
+     "pl_bj_nanluoguxiang"
+    ]
+   ],
+   "acceptable": [],
+   "note": ""
+  },
+  {
+   "id": "bj-2-zh",
+   "city": "beijing",
+   "adcode": "110000",
+   "locale": "zh",
+   "answer": "第二天可以去八达岭长城，坐S2线火车过去大约一个半小时；回来后去什刹海散步。",
+   "expected": [
+    [
+     "八达岭长城",
+     "pl_bj_badaling"
+    ],
+    [
+     "什刹海",
+     "pl_bj_shichahai"
+    ]
+   ],
+   "acceptable": [],
+   "note": ""
+  },
+  {
+   "id": "bj-3-zh",
+   "city": "beijing",
+   "adcode": "110000",
+   "locale": "zh",
+   "answer": "天坛和颐和园都值得去，天坛公园早上人少，颐和园建议留半天。",
+   "expected": [
+    [
+     "天坛",
+     "pl_bj_tiantan"
+    ],
+    [
+     "颐和园",
+     "pl_bj_yiheyuan"
+    ]
+   ],
+   "acceptable": [
+    [
+     "天坛公园",
+     "pl_bj_tiantan"
+    ]
+   ],
+   "note": "a nickname (天坛) next to a full name: the nickname is the natural way to say it"
+  },
+  {
+   "id": "bj-4-zh",
+   "city": "beijing",
+   "adcode": "110000",
+   "locale": "zh",
+   "answer": "想拍紫禁城的全景，可以去景山公园的万春亭。",
+   "expected": [
+    [
+     "紫禁城",
+     "pl_bj_gugong"
+    ],
+    [
+     "景山公园",
+     "pl_bj_jingshan"
+    ]
+   ],
+   "acceptable": [],
+   "note": ""
+  },
+  {
+   "id": "bj-5-en",
+   "city": "beijing",
+   "adcode": "110000",
+   "locale": "en",
+   "answer": "Start at the Forbidden City (**故宫**), then walk to Jingshan Park for the view. Book the Forbidden City ahead.",
+   "expected": [
+    [
+     "Forbidden City",
+     "pl_bj_gugong"
+    ],
+    [
+     "Jingshan Park",
+     "pl_bj_jingshan"
+    ]
+   ],
+   "acceptable": [],
+   "note": ""
+  },
+  {
+   "id": "bj-6-en",
+   "city": "beijing",
+   "adcode": "110000",
+   "locale": "en",
+   "answer": "The Summer Palace is lovely; the Badaling Great Wall is a long day trip from Beijing.",
+   "expected": [
+    [
+     "Badaling Great Wall",
+     "pl_bj_badaling"
+    ],
+    [
+     "Summer Palace",
+     "pl_bj_yiheyuan"
+    ]
+   ],
+   "acceptable": [],
+   "note": ""
+  },
+  {
+   "id": "bj-7-zh",
+   "city": "beijing",
+   "adcode": "110000",
+   "locale": "zh",
+   "answer": "从北京西站坐高铁去上海大约四个半小时，到站后可以打车去酒店。",
+   "expected": [],
+   "acceptable": [
+    [
+     "北京西站",
+     "pl_bj_beijingxi"
+    ]
+   ],
+   "note": "a rail hub is a library place, so linking it is allowed; a name of another city is not in this city library"
+  },
+  {
+   "id": "bj-8-zh",
+   "city": "beijing",
+   "adcode": "110000",
+   "locale": "zh",
+   "answer": "地铁1号线到天坛东门站，出站就是天坛公园的东门。",
+   "expected": [
+    [
+     "天坛公园",
+     "pl_bj_tiantan"
+    ]
+   ],
+   "acceptable": [],
+   "note": "the station name must not link; the park name after it does"
+  },
+  {
+   "id": "bj-9-zh",
+   "city": "beijing",
+   "adcode": "110000",
+   "locale": "zh",
+   "answer": "更多介绍见[故宫博物院官网](https://www.dpm.org.cn)，也可以用 `故宫` 搜索。",
+   "expected": [],
+   "acceptable": [],
+   "note": "inside a Markdown link and in code: nothing"
+  },
+  {
+   "id": "sh-1-zh",
+   "city": "shanghai",
+   "adcode": "310000",
+   "locale": "zh",
+   "answer": "傍晚先去外滩看夜景，再去东方明珠广播电视塔上面俯瞰浦江两岸。\n\n第二天上午逛上海豫园和城隍庙。",
+   "expected": [
+    [
+     "外滩",
+     "pl_sh_waitan"
+    ],
+    [
+     "东方明珠广播电视塔",
+     "pl_sh_dongfang_mingzhu"
+    ],
+    [
+     "上海豫园",
+     "pl_sh_yuyuan"
+    ]
+   ],
+   "acceptable": [],
+   "note": ""
+  },
+  {
+   "id": "sh-2-zh",
+   "city": "shanghai",
+   "adcode": "310000",
+   "locale": "zh",
+   "answer": "东方明珠和豫园离得不远，坐地铁2号线转10号线就到。",
+   "expected": [
+    [
+     "东方明珠",
+     "pl_sh_dongfang_mingzhu"
+    ],
+    [
+     "豫园",
+     "pl_sh_yuyuan"
+    ]
+   ],
+   "acceptable": [],
+   "note": "nicknames"
+  },
+  {
+   "id": "sh-3-en",
+   "city": "shanghai",
+   "adcode": "310000",
+   "locale": "en",
+   "answer": "Walk along the Bund at night, then see the Oriental Pearl Tower lit up across the river.",
+   "expected": [
+    [
+     "Oriental Pearl Tower",
+     "pl_sh_dongfang_mingzhu"
+    ],
+    [
+     "the Bund",
+     "pl_sh_waitan"
+    ]
+   ],
+   "acceptable": [],
+   "note": ""
+  },
+  {
+   "id": "sh-4-zh",
+   "city": "shanghai",
+   "adcode": "310000",
+   "locale": "zh",
+   "answer": "迪士尼很大，建议早点到；上海迪士尼乐园的门票最好提前在小程序买。",
+   "expected": [
+    [
+     "上海迪士尼乐园",
+     "pl_sh_dishinileyuan"
+    ]
+   ],
+   "acceptable": [],
+   "note": ""
+  },
+  {
+   "id": "sh-5-zh",
+   "city": "shanghai",
+   "adcode": "310000",
+   "locale": "zh",
+   "answer": "想看故宫的话要去北京，上海这边可以看上海博物馆。",
+   "expected": [],
+   "acceptable": [],
+   "note": "a Beijing sight in a Shanghai answer: nothing linked"
+  },
+  {
+   "id": "sh-6-zh",
+   "city": "shanghai",
+   "adcode": "310000",
+   "locale": "zh",
+   "answer": "外滩路上很堵，建议地铁到南京东路站再步行。",
+   "expected": [],
+   "acceptable": [],
+   "note": "a road suffix after the name"
+  },
+  {
+   "id": "gz-1-zh",
+   "city": "guangzhou",
+   "adcode": "440100",
+   "locale": "zh",
+   "answer": "先上广州塔看夜景，第二天去陈家祠和沙面岛，晚上在北京路步行街吃点心。",
+   "expected": [
+    [
+     "广州塔",
+     "pl_gz_guangzhou_ta"
+    ],
+    [
+     "陈家祠",
+     "pl_gz_chenjiaci"
+    ],
+    [
+     "沙面岛",
+     "pl_gz_shamian"
+    ],
+    [
+     "北京路步行街",
+     "pl_gz_beijinglu"
+    ]
+   ],
+   "acceptable": [],
+   "note": ""
+  },
+  {
+   "id": "gz-2-zh",
+   "city": "guangzhou",
+   "adcode": "440100",
+   "locale": "zh",
+   "answer": "沙面的老建筑很适合拍照，下午去陈家祠。",
+   "expected": [
+    [
+     "沙面",
+     "pl_gz_shamian"
+    ],
+    [
+     "陈家祠",
+     "pl_gz_chenjiaci"
+    ]
+   ],
+   "acceptable": [],
+   "note": "nickname 沙面"
+  },
+  {
+   "id": "gz-3-en",
+   "city": "guangzhou",
+   "adcode": "440100",
+   "locale": "en",
+   "answer": "Climb Baiyun Mountain in the morning and visit the Chen Clan Ancestral Hall after lunch.",
+   "expected": [
+    [
+     "Chen Clan Ancestral Hall",
+     "pl_gz_chenjiaci"
+    ]
+   ],
+   "acceptable": [],
+   "note": "Baiyun Mountain is \"Baiyun Mountain Scenic Area\" in the pack: no link expected"
+  },
+  {
+   "id": "gz-4-zh",
+   "city": "guangzhou",
+   "adcode": "440100",
+   "locale": "zh",
+   "answer": "从广州南站坐地铁2号线到广州塔，大概半小时。",
+   "expected": [
+    [
+     "广州塔",
+     "pl_gz_guangzhou_ta"
+    ]
+   ],
+   "acceptable": [
+    [
+     "广州南站",
+     "pl_gz_guangzhounan"
+    ]
+   ],
+   "note": ""
+  },
+  {
+   "id": "sz-1-zh",
+   "city": "shenzhen",
+   "adcode": "440300",
+   "locale": "zh",
+   "answer": "上午去深圳世界之窗，下午去大梅沙海滨公园吹海风，晚上逛东门老街。",
+   "expected": [
+    [
+     "深圳世界之窗",
+     "pl_sz_shijiezhi_chuang"
+    ],
+    [
+     "大梅沙海滨公园",
+     "pl_sz_dameisha"
+    ],
+    [
+     "东门老街",
+     "pl_sz_dongmen"
+    ]
+   ],
+   "acceptable": [],
+   "note": ""
+  },
+  {
+   "id": "sz-2-zh",
+   "city": "shenzhen",
+   "adcode": "440300",
+   "locale": "zh",
+   "answer": "世界之窗和大梅沙都在地铁沿线，世界之窗站下车就是。",
+   "expected": [
+    [
+     "世界之窗",
+     "pl_sz_shijiezhi_chuang"
+    ],
+    [
+     "大梅沙",
+     "pl_sz_dameisha"
+    ]
+   ],
+   "acceptable": [],
+   "note": "nicknames; the station is not a link"
+  },
+  {
+   "id": "sz-3-en",
+   "city": "shenzhen",
+   "adcode": "440300",
+   "locale": "en",
+   "answer": "Dafen Oil Painting Village is a short taxi ride from Luohu.",
+   "expected": [
+    [
+     "Dafen Oil Painting Village",
+     "pl_sz_dafen"
+    ]
+   ],
+   "acceptable": [],
+   "note": ""
+  },
+  {
+   "id": "cd-1-zh",
+   "city": "chengdu",
+   "adcode": "510100",
+   "locale": "zh",
+   "answer": "上午去宽窄巷子，中午吃火锅，下午去成都武侯祠博物馆，晚上逛春熙路。",
+   "expected": [
+    [
+     "宽窄巷子",
+     "pl_cd_kuanzhai_xiangzi"
+    ],
+    [
+     "成都武侯祠博物馆",
+     "pl_cd_wuhouci"
+    ],
+    [
+     "春熙路",
+     "pl_cd_chunxilu"
+    ]
+   ],
+   "acceptable": [],
+   "note": ""
+  },
+  {
+   "id": "cd-2-zh",
+   "city": "chengdu",
+   "adcode": "510100",
+   "locale": "zh",
+   "answer": "武侯祠和锦里挨着，大熊猫基地建议早上去，熊猫上午最活跃。",
+   "expected": [
+    [
+     "武侯祠",
+     "pl_cd_wuhouci"
+    ]
+   ],
+   "acceptable": [
+    [
+     "锦里",
+     "pl_cd_jinli"
+    ],
+    [
+     "熊猫基地",
+     "pl_cd_daxiongmao_jidi"
+    ]
+   ],
+   "note": "大熊猫基地 is a description, not the name"
+  },
+  {
+   "id": "cd-3-zh",
+   "city": "chengdu",
+   "adcode": "510100",
+   "locale": "zh",
+   "answer": "春熙路地铁站出来就是商圈，春熙路上有很多小吃。",
+   "expected": [
+    [
+     "春熙路",
+     "pl_cd_chunxilu"
+    ]
+   ],
+   "acceptable": [],
+   "note": "first mention only; the station name must not link"
+  },
+  {
+   "id": "cd-4-en",
+   "city": "chengdu",
+   "adcode": "510100",
+   "locale": "en",
+   "answer": "See the Chengdu Museum on a rainy day, and Chunxi Road in the evening.",
+   "expected": [
+    [
+     "Chengdu Museum",
+     "pl_cd_chengdu_bowuguan"
+    ],
+    [
+     "Chunxi Road",
+     "pl_cd_chunxilu"
+    ]
+   ],
+   "acceptable": [],
+   "note": ""
+  },
+  {
+   "id": "cq-1-zh",
+   "city": "chongqing",
+   "adcode": "500000",
+   "locale": "zh",
+   "answer": "先去解放碑，再坐长江索道过江，晚上去洪崖洞民俗风貌区看夜景，第二天去重庆磁器口古镇。",
+   "expected": [
+    [
+     "解放碑",
+     "pl_cq_jiefangbei"
+    ],
+    [
+     "长江索道",
+     "pl_cq_changjiang_suodao"
+    ],
+    [
+     "洪崖洞民俗风貌区",
+     "pl_cq_hongyadong"
+    ],
+    [
+     "重庆磁器口古镇",
+     "pl_cq_ciqikou"
+    ]
+   ],
+   "acceptable": [],
+   "note": ""
+  },
+  {
+   "id": "cq-2-zh",
+   "city": "chongqing",
+   "adcode": "500000",
+   "locale": "zh",
+   "answer": "洪崖洞晚上人很多，磁器口建议工作日去，朝天门广场也顺路。",
+   "expected": [
+    [
+     "洪崖洞",
+     "pl_cq_hongyadong"
+    ],
+    [
+     "磁器口",
+     "pl_cq_ciqikou"
+    ],
+    [
+     "朝天门广场",
+     "pl_cq_chaotianmen"
+    ]
+   ],
+   "acceptable": [],
+   "note": "nicknames"
+  },
+  {
+   "id": "cq-3-zh",
+   "city": "chongqing",
+   "adcode": "500000",
+   "locale": "zh",
+   "answer": "解放碑站下车，往前走五分钟就是解放碑步行街。",
+   "expected": [
+    [
+     "解放碑",
+     "pl_cq_jiefangbei"
+    ]
+   ],
+   "acceptable": [],
+   "note": "the station name does not link; the first plain mention is not \"…站\""
+  },
+  {
+   "id": "cq-4-en",
+   "city": "chongqing",
+   "adcode": "500000",
+   "locale": "en",
+   "answer": "Take the Yangtze River Cableway at dusk; Chaotianmen Square is nearby.",
+   "expected": [
+    [
+     "Yangtze River Cableway",
+     "pl_cq_changjiang_suodao"
+    ],
+    [
+     "Chaotianmen Square",
+     "pl_cq_chaotianmen"
+    ]
+   ],
+   "acceptable": [],
+   "note": ""
+  },
+  {
+   "id": "none-1-zh",
+   "city": "beijing",
+   "adcode": "110000",
+   "locale": "zh",
+   "answer": "建议你先定下来去哪个城市，再决定住在哪一带。",
+   "expected": [],
+   "acceptable": [],
+   "note": ""
+  }
+ ],
+ "cards": [
+  {
+   "id": "taxi-palace-zh",
+   "locale": "zh",
+   "question": "怎么打车去故宫",
+   "adcode": null,
+   "destination": {
+    "name_zh": "故宫博物院",
+    "location": "116.397026,39.918058",
+    "address_zh": "景山前街4号",
+    "name_en": "The Palace Museum"
+   },
+   "expected": [
+    {
+     "type": "taxi",
+     "parameters": {
+      "destination": "故宫博物院",
+      "lat": "39.918058",
+      "lng": "116.397026",
+      "address": "景山前街4号",
+      "destinationEN": "The Palace Museum"
+     }
+    }
+   ]
+  },
+  {
+   "id": "taxi-palace-en",
+   "locale": "en",
+   "question": "How do I get a taxi to the Palace Museum?",
+   "adcode": null,
+   "destination": {
+    "name_zh": "故宫博物院",
+    "location": "116.397026,39.918058",
+    "address_zh": "景山前街4号",
+    "name_en": "The Palace Museum"
+   },
+   "expected": [
+    {
+     "type": "taxi",
+     "parameters": {
+      "destination": "故宫博物院",
+      "lat": "39.918058",
+      "lng": "116.397026",
+      "address": "景山前街4号",
+      "destinationEN": "The Palace Museum"
+     }
+    }
+   ]
+  },
+  {
+   "id": "taxi-no-destination-zh",
+   "locale": "zh",
+   "question": "怎么打车",
+   "adcode": null,
+   "destination": null,
+   "expected": []
+  },
+  {
+   "id": "taxi-not-a-taxi-question",
+   "locale": "zh",
+   "question": "故宫几点开门",
+   "adcode": null,
+   "destination": {
+    "name_zh": "故宫博物院",
+    "location": "116.397026,39.918058",
+    "address_zh": "景山前街4号",
+    "name_en": "The Palace Museum"
+   },
+   "expected": []
+  },
+  {
+   "id": "metro-bj-zh",
+   "locale": "zh",
+   "question": "北京地铁怎么坐",
+   "adcode": "110000",
+   "destination": null,
+   "expected": [
+    {
+     "type": "metro",
+     "data": {
+      "city": {
+       "id": "beijing",
+       "zh": "北京",
+       "en": "Beijing"
+      }
+     }
+    }
+   ]
+  },
+  {
+   "id": "metro-sh-en",
+   "locale": "en",
+   "question": "How does the Shanghai metro work?",
+   "adcode": "310000",
+   "destination": null,
+   "expected": [
+    {
+     "type": "metro",
+     "data": {
+      "city": {
+       "id": "shanghai",
+       "zh": "上海",
+       "en": "Shanghai"
+      }
+     }
+    }
+   ]
+  },
+  {
+   "id": "metro-district-code",
+   "locale": "zh",
+   "question": "成都地铁几点停运",
+   "adcode": "510104",
+   "destination": null,
+   "expected": [
+    {
+     "type": "metro",
+     "data": {
+      "city": {
+       "id": "chengdu",
+       "zh": "成都",
+       "en": "Chengdu"
+      }
+     }
+    }
+   ]
+  },
+  {
+   "id": "metro-no-city",
+   "locale": "zh",
+   "question": "地铁怎么坐",
+   "adcode": null,
+   "destination": null,
+   "expected": []
+  },
+  {
+   "id": "metro-other-city",
+   "locale": "zh",
+   "question": "杭州地铁怎么坐",
+   "adcode": "330100",
+   "destination": null,
+   "expected": []
+  },
+  {
+   "id": "transport-zh",
+   "locale": "zh",
+   "question": "北京到上海的高铁要几个小时",
+   "adcode": null,
+   "destination": null,
+   "expected": [
+    {
+     "type": "transport",
+     "parameters": {
+      "from": "beijing",
+      "to": "shanghai"
+     },
+     "data": {
+      "from": {
+       "id": "beijing",
+       "zh": "北京",
+       "en": "Beijing"
+      },
+      "to": {
+       "id": "shanghai",
+       "zh": "上海",
+       "en": "Shanghai"
+      }
+     }
+    }
+   ]
+  },
+  {
+   "id": "transport-en",
+   "locale": "en",
+   "question": "Are there flights from Guangzhou to Chengdu?",
+   "adcode": null,
+   "destination": null,
+   "expected": [
+    {
+     "type": "transport",
+     "parameters": {
+      "from": "guangzhou",
+      "to": "chengdu"
+     },
+     "data": {
+      "from": {
+       "id": "guangzhou",
+       "zh": "广州",
+       "en": "Guangzhou"
+      },
+      "to": {
+       "id": "chengdu",
+       "zh": "成都",
+       "en": "Chengdu"
+      }
+     }
+    }
+   ]
+  },
+  {
+   "id": "transport-one-city",
+   "locale": "zh",
+   "question": "坐高铁去上海方便吗",
+   "adcode": "110000",
+   "destination": null,
+   "expected": [
+    {
+     "type": "transport",
+     "parameters": {
+      "from": "beijing",
+      "to": "shanghai"
+     },
+     "data": {
+      "from": {
+       "id": "beijing",
+       "zh": "北京",
+       "en": "Beijing"
+      },
+      "to": {
+       "id": "shanghai",
+       "zh": "上海",
+       "en": "Shanghai"
+      }
+     }
+    }
+   ]
+  },
+  {
+   "id": "transport-same-city",
+   "locale": "zh",
+   "question": "高铁去北京要多久",
+   "adcode": "110000",
+   "destination": null,
+   "expected": []
+  },
+  {
+   "id": "transport-no-city",
+   "locale": "zh",
+   "question": "高铁怎么买票",
+   "adcode": null,
+   "destination": null,
+   "expected": []
+  },
+  {
+   "id": "currency-usd-zh",
+   "locale": "zh",
+   "question": "美元汇率是多少",
+   "adcode": null,
+   "destination": null,
+   "expected": [
+    {
+     "type": "currency",
+     "data": {
+      "quote": "USD"
+     }
+    }
+   ]
+  },
+  {
+   "id": "currency-jpy-en",
+   "locale": "en",
+   "question": "Where can I exchange yen?",
+   "adcode": null,
+   "destination": null,
+   "expected": [
+    {
+     "type": "currency",
+     "data": {
+      "quote": "JPY"
+     }
+    }
+   ]
+  },
+  {
+   "id": "currency-bare-zh",
+   "locale": "zh",
+   "question": "在哪里换钱",
+   "adcode": null,
+   "destination": null,
+   "expected": [
+    {
+     "type": "currency",
+     "data": null
+    }
+   ]
+  },
+  {
+   "id": "currency-two-zh",
+   "locale": "zh",
+   "question": "美元和欧元的汇率",
+   "adcode": null,
+   "destination": null,
+   "expected": [
+    {
+     "type": "currency",
+     "data": null
+    }
+   ]
+  },
+  {
+   "id": "none-weather",
+   "locale": "zh",
+   "question": "今天天气怎么样",
+   "adcode": null,
+   "destination": null,
+   "expected": []
+  },
+  {
+   "id": "three-cards",
+   "locale": "zh",
+   "question": "北京地铁、北京到上海的高铁，还有美元汇率",
+   "adcode": "110000",
+   "destination": null,
+   "expected": [
+    {
+     "type": "metro",
+     "data": {
+      "city": {
+       "id": "beijing",
+       "zh": "北京",
+       "en": "Beijing"
+      }
+     }
+    },
+    {
+     "type": "transport",
+     "parameters": {
+      "from": "beijing",
+      "to": "shanghai"
+     },
+     "data": {
+      "from": {
+       "id": "beijing",
+       "zh": "北京",
+       "en": "Beijing"
+      },
+      "to": {
+       "id": "shanghai",
+       "zh": "上海",
+       "en": "Shanghai"
+      }
+     }
+    },
+    {
+     "type": "currency",
+     "data": {
+      "quote": "USD"
+     }
+    }
+   ]
+  }
+ ]
+}
