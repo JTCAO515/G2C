@@ -68,7 +68,7 @@ class Row(unittest.TestCase):
     def test_a_failing_lookup_is_no_titles(self):
         def broken(*args):
             raise RuntimeError('memory unavailable')
-        cards = SimpleNamespace(used_titles=broken)
+        cards = SimpleNamespace(used_titles=broken, used_allowed=lambda scope: True)
         self.assertEqual(_used_titles(cards, SimpleNamespace(scope='s'))(['a']), {})
         self.assertEqual(_used_titles(SimpleNamespace(), SimpleNamespace(scope='s'))(['a']), {})
 
@@ -94,6 +94,21 @@ class Consent(unittest.TestCase):
             self.assertEqual(self.cards(True, reader).used_titles('s', ['a']), {'a': 'x1'})
         with mock.patch.dict(os.environ, {'CJ_LIO_MEMORY_CONSENT_REQUIRED': '0'}):
             self.assertEqual(self.cards(False, reader).used_titles('s', ['a']), {'a': 'x1'})
+
+    def test_the_consent_state_is_read_once_per_page(self):
+        reads = []
+
+        class Store:
+            def granted(self, scope):
+                reads.append(scope)
+                return True
+        cards = LioMemoryCards(SimpleNamespace(titles=lambda scope, ids: {i: 'x1' for i in ids}), None, Store())
+        with mock.patch.dict(os.environ, {'CJ_LIO_MEMORY_CONSENT_REQUIRED': '1'}):
+            lookup = _used_titles(cards, SimpleNamespace(scope='s'))
+            self.assertEqual(lookup(['a']), {'a': 'x1'})
+            self.assertEqual(lookup(['b']), {'b': 'x1'})
+            self.assertEqual(lookup(['c']), {'c': 'x1'})
+        self.assertEqual(reads, ['s'])
 
     def test_no_reader_mounted_is_no_titles(self):
         self.assertEqual(LioMemoryCards(SimpleNamespace(), None, None).used_titles('s', ['a']), {})

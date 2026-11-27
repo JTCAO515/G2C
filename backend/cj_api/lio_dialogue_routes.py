@@ -199,10 +199,16 @@ def _rich(answer, entities, cards=None, receipt=None, prompt=None, used=None):
 def _used_titles(memory_cards, context):
     """A lookup of the titles of the memories a row used, run only for a row that carries the used effect; any failure
     is no titles. One read per row at most (three ids)."""
+    allowed = []
+
     def lookup(item_ids):
         try:
             titles = getattr(memory_cards, 'used_titles', None)
-            return {} if titles is None else titles(context.scope, item_ids)
+            if titles is None:
+                return {}
+            if not allowed:   # the consent state is read once for the whole page
+                allowed.append(bool(memory_cards.used_allowed(context.scope)))
+            return titles(context.scope, item_ids, checked=True) if allowed[0] else {}
         except Exception:
             return {}
     return lookup

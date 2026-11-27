@@ -384,6 +384,7 @@ def test_the_used_ids_are_written_after_the_followups_with_the_switch_on():
     state = _used_run(_memory_run(['s1', 's2'], [('s1', 'mem-1'), ('s2', 'mem-2'), ('s3', 'mem-3')]))
     assert state.effects[-1] == 'lio_memory_used:{"item_ids":["mem-1","mem-2"],"total":2}'
     assert state.effects[-2].startswith(FOLLOWUPS_EFFECT)
+    # contract order: followups, then used, then the consent prompt marker
 
 
 def test_nothing_is_written_with_the_switch_off_no_run_or_nothing_used():
