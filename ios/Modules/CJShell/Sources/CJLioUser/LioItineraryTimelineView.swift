@@ -26,6 +26,8 @@ struct LioItineraryTimelineView: View {
     let language: LioLanguage
     var startDate: String?
     var actions = Actions()
+    /// #1976: this build reads a chat trip's places before saving, so a place left unmatched is marked.
+    var placesRead = LioChatTripPlacesFeature.enabledInBuild
     @State private var selectedDay = 1
     @Environment(\.dynamicTypeSize) private var typeSize
 
@@ -199,7 +201,7 @@ struct LioItineraryTimelineView: View {
                 if language == .english, stop.place.nameZH != stop.place.nameEN {
                     Text(stop.place.nameZH).font(.subheadline).foregroundStyle(LioTheme.inkSecondary)
                 }
-                if let unconfirmed = stop.unconfirmedNote(language) {
+                if let unconfirmed = stop.unconfirmedNote(language, placesRead: placesRead) {
                     Text(unconfirmed).font(.caption).foregroundStyle(LioTheme.inkSecondary)
                         .accessibilityIdentifier("lio.plan.unconfirmed")
                 }

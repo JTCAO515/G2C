@@ -170,23 +170,29 @@ import CJMessageHTTP
 
     // MARK: Unconfirmed places
 
-    @Test func anUnconfirmedPlaceIsMarkedAndACheckedOneIsNot() throws {
+    @Test func anUnmatchedPlaceIsMarkedOnlyWhenThePlacesWereRead() throws {
+        // Places read off (the default build): a summary's places are names, none is marked.
         let plan = LioPlanSummary(try card("structured4_undated"))
         let stop = try #require(plan.itinerary.days.first?.stops.first)
         #expect(!stop.place.matched)
-        #expect(stop.unconfirmedNote(.english) == "Place not confirmed" && stop.unconfirmedNote(.chinese) == "地点未确认")
+        #expect(stop.unconfirmedNote(.english, placesRead: false) == nil && stop.unconfirmedNote(.chinese, placesRead: false) == nil)
 
+        // Places read on: the unmatched one is marked in both languages, the matched ones are not.
+        #expect(stop.unconfirmedNote(.english, placesRead: true) == "Place not confirmed")
+        #expect(stop.unconfirmedNote(.chinese, placesRead: true) == "地点未确认")
         let content = try content("matched")
         let confirmed = LioChatTripPlaces.reconcile(try reference(content, version: 3), summary: try summary(content, version: 3),
                                                     record: try record(content, version: 3)).plan
         let stops = confirmed.itinerary.days.flatMap(\.stops)
-        #expect(stops.filter { $0.place.matched }.allSatisfy { $0.unconfirmedNote(.english) == nil && $0.unconfirmedNote(.chinese) == nil })
-        // A trip with one place the server left unconfirmed marks that one only.
-        #expect(stops.filter { $0.unconfirmedNote(.chinese) != nil }.map(\.id) == stops.filter { !$0.place.matched }.map(\.id))
         #expect(stops.contains { !$0.place.matched } && stops.contains { $0.place.matched })
+        for stop in stops {
+            let marked = stop.unconfirmedNote(.chinese, placesRead: true) != nil
+            #expect(marked == !stop.place.matched && (stop.unconfirmedNote(.english, placesRead: true) != nil) == marked)
+            #expect(stop.unconfirmedNote(.english, placesRead: false) == nil)
+        }
         // A popular route's places are all checked.
         let template = LioPlanSummary(template: LioRoadbookTemplates.beijing(.english))
-        #expect(template.itinerary.days.flatMap(\.stops).allSatisfy { $0.unconfirmedNote(.english) == nil })
+        #expect(template.itinerary.days.flatMap(\.stops).allSatisfy { $0.unconfirmedNote(.english, placesRead: true) == nil })
     }
 
     @Test func aDegradedTripWithoutADateOrTimesStillShowsEveryDayAndStop() throws {
@@ -206,7 +212,7 @@ import CJMessageHTTP
         #expect(list.schedule.flatMap(\.stops).map(\.time) == [nil, nil])
         let stops = try #require(list.plan).itinerary.days.flatMap(\.stops)
         #expect(stops.map { $0.place.nameZH } == ["故宫", "长城", "天坛"])
-        #expect(stops.allSatisfy { $0.unconfirmedNote(.english) == "Place not confirmed" })
+        #expect(stops.allSatisfy { $0.unconfirmedNote(.english, placesRead: true) == "Place not confirmed" })
     }
 
     // MARK: A save that did not reach the phone
@@ -228,5 +234,27 @@ import CJMessageHTTP
         try FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: directory.path)
         model.save(plan)
         #expect(!model.saveFailed(plan) && model.isSaved(plan))
+    }
+
+    @Test func aFailedSaveThroughThePlacesReadIsReportedToo() async throws {
+        // The Save button's path with places read on: the read finds nothing (`trip: null`), the summary is saved.
+        let directory = folder()
+        defer {
+            try? FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: directory.path)
+            try? FileManager.default.removeItem(at: directory)
+        }
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        let model = LioSavedPlansModel(store: LioSavedPlans(directory: directory, isCurrent: { true }))
+        let content = try content("matched")
+        let card = try summary(content, version: 3)
+        let body = try canonical(["version": "TRIP-structured-read.3", "request_id": Self.trace, "trip": NSNull()])
+        let places = LioChatTripPlaces(enabled: true, read: { _ in .init(status: 200, requestID: Self.trace, bytes: body) })
+        try FileManager.default.setAttributes([.posixPermissions: 0o500], ofItemAtPath: directory.path)
+        let outcome = await model.save(card, reference: try reference(content, version: 3), places: places)
+        #expect(outcome == .missing && model.saveFailed(card) && !model.hasSavedCopy(of: card) && model.savingTripIDs.isEmpty)
+
+        try FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: directory.path)
+        _ = await model.save(card, reference: try reference(content, version: 3), places: places)
+        #expect(!model.saveFailed(card) && model.hasSavedCopy(of: card))
     }
 }
