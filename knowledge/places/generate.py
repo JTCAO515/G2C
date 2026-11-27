@@ -15,18 +15,20 @@ not run the Swift job.
 from collections import namedtuple
 import json
 from pathlib import Path
+import re
 import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import placeimages  # noqa: E402
 import placelib  # noqa: E402
 
-Layout = namedtuple('Layout', 'places_dir server_dir app_path images_path', defaults=(None,))
+Layout = namedtuple('Layout', 'places_dir server_dir app_path images_path hubs_path', defaults=(None, None))
 LAYOUT = Layout(
     placelib.PLACES_DIR,
     placelib.ROOT / 'backend/fact/cj_fact',
     placelib.ROOT / 'ios/Modules/CJShell/Sources/CJLioUser/Resources/LioPlaces.v1.json',
     placelib.PLACES_DIR / 'images/manifest.v1.json',
+    placelib.ROOT / 'ios/Modules/CJShell/Sources/CJLioUser/Resources/LioTransportHubs.v1.json',
 )
 APP_KEYS = ('id', 'city', 'category', 'kind', 'tier', 'rank', 'name_zh', 'name_en', 'aliases_zh', 'aliases_en',
             'lat', 'lng', 'amap_id', 'price_band', 'star', 'accepts_foreigners', 'intro_short_zh', 'intro_short_en',
@@ -63,6 +65,45 @@ def render_app(docs, thumbs=None):
     return json.dumps({'version': placelib.APP_VERSION, 'places': places}, ensure_ascii=False, separators=(',', ':')) + '\n'
 
 
+HUBS_VERSION = 'g2c-transport-hubs.1'
+HUBS_MAXIMUM_BYTES = 512 * 1024      # the App refuses a bigger pack whole
+HUB_AIRPORT_CODE = re.compile(r'[A-Z]{3}')
+HUB_KEYS = ('id', 'city', 'hub_type', 'name_zh', 'name_en', 'code', 'terminals', 'to_city_zh', 'to_city_en',
+            'foreigner_tips_zh', 'foreigner_tips_en', 'official_url', 'checked_on')
+
+
+def hub_place(entry):
+    """One approved library hub as the 大交通 page reads it (snake_case, the library's own values)."""
+    if entry['hub_type'] == 'airport':     # the App rejects the whole pack for an airport without an IATA code
+        placelib._require(HUB_AIRPORT_CODE.fullmatch(entry['code'] or '') is not None, f'{entry["id"]}: an airport needs a 3-letter upper-case code for the App')
+    terminals = entry['terminals']
+    if terminals is not None:
+        terminals = [{'name': t['name'], 'note_zh': t['note_zh'], 'note_en': t.get('note_en')} for t in terminals]
+    values = {**entry, 'terminals': terminals}
+    return {key: values[key] for key in HUB_KEYS}
+
+
+def render_hubs(docs):
+    """The hubs copy for the given city documents, or None when no approved hub exists."""
+    cities, kinds = list(placelib.CITIES), ('airport', 'rail')
+    hubs = [e for doc in docs for e in doc['places'] if e['category'] == 'hub' and e['review']['status'] == 'approved']
+    if not hubs:
+        return None
+    hubs.sort(key=lambda e: (cities.index(e['city']), kinds.index(e['hub_type']), e['rank'] is None, e['rank'] or 0, e['id']))
+    text = json.dumps({'version': HUBS_VERSION, 'status': 'approved', 'places': [hub_place(e) for e in hubs]},
+                      ensure_ascii=False, indent=1) + '\n'
+    placelib._require(len(text.encode('utf-8')) <= HUBS_MAXIMUM_BYTES, f'the hubs copy is over {HUBS_MAXIMUM_BYTES} bytes; the App would refuse it')
+    return text
+
+
+def _is_draft_hubs(path):
+    """True for the transport line's hand-kept draft pack (anything else at that path is a stale generated copy)."""
+    try:
+        return json.loads(path.read_text(encoding='utf-8')).get('status') == 'draft'
+    except (OSError, ValueError, AttributeError):
+        return False
+
+
 def expected(layout=LAYOUT, thumbs=None):
     """{path: bytes} of every generated file, validating each source on the way (raises placelib.Invalid)."""
     if thumbs is None:  # thumbnail file names come from the image manifest, when there is one
@@ -76,6 +117,9 @@ def expected(layout=LAYOUT, thumbs=None):
         out[server_copy(layout, doc['city'])] = raw
     if docs:
         out[layout.app_path] = render_app(docs, thumbs).encode('utf-8')
+        hubs = render_hubs(docs) if layout.hubs_path else None
+        if hubs is not None:
+            out[layout.hubs_path] = hubs.encode('utf-8')
     return out
 
 
@@ -92,6 +136,8 @@ def stale(layout=LAYOUT, thumbs=None):
                  if server_copy(layout, city).is_file() and server_copy(layout, city) not in want]
     if layout.app_path.is_file() and layout.app_path not in want:
         leftovers.append(layout.app_path)
+    if layout.hubs_path and layout.hubs_path.is_file() and layout.hubs_path not in want and not _is_draft_hubs(layout.hubs_path):
+        leftovers.append(layout.hubs_path)      # an approved pack with no approved hub behind it
     return bad + leftovers
 
 
