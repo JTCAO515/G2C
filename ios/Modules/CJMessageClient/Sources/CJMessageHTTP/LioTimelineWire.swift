@@ -307,10 +307,52 @@ public enum LioTimelineWire {
         /// answer holds a preference, so the App may ask once. It is not consent; the choice is written with
         /// `PUT /v1/lio/memory/consent`.
         public let memoryPrompt: Bool
+        /// `memory.used` (#2001): which of the traveller's remembered preferences the server gave the model for this answer.
+        public let memoryUsed: MemoryUsed?
 
-        public init(entities: [Entity] = [], memoryPrompt: Bool = false) {
+        public init(entities: [Entity] = [], memoryPrompt: Bool = false, memoryUsed: MemoryUsed? = nil) {
             self.entities = entities
             self.memoryPrompt = memoryPrompt
+            self.memoryUsed = memoryUsed
+        }
+    }
+
+    /// One to three remembered items the answer was based on, most relevant first, and how many there were in all
+    /// (`used_total`, at least the number listed). `title` is the item's current title, one line of at most 40 characters;
+    /// it never carries the remembered text.
+    public struct MemoryUsed: Sendable, Equatable {
+        public struct Item: Sendable, Equatable {
+            public let itemID: String
+            public let title: String
+            public init(itemID: String, title: String) { self.itemID = itemID; self.title = title }
+        }
+        public let items: [Item]
+        public let total: Int
+        public init(items: [Item], total: Int) { self.items = items; self.total = total }
+    }
+
+    static let maximumMemoryUsedItems = 3
+    static let maximumMemoryUsedTotal = 99
+    static let maximumMemoryTitleLength = 40
+
+    /// `^[A-Za-z0-9][A-Za-z0-9_.:-]{0,255}$`
+    static func validMemoryItemID(_ value: String) -> Bool {
+        let bytes = Array(value.utf8)
+        guard (1...256).contains(bytes.count), bytes[0] != 95, bytes[0] != 46, bytes[0] != 58, bytes[0] != 45 else { return false }
+        return bytes.allSatisfy {
+            (48...57).contains($0) || (65...90).contains($0) || (97...122).contains($0) || $0 == 95 || $0 == 46 || $0 == 58 || $0 == 45
+        }
+    }
+
+    /// One line of 1–40 characters with no control, line-separator or zero-width characters (the contract's pattern).
+    static func validMemoryTitle(_ value: String) -> Bool {
+        let scalars = value.unicodeScalars
+        guard (1...maximumMemoryTitleLength).contains(scalars.count) else { return false }
+        return !scalars.contains { scalar in
+            switch scalar.value {
+            case 0x00...0x1F, 0x7F...0x9F, 0x200B...0x200F, 0x2028...0x202E, 0x2060...0x2064, 0xFEFF: true
+            default: false
+            }
         }
     }
 
@@ -414,7 +456,22 @@ public enum LioTimelineWire {
             return Entity(start: item.start, end: item.end, placeID: item.placeID)
         }
         let prompt = wire.memory?.prompt == "consent"
-        return entities.isEmpty && !prompt ? nil : Rich(entities: entities, memoryPrompt: prompt)
+        let used = validMemoryUsed(wire.memory)
+        return entities.isEmpty && !prompt && used == nil ? nil : Rich(entities: entities, memoryPrompt: prompt, memoryUsed: used)
+    }
+
+    /// `used` and `used_total` come together. More than three items, a total outside 1...99 or below the number listed,
+    /// or one item listed twice drops `used` whole; a single bad item is dropped on its own; nothing left means none.
+    private static func validMemoryUsed(_ wire: Snapshot.Row.RichWire.MemoryWire?) -> MemoryUsed? {
+        guard let wire, let listed = wire.used, let total = wire.usedTotal,
+              (1...maximumMemoryUsedItems).contains(listed.count),
+              (1...maximumMemoryUsedTotal).contains(total), total >= listed.count else { return nil }
+        let items = listed.compactMap { entry -> MemoryUsed.Item? in
+            guard let entry = entry.value, validMemoryItemID(entry.itemID), validMemoryTitle(entry.title) else { return nil }
+            return MemoryUsed.Item(itemID: entry.itemID, title: entry.title)
+        }
+        guard !items.isEmpty, Set(listed.compactMap { $0.value?.itemID }).count == listed.compactMap({ $0.value?.itemID }).count else { return nil }
+        return MemoryUsed(items: items, total: total)
     }
 
     /// `^pl_[a-z]{2}_[a-z0-9]+(_[a-z0-9]+)*$`, at most 64 characters.
@@ -530,9 +587,30 @@ public enum LioTimelineWire {
             struct RichWire: Decodable {
                 let version: String
                 let entities: [LossyEntity]?
-                /// `memory.prompt` only (#1999); the rest of `memory` is for M-3.
+                /// `memory.prompt` (#1999) and `memory.used` with `used_total` (#2001).
                 let memory: MemoryWire?
-                struct MemoryWire: Decodable { let prompt: String? }
+                struct MemoryWire: Decodable {
+                    let prompt: String?
+                    let used: [LossyUsed]?
+                    let usedTotal: Int?
+                    struct UsedWire: Decodable {
+                        let itemID: String
+                        let title: String
+                        enum CodingKeys: String, CodingKey { case itemID = "item_id", title }
+                    }
+                    struct LossyUsed: Decodable {
+                        let value: UsedWire?
+                        init(from decoder: Decoder) throws { value = try? UsedWire(from: decoder) }
+                    }
+                    init(from decoder: Decoder) throws {
+                        let c = try decoder.container(keyedBy: CodingKeys.self)
+                        // Each part is read on its own: a broken one is none and does not hide the others.
+                        prompt = (try? c.decodeIfPresent(String.self, forKey: .prompt)) ?? nil
+                        used = (try? c.decodeIfPresent([LossyUsed].self, forKey: .used)) ?? nil
+                        usedTotal = (try? c.decodeIfPresent(Int.self, forKey: .usedTotal)) ?? nil
+                    }
+                    enum CodingKeys: String, CodingKey { case prompt, used, usedTotal = "used_total" }
+                }
                 struct EntityWire: Decodable {
                     let type: String
                     let start: Int

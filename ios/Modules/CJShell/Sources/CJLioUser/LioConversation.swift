@@ -99,6 +99,8 @@ struct LioTurn: Identifiable {
     var places: [LioPlaceSpan] = []
     /// #1999: the server says the account has never chosen about memory and this answer holds a preference.
     var memoryPrompt = false
+    /// #2001: the line "based on what you asked me to remember" under the answer.
+    var memoryNote: LioMemoryUsedNote?
     var fromTimeline = false
     var readFailure: LioRequestProblem?
     var id: Data { question.id }
@@ -358,6 +360,7 @@ final class LioConversation {
         return LioTurn(question: question, status: row.status, answer: row.answer,
                        sources: row.sources, itinerary: row.itinerary, memoryTags: row.memoryTags,
                        exploration: row.exploration, layout: row.layout, followups: row.followups, chips: row.chips,
-                       places: row.places, memoryPrompt: row.memoryPrompt, fromTimeline: true)
+                       places: row.places, memoryPrompt: row.memoryPrompt,
+                       memoryNote: row.memoryNote, fromTimeline: true)
     }
 }
