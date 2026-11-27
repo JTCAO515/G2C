@@ -98,7 +98,7 @@ class NationalLioIdentity(unittest.TestCase):
                        'Never invent personal facts or answer that the traveler is Lio.',
                        'Never invent prices, opening hours, or transport facts.',
                        'Do not offer to book tickets or take payment.',
-                       'Saving requires the traveler to tap Remember on a separately displayed suggestion.'):
+                       'Never tell the traveler to tap Remember or any button to save a plan.'):
             self.assertIn(clause,PERSONA)
         for term in ('醒狮','xingshi','lion-dance'):
             self.assertNotIn(term,PERSONA.casefold())
