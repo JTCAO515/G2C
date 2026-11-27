@@ -210,15 +210,20 @@
         "id": "pl_sz_baoanhuashengxierdun",
         "city": "shenzhen",
         "category": "hotel",
-        "tier": "main",
+        "tier": "backup",
         "name_zh": "深圳宝安华盛希尔顿花园酒店",
         "name_en": "Hilton Garden Inn Shenzhen Bao'an",
         "aliases_zh": [],
         "aliases_en": [],
-        "address_zh": null,
-        "address_en": null,
+        "address_zh": "深圳市宝安区沙井街道新沙路529号",
+        "address_en": "529 Xin Sha Road, Bao’an District, Shenzhen, China 518125",
         "district_zh": "宝安区",
-        "nearest_metro": null,
+        "nearest_metro": {
+          "station_zh": "沙井",
+          "station_en": "Shajing",
+          "line": "11号线",
+          "exit": null
+        },
         "foreigner_signals": {
           "english_signage": null,
           "foreign_cards": null,
@@ -230,16 +235,18 @@
         "official_url": "https://www.hilton.com.cn/zh-cn/hotels/szxsbgi-hilton-garden-inn-shenzhen-baoan",
         "sources": [
           "https://www.hilton.com.cn/zh-cn/hotels/szxsbgi-hilton-garden-inn-shenzhen-baoan",
-          "https://www.hilton.com.cn/zh-cn/locations/china/guangdong-shenzhen"
+          "https://www.hilton.com.cn/zh-cn/locations/china/guangdong-shenzhen",
+          "https://ir.hilton.com/_assets/_de1e637820b6842c68b34801d11a8fd1/hilton/db/3577/34740/pdf/HLT_Investor_Presentation_-_November_2026.pdf",
+          "https://www.hilton.com/en/hotels/szxsbgi-hilton-garden-inn-shenzhen-baoan/hotel-location/"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
-        "notes": "希尔顿城市页显示 2026-11-27 入住、11-28 退房的起价。 官网样本为每房每晚人民币 ¥434。当前价以所选日期及房型的报价为准。",
+        "notes": "希尔顿城市页显示 2026-11-27 入住、11-28 退房的起价。 官网样本为每房每晚人民币 ¥434。当前价以所选日期及房型的报价为准。 分档依据：希尔顿集团将品牌列为 Focused Service，本库按中档处理。",
         "subcategory": "hotel",
-        "intro_short_zh": "宝安区的希尔顿花园酒店。",
-        "intro_short_en": "A Hilton Garden Inn in Bao'an.",
-        "intro_long_zh": "宝安区的希尔顿花园酒店。可在品牌官网查看房型和入住安排。",
-        "intro_long_en": "A Hilton Garden Inn in Bao'an. See the hotel's own website for room types and check-in details.",
+        "intro_short_zh": "沙井购物广场里的希尔顿花园，可用地铁11号线。",
+        "intro_short_en": "A Shajing stay connected to shopping, with Line 11 nearby.",
+        "intro_long_zh": "门店在新沙路购物广场内。希尔顿位置页列出沙井站。若在宝安北部有活动，这里可将购物和地铁出行放在同一片区。",
+        "intro_long_en": "The hotel is inside Xihuicheng Shopping Plaza. For trips farther afield, Hilton's location information points to Shajing on Line 11.",
         "star": null,
         "price_band": "<500",
         "accepts_foreigners": true,
@@ -261,17 +268,19 @@
         "alternatives": []
       },
       "score": {
-        "total": 26,
+        "total": 31,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 4,
+          "complete": 9,
           "amap": 0
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "pl_sz_baoanhuashengxierdun: unknown field 'hotel_class' is dropped on import"
+      ]
     },
     {
       "id": "pl_sz_baoanruiji",
@@ -286,9 +295,9 @@
         "name_en": "The St. Regis Shenzhen Bao'an",
         "aliases_zh": [],
         "aliases_en": [],
-        "address_zh": null,
-        "address_en": null,
-        "district_zh": null,
+        "address_zh": "深圳市宝安区兴业路1088号",
+        "address_en": "1088 Xingye Road, Bao’an District, Shenzhen, China 518101",
+        "district_zh": "宝安区",
         "nearest_metro": null,
         "foreigner_signals": {
           "english_signage": null,
@@ -301,16 +310,18 @@
         "official_url": "https://www.marriott.com/en-us/hotels/szxxs-the-st-regis-shenzhen-baoan/overview/",
         "sources": [
           "https://www.marriott.com/en-us/hotels/szxxs-the-st-regis-shenzhen-baoan/overview/",
-          "https://www.marriott.com/en-us/destinations/china/shenzhen.mi?pg=2"
+          "https://www.marriott.com/en-us/destinations/china/shenzhen.mi?pg=2",
+          "https://help.marriott.com/s/article/Article-24483",
+          "https://www.marriott.com.cn/hotels/szxxs-the-st-regis-shenzhen-baoan/overview/"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
-        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sat, Dec 26 - Sun, Dec 27。 官网样本为每房每晚人民币 ¥2,432。当前价以所选日期及房型的报价为准。",
+        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sat, Dec 26 - Sun, Dec 27。 官网样本为每房每晚人民币 ¥2,432。当前价以所选日期及房型的报价为准。 分档依据：万豪集团将此品牌列为 Luxury。",
         "subcategory": "hotel",
-        "intro_short_zh": "宝安一带的瑞吉酒店。",
-        "intro_short_en": "A St. Regis hotel in the Bao'an area.",
-        "intro_long_zh": "宝安一带的瑞吉酒店。可在品牌官网查看房型和入住安排。",
-        "intro_long_en": "A St. Regis hotel in the Bao'an area. See the hotel's own website for room types and check-in details.",
+        "intro_short_zh": "酒店交通页列宝华站与宝安站，可分别搭5号线和11号线。",
+        "intro_short_en": "Two metro options for a Bao'an stay, with English listed by Marriott.",
+        "intro_long_zh": "游览深圳宝安时，可通过宝华站或宝安站在地铁5号线和11号线间选择。酒店提供英文到店资料和中英文服务语言。",
+        "intro_long_en": "On the Bao'an side of Shenzhen, Marriott names Bao Hua on Line 5 and Bao An on Line 11 for arrival. The hotel's language list includes English.",
         "star": null,
         "price_band": ">2000",
         "accepts_foreigners": true,
@@ -332,17 +343,19 @@
         "alternatives": []
       },
       "score": {
-        "total": 26,
+        "total": 29,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 4,
+          "complete": 7,
           "amap": 0
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "pl_sz_baoanruiji: unknown field 'hotel_class' is dropped on import"
+      ]
     },
     {
       "id": "pl_sz_chiwan_tianhou",
@@ -425,9 +438,14 @@
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": "文心五路33号",
-        "address_en": null,
+        "address_en": "33 Wenxin Road 5, Nanshan District, Shenzhen",
         "district_zh": "南山区",
-        "nearest_metro": null,
+        "nearest_metro": {
+          "station_zh": "后海",
+          "station_en": "Houhai",
+          "line": "2号线",
+          "exit": "D1"
+        },
         "foreigner_signals": {
           "english_signage": null,
           "foreign_cards": null,
@@ -442,7 +460,8 @@
         "sources": [
           "https://jtys.sz.gov.cn/szsjtysjwzgkml/szsjtysjwzgkml/seztfw/jtly/wyk/content/post_12990018.html",
           "https://www.sz.gov.cn/cn/xxgk/zfxxgj/bmdt/content/post_13000497.html",
-          "https://www.eyeshenzhen.com/content/2024-07/22/content_31098138.htm"
+          "https://www.eyeshenzhen.com/content/2024-07/22/content_31098138.htm",
+          "https://www.eyeshenzhen.com/content/2020-09/28/content_18804581.htm"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
@@ -462,12 +481,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 26,
+        "total": 30,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 4,
+          "complete": 8,
           "amap": 0
         },
         "external_used": false
@@ -488,9 +507,14 @@
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": "福华三路购物公园片区",
-        "address_en": null,
+        "address_en": "268 Fuhua Road 3, Futian District, Shenzhen",
         "district_zh": "福田区",
-        "nearest_metro": null,
+        "nearest_metro": {
+          "station_zh": "购物公园",
+          "station_en": "Shopping Park",
+          "line": "1、3号线",
+          "exit": "C、G"
+        },
         "foreigner_signals": {
           "english_signage": null,
           "foreign_cards": null,
@@ -503,7 +527,8 @@
         "official_url": "https://jtys.sz.gov.cn/szsjtysjwzgkml/szsjtysjwzgkml/seztfw/jtly/wyk/content/post_12990018.html",
         "sources": [
           "https://jtys.sz.gov.cn/szsjtysjwzgkml/szsjtysjwzgkml/seztfw/jtly/wyk/content/post_12990018.html",
-          "https://www.eyeshenzhen.com/download/%E5%86%8C%E5%AD%9020251210.pdf"
+          "https://www.eyeshenzhen.com/download/%E5%86%8C%E5%AD%9020251210.pdf",
+          "https://www.sz.gov.cn/en_szgov/travel/malls/content/post_9600607.html"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
@@ -523,12 +548,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 26,
+        "total": 30,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 4,
+          "complete": 8,
           "amap": 0
         },
         "external_used": false
@@ -683,7 +708,7 @@
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": "深圳机场T3三层",
-        "address_en": null,
+        "address_en": "Terminal 3, Level 3, Shenzhen Bao'an International Airport",
         "district_zh": "宝安区",
         "nearest_metro": null,
         "foreigner_signals": {
@@ -724,12 +749,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 28,
+        "total": 29,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 6,
+          "complete": 7,
           "amap": 0
         },
         "external_used": false
@@ -1085,10 +1110,15 @@
         "name_en": "Hilton Shenzhen Futian",
         "aliases_zh": [],
         "aliases_en": [],
-        "address_zh": null,
-        "address_en": null,
+        "address_zh": "深圳市福田区深南大道1003号大中华国际金融中心B座",
+        "address_en": "Tower B, Great China International Finance Centre, 1003 Shennan Road, Shenzhen, China 518000",
         "district_zh": "福田区",
-        "nearest_metro": null,
+        "nearest_metro": {
+          "station_zh": "岗厦北",
+          "station_en": "Gangxia North",
+          "line": "2、10、11、14号线",
+          "exit": null
+        },
         "foreigner_signals": {
           "english_signage": null,
           "foreign_cards": null,
@@ -1100,16 +1130,20 @@
         "official_url": "https://www.hilton.com.cn/zh-cn/hotels/szxsfhi-hilton-shenzhen-futian",
         "sources": [
           "https://www.hilton.com.cn/zh-cn/hotels/szxsfhi-hilton-shenzhen-futian",
-          "https://www.hilton.com.cn/zh-cn/locations/china/guangdong-shenzhen"
+          "https://www.hilton.com.cn/zh-cn/locations/china/guangdong-shenzhen",
+          "https://ir.hilton.com/_assets/_de1e637820b6842c68b34801d11a8fd1/hilton/db/3577/34740/pdf/HLT_Investor_Presentation_-_November_2026.pdf",
+          "https://www.hilton.com.cn/zh-CN/hotel/shenzhen/hilton-shenzhen-szxsfhi/dining3337.html",
+          "https://www.sz.gov.cn/en_szgov/life/transport/metro/content/post_12870342.html",
+          "https://www.hilton.com/en/hotels/szxsfhi-hilton-shenzhen-futian/hotel-location/"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
-        "notes": "希尔顿城市页显示 2026-11-27 入住、11-28 退房的起价。 官网样本为每房每晚人民币 ¥888。当前价以所选日期及房型的报价为准。",
+        "notes": "希尔顿城市页显示 2026-11-27 入住、11-28 退房的起价。 官网样本为每房每晚人民币 ¥888。当前价以所选日期及房型的报价为准。 分档依据：希尔顿集团将品牌列为 Full Service，本库按高档处理。",
         "subcategory": "hotel",
-        "intro_short_zh": "福田区内的希尔顿酒店。",
-        "intro_short_en": "A Hilton hotel in Futian.",
-        "intro_long_zh": "福田区内的希尔顿酒店。可在品牌官网查看房型和入住安排。",
-        "intro_long_en": "A Hilton hotel in Futian. See the hotel's own website for room types and check-in details.",
+        "intro_short_zh": "福田中心区的希尔顿，可结合购物公园和福田站。",
+        "intro_short_en": "A central Futian stay for COCO Park and onward rail to Hong Kong.",
+        "intro_long_zh": "酒店位于深南大道1003号。希尔顿英文页把福田站的香港方向高铁和购物公园列作附近行程参照，店内另有屋顶泳池。",
+        "intro_long_en": "Set up a city stay near Futian's shopping area. The hotel points to rail service to Hong Kong from Futian Station and lists an outdoor rooftop pool.",
         "star": null,
         "price_band": "500-1000",
         "accepts_foreigners": true,
@@ -1131,17 +1165,19 @@
         "alternatives": []
       },
       "score": {
-        "total": 26,
+        "total": 31,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 4,
+          "complete": 9,
           "amap": 0
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "pl_sz_dazhonghuaxierdun: unknown field 'hotel_class' is dropped on import"
+      ]
     },
     {
       "id": "pl_sz_diwangna_futian",
@@ -1289,7 +1325,7 @@
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": "深业上城",
-        "address_en": null,
+        "address_en": "5001 Huanggang Road, Futian District, Shenzhen, China",
         "district_zh": "福田区",
         "nearest_metro": null,
         "foreigner_signals": {
@@ -1304,7 +1340,8 @@
         "official_url": "https://www.szlh.gov.cn/English/news/content/mpost_12941947.html",
         "sources": [
           "https://www.szlh.gov.cn/English/news/content/mpost_12941947.html",
-          "https://www.eyeshenzhen.com/content/2026-02/02/content_31931787.htm"
+          "https://www.eyeshenzhen.com/content/2026-02/02/content_31931787.htm",
+          "https://www.mandarinoriental.com/ar-ae/shenzhen/futian/dine/the-bay-by-chef-fei"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
@@ -1330,12 +1367,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 26,
+        "total": 28,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 4,
+          "complete": 6,
           "amap": 0
         },
         "external_used": false
@@ -1350,13 +1387,13 @@
         "id": "pl_sz_enriquetomas_jichang",
         "city": "shenzhen",
         "category": "food",
-        "tier": "backup",
+        "tier": "main",
         "name_zh": "伊挑火腿Enrique Tomas（深圳机场T3店）",
         "name_en": "Enrique Tomas (Shenzhen Airport T3)",
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": "深圳机场T3三层",
-        "address_en": null,
+        "address_en": "Terminal 3, Level 3, Shenzhen Bao'an International Airport",
         "district_zh": "宝安区",
         "nearest_metro": null,
         "foreigner_signals": {
@@ -1397,12 +1434,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 28,
+        "total": 29,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 6,
+          "complete": 7,
           "amap": 0
         },
         "external_used": false
@@ -1423,7 +1460,7 @@
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": "福田香格里拉",
-        "address_en": null,
+        "address_en": "Futian Shangri-La, 4088 Yi Tian Road, Futian District, Shenzhen, China 518048",
         "district_zh": "福田区",
         "nearest_metro": null,
         "foreigner_signals": {
@@ -1438,7 +1475,8 @@
         "official_url": "https://www.szlh.gov.cn/English/news/content/mpost_12941947.html",
         "sources": [
           "https://www.szlh.gov.cn/English/news/content/mpost_12941947.html",
-          "https://www.eyeshenzhen.com/content/2026-02/02/content_31931787.htm"
+          "https://www.eyeshenzhen.com/content/2026-02/02/content_31931787.htm",
+          "https://www.shangri-la.com/shenzhen/futianshangrila/"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
@@ -1464,12 +1502,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 26,
+        "total": 28,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 4,
+          "complete": 6,
           "amap": 0
         },
         "external_used": false
@@ -1551,7 +1589,7 @@
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": "深圳机场T3三层国际出发3L-05-01",
-        "address_en": null,
+        "address_en": "Terminal 3, Level 3, international departures, unit 3L-05-01, Shenzhen Bao'an International Airport",
         "district_zh": "宝安区",
         "nearest_metro": null,
         "foreigner_signals": {
@@ -1566,7 +1604,8 @@
         "official_url": "https://www.szairport.com/szairport/tscy/202507/40a51cbc6f044e4cba749ac4b5a75516.shtml",
         "sources": [
           "https://www.szairport.com/szairport/tscy/202507/40a51cbc6f044e4cba749ac4b5a75516.shtml",
-          "https://www.szairport.com/szairport/msmk/Dining.shtml"
+          "https://www.szairport.com/szairport/msmk/Dining.shtml",
+          "https://www.szairport.com/szairporten/msmk/Dining.shtml"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
@@ -1592,12 +1631,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 28,
+        "total": 29,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 6,
+          "complete": 7,
           "amap": 0
         },
         "external_used": false
@@ -1617,8 +1656,8 @@
         "name_en": "FOO",
         "aliases_zh": [],
         "aliases_en": [],
-        "address_zh": null,
-        "address_en": null,
+        "address_zh": "深圳市福田区福华三路138号深圳四季酒店",
+        "address_en": "Four Seasons Hotel Shenzhen, 138 Fuhua Third Road, Futian District, Shenzhen, China 518048",
         "district_zh": "福田区",
         "nearest_metro": null,
         "foreigner_signals": {
@@ -1633,7 +1672,8 @@
         "official_url": "https://www.fourseasons.com/shenzhen/dining/restaurants/foo/?_s_icmp=far_restaurant_learnmore",
         "sources": [
           "https://www.fourseasons.com/shenzhen/dining/restaurants/foo/?_s_icmp=far_restaurant_learnmore",
-          "https://www.fourseasons.com/zh/shenzhen/dining/"
+          "https://www.fourseasons.com/zh/shenzhen/dining/",
+          "https://www.fourseasons.com/shenzhen/getting-here/"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
@@ -1659,12 +1699,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 25,
+        "total": 28,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 3,
+          "complete": 6,
           "amap": 0
         },
         "external_used": false
@@ -1822,8 +1862,8 @@
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": null,
-        "address_en": null,
-        "district_zh": null,
+        "address_en": "3 Fuhua Third Road, Fushan Community, Futian Subdistrict, Shenzhen, China 518026",
+        "district_zh": "福田区",
         "nearest_metro": null,
         "foreigner_signals": {
           "english_signage": null,
@@ -1836,16 +1876,17 @@
         "official_url": "https://www.marriott.com/en-us/hotels/szxpf-four-points-shenzhen-futian-cbd/overview/",
         "sources": [
           "https://www.marriott.com/en-us/hotels/szxpf-four-points-shenzhen-futian-cbd/overview/",
-          "https://www.marriott.com/en-us/destinations/china/shenzhen.mi"
+          "https://www.marriott.com/en-us/destinations/china/shenzhen.mi",
+          "https://help.marriott.com/s/article/Article-24483"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
-        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sat, Dec 26 - Sun, Dec 27。 官网样本为每房每晚人民币 ¥838。当前价以所选日期及房型的报价为准。",
+        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sat, Dec 26 - Sun, Dec 27。 官网样本为每房每晚人民币 ¥838。当前价以所选日期及房型的报价为准。 分档依据：万豪集团列为 Select 精选服务品牌，本库按中档处理。",
         "subcategory": "hotel",
-        "intro_short_zh": "福田的一家福朋喜来登酒店，按分店全名查找。",
-        "intro_short_en": "A Four Points hotel in Futian. Use the full property name.",
-        "intro_long_zh": "福田的一家福朋喜来登酒店，按分店全名查找。可在品牌官网查看房型和入住安排。",
-        "intro_long_en": "A Four Points hotel in Futian. Use the full property name. See the hotel's own website for room types and check-in details.",
+        "intro_short_zh": "福华三路的福朋，可从岗厦站和福田站规划到店。",
+        "intro_short_en": "A Futian stay near Gangxia with Futian Railway Station listed for arrival.",
+        "intro_long_zh": "酒店在福华三路，官网列岗厦地铁站与福田铁路站。适合白天用地铁游福田，或接着从福田站乘高铁的旅客。",
+        "intro_long_en": "Use this central Futian address for a trip built around subway travel. The property lists English and gives directions for travelers arriving via Futian Railway Station.",
         "star": null,
         "price_band": "500-1000",
         "accepts_foreigners": true,
@@ -1867,17 +1908,19 @@
         "alternatives": []
       },
       "score": {
-        "total": 26,
+        "total": 28,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 4,
+          "complete": 6,
           "amap": 0
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "pl_sz_futianfupeng: unknown field 'hotel_class' is dropped on import"
+      ]
     },
     {
       "id": "pl_sz_futianxilaideng",
@@ -1892,10 +1935,15 @@
         "name_en": "Sheraton Shenzhen Futian Hotel",
         "aliases_zh": [],
         "aliases_en": [],
-        "address_zh": null,
-        "address_en": null,
-        "district_zh": null,
-        "nearest_metro": null,
+        "address_zh": "深圳市福田区福华路大中华国际交易广场",
+        "address_en": "Great China International Exchange Square, Fuhua Road, Futian District, Shenzhen, China 518048",
+        "district_zh": "福田区",
+        "nearest_metro": {
+          "station_zh": "会展中心",
+          "station_en": "Convention & Exhibition Center",
+          "line": "1、4号线",
+          "exit": null
+        },
         "foreigner_signals": {
           "english_signage": null,
           "foreign_cards": null,
@@ -1907,16 +1955,19 @@
         "official_url": "https://www.marriott.com/en-us/hotels/szxsf-sheraton-shenzhen-futian-hotel/overview/",
         "sources": [
           "https://www.marriott.com/en-us/hotels/szxsf-sheraton-shenzhen-futian-hotel/overview/",
-          "https://www.marriott.com/en-us/destinations/china/shenzhen.mi"
+          "https://www.marriott.com/en-us/destinations/china/shenzhen.mi",
+          "https://help.marriott.com/s/article/Article-24483",
+          "https://www.marriott.com.cn/hotels/szxsf-sheraton-shenzhen-futian-hotel/overview/",
+          "https://www.sz.gov.cn/en_szgov/life/transport/metro/content/post_12870342.html"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
-        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sat, Dec 26 - Sun, Dec 27。 官网样本为每房每晚人民币 ¥1,180。当前价以所选日期及房型的报价为准。",
+        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sat, Dec 26 - Sun, Dec 27。 官网样本为每房每晚人民币 ¥1,180。当前价以所选日期及房型的报价为准。 分档依据：万豪集团将此品牌列为 Premium。",
         "subcategory": "hotel",
-        "intro_short_zh": "在福田中心一带安排住宿。",
-        "intro_short_en": "A hotel option in central Futian.",
-        "intro_long_zh": "在福田中心一带安排住宿。可在品牌官网查看房型和入住安排。",
-        "intro_long_en": "A hotel option in central Futian. See the hotel's own website for room types and check-in details.",
+        "intro_short_zh": "往返福田高铁站时可考虑，门店列出英、韩语。",
+        "intro_short_en": "A Futian option with English and Korean in the property language list.",
+        "intro_long_zh": "适合从福田铁路站到深圳、希望使用英语或韩语与酒店沟通的旅客。万豪到店页列出福田站和店内服务语言。",
+        "intro_long_en": "Use the property directions if arriving by high-speed rail at Futian. The hotel lists Chinese, English and Korean among its spoken languages.",
         "star": null,
         "price_band": "1000-2000",
         "accepts_foreigners": true,
@@ -1938,17 +1989,19 @@
         "alternatives": []
       },
       "score": {
-        "total": 26,
+        "total": 31,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 4,
+          "complete": 9,
           "amap": 0
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "pl_sz_futianxilaideng: unknown field 'hotel_class' is dropped on import"
+      ]
     },
     {
       "id": "pl_sz_gankeng",
@@ -2167,10 +2220,15 @@
         "name_en": "Four Points by Sheraton Shenzhen Guangming",
         "aliases_zh": [],
         "aliases_en": [],
-        "address_zh": null,
-        "address_en": null,
-        "district_zh": null,
-        "nearest_metro": null,
+        "address_zh": "深圳市光明区聚丰路7号",
+        "address_en": "7 Jufeng Road, Guangming District, Shenzhen, China 518107",
+        "district_zh": "光明区",
+        "nearest_metro": {
+          "station_zh": "凤凰城",
+          "station_en": "Fenghuangcheng",
+          "line": "6号线",
+          "exit": null
+        },
         "foreigner_signals": {
           "english_signage": null,
           "foreign_cards": null,
@@ -2182,16 +2240,19 @@
         "official_url": "https://www.marriott.com/en-us/hotels/szxgu-four-points-shenzhen-guangming/overview/",
         "sources": [
           "https://www.marriott.com/en-us/hotels/szxgu-four-points-shenzhen-guangming/overview/",
-          "https://www.marriott.com/en-us/destinations/china/shenzhen.mi?pg=3"
+          "https://www.marriott.com/en-us/destinations/china/shenzhen.mi?pg=3",
+          "https://help.marriott.com/s/article/Article-24483",
+          "https://www.marriott.com.cn/hotels/szxgu-four-points-shenzhen-guangming/overview/",
+          "https://www.sz.gov.cn/en_szgov/life/transport/metro/content/post_12870342.html"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
-        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sat, Dec 26 - Sun, Dec 27。 官网样本为每房每晚人民币 ¥496。当前价以所选日期及房型的报价为准。",
+        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sat, Dec 26 - Sun, Dec 27。 官网样本为每房每晚人民币 ¥496。当前价以所选日期及房型的报价为准。 分档依据：万豪集团列为 Select 精选服务品牌，本库按中档处理。",
         "subcategory": "hotel",
-        "intro_short_zh": "光明区的福朋喜来登酒店。",
-        "intro_short_en": "A Four Points hotel in Guangming.",
-        "intro_long_zh": "光明区的福朋喜来登酒店。可在品牌官网查看房型和入住安排。",
-        "intro_long_en": "A Four Points hotel in Guangming. See the hotel's own website for room types and check-in details.",
+        "intro_short_zh": "凤凰城站和光明城站可用于光明区抵达。",
+        "intro_short_en": "A Guangming hotel with metro and railway arrival options.",
+        "intro_long_zh": "万豪位置页列出凤凰城地铁站、光明城铁路站，也列出中文与英文。打算在深圳北部多留一晚的人，可按自己的路线选择到店方式。",
+        "intro_long_en": "Plan a Guangming stay around Fenghuangcheng for the metro or Guangmingcheng for mainline rail. English is among the languages the hotel lists.",
         "star": null,
         "price_band": "<500",
         "accepts_foreigners": true,
@@ -2213,17 +2274,19 @@
         "alternatives": []
       },
       "score": {
-        "total": 26,
+        "total": 31,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 4,
+          "complete": 9,
           "amap": 0
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "pl_sz_guangmingfupeng: unknown field 'hotel_class' is dropped on import"
+      ]
     },
     {
       "id": "pl_sz_guangmingxierdun",
@@ -2703,8 +2766,8 @@
         "name_en": "The Glasshouse",
         "aliases_zh": [],
         "aliases_en": [],
-        "address_zh": null,
-        "address_en": null,
+        "address_zh": "深圳市福田区益田路5023号深圳柏悦酒店47层",
+        "address_en": "Level 47, Park Hyatt Shenzhen, 5023 Yi Tian Road, Futian District, Shenzhen, China 518033",
         "district_zh": "福田区",
         "nearest_metro": null,
         "foreigner_signals": {
@@ -2717,7 +2780,9 @@
         },
         "official_url": "https://www.hyatt.com/content/dam/hotel/propertysites/assets/park/szxph/documents/en_us/dining/the-glasshouse/The-Glasshouse-A-La-Carte-Menu.pdf",
         "sources": [
-          "https://www.hyatt.com/content/dam/hotel/propertysites/assets/park/szxph/documents/en_us/dining/the-glasshouse/The-Glasshouse-A-La-Carte-Menu.pdf"
+          "https://www.hyatt.com/content/dam/hotel/propertysites/assets/park/szxph/documents/en_us/dining/the-glasshouse/The-Glasshouse-A-La-Carte-Menu.pdf",
+          "https://www.hyatt.com/park-hyatt/zh-CN/szxph-park-hyatt-shenzhen/dining",
+          "https://www.hyatt.com/park-hyatt/en-US/szxph-park-hyatt-shenzhen/dining"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
@@ -2743,12 +2808,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 20,
+        "total": 28,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
-          "sources": 5,
-          "complete": 3,
+          "sources": 10,
+          "complete": 6,
           "amap": 0
         },
         "external_used": false
@@ -3165,9 +3230,14 @@
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": "深南中路华强北片区",
-        "address_en": null,
+        "address_en": "1007–1015 Huaqiangbei Road, Futian District, Shenzhen",
         "district_zh": "福田区",
-        "nearest_metro": null,
+        "nearest_metro": {
+          "station_zh": "华强路",
+          "station_en": "Huaqiang Road",
+          "line": "1号线",
+          "exit": "A"
+        },
         "foreigner_signals": {
           "english_signage": null,
           "foreign_cards": null,
@@ -3180,7 +3250,8 @@
         "official_url": "https://www.eyeshenzhen.com/content/2024-05/10/content_30929915.htm",
         "sources": [
           "https://www.eyeshenzhen.com/content/2024-05/10/content_30929915.htm",
-          "https://www.sz.gov.cn/cn/xxgk/zfxxgj/zwdt/content/post_12756562.html"
+          "https://www.sz.gov.cn/cn/xxgk/zfxxgj/zwdt/content/post_12756562.html",
+          "https://www.eyeshenzhen.com/content/2025-07/04/content_31595474.htm"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
@@ -3200,12 +3271,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 26,
+        "total": 30,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 4,
+          "complete": 8,
           "amap": 0
         },
         "external_used": false
@@ -3427,7 +3498,7 @@
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": "深圳机场T3三层",
-        "address_en": null,
+        "address_en": "Terminal 3, Level 3, Shenzhen Bao'an International Airport",
         "district_zh": "宝安区",
         "nearest_metro": null,
         "foreigner_signals": {
@@ -3468,12 +3539,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 28,
+        "total": 29,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 6,
+          "complete": 7,
           "amap": 0
         },
         "external_used": false
@@ -3752,13 +3823,13 @@
         "id": "pl_sz_jichanghuaidexierdun",
         "city": "shenzhen",
         "category": "hotel",
-        "tier": "main",
+        "tier": "backup",
         "name_zh": "深圳机场怀德希尔顿花园酒店",
         "name_en": "Hilton Garden Inn Shenzhen Airport",
         "aliases_zh": [],
         "aliases_en": [],
-        "address_zh": null,
-        "address_en": null,
+        "address_zh": "深圳市宝安区福永街道翠岗西路9号",
+        "address_en": "9 Cuigang West Road, Fuyong Street, Bao’an District, Shenzhen, China 518103",
         "district_zh": "宝安区",
         "nearest_metro": null,
         "foreigner_signals": {
@@ -3772,16 +3843,18 @@
         "official_url": "https://www.hilton.com.cn/zh-cn/hotels/szxhdgi-hilton-garden-inn-shenzhen-airport",
         "sources": [
           "https://www.hilton.com.cn/zh-cn/hotels/szxhdgi-hilton-garden-inn-shenzhen-airport",
-          "https://www.hilton.com.cn/zh-cn/locations/china/guangdong-shenzhen"
+          "https://www.hilton.com.cn/zh-cn/locations/china/guangdong-shenzhen",
+          "https://ir.hilton.com/_assets/_de1e637820b6842c68b34801d11a8fd1/hilton/db/3577/34740/pdf/HLT_Investor_Presentation_-_November_2026.pdf",
+          "https://www.hilton.com/en/hotels/szxhdgi-hilton-garden-inn-shenzhen-airport/hotel-location/"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
-        "notes": "希尔顿城市页显示 2026-11-27 入住、11-28 退房的起价。 官网样本为每房每晚人民币 ¥478。当前价以所选日期及房型的报价为准。",
+        "notes": "希尔顿城市页显示 2026-11-27 入住、11-28 退房的起价。 官网样本为每房每晚人民币 ¥478。当前价以所选日期及房型的报价为准。 分档依据：希尔顿集团将品牌列为 Focused Service，本库按中档处理。",
         "subcategory": "hotel",
-        "intro_short_zh": "在深圳宝安机场一带停留时可考虑。",
-        "intro_short_en": "An option for staying in the Bao'an Airport area.",
-        "intro_long_zh": "在深圳宝安机场一带停留时可考虑。可在品牌官网查看房型和入住安排。",
-        "intro_long_en": "An option for staying in the Bao'an Airport area. See the hotel's own website for room types and check-in details.",
+        "intro_short_zh": "早晚搭宝安机场航班时，可在福永过一晚。",
+        "intro_short_en": "A Fuyong option for a night before or after a flight from Bao'an.",
+        "intro_long_zh": "酒店位于福永翠岗西路。官网将宝安机场列为附近交通点，另有店内餐厅。若赶飞机，需把福永到航站楼的路程另行安排。",
+        "intro_long_en": "Plan a separate ride from this Fuyong address to the terminal. The Hilton page gives the hotel location and lists an on-site restaurant.",
         "star": null,
         "price_band": "<500",
         "accepts_foreigners": true,
@@ -3803,17 +3876,19 @@
         "alternatives": []
       },
       "score": {
-        "total": 26,
+        "total": 29,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 4,
+          "complete": 7,
           "amap": 0
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "pl_sz_jichanghuaidexierdun: unknown field 'hotel_class' is dropped on import"
+      ]
     },
     {
       "id": "pl_sz_jiliguopu_jichang",
@@ -3957,15 +4032,20 @@
         "id": "pl_sz_jinmaowan",
         "city": "shenzhen",
         "category": "hotel",
-        "tier": "main",
+        "tier": "backup",
         "name_zh": "金茂深圳JW万豪酒店",
         "name_en": "JW Marriott Hotel Shenzhen",
         "aliases_zh": [],
         "aliases_en": [],
-        "address_zh": null,
-        "address_en": null,
-        "district_zh": null,
-        "nearest_metro": null,
+        "address_zh": "深圳市福田区深南大道6005号",
+        "address_en": "6005 Shennan Boulevard, Futian, Shenzhen, China 518040",
+        "district_zh": "福田区",
+        "nearest_metro": {
+          "station_zh": "车公庙",
+          "station_en": "Chegongmiao",
+          "line": "1、7、9、11号线",
+          "exit": "J1"
+        },
         "foreigner_signals": {
           "english_signage": null,
           "foreign_cards": null,
@@ -3977,16 +4057,19 @@
         "official_url": "https://www.marriott.com/en-us/hotels/szxjw-jw-marriott-hotel-shenzhen/overview/",
         "sources": [
           "https://www.marriott.com/en-us/hotels/szxjw-jw-marriott-hotel-shenzhen/overview/",
-          "https://www.marriott.com/en-us/destinations/china/shenzhen.mi"
+          "https://www.marriott.com/en-us/destinations/china/shenzhen.mi",
+          "https://help.marriott.com/s/article/Article-24483",
+          "https://www.marriott.com.cn/hotels/szxjw-jw-marriott-hotel-shenzhen/overview/",
+          "https://www.sz.gov.cn/en_szgov/life/transport/metro/content/post_12870342.html"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
-        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sat, Dec 26 - Sun, Dec 27。 官网样本为每房每晚人民币 ¥1,262。当前价以所选日期及房型的报价为准。",
+        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sat, Dec 26 - Sun, Dec 27。 官网样本为每房每晚人民币 ¥1,262。当前价以所选日期及房型的报价为准。 分档依据：万豪集团将此品牌列为 Luxury。",
         "subcategory": "hotel",
-        "intro_short_zh": "在深圳福田住宿的一处候选。",
-        "intro_short_en": "A JW Marriott option in Futian.",
-        "intro_long_zh": "在深圳福田住宿的一处候选。可在品牌官网查看房型和入住安排。",
-        "intro_long_en": "A JW Marriott option in Futian. See the hotel's own website for room types and check-in details.",
+        "intro_short_zh": "车公庙站可在四条地铁线间换乘。",
+        "intro_short_en": "A Futian hotel with four metro lines at Chegongmiao.",
+        "intro_long_zh": "门店位于深南大道6005号，万豪列出车公庙站的1、7、9、11号线和J1口，适合靠地铁往返不同片区的游客。",
+        "intro_long_en": "Start with Chegongmiao for flexible routes across Shenzhen. Check the hotel's directions for exit J1 and its listed languages, which include English.",
         "star": null,
         "price_band": "1000-2000",
         "accepts_foreigners": true,
@@ -4008,17 +4091,19 @@
         "alternatives": []
       },
       "score": {
-        "total": 26,
+        "total": 31,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 4,
+          "complete": 9,
           "amap": 0
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "pl_sz_jinmaowan: unknown field 'hotel_class' is dropped on import"
+      ]
     },
     {
       "id": "pl_sz_jinxiu_zhonghua",
@@ -4101,7 +4186,7 @@
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": "深圳机场T3五层",
-        "address_en": null,
+        "address_en": "Terminal 3, Level 5, Shenzhen Bao'an International Airport",
         "district_zh": "宝安区",
         "nearest_metro": null,
         "foreigner_signals": {
@@ -4142,12 +4227,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 28,
+        "total": 29,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 6,
+          "complete": 7,
           "amap": 0
         },
         "external_used": false
@@ -4235,9 +4320,14 @@
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": "蛇口太子湾",
-        "address_en": null,
+        "address_en": "Prince Bay, Nanshan District, Shenzhen",
         "district_zh": "南山区",
-        "nearest_metro": null,
+        "nearest_metro": {
+          "station_zh": "太子湾",
+          "station_en": "Taiziwan",
+          "line": "12号线",
+          "exit": "C"
+        },
         "foreigner_signals": {
           "english_signage": null,
           "foreign_cards": null,
@@ -4248,7 +4338,8 @@
         },
         "official_url": "https://qh.sz.gov.cn/en/life-in-qianhai/malls-and-places-for-leisure/content/post_10660073.html",
         "sources": [
-          "https://qh.sz.gov.cn/en/life-in-qianhai/malls-and-places-for-leisure/content/post_10660073.html"
+          "https://qh.sz.gov.cn/en/life-in-qianhai/malls-and-places-for-leisure/content/post_10660073.html",
+          "https://qh.sz.gov.cn/en/news/content/post_12155044.html"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
@@ -4268,12 +4359,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 21,
+        "total": 30,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
-          "sources": 5,
-          "complete": 4,
+          "sources": 10,
+          "complete": 8,
           "amap": 0
         },
         "external_used": false
@@ -4293,9 +4384,9 @@
         "name_en": "Conrad Shenzhen",
         "aliases_zh": [],
         "aliases_en": [],
-        "address_zh": null,
-        "address_en": null,
-        "district_zh": null,
+        "address_zh": "深圳市南山区听海大道5001号",
+        "address_en": "5001 Tinghai Avenue, Nanshan District, Shenzhen, China 518066",
+        "district_zh": "南山区",
         "nearest_metro": null,
         "foreigner_signals": {
           "english_signage": null,
@@ -4308,16 +4399,18 @@
         "official_url": "https://www.hilton.com.cn/zh-cn/hotels/szxcici-conrad-shenzhen",
         "sources": [
           "https://www.hilton.com.cn/zh-cn/hotels/szxcici-conrad-shenzhen",
-          "https://www.hilton.com.cn/zh-cn/locations/china/guangdong-shenzhen"
+          "https://www.hilton.com.cn/zh-cn/locations/china/guangdong-shenzhen",
+          "https://ir.hilton.com/_assets/_de1e637820b6842c68b34801d11a8fd1/hilton/db/3577/34740/pdf/HLT_Investor_Presentation_-_November_2026.pdf",
+          "https://www.hilton.com/en/hotels/szxcici-conrad-shenzhen/hotel-location/"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
-        "notes": "希尔顿城市页显示 2026-11-27 入住、11-28 退房的起价。 官网样本为每房每晚人民币 ¥2,200。当前价以所选日期及房型的报价为准。",
+        "notes": "希尔顿城市页显示 2026-11-27 入住、11-28 退房的起价。 官网样本为每房每晚人民币 ¥2,200。当前价以所选日期及房型的报价为准。 分档依据：希尔顿集团将品牌列为 Luxury。",
         "subcategory": "hotel",
-        "intro_short_zh": "前海一带的康莱德酒店。",
-        "intro_short_en": "A Conrad hotel in Qianhai.",
-        "intro_long_zh": "前海一带的康莱德酒店。可在品牌官网查看房型和入住安排。",
-        "intro_long_en": "A Conrad hotel in Qianhai. See the hotel's own website for room types and check-in details.",
+        "intro_short_zh": "前海听海大道的酒店，可把购物和餐饮集中在前海。",
+        "intro_short_en": "A Qianhai stay on Tinghai Avenue near shops and restaurants.",
+        "intro_long_zh": "门店位于南山听海大道5001号，适合把前海排进多日深圳游。希尔顿有英文位置和交通页，可在出发前核对到店方式。",
+        "intro_long_en": "Pick this Conrad if you want to spend more of the trip in Qianhai. The hotel publishes a separate English location guide with travel options for arrival.",
         "star": null,
         "price_band": ">2000",
         "accepts_foreigners": true,
@@ -4339,17 +4432,19 @@
         "alternatives": []
       },
       "score": {
-        "total": 26,
+        "total": 29,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 4,
+          "complete": 7,
           "amap": 0
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "pl_sz_kanglaide: unknown field 'hotel_class' is dropped on import"
+      ]
     },
     {
       "id": "pl_sz_kejia_minsu",
@@ -4432,7 +4527,7 @@
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": "深圳机场T3五层东侧5R-01-03",
-        "address_en": null,
+        "address_en": "Terminal 3, Level 5, east side, unit 5R-01-03, Shenzhen Bao'an International Airport",
         "district_zh": "宝安区",
         "nearest_metro": null,
         "foreigner_signals": {
@@ -4447,7 +4542,8 @@
         "official_url": "https://www.szairport.com/szairport/zcys/202402/f37e72c53baa4c98b67ffb6f366c4baf.shtml",
         "sources": [
           "https://www.szairport.com/szairport/zcys/202402/f37e72c53baa4c98b67ffb6f366c4baf.shtml",
-          "https://www.szairport.com/szairport/msmk/Dining.shtml"
+          "https://www.szairport.com/szairport/msmk/Dining.shtml",
+          "https://www.szairport.com/szairporten/msmk/Dining.shtml"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
@@ -4473,12 +4569,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 28,
+        "total": 29,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 6,
+          "complete": 7,
           "amap": 0
         },
         "external_used": false
@@ -4493,7 +4589,7 @@
         "id": "pl_sz_latable_ronghe",
         "city": "shenzhen",
         "category": "food",
-        "tier": "main",
+        "tier": "backup",
         "name_zh": "La Tablée融合料理",
         "name_en": "La Tablée",
         "aliases_zh": [],
@@ -4515,8 +4611,8 @@
           "https://www.eyeshenzhen.com/content/2026-02/02/content_31931787.htm"
         ],
         "checked_on": "2026-11-27",
-        "confidence": "medium",
-        "notes": "营业依据为当前经营方点位或近期主管部门的具名记录。",
+        "confidence": "low",
+        "notes": "城市英文门户列有餐厅名称，门店门牌待补。 近期官方资料确认身份，具体到店位置待复核。 待人工处理。市属英文门户仍有店名，2026年活动可核品牌参与。未查到经营方或主管部门注明该分店的现行门牌、营业时间、预约规则，暂留候补。",
         "subcategory": "western",
         "hours_zh": null,
         "hours_source": null,
@@ -4538,10 +4634,10 @@
         "alternatives": []
       },
       "score": {
-        "total": 20,
+        "total": 12,
         "parts": {
           "foreigner": 0,
-          "confidence": 12,
+          "confidence": 4,
           "sources": 5,
           "complete": 3,
           "amap": 0
@@ -4691,14 +4787,14 @@
         "id": "pl_sz_lisi",
         "city": "shenzhen",
         "category": "hotel",
-        "tier": "main",
+        "tier": "backup",
         "name_zh": "深圳星河丽思卡尔顿酒店",
         "name_en": "The Ritz-Carlton, Shenzhen",
         "aliases_zh": [],
         "aliases_en": [],
-        "address_zh": null,
-        "address_en": null,
-        "district_zh": null,
+        "address_zh": "深圳市福田区福华三路116号",
+        "address_en": "116 Fuhua San Road, Futian District, Shenzhen, China 518048",
+        "district_zh": "福田区",
         "nearest_metro": null,
         "foreigner_signals": {
           "english_signage": null,
@@ -4711,16 +4807,18 @@
         "official_url": "https://www.ritzcarlton.com/en/hotels/szxrz-the-ritz-carlton-shenzhen/overview/",
         "sources": [
           "https://www.ritzcarlton.com/en/hotels/szxrz-the-ritz-carlton-shenzhen/overview/",
-          "https://www.marriott.com/en-us/destinations/china/shenzhen.mi"
+          "https://www.marriott.com/en-us/destinations/china/shenzhen.mi",
+          "https://help.marriott.com/s/article/Article-24483",
+          "https://www.ritzcarlton.com/zh-cn/hotels/szxrz-the-ritz-carlton-shenzhen/overview/"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
-        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sat, Dec 26 - Sun, Dec 27。 官网样本为每房每晚人民币 ¥2,470。当前价以所选日期及房型的报价为准。",
+        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sat, Dec 26 - Sun, Dec 27。 官网样本为每房每晚人民币 ¥2,470。当前价以所选日期及房型的报价为准。 分档依据：万豪集团将此品牌列为 Luxury。",
         "subcategory": "hotel",
-        "intro_short_zh": "可作为福田中心一带的住宿点。",
-        "intro_short_en": "A Ritz-Carlton hotel in central Futian.",
-        "intro_long_zh": "可作为福田中心一带的住宿点。可在品牌官网查看房型和入住安排。",
-        "intro_long_en": "A Ritz-Carlton hotel in central Futian. See the hotel's own website for room types and check-in details.",
+        "intro_short_zh": "福田室外泳池酒店，门店列出英文服务。",
+        "intro_short_en": "A Futian stay with an outdoor pool and English listed by the hotel.",
+        "intro_long_zh": "万豪门店资料给出了深圳北站与福田站两种铁路到店参照。适合把福田安排为一站、回店还想留点游泳时间的人。",
+        "intro_long_en": "Check which railway station serves your trip before arrival. The property lists both Futian and Shenzhen North, and offers an outdoor pool for time back at the hotel.",
         "star": null,
         "price_band": ">2000",
         "accepts_foreigners": true,
@@ -4742,17 +4840,19 @@
         "alternatives": []
       },
       "score": {
-        "total": 26,
+        "total": 29,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 4,
+          "complete": 7,
           "amap": 0
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "pl_sz_lisi: unknown field 'hotel_class' is dropped on import"
+      ]
     },
     {
       "id": "pl_sz_longgangwanfeng",
@@ -4767,9 +4867,9 @@
         "name_en": "Fairfield by Marriott Shenzhen Longgang",
         "aliases_zh": [],
         "aliases_en": [],
-        "address_zh": null,
-        "address_en": null,
-        "district_zh": null,
+        "address_zh": "深圳市龙岗区富安大道18号",
+        "address_en": "18 Fu'an Boulevard, Longgang District, Shenzhen, China 518111",
+        "district_zh": "龙岗区",
         "nearest_metro": null,
         "foreigner_signals": {
           "english_signage": null,
@@ -4782,16 +4882,18 @@
         "official_url": "https://www.marriott.com/en-us/hotels/szxfl-fairfield-shenzhen-longgang/overview/",
         "sources": [
           "https://www.marriott.com/en-us/hotels/szxfl-fairfield-shenzhen-longgang/overview/",
-          "https://www.marriott.com/en-us/destinations/china/shenzhen.mi?pg=2"
+          "https://www.marriott.com/en-us/destinations/china/shenzhen.mi?pg=2",
+          "https://help.marriott.com/s/article/Article-24483",
+          "https://www.marriott.com.cn/hotels/szxfl-fairfield-shenzhen-longgang/overview/"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
-        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sat, Dec 26 - Sun, Dec 27。 官网样本为每房每晚人民币 ¥402。当前价以所选日期及房型的报价为准。",
+        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sat, Dec 26 - Sun, Dec 27。 官网样本为每房每晚人民币 ¥402。当前价以所选日期及房型的报价为准。 分档依据：万豪集团列为 Select 精选服务品牌，本库按中档处理。",
         "subcategory": "hotel",
-        "intro_short_zh": "在龙岗停留时可考虑这家万枫。",
-        "intro_short_en": "A Fairfield hotel in Longgang.",
-        "intro_long_zh": "在龙岗停留时可考虑这家万枫。可在品牌官网查看房型和入住安排。",
-        "intro_long_en": "A Fairfield hotel in Longgang. See the hotel's own website for room types and check-in details.",
+        "intro_short_zh": "龙岗福安大道的万枫，可用英文查看到店信息。",
+        "intro_short_en": "A Longgang base with English on the hotel's language list.",
+        "intro_long_zh": "门店在福安大道18号，适合把行程集中在深圳东部的游客。品牌页列出中英文服务，有住客可用的健身房与餐厅。",
+        "intro_long_en": "If you're spending time in Longgang, staying here keeps the focus on eastern Shenzhen. Marriott lists English as a property language and gives the Fu'an Boulevard address.",
         "star": null,
         "price_band": "<500",
         "accepts_foreigners": true,
@@ -4813,17 +4915,19 @@
         "alternatives": []
       },
       "score": {
-        "total": 26,
+        "total": 29,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 4,
+          "complete": 7,
           "amap": 0
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "pl_sz_longgangwanfeng: unknown field 'hotel_class' is dropped on import"
+      ]
     },
     {
       "id": "pl_sz_longhuayilin",
@@ -4910,9 +5014,14 @@
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": "宝安南路1881号",
-        "address_en": null,
+        "address_en": "1881 Bao’an Nan Road, Luohu District, Shenzhen",
         "district_zh": "罗湖区",
-        "nearest_metro": null,
+        "nearest_metro": {
+          "station_zh": "大剧院",
+          "station_en": "Grand Theater",
+          "line": "1、2号线",
+          "exit": null
+        },
         "foreigner_signals": {
           "english_signage": null,
           "foreign_cards": null,
@@ -4925,7 +5034,8 @@
         "official_url": "https://www.sz.gov.cn/cn/xxgk/zfxxgj/bmdt/content/post_13000497.html",
         "sources": [
           "https://www.sz.gov.cn/cn/xxgk/zfxxgj/bmdt/content/post_13000497.html",
-          "https://www.eyeshenzhen.com/content/2024-07/22/content_31098138.htm"
+          "https://www.eyeshenzhen.com/content/2024-07/22/content_31098138.htm",
+          "https://www.sz.gov.cn/en_szgov/news/infocus/SZCitywalk/Explore/Shopping/content/post_11857120.html"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
@@ -4937,6 +5047,67 @@
         "intro_short_en": "A Luohu stop for fashion, accessories and lifestyle stores.",
         "intro_long_zh": "在罗湖可集中逛时装、配饰与生活门店。按中文店名在宝安南路1881号定位。",
         "intro_long_en": "A Luohu stop for fashion, accessories and lifestyle stores. Use the full Chinese name when looking up this location."
+      },
+      "external_signals": [],
+      "location": null,
+      "amap": {
+        "status": "not-run",
+        "alternatives": []
+      },
+      "score": {
+        "total": 30,
+        "parts": {
+          "foreigner": 0,
+          "confidence": 12,
+          "sources": 10,
+          "complete": 8,
+          "amap": 0
+        },
+        "external_used": false
+      },
+      "flags": []
+    },
+    {
+      "id": "pl_sz_luohu_yitian",
+      "source_file": "C8/shenzhen-shopping.json",
+      "status": "pending",
+      "draft": {
+        "id": "pl_sz_luohu_yitian",
+        "city": "shenzhen",
+        "category": "shopping",
+        "tier": "main",
+        "name_zh": "罗湖益田假日广场",
+        "name_en": "Yitian Holiday Plaza, Luohu",
+        "aliases_zh": [],
+        "aliases_en": [],
+        "address_zh": "华丽路2038号",
+        "address_en": null,
+        "district_zh": "罗湖区",
+        "nearest_metro": null,
+        "foreigner_signals": {
+          "english_signage": null,
+          "foreign_cards": null,
+          "english_service": null,
+          "evidence": [
+            "https://www.sz.gov.cn/cn/xxgk/zfxxgj/gqdt/content/mpost_12717492.html",
+            "https://www.yonghui.com.cn/upload/financial/12685173.PDF"
+          ]
+        },
+        "official_url": "https://www.sz.gov.cn/cn/xxgk/zfxxgj/gqdt/content/mpost_12717492.html",
+        "sources": [
+          "https://www.sz.gov.cn/cn/xxgk/zfxxgj/gqdt/content/mpost_12717492.html",
+          "https://www.yonghui.com.cn/upload/financial/12685173.PDF"
+        ],
+        "checked_on": "2026-11-27",
+        "confidence": "medium",
+        "notes": "营业依据为当前经营方点位或近期主管部门的具名记录。",
+        "subcategory": "mall",
+        "hours_zh": null,
+        "hours_source": null,
+        "intro_short_zh": "罗湖的购物中心，有运动品牌和生活零售。",
+        "intro_short_en": "A Luohu mall for sports brands and everyday retail.",
+        "intro_long_zh": "罗湖的购物中心，有运动品牌和生活零售。按中文店名在华丽路2038号定位。",
+        "intro_long_en": "A Luohu mall for sports brands and everyday retail. Use the full Chinese name when looking up this location."
       },
       "external_signals": [],
       "location": null,
@@ -4958,65 +5129,6 @@
       "flags": []
     },
     {
-      "id": "pl_sz_luohu_yitian",
-      "source_file": "C8/shenzhen-shopping.json",
-      "status": "pending",
-      "draft": {
-        "id": "pl_sz_luohu_yitian",
-        "city": "shenzhen",
-        "category": "shopping",
-        "tier": "main",
-        "name_zh": "罗湖益田假日广场",
-        "name_en": "Yitian Holiday Plaza, Luohu",
-        "aliases_zh": [],
-        "aliases_en": [],
-        "address_zh": null,
-        "address_en": null,
-        "district_zh": "罗湖区",
-        "nearest_metro": null,
-        "foreigner_signals": {
-          "english_signage": null,
-          "foreign_cards": null,
-          "english_service": null,
-          "evidence": [
-            "https://www.sz.gov.cn/cn/xxgk/zfxxgj/gqdt/content/mpost_12717492.html"
-          ]
-        },
-        "official_url": "https://www.sz.gov.cn/cn/xxgk/zfxxgj/gqdt/content/mpost_12717492.html",
-        "sources": [
-          "https://www.sz.gov.cn/cn/xxgk/zfxxgj/gqdt/content/mpost_12717492.html"
-        ],
-        "checked_on": "2026-11-27",
-        "confidence": "medium",
-        "notes": "营业依据为当前经营方点位或近期主管部门的具名记录。",
-        "subcategory": "mall",
-        "hours_zh": null,
-        "hours_source": null,
-        "intro_short_zh": "罗湖的购物中心，有运动品牌和生活零售。",
-        "intro_short_en": "A Luohu mall for sports brands and everyday retail.",
-        "intro_long_zh": "罗湖的购物中心，有运动品牌和生活零售。按中文店名在罗湖区定位。",
-        "intro_long_en": "A Luohu mall for sports brands and everyday retail. Use the full Chinese name when looking up this location."
-      },
-      "external_signals": [],
-      "location": null,
-      "amap": {
-        "status": "not-run",
-        "alternatives": []
-      },
-      "score": {
-        "total": 19,
-        "parts": {
-          "foreigner": 0,
-          "confidence": 12,
-          "sources": 5,
-          "complete": 2,
-          "amap": 0
-        },
-        "external_used": false
-      },
-      "flags": []
-    },
-    {
       "id": "pl_sz_luohuruiji",
       "source_file": "C8/shenzhen-hotel.json",
       "status": "pending",
@@ -5029,10 +5141,15 @@
         "name_en": "The St. Regis Shenzhen",
         "aliases_zh": [],
         "aliases_en": [],
-        "address_zh": null,
-        "address_en": null,
-        "district_zh": null,
-        "nearest_metro": null,
+        "address_zh": "深圳市罗湖区深南东路5016号",
+        "address_en": "5016 Shennan Road East, Luohu District, Shenzhen, China 518001",
+        "district_zh": "罗湖区",
+        "nearest_metro": {
+          "station_zh": "大剧院",
+          "station_en": "Grand Theater",
+          "line": "1、2号线",
+          "exit": null
+        },
         "foreigner_signals": {
           "english_signage": null,
           "foreign_cards": null,
@@ -5044,16 +5161,19 @@
         "official_url": "https://www.marriott.com/en-us/hotels/szxxr-the-st-regis-shenzhen/overview/",
         "sources": [
           "https://www.marriott.com/en-us/hotels/szxxr-the-st-regis-shenzhen/overview/",
-          "https://www.marriott.com/en-us/destinations/china/shenzhen.mi"
+          "https://www.marriott.com/en-us/destinations/china/shenzhen.mi",
+          "https://help.marriott.com/s/article/Article-24483",
+          "https://www.sz.gov.cn/en_szgov/life/transport/metro/content/post_12870342.html",
+          "https://www.marriott.com.cn/hotels/szxxr-the-st-regis-shenzhen/events/"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
-        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sat, Dec 26 - Sun, Dec 27。 官网样本为每房每晚人民币 ¥1,615。当前价以所选日期及房型的报价为准。",
+        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sat, Dec 26 - Sun, Dec 27。 官网样本为每房每晚人民币 ¥1,615。当前价以所选日期及房型的报价为准。 分档依据：万豪集团将此品牌列为 Luxury。",
         "subcategory": "hotel",
-        "intro_short_zh": "罗湖区的瑞吉酒店。",
-        "intro_short_en": "A St. Regis hotel in Luohu.",
-        "intro_long_zh": "罗湖区的瑞吉酒店。可在品牌官网查看房型和入住安排。",
-        "intro_long_en": "A St. Regis hotel in Luohu. See the hotel's own website for room types and check-in details.",
+        "intro_short_zh": "罗湖深南东路的瑞吉，酒店列有英语服务。",
+        "intro_short_en": "A Luohu stay with English listed and a high-floor pool.",
+        "intro_long_zh": "酒店位于深南东路5016号。想在罗湖逛街后回店休息，可查店内高层泳池。万豪门店资料列出普通话和英语。",
+        "intro_long_en": "Choose this Luohu property if you want an afternoon away from the street after sightseeing. The hotel lists a skyline pool and English among its languages.",
         "star": null,
         "price_band": "1000-2000",
         "accepts_foreigners": true,
@@ -5075,17 +5195,19 @@
         "alternatives": []
       },
       "score": {
-        "total": 26,
+        "total": 31,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 4,
+          "complete": 9,
           "amap": 0
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "pl_sz_luohuruiji: unknown field 'hotel_class' is dropped on import"
+      ]
     },
     {
       "id": "pl_sz_maluanshan",
@@ -5168,7 +5290,7 @@
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": "深圳机场T3三层十字指廊3C-05-01",
-        "address_en": null,
+        "address_en": "Terminal 3, Level 3, unit 3C-05-01, Shenzhen Bao'an International Airport",
         "district_zh": "宝安区",
         "nearest_metro": null,
         "foreigner_signals": {
@@ -5183,7 +5305,8 @@
         "official_url": "https://www.szairport.com/szairport/zcys/202308/2e479ff0101243c7a37e1e524939fd73.shtml",
         "sources": [
           "https://www.szairport.com/szairport/zcys/202308/2e479ff0101243c7a37e1e524939fd73.shtml",
-          "https://www.szairport.com/szairport/msmk/Dining.shtml"
+          "https://www.szairport.com/szairport/msmk/Dining.shtml",
+          "https://www.szairport.com/szairporten/msmk/Dining.shtml"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
@@ -5209,12 +5332,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 28,
+        "total": 29,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 6,
+          "complete": 7,
           "amap": 0
         },
         "external_used": false
@@ -5235,7 +5358,7 @@
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": "深圳宝安国际机场",
-        "address_en": null,
+        "address_en": "Satellite Concourse, Level 3, Shenzhen Bao'an International Airport",
         "district_zh": "宝安区",
         "nearest_metro": null,
         "foreigner_signals": {
@@ -5248,14 +5371,15 @@
         },
         "official_url": "https://www.szairport.com/szairport/msmk/Dining.shtml",
         "sources": [
-          "https://www.szairport.com/szairport/msmk/Dining.shtml"
+          "https://www.szairport.com/szairport/msmk/Dining.shtml",
+          "https://www.szairport.com/szairporten/msmk/Dining.shtml"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
-        "notes": "营业依据为当前经营方点位或近期主管部门的具名记录。",
+        "notes": "营业依据为当前经营方点位或近期主管部门的具名记录。 机场现行中英文餐饮目录均列于卫星厅三层。",
         "subcategory": "western",
-        "hours_zh": null,
-        "hours_source": null,
+        "hours_zh": "05:30–22:00",
+        "hours_source": "https://www.szairport.com/szairporten/msmk/Dining.shtml",
         "intro_short_zh": "旅途中想吃些烘焙点心，可留作候补。",
         "intro_short_en": "An airport alternative for baked snacks.",
         "intro_long_zh": "旅途中想吃些烘焙点心，可留作候补。按中文店名在深圳宝安国际机场定位。",
@@ -5274,12 +5398,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 21,
+        "total": 29,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
-          "sources": 5,
-          "complete": 4,
+          "sources": 10,
+          "complete": 7,
           "amap": 0
         },
         "external_used": false
@@ -5300,7 +5424,7 @@
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": "深南大道与沙河西路交汇处",
-        "address_en": null,
+        "address_en": "9668 Shennan Avenue, Shenzhen",
         "district_zh": "南山区",
         "nearest_metro": null,
         "foreigner_signals": {
@@ -5315,7 +5439,8 @@
         "official_url": "https://jtys.sz.gov.cn/szsjtysjwzgkml/szsjtysjwzgkml/seztfw/jtly/wyk/content/post_12990018.html",
         "sources": [
           "https://jtys.sz.gov.cn/szsjtysjwzgkml/szsjtysjwzgkml/seztfw/jtly/wyk/content/post_12990018.html",
-          "https://www.eyeshenzhen.com/content/2020-09/28/content_18804581.htm"
+          "https://www.eyeshenzhen.com/content/2020-09/28/content_18804581.htm",
+          "https://www.eyeshenzhen.com/content/2025-07/09/content_31585397.htm"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
@@ -5335,12 +5460,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 26,
+        "total": 28,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 4,
+          "complete": 6,
           "amap": 0
         },
         "external_used": false
@@ -5494,9 +5619,9 @@
         "name_en": "Shenzhen Marriott Hotel Nanshan",
         "aliases_zh": [],
         "aliases_en": [],
-        "address_zh": null,
-        "address_en": null,
-        "district_zh": null,
+        "address_zh": "深圳市南山区海德一道88号",
+        "address_en": "88 Haide Yi Road, Nanshan District, Shenzhen, China 518054",
+        "district_zh": "南山区",
         "nearest_metro": null,
         "foreigner_signals": {
           "english_signage": null,
@@ -5509,16 +5634,19 @@
         "official_url": "https://www.marriott.com/en-us/hotels/szxwt-shenzhen-marriott-hotel-nanshan/overview/",
         "sources": [
           "https://www.marriott.com/en-us/hotels/szxwt-shenzhen-marriott-hotel-nanshan/overview/",
-          "https://www.marriott.com/en-us/destinations/china/shenzhen.mi?pg=2"
+          "https://www.marriott.com/en-us/destinations/china/shenzhen.mi?pg=2",
+          "https://help.marriott.com/s/article/Article-24483",
+          "https://www.marriott.com.cn/hotels/szxwt-shenzhen-marriott-hotel-nanshan/events/",
+          "https://www.marriott.com/en-us/hotels/szxwt-shenzhen-marriott-hotel-nanshan/rooms/"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
-        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sat, Dec 26 - Sun, Dec 27。 官网样本为每房每晚人民币 ¥1,547。当前价以所选日期及房型的报价为准。",
+        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sat, Dec 26 - Sun, Dec 27。 官网样本为每房每晚人民币 ¥1,547。当前价以所选日期及房型的报价为准。 分档依据：万豪集团将此品牌列为 Premium。",
         "subcategory": "hotel",
-        "intro_short_zh": "南山区的万豪酒店。",
-        "intro_short_en": "A Marriott hotel in Nanshan.",
-        "intro_long_zh": "南山区的万豪酒店。可在品牌官网查看房型和入住安排。",
-        "intro_long_en": "A Marriott hotel in Nanshan. See the hotel's own website for room types and check-in details.",
+        "intro_short_zh": "海德一路的万豪，酒店交通页列后海站。",
+        "intro_short_en": "A Houhai-area hotel with metro directions from the property.",
+        "intro_long_zh": "计划把后海一带分几次逛，可住海德一路88号的这家门店。万豪英文页给出后海地铁站，并列出蛇口方向的交通选项。",
+        "intro_long_en": "Stay in Houhai for a visit centered on Nanshan. Use the operator's arrival information to plan a route from Houhai station or toward Shekou.",
         "star": null,
         "price_band": "1000-2000",
         "accepts_foreigners": true,
@@ -5540,17 +5668,19 @@
         "alternatives": []
       },
       "score": {
-        "total": 26,
+        "total": 29,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 4,
+          "complete": 7,
           "amap": 0
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "pl_sz_nanshanwanhao: unknown field 'hotel_class' is dropped on import"
+      ]
     },
     {
       "id": "pl_sz_nanshanweisiting",
@@ -5565,10 +5695,15 @@
         "name_en": "The Westin Shenzhen Nanshan",
         "aliases_zh": [],
         "aliases_en": [],
-        "address_zh": null,
-        "address_en": null,
-        "district_zh": null,
-        "nearest_metro": null,
+        "address_zh": "深圳市南山区深南大道9028-2号",
+        "address_en": "9028-2 Shennan Road, Nanshan District, Shenzhen, China 518053",
+        "district_zh": "南山区",
+        "nearest_metro": {
+          "station_zh": "世界之窗",
+          "station_en": "Window of the World",
+          "line": "1、2号线",
+          "exit": null
+        },
         "foreigner_signals": {
           "english_signage": null,
           "foreign_cards": null,
@@ -5580,16 +5715,19 @@
         "official_url": "https://www.marriott.com/en-us/hotels/szxwi-the-westin-shenzhen-nanshan/overview/",
         "sources": [
           "https://www.marriott.com/en-us/hotels/szxwi-the-westin-shenzhen-nanshan/overview/",
-          "https://www.marriott.com/en-us/destinations/china/shenzhen.mi"
+          "https://www.marriott.com/en-us/destinations/china/shenzhen.mi",
+          "https://help.marriott.com/s/article/Article-24483",
+          "https://www.marriott.com.cn/hotels/szxwi-the-westin-shenzhen-nanshan/overview/",
+          "https://www.sz.gov.cn/en_szgov/life/transport/metro/content/post_12870342.html"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
-        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sat, Dec 26 - Sun, Dec 27。 官网样本为每房每晚人民币 ¥1,058。当前价以所选日期及房型的报价为准。",
+        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sat, Dec 26 - Sun, Dec 27。 官网样本为每房每晚人民币 ¥1,058。当前价以所选日期及房型的报价为准。 分档依据：万豪集团将此品牌列为 Premium。",
         "subcategory": "hotel",
-        "intro_short_zh": "在南山游览时可作为住处。",
-        "intro_short_en": "A Westin hotel for a stay in Nanshan.",
-        "intro_long_zh": "在南山游览时可作为住处。可在品牌官网查看房型和入住安排。",
-        "intro_long_en": "A Westin hotel for a stay in Nanshan. See the hotel's own website for room types and check-in details.",
+        "intro_short_zh": "世界之窗对面，可把华侨城一带景点集中游览。",
+        "intro_short_en": "Across from Window of the World, near OCT's themed attractions.",
+        "intro_long_zh": "门店在深南大道，酒店页确认对面是世界之窗，并列出欢乐谷与锦绣中华等周边选择。酒店服务语言包括英语和韩语。",
+        "intro_long_en": "Make this one base for the OCT area's theme parks. Marriott also lists English and Korean among the hotel's spoken languages.",
         "star": null,
         "price_band": "1000-2000",
         "accepts_foreigners": true,
@@ -5611,17 +5749,19 @@
         "alternatives": []
       },
       "score": {
-        "total": 26,
+        "total": 31,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 4,
+          "complete": 9,
           "amap": 0
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "pl_sz_nanshanweisiting: unknown field 'hotel_class' is dropped on import"
+      ]
     },
     {
       "id": "pl_sz_nanshanxianggelila",
@@ -5636,10 +5776,15 @@
         "name_en": "Shangri-La Nanshan, Shenzhen",
         "aliases_zh": [],
         "aliases_en": [],
-        "address_zh": null,
-        "address_en": null,
+        "address_zh": "深圳市南山区白石三道深湾汇云中心五期J座",
+        "address_en": "Block J, Phase 5, Shenwan Huiyun Center, Baishi Third Road, Nanshan District, Shenzhen, China",
         "district_zh": "南山区",
-        "nearest_metro": null,
+        "nearest_metro": {
+          "station_zh": "红树湾南",
+          "station_en": "Hongshuwan South",
+          "line": "9、11号线",
+          "exit": null
+        },
         "foreigner_signals": {
           "english_signage": null,
           "foreign_cards": null,
@@ -5650,16 +5795,20 @@
         },
         "official_url": "https://www.shangri-la.com/cn/shangrila/city/shenzhen/",
         "sources": [
-          "https://www.shangri-la.com/cn/shangrila/city/shenzhen/"
+          "https://www.shangri-la.com/cn/shangrila/city/shenzhen/",
+          "https://www.shangri-la.com/group/our-businesses/",
+          "https://www.shangri-la.com/cn/shenzhen/nanshanshangrila/",
+          "https://www.shangri-la.com/shenzhen/nanshanshangrila/about/map-directions/",
+          "https://www.sz.gov.cn/en_szgov/life/transport/metro/content/post_12870342.html"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
-        "notes": "香格里拉城市目录展示的门店平均晚价，未列入住日期。 官网样本为每房每晚人民币 ¥2,400。当前价以所选日期及房型的报价为准。",
+        "notes": "香格里拉城市目录展示的门店平均晚价，未列入住日期。 官网样本为每房每晚人民币 ¥2,400。当前价以所选日期及房型的报价为准。 分档依据：香格里拉集团将 Shangri-La 酒店品牌定位于亚洲奢华酒店。",
         "subcategory": "hotel",
-        "intro_short_zh": "在南山安排深圳湾一带的游览。",
-        "intro_short_en": "A Nanshan hotel for a stay around Shenzhen Bay.",
-        "intro_long_zh": "在南山安排深圳湾一带的游览。可在品牌官网查看房型和入住安排。",
-        "intro_long_en": "A Nanshan hotel for a stay around Shenzhen Bay. See the hotel's own website for room types and check-in details.",
+        "intro_short_zh": "临近睿印商场，酒店高层可看深圳湾方向。",
+        "intro_short_en": "A Nanshan stay beside RAIL IN, with views toward Shenzhen Bay.",
+        "intro_long_zh": "门店在汇云中心。想在深圳湾片区多留半天，可选择相邻的睿印商场，或按品牌英文页核对能看到湾区的房型。",
+        "intro_long_en": "Stay in the Huiyun Center for a Shenzhen Bay itinerary. RAIL IN mall is next door, and the property page helps you choose between room outlooks.",
         "star": null,
         "price_band": ">2000",
         "accepts_foreigners": true,
@@ -5681,17 +5830,19 @@
         "alternatives": []
       },
       "score": {
-        "total": 21,
+        "total": 31,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
-          "sources": 5,
-          "complete": 4,
+          "sources": 10,
+          "complete": 9,
           "amap": 0
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "pl_sz_nanshanxianggelila: unknown field 'hotel_class' is dropped on import"
+      ]
     },
     {
       "id": "pl_sz_nanshanxilaideng",
@@ -5844,9 +5995,9 @@
         "name_en": "NOA Hotel Shenzhen, a Member of Design Hotels",
         "aliases_zh": [],
         "aliases_en": [],
-        "address_zh": null,
-        "address_en": null,
-        "district_zh": null,
+        "address_zh": "深圳市罗湖区宝岗路5号",
+        "address_en": "5 Baogang Road, Luohu District, Shenzhen, China 518001",
+        "district_zh": "罗湖区",
         "nearest_metro": null,
         "foreigner_signals": {
           "english_signage": null,
@@ -5859,16 +6010,18 @@
         "official_url": "https://www.marriott.com/en-us/hotels/szxnh-noa-hotel-shenzhen-a-member-of-design-hotels/overview/",
         "sources": [
           "https://www.marriott.com/en-us/hotels/szxnh-noa-hotel-shenzhen-a-member-of-design-hotels/overview/",
-          "https://www.marriott.com/en-us/destinations/china/shenzhen.mi"
+          "https://www.marriott.com/en-us/destinations/china/shenzhen.mi",
+          "https://help.marriott.com/s/article/Article-24483",
+          "https://www.marriott.com.cn/hotels/szxnh-noa-hotel-shenzhen-a-member-of-design-hotels/overview/"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
-        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sat, Dec 26 - Sun, Dec 27。 官网样本为每房每晚人民币 ¥513。当前价以所选日期及房型的报价为准。",
+        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sat, Dec 26 - Sun, Dec 27。 官网样本为每房每晚人民币 ¥513。当前价以所选日期及房型的报价为准。 分档依据：万豪集团将此品牌列为 Premium。",
         "subcategory": "hotel",
-        "intro_short_zh": "一家纳入 Design Hotels 目录的独立酒店。",
-        "intro_short_en": "An independent property listed by Design Hotels.",
-        "intro_long_zh": "一家纳入 Design Hotels 目录的独立酒店。可在品牌官网查看房型和入住安排。",
-        "intro_long_en": "An independent property listed by Design Hotels. See the hotel's own website for room types and check-in details.",
+        "intro_short_zh": "罗湖宝岗路上的设计酒店，店内可看展览主题。",
+        "intro_short_en": "An industrial-design hotel on Baogang Road in Luohu.",
+        "intro_long_zh": "酒店在宝岗路5号，万豪门店介绍楼内的混凝土和钢材设计，并列出展览和咖啡馆。适合关注深圳街区设计与小型展览的人。",
+        "intro_long_en": "Choose NOA if you like former industrial textures and want a café in the building. The English property page describes its design and art exhibitions.",
         "star": null,
         "price_band": "500-1000",
         "accepts_foreigners": true,
@@ -5890,17 +6043,19 @@
         "alternatives": []
       },
       "score": {
-        "total": 26,
+        "total": 29,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 4,
+          "complete": 7,
           "amap": 0
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "pl_sz_noajiudian: unknown field 'hotel_class' is dropped on import"
+      ]
     },
     {
       "id": "pl_sz_one_avenue_sz",
@@ -5916,9 +6071,14 @@
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": "深南大道与金田路交汇处东南侧",
-        "address_en": null,
+        "address_en": "348 Fuhua 1st Road, Futian District, Shenzhen",
         "district_zh": "福田区",
-        "nearest_metro": null,
+        "nearest_metro": {
+          "station_zh": "岗厦",
+          "station_en": "Gangxia",
+          "line": "1、10号线",
+          "exit": "B"
+        },
         "foreigner_signals": {
           "english_signage": null,
           "foreign_cards": null,
@@ -5931,7 +6091,9 @@
         "official_url": "https://jtys.sz.gov.cn/szsjtysjwzgkml/szsjtysjwzgkml/seztfw/jtly/wyk/content/post_12990018.html",
         "sources": [
           "https://jtys.sz.gov.cn/szsjtysjwzgkml/szsjtysjwzgkml/seztfw/jtly/wyk/content/post_12990018.html",
-          "https://www.eyeshenzhen.com/content/2020-09/28/content_18804581.htm"
+          "https://www.eyeshenzhen.com/content/2020-09/28/content_18804581.htm",
+          "https://www.sz.gov.cn/en_szgov/news/infocus/SZCitywalk/Explore/Shopping/content/post_11857117.html",
+          "https://www.sz.gov.cn/en_szgov/news/infocus/SZCitywalk/Explore/Shopping/content/post_11961031.html"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
@@ -5951,12 +6113,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 26,
+        "total": 30,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 4,
+          "complete": 8,
           "amap": 0
         },
         "external_used": false
@@ -6242,15 +6404,20 @@
         "id": "pl_sz_qianhai_uniwalk",
         "city": "shenzhen",
         "category": "shopping",
-        "tier": "backup",
+        "tier": "main",
         "name_zh": "前海壹方城",
         "name_en": "Uniwalk, Qianhai",
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": "新湖路99号",
-        "address_en": null,
+        "address_en": "99 Xinhu Road, Bao’an District, Shenzhen",
         "district_zh": "宝安区",
-        "nearest_metro": null,
+        "nearest_metro": {
+          "station_zh": "宝安中心",
+          "station_en": "Bao’an Center",
+          "line": "1、5号线",
+          "exit": "F"
+        },
         "foreigner_signals": {
           "english_signage": null,
           "foreign_cards": null,
@@ -6265,7 +6432,8 @@
         "sources": [
           "https://www.sz.gov.cn/cn/xxgk/zfxxgj/zwdt/content/post_12822082.html",
           "https://jtys.sz.gov.cn/szsjtysjwzgkml/szsjtysjwzgkml/seztfw/jtly/wyk/content/post_12990018.html",
-          "https://www.eyeshenzhen.com/content/2024-07/22/content_31098138.htm"
+          "https://www.eyeshenzhen.com/content/2024-07/22/content_31098138.htm",
+          "https://qh.sz.gov.cn/en/life-in-qianhai/malls-and-places-for-leisure/content/post_10660073.html"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
@@ -6285,12 +6453,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 26,
+        "total": 30,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 4,
+          "complete": 8,
           "amap": 0
         },
         "external_used": false
@@ -6310,9 +6478,9 @@
         "name_en": "Fairfield by Marriott Shenzhen Qianhai",
         "aliases_zh": [],
         "aliases_en": [],
-        "address_zh": null,
-        "address_en": null,
-        "district_zh": null,
+        "address_zh": "深圳市宝安区西乡金海路1233号",
+        "address_en": "1233 Jinhai Road, Xixiang, Bao'an District, Shenzhen, China 518100",
+        "district_zh": "宝安区",
         "nearest_metro": null,
         "foreigner_signals": {
           "english_signage": null,
@@ -6325,16 +6493,18 @@
         "official_url": "https://www.marriott.com/en-us/hotels/szxqf-fairfield-shenzhen-qianhai/overview/",
         "sources": [
           "https://www.marriott.com/en-us/hotels/szxqf-fairfield-shenzhen-qianhai/overview/",
-          "https://www.marriott.com/en-us/destinations/china/shenzhen.mi?pg=3"
+          "https://www.marriott.com/en-us/destinations/china/shenzhen.mi?pg=3",
+          "https://help.marriott.com/s/article/Article-24483",
+          "https://www.marriott.com.cn/hotels/szxqf-fairfield-shenzhen-qianhai/overview/"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
-        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sat, Dec 26 - Sun, Dec 27。 官网样本为每房每晚人民币 ¥472。当前价以所选日期及房型的报价为准。",
+        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sat, Dec 26 - Sun, Dec 27。 官网样本为每房每晚人民币 ¥472。当前价以所选日期及房型的报价为准。 分档依据：万豪集团列为 Select 精选服务品牌，本库按中档处理。",
         "subcategory": "hotel",
-        "intro_short_zh": "前海一带的万枫酒店。",
-        "intro_short_en": "A Fairfield hotel in the Qianhai area.",
-        "intro_long_zh": "前海一带的万枫酒店。可在品牌官网查看房型和入住安排。",
-        "intro_long_en": "A Fairfield hotel in the Qianhai area. See the hotel's own website for room types and check-in details.",
+        "intro_short_zh": "宝安西乡的万枫，去地铁可看碧海湾站。",
+        "intro_short_en": "A Xixiang option with Bihaiwan listed for metro access.",
+        "intro_long_zh": "酒店位于金海路1233号，官网强调碧海湾地铁站是附近交通点。适合把宝安与深圳西部行程放在一起的人。",
+        "intro_long_en": "For a stay in western Bao'an, look up Bihaiwan in the hotel's arrival guide. The airport is also listed, so you can plan the onward journey before you travel.",
         "star": null,
         "price_band": "<500",
         "accepts_foreigners": true,
@@ -6356,17 +6526,19 @@
         "alternatives": []
       },
       "score": {
-        "total": 26,
+        "total": 29,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 4,
+          "complete": 7,
           "amap": 0
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "pl_sz_qianhaiwanfeng: unknown field 'hotel_class' is dropped on import"
+      ]
     },
     {
       "id": "pl_sz_qianhaixiaochu_jichang",
@@ -6382,7 +6554,7 @@
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": "深圳机场T3三层国内出发十字指廊3C-05-11",
-        "address_en": null,
+        "address_en": "Terminal 3, Level 3, domestic departures, unit 3C-05-11, Shenzhen Bao'an International Airport",
         "district_zh": "宝安区",
         "nearest_metro": null,
         "foreigner_signals": {
@@ -6397,7 +6569,8 @@
         "official_url": "https://www.szairport.com/szairport/zcys/202507/98f3e5ee9904468e8ed8bfde95bd5572.shtml",
         "sources": [
           "https://www.szairport.com/szairport/zcys/202507/98f3e5ee9904468e8ed8bfde95bd5572.shtml",
-          "https://www.szairport.com/szairport/msmk/Dining.shtml"
+          "https://www.szairport.com/szairport/msmk/Dining.shtml",
+          "https://www.szairport.com/szairporten/msmk/Dining.shtml"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
@@ -6423,12 +6596,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 28,
+        "total": 29,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 6,
+          "complete": 7,
           "amap": 0
         },
         "external_used": false
@@ -6648,7 +6821,7 @@
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": "深圳机场T3三层国际候机厅东翼廊3R-06-01a",
-        "address_en": null,
+        "address_en": "Terminal 3, Level 3, international departures, east wing, unit 3R-06-01a, Shenzhen Bao'an International Airport",
         "district_zh": "宝安区",
         "nearest_metro": null,
         "foreigner_signals": {
@@ -6663,7 +6836,8 @@
         "official_url": "https://www.szairport.com/szairport/zcys/202307/df9a86d7f5e94c6699903801958bf267.shtml",
         "sources": [
           "https://www.szairport.com/szairport/zcys/202307/df9a86d7f5e94c6699903801958bf267.shtml",
-          "https://www.szairport.com/szairport/msmk/Dining.shtml"
+          "https://www.szairport.com/szairport/msmk/Dining.shtml",
+          "https://www.szairport.com/szairporten/msmk/Dining.shtml"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
@@ -6689,12 +6863,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 28,
+        "total": 29,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 6,
+          "complete": 7,
           "amap": 0
         },
         "external_used": false
@@ -6767,6 +6941,248 @@
         "external_used": false
       },
       "flags": []
+    },
+    {
+      "id": "pl_sz_rujia_neo_changlong",
+      "source_file": "C8/shenzhen-hotel.json",
+      "status": "pending",
+      "draft": {
+        "id": "pl_sz_rujia_neo_changlong",
+        "city": "shenzhen",
+        "category": "hotel",
+        "tier": "main",
+        "name_zh": "如家·neo（深圳东站布吉长龙地铁站店）",
+        "name_en": "Home Inn neo — Shenzhen East Railway Station / Changlong",
+        "aliases_zh": [],
+        "aliases_en": [],
+        "address_zh": "深圳市布吉镇西环路7号",
+        "address_en": null,
+        "district_zh": "龙岗区",
+        "nearest_metro": {
+          "station_zh": "长龙",
+          "station_en": "Changlong",
+          "line": "5号线",
+          "exit": "A"
+        },
+        "foreigner_signals": {
+          "english_signage": null,
+          "foreign_cards": null,
+          "english_service": null,
+          "evidence": [
+            "https://www.bthhotels.com/hotel/075510?beginDate=2026-11-27&endDate=2026-11-28"
+          ]
+        },
+        "official_url": "https://www.bthhotels.com/hotel/075510",
+        "sources": [
+          "https://www.bthhotels.com/hotel/075510",
+          "https://www.bthhotels.com/hotel/075510?beginDate=2026-11-27&endDate=2026-11-28",
+          "https://images.bthhotels.com/investmentrelations/reports/A27E7EB0-6C86-43A9-9A79-625C3D0D8FBE.pdf",
+          "https://www.sz.gov.cn/en_szgov/life/transport/metro/content/post_12870342.html",
+          "https://www.bthhotels.com/hotel/075510?beginDate=2026-11-26&endDate=2026-11-27"
+        ],
+        "checked_on": "2026-11-27",
+        "confidence": "high",
+        "notes": "分档依据：首旅酒店集团年报将如家 NEO 3.0 列为经济型产品升级。外宾依据：首旅如家同门店官网标明“接待外宾”。英文店名为编辑用译名。",
+        "subcategory": "hotel",
+        "intro_short_zh": "在布吉长龙站A口附近，可搭5号线转乘火车。",
+        "intro_short_en": "A Buji stopover near Changlong Station, with a laundry room on-site.",
+        "intro_long_zh": "首旅确认这家门店接待外宾。到店按长龙站A口走。5号线同站串联深圳北站与布吉站，在布吉站可换乘深圳东站的列车。住两晚以上可用店内自助洗衣。",
+        "intro_long_en": "This works for a rail-focused stopover. Changlong is on Line 5, which also serves Shenzhen North and Buji, the interchange for Shenzhen East Railway Station. The hotel lists self-service laundry and confirms it receives foreign guests.",
+        "star": null,
+        "price_band": null,
+        "accepts_foreigners": true,
+        "foreign_service": {
+          "english_front_desk": null,
+          "foreign_guest_share": null,
+          "foreign_guest_experience": null,
+          "international_brand": null,
+          "evidence_zh": "首旅如家门店官方页面标明“接待外宾”。",
+          "evidence": [
+            "https://www.bthhotels.com/hotel/075510?beginDate=2026-11-27&endDate=2026-11-28"
+          ]
+        }
+      },
+      "external_signals": [],
+      "location": null,
+      "amap": {
+        "status": "not-run",
+        "alternatives": []
+      },
+      "score": {
+        "total": 36,
+        "parts": {
+          "foreigner": 0,
+          "confidence": 20,
+          "sources": 10,
+          "complete": 6,
+          "amap": 0
+        },
+        "external_used": false
+      },
+      "flags": [
+        "pl_sz_rujia_neo_changlong: unknown field 'hotel_class' is dropped on import"
+      ]
+    },
+    {
+      "id": "pl_sz_rujia_neo_shaibu",
+      "source_file": "C8/shenzhen-hotel.json",
+      "status": "pending",
+      "draft": {
+        "id": "pl_sz_rujia_neo_shaibu",
+        "city": "shenzhen",
+        "category": "hotel",
+        "tier": "main",
+        "name_zh": "如家·neo（深圳东门步行街晒布路地铁站店）",
+        "name_en": "Home Inn neo — Dongmen Pedestrian Street / Shaibu",
+        "aliases_zh": [],
+        "aliases_en": [],
+        "address_zh": "深圳市罗湖区晒布路67号",
+        "address_en": null,
+        "district_zh": "罗湖区",
+        "nearest_metro": {
+          "station_zh": "晒布",
+          "station_en": "Shaibu",
+          "line": "3号线",
+          "exit": "D1"
+        },
+        "foreigner_signals": {
+          "english_signage": null,
+          "foreign_cards": null,
+          "english_service": null,
+          "evidence": [
+            "https://www.bthhotels.com/hotel/075548?beginDate=2026-11-27&endDate=2026-11-28"
+          ]
+        },
+        "official_url": "https://www.bthhotels.com/hotel/075548",
+        "sources": [
+          "https://www.bthhotels.com/hotel/075548",
+          "https://www.bthhotels.com/hotel/075548?beginDate=2026-11-27&endDate=2026-11-28",
+          "https://images.bthhotels.com/investmentrelations/reports/A27E7EB0-6C86-43A9-9A79-625C3D0D8FBE.pdf",
+          "https://www.bthhotels.com/Hotel/075548",
+          "https://www.sz.gov.cn/en_szgov/life/transport/metro/content/post_12870342.html"
+        ],
+        "checked_on": "2026-11-27",
+        "confidence": "high",
+        "notes": "分档依据：首旅酒店集团年报将如家 NEO 3.0 列为经济型产品升级。外宾依据：首旅如家同门店官网标明“接待外宾”。英文店名为编辑用译名。",
+        "subcategory": "hotel",
+        "intro_short_zh": "住在东门，门店给出晒布站D1口到店路线。",
+        "intro_short_en": "A Luohu stay for Dongmen's pedestrian streets and nearby food lanes.",
+        "intro_long_zh": "想傍晚逛东门，可以住在晒布路。首旅官网把3号线晒布站D1口列为离酒店较近的出口，并标注接待外宾。周边有东门町和乐园路饮食街。",
+        "intro_long_en": "Pick this hotel if you want to spend an evening around Dongmen's shops and Leyuan Road food street. The branch accepts international guests. On Line 3, its directions point to Shaibu Exit D1.",
+        "star": null,
+        "price_band": null,
+        "accepts_foreigners": true,
+        "foreign_service": {
+          "english_front_desk": null,
+          "foreign_guest_share": null,
+          "foreign_guest_experience": null,
+          "international_brand": null,
+          "evidence_zh": "首旅如家门店官方页面标明“接待外宾”。",
+          "evidence": [
+            "https://www.bthhotels.com/hotel/075548?beginDate=2026-11-27&endDate=2026-11-28"
+          ]
+        }
+      },
+      "external_signals": [],
+      "location": null,
+      "amap": {
+        "status": "not-run",
+        "alternatives": []
+      },
+      "score": {
+        "total": 36,
+        "parts": {
+          "foreigner": 0,
+          "confidence": 20,
+          "sources": 10,
+          "complete": 6,
+          "amap": 0
+        },
+        "external_used": false
+      },
+      "flags": [
+        "pl_sz_rujia_neo_shaibu: unknown field 'hotel_class' is dropped on import"
+      ]
+    },
+    {
+      "id": "pl_sz_rujia_neo_shekou",
+      "source_file": "C8/shenzhen-hotel.json",
+      "status": "pending",
+      "draft": {
+        "id": "pl_sz_rujia_neo_shekou",
+        "city": "shenzhen",
+        "category": "hotel",
+        "tier": "main",
+        "name_zh": "如家·neo（深圳南山蛇口海上世界店）",
+        "name_en": "Home Inn neo — Shekou Sea World",
+        "aliases_zh": [],
+        "aliases_en": [],
+        "address_zh": "深圳市南山区蛇口街道石云路38-1号",
+        "address_en": null,
+        "district_zh": "南山区",
+        "nearest_metro": {
+          "station_zh": "东角头",
+          "station_en": "Dongjiaotou",
+          "line": "2号线",
+          "exit": "A"
+        },
+        "foreigner_signals": {
+          "english_signage": null,
+          "foreign_cards": null,
+          "english_service": null,
+          "evidence": [
+            "https://www.bthhotels.com/hotel/075544?beginDate=2026-11-23&endDate=2026-11-24"
+          ]
+        },
+        "official_url": "https://www.bthhotels.com/hotel/075544",
+        "sources": [
+          "https://www.bthhotels.com/hotel/075544",
+          "https://www.bthhotels.com/hotel/075544?beginDate=2026-11-23&endDate=2026-11-24",
+          "https://images.bthhotels.com/investmentrelations/reports/A27E7EB0-6C86-43A9-9A79-625C3D0D8FBE.pdf",
+          "https://www.szmc.net/szmc_en/Time_Table/line2/202003/75552.html"
+        ],
+        "checked_on": "2026-11-27",
+        "confidence": "high",
+        "notes": "分档依据：首旅酒店集团年报将如家 NEO 3.0 列为经济型产品升级。外宾依据：首旅如家同门店官网标明“接待外宾”。英文店名为编辑用译名。",
+        "subcategory": "hotel",
+        "intro_short_zh": "以蛇口为中心游玩，可从东角头站A口到店。",
+        "intro_short_en": "Stay in Shekou for Sea World and the cruise homeport area.",
+        "intro_long_zh": "这家如家在蛇口石云路，门店页标有接待外宾。搭2号线到东角头站，走A口。想逛海上世界，或把蛇口邮轮母港安排进旅程，可以把这一带作为落脚点。",
+        "intro_long_en": "The hotel identifies Dongjiaotou Exit A for arrivals. Its Shiyun Road address puts you in Shekou near the Sea World area, handy if your plans also involve the cruise homeport. The branch confirms it receives overseas guests.",
+        "star": null,
+        "price_band": null,
+        "accepts_foreigners": true,
+        "foreign_service": {
+          "english_front_desk": null,
+          "foreign_guest_share": null,
+          "foreign_guest_experience": null,
+          "international_brand": null,
+          "evidence_zh": "首旅如家门店官方页面标明“接待外宾”。",
+          "evidence": [
+            "https://www.bthhotels.com/hotel/075544?beginDate=2026-11-23&endDate=2026-11-24"
+          ]
+        }
+      },
+      "external_signals": [],
+      "location": null,
+      "amap": {
+        "status": "not-run",
+        "alternatives": []
+      },
+      "score": {
+        "total": 36,
+        "parts": {
+          "foreigner": 0,
+          "confidence": 20,
+          "sources": 10,
+          "complete": 6,
+          "amap": 0
+        },
+        "external_used": false
+      },
+      "flags": [
+        "pl_sz_rujia_neo_shekou: unknown field 'hotel_class' is dropped on import"
+      ]
     },
     {
       "id": "pl_sz_sansheng_haishang",
@@ -6849,7 +7265,12 @@
         "address_zh": "华强北路1002号赛格广场",
         "address_en": null,
         "district_zh": "福田区",
-        "nearest_metro": null,
+        "nearest_metro": {
+          "station_zh": "华强路",
+          "station_en": "Huaqiang Road",
+          "line": "1号线",
+          "exit": "A"
+        },
         "foreigner_signals": {
           "english_signage": null,
           "foreign_cards": null,
@@ -6862,7 +7283,8 @@
         "official_url": "https://www.eyeshenzhen.com/content/2025-07/03/content_31595461.htm",
         "sources": [
           "https://www.eyeshenzhen.com/content/2025-07/03/content_31595461.htm",
-          "https://www.sz.gov.cn/cn/xxgk/zfxxgj/zwdt/content/post_12756562.html"
+          "https://www.sz.gov.cn/cn/xxgk/zfxxgj/zwdt/content/post_12756562.html",
+          "https://www.eyeshenzhen.com/content/2024-05/10/content_30929915.htm"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
@@ -6882,12 +7304,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 26,
+        "total": 28,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 4,
+          "complete": 6,
           "amap": 0
         },
         "external_used": false
@@ -7039,8 +7461,8 @@
         "name_en": "Hilton Shenzhen Shekou Nanhai",
         "aliases_zh": [],
         "aliases_en": [],
-        "address_zh": null,
-        "address_en": null,
+        "address_zh": "深圳市南山区望海路1177号",
+        "address_en": "1177 Wanghai Road, Nanshan District, Shenzhen, China 518067",
         "district_zh": "南山区",
         "nearest_metro": null,
         "foreigner_signals": {
@@ -7054,16 +7476,19 @@
         "official_url": "https://www.hilton.com.cn/zh-cn/hotels/szxsshi-hilton-shenzhen-shekou-nanhai",
         "sources": [
           "https://www.hilton.com.cn/zh-cn/hotels/szxsshi-hilton-shenzhen-shekou-nanhai",
-          "https://www.hilton.com.cn/zh-cn/locations/china/guangdong-shenzhen"
+          "https://www.hilton.com.cn/zh-cn/locations/china/guangdong-shenzhen",
+          "https://ir.hilton.com/_assets/_de1e637820b6842c68b34801d11a8fd1/hilton/db/3577/34740/pdf/HLT_Investor_Presentation_-_November_2026.pdf",
+          "https://www.hilton.com.cn/SZXSSHI",
+          "https://www.hilton.com/en/hotels/szxsshi-hilton-shenzhen-shekou-nanhai/hotel-location/"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
-        "notes": "希尔顿城市页显示 2026-11-27 入住、11-28 退房的起价。 官网样本为每房每晚人民币 ¥991。当前价以所选日期及房型的报价为准。",
+        "notes": "希尔顿城市页显示 2026-11-27 入住、11-28 退房的起价。 官网样本为每房每晚人民币 ¥991。当前价以所选日期及房型的报价为准。 分档依据：希尔顿集团将品牌列为 Full Service，本库按高档处理。",
         "subcategory": "hotel",
-        "intro_short_zh": "可作为探访蛇口海边的住宿点。",
-        "intro_short_en": "A base for exploring the Shekou waterfront.",
-        "intro_long_zh": "可作为探访蛇口海边的住宿点。可在品牌官网查看房型和入住安排。",
-        "intro_long_en": "A base for exploring the Shekou waterfront. See the hotel's own website for room types and check-in details.",
+        "intro_short_zh": "望海路滨海酒店，设有室内外泳池和儿童设施。",
+        "intro_short_en": "A Shekou waterfront hotel with pools and facilities for children.",
+        "intro_long_zh": "想在蛇口湾边放慢节奏，可在望海路住一晚。酒店能看到海湾方向，品牌也列出室内和室外泳池与儿童设施，兼顾亲子行程。",
+        "intro_long_en": "Choose this property for a flexible family stay on the Shekou coast. The hotel describes views across the bay and has both indoor and outdoor swimming pools.",
         "star": null,
         "price_band": "500-1000",
         "accepts_foreigners": true,
@@ -7085,17 +7510,19 @@
         "alternatives": []
       },
       "score": {
-        "total": 26,
+        "total": 29,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 4,
+          "complete": 7,
           "amap": 0
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "pl_sz_shekounanhaixierdun: unknown field 'hotel_class' is dropped on import"
+      ]
     },
     {
       "id": "pl_sz_shenzhen_bay_mixc",
@@ -7111,9 +7538,14 @@
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": "后海片区深圳人才公园旁",
-        "address_en": null,
+        "address_en": "2888 Keyuan Road South, Nanshan District, Shenzhen",
         "district_zh": "南山区",
-        "nearest_metro": null,
+        "nearest_metro": {
+          "station_zh": "后海",
+          "station_en": "Houhai",
+          "line": "2、11号线",
+          "exit": "G"
+        },
         "foreigner_signals": {
           "english_signage": null,
           "foreign_cards": null,
@@ -7126,7 +7558,8 @@
         "official_url": "https://jtys.sz.gov.cn/szsjtysjwzgkml/szsjtysjwzgkml/seztfw/jtly/wyk/content/post_12990018.html",
         "sources": [
           "https://jtys.sz.gov.cn/szsjtysjwzgkml/szsjtysjwzgkml/seztfw/jtly/wyk/content/post_12990018.html",
-          "https://www.eyeshenzhen.com/download/%E5%86%8C%E5%AD%9020251210.pdf"
+          "https://www.eyeshenzhen.com/download/%E5%86%8C%E5%AD%9020251210.pdf",
+          "https://www.sz.gov.cn/en_szgov/travel/areas/content/post_10684425.html"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
@@ -7146,12 +7579,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 26,
+        "total": 30,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 4,
+          "complete": 8,
           "amap": 0
         },
         "external_used": false
@@ -7241,7 +7674,12 @@
         "address_zh": "创业二路与前进一路交汇处",
         "address_en": null,
         "district_zh": "宝安区",
-        "nearest_metro": null,
+        "nearest_metro": {
+          "station_zh": "灵芝",
+          "station_en": "Lingzhi",
+          "line": "5、12号线",
+          "exit": null
+        },
         "foreigner_signals": {
           "english_signage": null,
           "foreign_cards": null,
@@ -7254,7 +7692,9 @@
         "official_url": "https://www.grandjoy.com/detail/350.html",
         "sources": [
           "https://www.grandjoy.com/detail/350.html",
-          "https://jtys.sz.gov.cn/szsjtysjwzgkml/szsjtysjwzgkml/seztfw/jtly/wyk/content/post_12990018.html"
+          "https://jtys.sz.gov.cn/szsjtysjwzgkml/szsjtysjwzgkml/seztfw/jtly/wyk/content/post_12990018.html",
+          "https://www.sz.gov.cn/cn/xxgk/zfxxgj/gqdt/content/post_12928596.html",
+          "https://www.sz.gov.cn/en_szgov/life/transport/metro/content/post_12870342.html"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
@@ -7274,12 +7714,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 26,
+        "total": 28,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 4,
+          "complete": 6,
           "amap": 0
         },
         "external_used": false
@@ -7436,9 +7876,9 @@
         "name_en": "Moxy Shenzhen North Station",
         "aliases_zh": [],
         "aliases_en": [],
-        "address_zh": null,
-        "address_en": null,
-        "district_zh": null,
+        "address_zh": "深圳市龙华区红山6979商业中心三期10栋301",
+        "address_en": "301, Tower 10, Hongshan 6979 Business Center, Longhua District, Shenzhen, China 518000",
+        "district_zh": "龙华区",
         "nearest_metro": null,
         "foreigner_signals": {
           "english_signage": null,
@@ -7451,16 +7891,18 @@
         "official_url": "https://www.marriott.com/en-us/hotels/szxns-moxy-shenzhen-north-station/overview/",
         "sources": [
           "https://www.marriott.com/en-us/hotels/szxns-moxy-shenzhen-north-station/overview/",
-          "https://www.marriott.com/en-us/destinations/china/shenzhen.mi"
+          "https://www.marriott.com/en-us/destinations/china/shenzhen.mi",
+          "https://help.marriott.com/s/article/Article-24483",
+          "https://www.marriott.com.cn/hotels/szxns-moxy-shenzhen-north-station/overview/"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
-        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sat, Dec 26 - Sun, Dec 27。 官网样本为每房每晚人民币 ¥510。当前价以所选日期及房型的报价为准。",
+        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sat, Dec 26 - Sun, Dec 27。 官网样本为每房每晚人民币 ¥510。当前价以所选日期及房型的报价为准。 分档依据：万豪集团将 Moxy 定位为平价的 Select 酒店品牌，本库按经济型处理。",
         "subcategory": "hotel",
-        "intro_short_zh": "便于把深圳北站作为行程起点。",
-        "intro_short_en": "A hotel for a trip starting near Shenzhen North Railway Station.",
-        "intro_long_zh": "便于把深圳北站作为行程起点。可在品牌官网查看房型和入住安排。",
-        "intro_long_en": "A hotel for a trip starting near Shenzhen North Railway Station. See the hotel's own website for room types and check-in details.",
+        "intro_short_zh": "住红山片区，可从红山站或深圳北站接地铁。",
+        "intro_short_en": "A Hongshan stay with connections toward Shenzhen North Railway Station.",
+        "intro_long_zh": "如果深圳是高铁行程中的一站，可考虑这家位于红山的Moxy。万豪列出红山与深圳北站两个地铁选择，服务语言也包括英语。",
+        "intro_long_en": "This Moxy is a rail-oriented stop in Longhua. Check the operator's directions for Hongshan and Shenzhen North, and use the English property information to plan arrival.",
         "star": null,
         "price_band": "500-1000",
         "accepts_foreigners": true,
@@ -7482,17 +7924,19 @@
         "alternatives": []
       },
       "score": {
-        "total": 26,
+        "total": 29,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 4,
+          "complete": 7,
           "amap": 0
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "pl_sz_shenzhenbeimoxy: unknown field 'hotel_class' is dropped on import"
+      ]
     },
     {
       "id": "pl_sz_shenzhendong",
@@ -7714,9 +8158,9 @@
         "name_en": "Courtyard by Marriott Shenzhen Bay",
         "aliases_zh": [],
         "aliases_en": [],
-        "address_zh": null,
-        "address_en": null,
-        "district_zh": null,
+        "address_zh": "深圳市南山区科技南路16号",
+        "address_en": "16 Keji South Road, Nanshan District, Shenzhen, China 518057",
+        "district_zh": "南山区",
         "nearest_metro": null,
         "foreigner_signals": {
           "english_signage": null,
@@ -7729,16 +8173,18 @@
         "official_url": "https://www.marriott.com/en-us/hotels/szxsb-courtyard-shenzhen-bay/overview/",
         "sources": [
           "https://www.marriott.com/en-us/hotels/szxsb-courtyard-shenzhen-bay/overview/",
-          "https://www.marriott.com/en-us/destinations/china/shenzhen.mi?pg=2"
+          "https://www.marriott.com/en-us/destinations/china/shenzhen.mi?pg=2",
+          "https://help.marriott.com/s/article/Article-24483",
+          "https://www.marriott.com.cn/hotels/szxsb-courtyard-shenzhen-bay/overview/"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
-        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sat, Dec 26 - Sun, Dec 27。 官网样本为每房每晚人民币 ¥774。当前价以所选日期及房型的报价为准。",
+        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sat, Dec 26 - Sun, Dec 27。 官网样本为每房每晚人民币 ¥774。当前价以所选日期及房型的报价为准。 分档依据：万豪集团列为 Select 精选服务品牌，本库按中档处理。",
         "subcategory": "hotel",
-        "intro_short_zh": "深圳湾一带的万怡酒店。",
-        "intro_short_en": "A Courtyard hotel in the Shenzhen Bay area.",
-        "intro_long_zh": "深圳湾一带的万怡酒店。可在品牌官网查看房型和入住安排。",
-        "intro_long_en": "A Courtyard hotel in the Shenzhen Bay area. See the hotel's own website for room types and check-in details.",
+        "intro_short_zh": "科技南路的万怡，高新南和高新园都可搭地铁。",
+        "intro_short_en": "Two metro options for this Courtyard on Keji South Road.",
+        "intro_long_zh": "门店在南山区科技南路16号，万豪列出高新南站和高新园站。适合把南山中部的活动放在同一段行程的人。",
+        "intro_long_en": "Look up High-Tech South or Hi-Tech Park before heading out. The hotel's location guide lists both stops so you can choose the route that suits the day.",
         "star": null,
         "price_band": "500-1000",
         "accepts_foreigners": true,
@@ -7760,17 +8206,19 @@
         "alternatives": []
       },
       "score": {
-        "total": 26,
+        "total": 29,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 4,
+          "complete": 7,
           "amap": 0
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "pl_sz_shenzhenwanwanyi: unknown field 'hotel_class' is dropped on import"
+      ]
     },
     {
       "id": "pl_sz_shenzhenzhan",
@@ -8006,8 +8454,8 @@
           "https://www.eyeshenzhen.com/content/2026-02/02/content_31931787.htm"
         ],
         "checked_on": "2026-11-27",
-        "confidence": "medium",
-        "notes": "营业依据为当前经营方点位或近期主管部门的具名记录。",
+        "confidence": "low",
+        "notes": "城市英文门户具名，待补深圳分店地址。 近期官方资料确认身份，具体到店位置待复核。 待人工处理。市属英文门户具名，仍缺可交叉验证的经营方深圳店门牌、营业时间和预约规则，暂留候补。",
         "subcategory": "international_brand",
         "hours_zh": null,
         "hours_source": null,
@@ -8029,10 +8477,10 @@
         "alternatives": []
       },
       "score": {
-        "total": 20,
+        "total": 12,
         "parts": {
           "foreigner": 0,
-          "confidence": 12,
+          "confidence": 4,
           "sources": 5,
           "complete": 3,
           "amap": 0
@@ -8185,9 +8633,14 @@
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": "福中一路市民中心北侧",
-        "address_en": null,
+        "address_en": "2014 Fuzhong Road 1, Futian District, Shenzhen",
         "district_zh": "福田区",
-        "nearest_metro": null,
+        "nearest_metro": {
+          "station_zh": "少年宫",
+          "station_en": "Children’s Palace",
+          "line": "3、4号线",
+          "exit": "D"
+        },
         "foreigner_signals": {
           "english_signage": null,
           "foreign_cards": null,
@@ -8198,7 +8651,9 @@
         },
         "official_url": "https://www.sz.gov.cn/en_szgov/life/cultural/book/content/post_7061570.html",
         "sources": [
-          "https://www.sz.gov.cn/en_szgov/life/cultural/book/content/post_7061570.html"
+          "https://www.sz.gov.cn/en_szgov/life/cultural/book/content/post_7061570.html",
+          "https://www.eyeshenzhen.com/content/2025-07/01/content_31595448.htm",
+          "https://www.eyeshenzhen.com/content/2024-09/19/content_31221229.htm"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
@@ -8218,12 +8673,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 21,
+        "total": 30,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
-          "sources": 5,
-          "complete": 4,
+          "sources": 10,
+          "complete": 8,
           "amap": 0
         },
         "external_used": false
@@ -8316,7 +8771,7 @@
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": "深圳机场T3三层十字指廊3C-05-08",
-        "address_en": null,
+        "address_en": "Terminal 3, Level 3, unit 3C-05-08, Shenzhen Bao'an International Airport",
         "district_zh": "宝安区",
         "nearest_metro": null,
         "foreigner_signals": {
@@ -8331,7 +8786,8 @@
         "official_url": "https://www.szairport.com/szairport/zcys/202406/1202bf9cd4fc4fbf877bb53d433555a3.shtml",
         "sources": [
           "https://www.szairport.com/szairport/zcys/202406/1202bf9cd4fc4fbf877bb53d433555a3.shtml",
-          "https://www.szairport.com/szairport/msmk/Dining.shtml"
+          "https://www.szairport.com/szairport/msmk/Dining.shtml",
+          "https://www.szairport.com/szairporten/msmk/Dining.shtml"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
@@ -8357,12 +8813,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 28,
+        "total": 29,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 6,
+          "complete": 7,
           "amap": 0
         },
         "external_used": false
@@ -8584,9 +9040,14 @@
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": "皇岗路5001号",
-        "address_en": null,
+        "address_en": "5001 Huanggang Road, Futian District, Shenzhen",
         "district_zh": "福田区",
-        "nearest_metro": null,
+        "nearest_metro": {
+          "station_zh": "冬瓜岭",
+          "station_en": "Donggualing",
+          "line": "10号线",
+          "exit": null
+        },
         "foreigner_signals": {
           "english_signage": null,
           "foreign_cards": null,
@@ -8601,7 +9062,10 @@
         "sources": [
           "https://jtys.sz.gov.cn/szsjtysjwzgkml/szsjtysjwzgkml/seztfw/jtly/wyk/content/post_12990018.html",
           "https://www.eyeshenzhen.com/download/%E5%86%8C%E5%AD%9020251210.pdf",
-          "https://www.eyeshenzhen.com/content/2024-07/22/content_31098138.htm"
+          "https://www.eyeshenzhen.com/content/2024-07/22/content_31098138.htm",
+          "https://www.eyeshenzhen.com/content/2023-07/11/content_30329631.htm",
+          "https://gzw.sz.gov.cn/gzdj/fclb/content/post_9431452.html",
+          "https://www.sz.gov.cn/en_szgov/life/transport/metro/content/post_12870342.html"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
@@ -8621,12 +9085,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 26,
+        "total": 30,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 4,
+          "complete": 8,
           "amap": 0
         },
         "external_used": false
@@ -8647,7 +9111,7 @@
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": "深圳市福田区皇岗路5001号深业上城A座",
-        "address_en": null,
+        "address_en": "Tower A, UpperHills, 5001 Huanggang Road, Futian District, Shenzhen, China",
         "district_zh": "福田区",
         "nearest_metro": null,
         "foreigner_signals": {
@@ -8661,16 +9125,18 @@
         "official_url": "https://www.mandarinoriental.com.cn/en/shenzhen/futian/stay",
         "sources": [
           "https://www.mandarinoriental.com.cn/en/shenzhen/futian/stay",
-          "https://www.mandarinoriental.com.cn/zh-cn/shenzhen/futian/stay/premier-view-room"
+          "https://www.mandarinoriental.com.cn/zh-cn/shenzhen/futian/stay/premier-view-room",
+          "https://www.mandarin-oriental.org/en/investors.html",
+          "https://www.mandarinoriental.com/tr/shenzhen/futian/contact-us"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
-        "notes": "品牌官网的尊赏客房均价样本，页面未列入住日期。 官网样本为每房每晚人民币 ¥4,407.48。当前价以所选日期及房型的报价为准。",
+        "notes": "品牌官网的尊赏客房均价样本，页面未列入住日期。 官网样本为每房每晚人民币 ¥4,407.48。当前价以所选日期及房型的报价为准。 分档依据：文华东方集团将旗下酒店定位于奢华酒店及度假村。",
         "subcategory": "hotel",
-        "intro_short_zh": "位于福田深业上城，适合安排福田一带的行程。",
-        "intro_short_en": "A hotel in UpperHills for exploring Futian.",
-        "intro_long_zh": "位于福田深业上城，适合安排福田一带的行程。可在品牌官网查看房型和入住安排。",
-        "intro_long_en": "A hotel in UpperHills for exploring Futian. See the hotel's own website for room types and check-in details.",
+        "intro_short_zh": "深业上城A座，逛商场后还能走莲花山或笔架山。",
+        "intro_short_en": "An UpperHills stay between Lianhuashan and Bijia Mountain parks.",
+        "intro_long_zh": "酒店位于皇岗路深业上城A座。住在这里可把商场、莲花山公园与笔架山公园连成半日游，适合希望在市区穿插步行的人。",
+        "intro_long_en": "If you'd like a park break between city outings, the hotel sits next to Lianhuashan and Bijia Mountain parks. Use the property's UpperHills address when getting directions.",
         "star": null,
         "price_band": ">2000",
         "accepts_foreigners": true,
@@ -8692,17 +9158,19 @@
         "alternatives": []
       },
       "score": {
-        "total": 28,
+        "total": 29,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 6,
+          "complete": 7,
           "amap": 0
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "pl_sz_wenhuadongfang: unknown field 'hotel_class' is dropped on import"
+      ]
     },
     {
       "id": "pl_sz_wolfgang_jichang",
@@ -8718,7 +9186,7 @@
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": "深圳机场T3三层国际出发西翼廊",
-        "address_en": null,
+        "address_en": "Terminal 3, Level 3, international departures, west wing, Shenzhen Bao'an International Airport",
         "district_zh": "宝安区",
         "nearest_metro": null,
         "foreigner_signals": {
@@ -8733,7 +9201,8 @@
         "official_url": "https://www.szairport.com/szairport/msmk/Dining.shtml",
         "sources": [
           "https://www.szairport.com/szairport/msmk/Dining.shtml",
-          "https://www.szairport.com/szairport/kgxw/202603/8c27dee8552342aba0a94cee8129b8f2.shtml"
+          "https://www.szairport.com/szairport/kgxw/202603/8c27dee8552342aba0a94cee8129b8f2.shtml",
+          "https://www.szairport.com/szairporten/msmk/Dining.shtml"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
@@ -8759,12 +9228,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 28,
+        "total": 29,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 6,
+          "complete": 7,
           "amap": 0
         },
         "external_used": false
@@ -8852,7 +9321,7 @@
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": "建设路1002号二层",
-        "address_en": null,
+        "address_en": "Level 2, Shangri-La Shenzhen, 1002 Jianshe Road, Shenzhen",
         "district_zh": "罗湖区",
         "nearest_metro": null,
         "foreigner_signals": {
@@ -8867,7 +9336,8 @@
         "official_url": "https://www.shangri-la.com/cn/shenzhen/shangrila/dining/restaurants/shang-palace/",
         "sources": [
           "https://www.shangri-la.com/cn/shenzhen/shangrila/dining/restaurants/shang-palace/",
-          "https://amr.sz.gov.cn/xxgk/xwzx/mtbd/content/post_12456231.html"
+          "https://amr.sz.gov.cn/xxgk/xwzx/mtbd/content/post_12456231.html",
+          "https://www.shangri-la.com/restaurants-bars/shenzhen/shangrila/shang-palace/book-a-table/"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
@@ -8893,12 +9363,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 26,
+        "total": 28,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 4,
+          "complete": 6,
           "amap": 0
         },
         "external_used": false
@@ -9373,6 +9843,79 @@
       "flags": []
     },
     {
+      "id": "pl_sz_yibisi_nanxinlu",
+      "source_file": "C8/shenzhen-hotel.json",
+      "status": "pending",
+      "draft": {
+        "id": "pl_sz_yibisi_nanxinlu",
+        "city": "shenzhen",
+        "category": "hotel",
+        "tier": "main",
+        "name_zh": "宜必思深圳南新路酒店",
+        "name_en": "ibis Shenzhen Nanxin Road Hotel",
+        "aliases_zh": [],
+        "aliases_en": [],
+        "address_zh": "南新路3020号4楼",
+        "address_en": "3020-4 Nanxin Road, Nanshan District, Shenzhen, China 518000",
+        "district_zh": "南山区",
+        "nearest_metro": null,
+        "foreigner_signals": {
+          "english_signage": null,
+          "foreign_cards": null,
+          "english_service": null,
+          "evidence": [
+            "https://all.accor.com/hotel/B5X6/index.en.shtml"
+          ]
+        },
+        "official_url": "https://all.accor.com/hotel/B5X6/index.en.shtml",
+        "sources": [
+          "https://all.accor.com/hotel/B5X6/index.en.shtml",
+          "https://group.accor.com/en/news-stories/midscale-economy-brands-novotel-mercure-ibis"
+        ],
+        "checked_on": "2026-11-27",
+        "confidence": "medium",
+        "notes": "分档依据：雅高集团将宜必思及宜必思尚品归为经济型。",
+        "subcategory": "hotel",
+        "intro_short_zh": "南新路与金鸡路附近的经济型客房，适合游南山西侧。",
+        "intro_short_en": "A Nanxin Road base for the western side of Nanshan.",
+        "intro_long_zh": "酒店在南山南新路，雅高提供英文到店信息。若计划走南山西侧或前往蛇口港，可先从门店位置安排接驳。",
+        "intro_long_en": "The English property page gives the Nanxin Road address and describes access toward Shekou Port. It makes a practical base if your plans take you through western Nanshan.",
+        "star": null,
+        "price_band": null,
+        "accepts_foreigners": true,
+        "foreign_service": {
+          "english_front_desk": null,
+          "foreign_guest_share": null,
+          "foreign_guest_experience": null,
+          "international_brand": "Accor",
+          "evidence_zh": "雅高官网以英文提供门店页、房型及预订入口，并明确面向所有旅客。",
+          "evidence": [
+            "https://all.accor.com/hotel/B5X6/index.en.shtml"
+          ]
+        }
+      },
+      "external_signals": [],
+      "location": null,
+      "amap": {
+        "status": "not-run",
+        "alternatives": []
+      },
+      "score": {
+        "total": 28,
+        "parts": {
+          "foreigner": 0,
+          "confidence": 12,
+          "sources": 10,
+          "complete": 6,
+          "amap": 0
+        },
+        "external_used": false
+      },
+      "flags": [
+        "pl_sz_yibisi_nanxinlu: unknown field 'hotel_class' is dropped on import"
+      ]
+    },
+    {
       "id": "pl_sz_yongfengyuan_guanglan",
       "source_file": "C8/shenzhen-shopping.json",
       "status": "pending",
@@ -9380,7 +9923,7 @@
         "id": "pl_sz_yongfengyuan_guanglan",
         "city": "shenzhen",
         "category": "shopping",
-        "tier": "main",
+        "tier": "backup",
         "name_zh": "国瓷永丰源旗舰店",
         "name_en": "Auratic Flagship Store",
         "aliases_zh": [],
@@ -9406,8 +9949,8 @@
           "https://www.sz0739.com/Article/6405.html"
         ],
         "checked_on": "2026-11-27",
-        "confidence": "medium",
-        "notes": "旗舰店有近期到访记录，普通游客要看工坊可向店方另问。 营业依据为当前经营方点位或近期主管部门的具名记录。",
+        "confidence": "low",
+        "notes": "旗舰店有近期团队访问记录，散客开放和精确门牌待核。 近期官方资料确认身份，具体到店位置待复核。 待人工处理。市文旅可核园区及团队研学。未查到同一处观湖门店的精确店址、散客营业时间或预约规则。福田四季花谷旗舰店为另一处地点。",
         "subcategory": "time_honored_brand",
         "hours_zh": null,
         "hours_source": null,
@@ -9423,10 +9966,10 @@
         "alternatives": []
       },
       "score": {
-        "total": 26,
+        "total": 18,
         "parts": {
           "foreigner": 0,
-          "confidence": 12,
+          "confidence": 4,
           "sources": 10,
           "complete": 4,
           "amap": 0
@@ -9581,7 +10124,7 @@
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": "深圳机场T3三层十字指廊3C-05-02",
-        "address_en": null,
+        "address_en": "Terminal 3, Level 3, unit 3C-05-02, Shenzhen Bao'an International Airport",
         "district_zh": "宝安区",
         "nearest_metro": null,
         "foreigner_signals": {
@@ -9596,7 +10139,8 @@
         "official_url": "https://www.szairport.com/szairport/zcys/202407/4ed496c1d80447088a7029007a06b94e.shtml",
         "sources": [
           "https://www.szairport.com/szairport/zcys/202407/4ed496c1d80447088a7029007a06b94e.shtml",
-          "https://www.szairport.com/szairport/msmk/Dining.shtml"
+          "https://www.szairport.com/szairport/msmk/Dining.shtml",
+          "https://www.szairport.com/szairporten/msmk/Dining.shtml"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
@@ -9622,12 +10166,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 28,
+        "total": 29,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 6,
+          "complete": 7,
           "amap": 0
         },
         "external_used": false
@@ -9713,7 +10257,7 @@
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": "深圳湾鹏瑞莱佛士",
-        "address_en": null,
+        "address_en": "Level 70, Raffles Shenzhen, Tower 7, One Shenzhen Bay, 3008 Zhongxin Road, Nanshan District, Shenzhen, China 518054",
         "district_zh": "南山区",
         "nearest_metro": null,
         "foreigner_signals": {
@@ -9728,7 +10272,9 @@
         "official_url": "https://www.szlh.gov.cn/English/news/content/mpost_12941947.html",
         "sources": [
           "https://www.szlh.gov.cn/English/news/content/mpost_12941947.html",
-          "https://www.eyeshenzhen.com/content/2026-02/02/content_31931787.htm"
+          "https://www.eyeshenzhen.com/content/2026-02/02/content_31931787.htm",
+          "https://www.raffles.com/shenzhen/",
+          "https://www.raffles.com/shenzhen/dining/yun-jing/"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
@@ -9741,73 +10287,6 @@
         "intro_long_zh": "适合在深圳湾一天的行程里安排一顿粤式正餐。按中文店名在深圳湾鹏瑞莱佛士定位。",
         "intro_long_en": "A sit-down Cantonese meal to pair with a day in Shenzhen Bay. Use the full Chinese name when looking up this location.",
         "cuisine_zh": "粤菜",
-        "price_per_person_cny": null,
-        "english_menu": null,
-        "halal": null,
-        "vegetarian_friendly": null,
-        "reservation_needed": null
-      },
-      "external_signals": [],
-      "location": null,
-      "amap": {
-        "status": "not-run",
-        "alternatives": []
-      },
-      "score": {
-        "total": 26,
-        "parts": {
-          "foreigner": 0,
-          "confidence": 12,
-          "sources": 10,
-          "complete": 4,
-          "amap": 0
-        },
-        "external_used": false
-      },
-      "flags": []
-    },
-    {
-      "id": "pl_sz_zhanglala_jichangdaoda",
-      "source_file": "C8/shenzhen-food.json",
-      "status": "pending",
-      "draft": {
-        "id": "pl_sz_zhanglala_jichangdaoda",
-        "city": "shenzhen",
-        "category": "food",
-        "tier": "backup",
-        "name_zh": "张拉拉兰州手撕牛肉面（深圳机场T3到达层店）",
-        "name_en": "Zhanglala Beef Noodles (Shenzhen Airport T3 Arrivals)",
-        "aliases_zh": [],
-        "aliases_en": [],
-        "address_zh": "深圳机场T3二层国内到达大厅西侧2H-03-02",
-        "address_en": null,
-        "district_zh": "宝安区",
-        "nearest_metro": null,
-        "foreigner_signals": {
-          "english_signage": null,
-          "foreign_cards": null,
-          "english_service": null,
-          "evidence": [
-            "https://www.szairport.com/szairporten/zcys/202311/09b92d4ed16d418b914bcce6c2349395.shtml",
-            "https://www.szairport.com/szairport/msmk/Dining.shtml"
-          ]
-        },
-        "official_url": "https://www.szairport.com/szairporten/zcys/202311/09b92d4ed16d418b914bcce6c2349395.shtml",
-        "sources": [
-          "https://www.szairport.com/szairporten/zcys/202311/09b92d4ed16d418b914bcce6c2349395.shtml",
-          "https://www.szairport.com/szairport/msmk/Dining.shtml"
-        ],
-        "checked_on": "2026-11-27",
-        "confidence": "medium",
-        "notes": "营业依据为当前经营方点位或近期主管部门的具名记录。",
-        "subcategory": "local_cuisine",
-        "hours_zh": "05:30–22:30",
-        "hours_source": "https://www.szairport.com/szairporten/zcys/202311/09b92d4ed16d418b914bcce6c2349395.shtml",
-        "intro_short_zh": "抵达后想先吃碗面，可在到达层找这家。",
-        "intro_short_en": "Try a bowl of beef noodles on Terminal 3 arrivals level.",
-        "intro_long_zh": "抵达后想先吃碗面，可在到达层找这家。按中文店名在深圳机场T3二层国内到达大厅西侧2H-03-02定位。",
-        "intro_long_en": "Try a bowl of beef noodles on Terminal 3 arrivals level. Use the full Chinese name when looking up this location.",
-        "cuisine_zh": "兰州牛肉面",
         "price_per_person_cny": null,
         "english_menu": null,
         "halal": null,
@@ -9834,6 +10313,74 @@
       "flags": []
     },
     {
+      "id": "pl_sz_zhanglala_jichangdaoda",
+      "source_file": "C8/shenzhen-food.json",
+      "status": "pending",
+      "draft": {
+        "id": "pl_sz_zhanglala_jichangdaoda",
+        "city": "shenzhen",
+        "category": "food",
+        "tier": "backup",
+        "name_zh": "张拉拉兰州手撕牛肉面（深圳机场T3到达层店）",
+        "name_en": "Zhanglala Beef Noodles (Shenzhen Airport T3 Arrivals)",
+        "aliases_zh": [],
+        "aliases_en": [],
+        "address_zh": "深圳机场T3二层国内到达大厅西侧2H-03-02",
+        "address_en": "Terminal 3, Level 2, domestic arrivals, west side, unit 2H-03-02, Shenzhen Bao'an International Airport",
+        "district_zh": "宝安区",
+        "nearest_metro": null,
+        "foreigner_signals": {
+          "english_signage": null,
+          "foreign_cards": null,
+          "english_service": null,
+          "evidence": [
+            "https://www.szairport.com/szairporten/zcys/202311/09b92d4ed16d418b914bcce6c2349395.shtml",
+            "https://www.szairport.com/szairport/msmk/Dining.shtml"
+          ]
+        },
+        "official_url": "https://www.szairport.com/szairporten/zcys/202311/09b92d4ed16d418b914bcce6c2349395.shtml",
+        "sources": [
+          "https://www.szairport.com/szairporten/zcys/202311/09b92d4ed16d418b914bcce6c2349395.shtml",
+          "https://www.szairport.com/szairport/msmk/Dining.shtml",
+          "https://www.szairport.com/szairporten/msmk/Dining.shtml"
+        ],
+        "checked_on": "2026-11-27",
+        "confidence": "medium",
+        "notes": "营业依据为当前经营方点位或近期主管部门的具名记录。",
+        "subcategory": "local_cuisine",
+        "hours_zh": "05:30–22:30",
+        "hours_source": "https://www.szairport.com/szairporten/zcys/202311/09b92d4ed16d418b914bcce6c2349395.shtml",
+        "intro_short_zh": "抵达后想先吃碗面，可在到达层找这家。",
+        "intro_short_en": "Try a bowl of beef noodles on Terminal 3 arrivals level.",
+        "intro_long_zh": "抵达后想先吃碗面，可在到达层找这家。按中文店名在深圳机场T3二层国内到达大厅西侧2H-03-02定位。",
+        "intro_long_en": "Try a bowl of beef noodles on Terminal 3 arrivals level. Use the full Chinese name when looking up this location.",
+        "cuisine_zh": "兰州牛肉面",
+        "price_per_person_cny": null,
+        "english_menu": null,
+        "halal": null,
+        "vegetarian_friendly": null,
+        "reservation_needed": null
+      },
+      "external_signals": [],
+      "location": null,
+      "amap": {
+        "status": "not-run",
+        "alternatives": []
+      },
+      "score": {
+        "total": 29,
+        "parts": {
+          "foreigner": 0,
+          "confidence": 12,
+          "sources": 10,
+          "complete": 7,
+          "amap": 0
+        },
+        "external_used": false
+      },
+      "flags": []
+    },
+    {
       "id": "pl_sz_zhengdong_jichang",
       "source_file": "C8/shenzhen-food.json",
       "status": "pending",
@@ -9847,7 +10394,7 @@
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": "深圳机场T3三层",
-        "address_en": null,
+        "address_en": "Terminal 3, Level 3, Shenzhen Bao'an International Airport",
         "district_zh": "宝安区",
         "nearest_metro": null,
         "foreigner_signals": {
@@ -9888,12 +10435,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 28,
+        "total": 29,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 6,
+          "complete": 7,
           "amap": 0
         },
         "external_used": false
@@ -10112,8 +10659,8 @@
         "name_en": "Zhuo Yue Xuan",
         "aliases_zh": [],
         "aliases_en": [],
-        "address_zh": null,
-        "address_en": null,
+        "address_zh": "深圳市福田区福华三路138号深圳四季酒店",
+        "address_en": "Four Seasons Hotel Shenzhen, 138 Fuhua Third Road, Futian District, Shenzhen, China 518048",
         "district_zh": "福田区",
         "nearest_metro": null,
         "foreigner_signals": {
@@ -10128,7 +10675,9 @@
         "official_url": "https://www.fourseasons.com/zh/shenzhen/dining/",
         "sources": [
           "https://www.fourseasons.com/zh/shenzhen/dining/",
-          "https://www.fourseasons.com/shenzhen/dining/menus/zhuo-yue-xuan-a-la-carte/"
+          "https://www.fourseasons.com/shenzhen/dining/menus/zhuo-yue-xuan-a-la-carte/",
+          "https://www.fourseasons.com/shenzhen/getting-here/",
+          "https://www.fourseasons.com/shenzhen/dining/restaurants/zhuo_yue_xuan/"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
@@ -10154,12 +10703,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 25,
+        "total": 28,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 3,
+          "complete": 6,
           "amap": 0
         },
         "external_used": false

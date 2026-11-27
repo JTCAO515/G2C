@@ -144,13 +144,13 @@
         "id": "pl_cd_anrenfupeng",
         "city": "chengdu",
         "category": "hotel",
-        "tier": "backup",
+        "tier": "main",
         "name_zh": "成都安仁福朋喜来登酒店",
         "name_en": "Four Points by Sheraton Chengdu, Anren",
         "aliases_zh": [],
         "aliases_en": [],
-        "address_zh": null,
-        "address_en": null,
+        "address_zh": "成都市安仁镇迎宾路198号",
+        "address_en": "198 Ying Bin Road, Anren, Chengdu, China 611331",
         "district_zh": null,
         "nearest_metro": null,
         "foreigner_signals": {
@@ -164,16 +164,18 @@
         "official_url": "https://www.marriott.com/en-us/hotels/ctuaf-four-points-chengdu-anren/overview/",
         "sources": [
           "https://www.marriott.com/en-us/hotels/ctuaf-four-points-chengdu-anren/overview/",
-          "https://www.marriott.com/en-us/destinations/china/chengdu.mi?pg=2"
+          "https://www.marriott.com/en-us/destinations/china/chengdu.mi?pg=2",
+          "https://help.marriott.com/s/article/Article-24483",
+          "https://www.marriott.com.cn/hotels/ctuaf-four-points-chengdu-anren/overview/"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
-        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Fri, Dec 25 - Sat, Dec 26。 官网样本为每房每晚人民币 ¥350。当前价以所选日期及房型的报价为准。",
+        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Fri, Dec 25 - Sat, Dec 26。 官网样本为每房每晚人民币 ¥350。当前价以所选日期及房型的报价为准。 分档依据：万豪集团列为 Select 精选服务品牌，本库按中档处理。",
         "subcategory": "hotel",
-        "intro_short_zh": "可安排在安仁古镇行程里。",
-        "intro_short_en": "A hotel for a visit to Anren.",
-        "intro_long_zh": "可安排在安仁古镇行程里。可在品牌官网查看房型和入住安排。",
-        "intro_long_en": "A hotel for a visit to Anren. See the hotel's own website for room types and check-in details.",
+        "intro_short_zh": "安仁镇迎宾路的门店，适合给古镇单独留一晚。",
+        "intro_short_en": "An overnight option on Yingbin Road in Anren.",
+        "intro_long_zh": "如果不想把安仁只排成当天往返，可住迎宾路198号。万豪交通页列安仁客运站，酒店另有室内泳池。",
+        "intro_long_en": "Plan a separate overnight stop in Anren. The operator lists the town's bus station and has an indoor pool for time between outings.",
         "star": null,
         "price_band": "<500",
         "accepts_foreigners": true,
@@ -195,17 +197,19 @@
         "alternatives": []
       },
       "score": {
-        "total": 26,
+        "total": 29,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 4,
+          "complete": 7,
           "amap": 0
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "pl_cd_anrenfupeng: unknown field 'hotel_class' is dropped on import"
+      ]
     },
     {
       "id": "pl_cd_bailu_yinyue",
@@ -407,6 +411,137 @@
       "flags": []
     },
     {
+      "id": "pl_cd_cd_joy_city_shop",
+      "source_file": "C8/chengdu-shopping.json",
+      "status": "pending",
+      "draft": {
+        "id": "pl_cd_cd_joy_city_shop",
+        "city": "chengdu",
+        "category": "shopping",
+        "tier": "main",
+        "name_zh": "成都大悦城",
+        "name_en": "Chengdu Joy City",
+        "aliases_zh": [],
+        "aliases_en": [],
+        "address_zh": "大悦路518号",
+        "address_en": null,
+        "district_zh": "武侯区",
+        "nearest_metro": null,
+        "foreigner_signals": {
+          "english_signage": null,
+          "foreign_cards": null,
+          "english_service": null,
+          "evidence": [
+            "https://www.grandjoy.com/detail/340.html",
+            "https://img.grandjoy.com/Uploads/Zlzd/File/2023/03/17/u6413e00325185.pdf"
+          ]
+        },
+        "official_url": "https://www.grandjoy.com/detail/340.html",
+        "sources": [
+          "https://www.grandjoy.com/detail/340.html",
+          "https://img.grandjoy.com/Uploads/Zlzd/File/2023/03/17/u6413e00325185.pdf"
+        ],
+        "checked_on": "2026-11-27",
+        "confidence": "medium",
+        "notes": "营业依据为当前经营方点位或近期主管部门的具名记录。",
+        "subcategory": "mall",
+        "hours_zh": null,
+        "hours_source": null,
+        "intro_short_zh": "城西南的综合商场，适合把逛店和亲子休闲放在一起。",
+        "intro_short_en": "A southwest Chengdu mall for shopping and time with children.",
+        "intro_long_zh": "城西南的综合商场，适合把逛店和亲子休闲放在一起。按中文店名在大悦路518号定位。",
+        "intro_long_en": "A southwest Chengdu mall for shopping and time with children. Use the full Chinese name when looking up this location."
+      },
+      "external_signals": [],
+      "location": null,
+      "amap": {
+        "status": "not-run",
+        "alternatives": []
+      },
+      "score": {
+        "total": 26,
+        "parts": {
+          "foreigner": 0,
+          "confidence": 12,
+          "sources": 10,
+          "complete": 4,
+          "amap": 0
+        },
+        "external_used": false
+      },
+      "flags": []
+    },
+    {
+      "id": "pl_cd_cd_taikoo_li_retail",
+      "source_file": "C8/chengdu-shopping.json",
+      "status": "pending",
+      "draft": {
+        "id": "pl_cd_cd_taikoo_li_retail",
+        "city": "chengdu",
+        "category": "shopping",
+        "tier": "main",
+        "name_zh": "成都太古里",
+        "name_en": "Taikoo Li Chengdu",
+        "aliases_zh": [],
+        "aliases_en": [],
+        "address_zh": "大慈寺与春熙路之间",
+        "address_en": "8 Middle Shamao Street, Jinjiang District, Chengdu",
+        "district_zh": "锦江区",
+        "nearest_metro": {
+          "station_zh": "春熙路",
+          "station_en": "Chunxi Road",
+          "line": "2、3号线",
+          "exit": null
+        },
+        "foreigner_signals": {
+          "english_signage": null,
+          "foreign_cards": null,
+          "english_service": null,
+          "evidence": [
+            "https://www.swireproperties.com/zh-cn/portfolio/current-developments/taikoo-li-chengdu/taikoo-li-chengdu/",
+            "https://www.swireproperties.com/zh-cn/contact-us/",
+            "https://www.cabep.com.cn/4/11116/2239486"
+          ]
+        },
+        "official_url": "https://www.swireproperties.com/zh-cn/portfolio/current-developments/taikoo-li-chengdu/taikoo-li-chengdu/",
+        "sources": [
+          "https://www.swireproperties.com/zh-cn/portfolio/current-developments/taikoo-li-chengdu/taikoo-li-chengdu/",
+          "https://www.swireproperties.com/zh-cn/contact-us/",
+          "https://www.cabep.com.cn/4/11116/2239486",
+          "https://www.swireproperties.com/en/portfolio/current-developments/taikoo-li-chengdu/taikoo-li-chengdu/",
+          "https://www.swireproperties.com/-/media/images/swireproperties/media/media-library/factsheets/taikoo-li-chengdu/taikoo-li-chengdu-factsheet_202510.ashx?sc_lang=en"
+        ],
+        "checked_on": "2026-11-27",
+        "confidence": "medium",
+        "notes": "营业依据为当前经营方点位或近期主管部门的具名记录。",
+        "subcategory": "mall",
+        "hours_zh": null,
+        "hours_source": null,
+        "intro_short_zh": "可把街区逛店、喝咖啡和附近的大慈寺安排在半天。",
+        "intro_short_en": "Open-air shopping lanes with a coffee stop and Daci Temple nearby.",
+        "intro_long_zh": "可把街区逛店、喝咖啡和附近的大慈寺安排在半天。按中文店名在大慈寺与春熙路之间定位。",
+        "intro_long_en": "Open-air shopping lanes with a coffee stop and Daci Temple nearby. Use the full Chinese name when looking up this location."
+      },
+      "external_signals": [],
+      "location": null,
+      "amap": {
+        "status": "not-run",
+        "alternatives": []
+      },
+      "score": {
+        "total": 30,
+        "parts": {
+          "foreigner": 0,
+          "confidence": 12,
+          "sources": 10,
+          "complete": 8,
+          "amap": 0
+        },
+        "external_used": false
+      },
+      "flags": []
+    },
+    {
       "id": "pl_cd_chaimenhui_chengdu",
       "source_file": "C8/chengdu-food.json",
       "status": "pending",
@@ -415,27 +550,27 @@
         "city": "chengdu",
         "category": "food",
         "tier": "main",
-        "name_zh": "柴门荟",
+        "name_zh": "柴门荟（中海店）",
         "name_en": "Chaimen Hui",
         "aliases_zh": [],
         "aliases_en": [],
-        "address_zh": null,
+        "address_zh": "交子大道289号",
         "address_en": null,
-        "district_zh": "成都市",
+        "district_zh": "武侯区",
         "nearest_metro": null,
         "foreigner_signals": {
           "english_signage": null,
           "foreign_cards": null,
           "english_service": null,
           "evidence": [
-            "https://news.chengdu.cn/2025/0902/68b6a15e3eb2f3537bf1404e.shtml?phone=yes",
-            "https://tire-uat.michelin.com.cn/news/2026/0903.html"
+            "https://www.chaimencanyin.com/store-information.aspx?t=12",
+            "https://sichuan.scol.com.cn/amsc/202609/83315752.html"
           ]
         },
-        "official_url": "https://news.chengdu.cn/2025/0902/68b6a15e3eb2f3537bf1404e.shtml?phone=yes",
+        "official_url": "https://www.chaimencanyin.com/store-information.aspx?t=12",
         "sources": [
-          "https://news.chengdu.cn/2025/0902/68b6a15e3eb2f3537bf1404e.shtml?phone=yes",
-          "https://tire-uat.michelin.com.cn/news/2026/0903.html"
+          "https://www.chaimencanyin.com/store-information.aspx?t=12",
+          "https://sichuan.scol.com.cn/amsc/202609/83315752.html"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
@@ -445,7 +580,7 @@
         "hours_source": null,
         "intro_short_zh": "想在成都尝精致川菜，可考虑这家。",
         "intro_short_en": "Consider this restaurant for a more elaborate Sichuan meal.",
-        "intro_long_zh": "想在成都尝精致川菜，可考虑这家。按中文店名在成都市定位。",
+        "intro_long_zh": "想在成都尝精致川菜，可考虑这家。按中文店名在交子大道289号定位。",
         "intro_long_en": "Consider this restaurant for a more elaborate Sichuan meal. Use the full Chinese name when looking up this location.",
         "cuisine_zh": "精致川菜",
         "price_per_person_cny": null,
@@ -461,12 +596,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 25,
+        "total": 26,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 3,
+          "complete": 4,
           "amap": 0
         },
         "external_used": false
@@ -1216,14 +1351,14 @@
         "id": "pl_cd_chunxilufupeng",
         "city": "chengdu",
         "category": "hotel",
-        "tier": "main",
+        "tier": "backup",
         "name_zh": "成都春熙路福朋喜来登酒店",
         "name_en": "Four Points by Sheraton Chengdu, Chunxi Road",
         "aliases_zh": [],
         "aliases_en": [],
-        "address_zh": null,
-        "address_en": null,
-        "district_zh": null,
+        "address_zh": "成都市锦江区福兴街1号1栋",
+        "address_en": "Building 1, 1 Fuxing Street, Jinjiang District, Chengdu, China 610020",
+        "district_zh": "锦江区",
         "nearest_metro": null,
         "foreigner_signals": {
           "english_signage": null,
@@ -1236,16 +1371,18 @@
         "official_url": "https://www.marriott.com/en-us/hotels/ctuuc-four-points-chengdu-chunxi-road/overview/",
         "sources": [
           "https://www.marriott.com/en-us/hotels/ctuuc-four-points-chengdu-chunxi-road/overview/",
-          "https://www.marriott.com/en-us/destinations/china/chengdu.mi"
+          "https://www.marriott.com/en-us/destinations/china/chengdu.mi",
+          "https://help.marriott.com/s/article/Article-24483",
+          "https://www.marriott.com.cn/hotels/ctuuc-four-points-chengdu-chunxi-road/overview/"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
-        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sun, Dec 27 - Mon, Dec 28。 官网样本为每房每晚人民币 ¥633。当前价以所选日期及房型的报价为准。",
+        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sun, Dec 27 - Mon, Dec 28。 官网样本为每房每晚人民币 ¥633。当前价以所选日期及房型的报价为准。 分档依据：万豪集团列为 Select 精选服务品牌，本库按中档处理。",
         "subcategory": "hotel",
-        "intro_short_zh": "可从春熙路一带开始游览。",
-        "intro_short_en": "A hotel near the Chunxi Road shopping area.",
-        "intro_long_zh": "可从春熙路一带开始游览。可在品牌官网查看房型和入住安排。",
-        "intro_long_en": "A hotel near the Chunxi Road shopping area. See the hotel's own website for room types and check-in details.",
+        "intro_short_zh": "复兴街的福朋，出行可选春熙路站或市二医院站。",
+        "intro_short_en": "A Jinjiang hotel with Chunxi Road and Second Municipal Hospital stations nearby.",
+        "intro_long_zh": "在春熙路一带住宿时，可按万豪的交通页从春熙路站或市二医院站出发。官网也列出住客可使用的全天健身房。",
+        "intro_long_en": "Pick this hotel if you want a base in Jinjiang with subway options on lines 2 and 3. The property's gym stays open around the clock.",
         "star": null,
         "price_band": "500-1000",
         "accepts_foreigners": true,
@@ -1267,17 +1404,19 @@
         "alternatives": []
       },
       "score": {
-        "total": 26,
+        "total": 29,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 4,
+          "complete": 7,
           "amap": 0
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "pl_cd_chunxilufupeng: unknown field 'hotel_class' is dropped on import"
+      ]
     },
     {
       "id": "pl_cd_ctu",
@@ -1347,6 +1486,67 @@
           "confidence": 20,
           "sources": 10,
           "complete": 10,
+          "amap": 0
+        },
+        "external_used": false
+      },
+      "flags": []
+    },
+    {
+      "id": "pl_cd_dacheng_market_cd",
+      "source_file": "C8/chengdu-shopping.json",
+      "status": "pending",
+      "draft": {
+        "id": "pl_cd_dacheng_market_cd",
+        "city": "chengdu",
+        "category": "shopping",
+        "tier": "main",
+        "name_zh": "荷花池大成市场",
+        "name_en": "Dacheng Market, Hehuachi",
+        "aliases_zh": [],
+        "aliases_en": [],
+        "address_zh": "火车北站旁荷花池片区",
+        "address_en": null,
+        "district_zh": "金牛区",
+        "nearest_metro": null,
+        "foreigner_signals": {
+          "english_signage": null,
+          "foreign_cards": null,
+          "english_service": null,
+          "evidence": [
+            "https://news.chengdu.cn/2026/0930/6abcc39c44deea573f294130.shtml",
+            "https://credit.leshan.gov.cn/credit/xydt/202207/12846a995e924a7a8757355a54e6fb96.shtml"
+          ]
+        },
+        "official_url": "https://news.chengdu.cn/2026/0930/6abcc39c44deea573f294130.shtml",
+        "sources": [
+          "https://news.chengdu.cn/2026/0930/6abcc39c44deea573f294130.shtml",
+          "https://credit.leshan.gov.cn/credit/xydt/202207/12846a995e924a7a8757355a54e6fb96.shtml"
+        ],
+        "checked_on": "2026-11-27",
+        "confidence": "medium",
+        "notes": "营业依据为当前经营方点位或近期主管部门的具名记录。",
+        "subcategory": "market",
+        "hours_zh": null,
+        "hours_source": null,
+        "intro_short_zh": "从成衣档口试着挑一件，可先问是否单件零售。",
+        "intro_short_en": "Browse clothing stalls and ask which vendors sell single pieces.",
+        "intro_long_zh": "从成衣档口试着挑一件，可先问是否单件零售。按中文店名在火车北站旁荷花池片区定位。",
+        "intro_long_en": "Browse clothing stalls and ask which vendors sell single pieces. Use the full Chinese name when looking up this location."
+      },
+      "external_signals": [],
+      "location": null,
+      "amap": {
+        "status": "not-run",
+        "alternatives": []
+      },
+      "score": {
+        "total": 26,
+        "parts": {
+          "foreigner": 0,
+          "confidence": 12,
+          "sources": 10,
+          "complete": 4,
           "amap": 0
         },
         "external_used": false
@@ -1500,7 +1700,7 @@
         "aliases_en": [],
         "address_zh": null,
         "address_en": null,
-        "district_zh": "成都市",
+        "district_zh": null,
         "nearest_metro": null,
         "foreigner_signals": {
           "english_signage": null,
@@ -1508,25 +1708,25 @@
           "english_service": null,
           "evidence": [
             "https://www.sccdysgs.com/",
-            "https://sichuan.scol.com.cn/ggxw/202610/83348677.html",
-            "https://news.chengdu.cn/2026/0425/69ecd17b8f007a160c619def.shtml"
+            "https://ent.scol.com.cn/wh/202511/83158639.html",
+            "https://sichuan.scol.com.cn/ggxw/202610/83348677.html"
           ]
         },
         "official_url": "https://www.sccdysgs.com/",
         "sources": [
           "https://www.sccdysgs.com/",
-          "https://sichuan.scol.com.cn/ggxw/202610/83348677.html",
-          "https://news.chengdu.cn/2026/0425/69ecd17b8f007a160c619def.shtml"
+          "https://ent.scol.com.cn/wh/202511/83158639.html",
+          "https://sichuan.scol.com.cn/ggxw/202610/83348677.html"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
-        "notes": "营业依据为当前经营方点位或近期主管部门的具名记录。",
+        "notes": "老字号门店由运营方列出，精确到店门牌待补。 营业依据为当前经营方点位或近期主管部门的具名记录。",
         "subcategory": "local_cuisine",
         "hours_zh": null,
         "hours_source": null,
         "intro_short_zh": "想吃一桌川菜时，可以考虑这家成都老字号。",
         "intro_short_en": "A traditional Chengdu restaurant for a shared Sichuan meal.",
-        "intro_long_zh": "想吃一桌川菜时，可以考虑这家成都老字号。按中文店名在成都市定位。",
+        "intro_long_zh": "想吃一桌川菜时，可以考虑这家成都老字号。到访时按中文门店名辨认。",
         "intro_long_en": "A traditional Chengdu restaurant for a shared Sichuan meal. Use the full Chinese name when looking up this location.",
         "cuisine_zh": "川菜",
         "price_per_person_cny": null,
@@ -1905,9 +2105,9 @@
         "name_en": "Four Points by Sheraton Chengdu East Station",
         "aliases_zh": [],
         "aliases_en": [],
-        "address_zh": null,
-        "address_en": null,
-        "district_zh": null,
+        "address_zh": "成都市锦江区百日红西路318号",
+        "address_en": "318 Bairihong West Road, Jinjiang District, Chengdu, China 610066",
+        "district_zh": "锦江区",
         "nearest_metro": null,
         "foreigner_signals": {
           "english_signage": null,
@@ -1920,16 +2120,18 @@
         "official_url": "https://www.marriott.com/en-us/hotels/ctuep-four-points-chengdu-east-station/overview/",
         "sources": [
           "https://www.marriott.com/en-us/hotels/ctuep-four-points-chengdu-east-station/overview/",
-          "https://www.marriott.com/en-us/destinations/china/chengdu.mi"
+          "https://www.marriott.com/en-us/destinations/china/chengdu.mi",
+          "https://help.marriott.com/s/article/Article-24483",
+          "https://www.marriott.com.cn/hotels/ctuep-four-points-chengdu-east-station/overview/"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
-        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sun, Dec 27 - Mon, Dec 28。 官网样本为每房每晚人民币 ¥381。当前价以所选日期及房型的报价为准。",
+        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sun, Dec 27 - Mon, Dec 28。 官网样本为每房每晚人民币 ¥381。当前价以所选日期及房型的报价为准。 分档依据：万豪集团列为 Select 精选服务品牌，本库按中档处理。",
         "subcategory": "hotel",
-        "intro_short_zh": "可作为成都东站附近的住宿候选。",
-        "intro_short_en": "A hotel option near Chengdu East Railway Station.",
-        "intro_long_zh": "可作为成都东站附近的住宿候选。可在品牌官网查看房型和入住安排。",
-        "intro_long_en": "A hotel option near Chengdu East Railway Station. See the hotel's own website for room types and check-in details.",
+        "intro_short_zh": "百日红西路门店，官网列海桐街地铁站与成都东站。",
+        "intro_short_en": "An eastern Chengdu option with Haitong Street listed for metro access.",
+        "intro_long_zh": "如果从成都东站进出城市，可先用门店位置页规划接驳。酒店位于锦江区百日红西路，地铁可查海桐街站。",
+        "intro_long_en": "This Four Points is on Bairihong West Road. The arrival page lists Chengdu East Railway Station for intercity trains and Haitong Street for the metro.",
         "star": null,
         "price_band": "<500",
         "accepts_foreigners": true,
@@ -1951,17 +2153,19 @@
         "alternatives": []
       },
       "score": {
-        "total": 26,
+        "total": 29,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 4,
+          "complete": 7,
           "amap": 0
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "pl_cd_dongzhanfupeng: unknown field 'hotel_class' is dropped on import"
+      ]
     },
     {
       "id": "pl_cd_dufu_caotang",
@@ -2093,6 +2297,66 @@
           "confidence": 12,
           "sources": 5,
           "complete": 1,
+          "amap": 0
+        },
+        "external_used": false
+      },
+      "flags": []
+    },
+    {
+      "id": "pl_cd_east_memory_north_lane",
+      "source_file": "C8/chengdu-shopping.json",
+      "status": "pending",
+      "draft": {
+        "id": "pl_cd_east_memory_north_lane",
+        "city": "chengdu",
+        "category": "shopping",
+        "tier": "backup",
+        "name_zh": "东郊记忆北二巷",
+        "name_en": "Eastern Suburb Memory North Lane 2",
+        "aliases_zh": [],
+        "aliases_en": [],
+        "address_zh": "东郊记忆园区北二巷",
+        "address_en": "North Lane 2, Eastern Suburb Memory, 99 Jianshe South Road, Chenghua District, Chengdu",
+        "district_zh": "成华区",
+        "nearest_metro": null,
+        "foreigner_signals": {
+          "english_signage": null,
+          "foreign_cards": null,
+          "english_service": null,
+          "evidence": [
+            "https://sc.cri.cn/n/20260806/8934452a-d0d5-4fbf-b3be-706c36337acb.html"
+          ]
+        },
+        "official_url": "https://sc.cri.cn/n/20260806/8934452a-d0d5-4fbf-b3be-706c36337acb.html",
+        "sources": [
+          "https://sc.cri.cn/n/20260806/8934452a-d0d5-4fbf-b3be-706c36337acb.html",
+          "https://www.gochengdu.cn/en/article/column_167323354598747/4650"
+        ],
+        "checked_on": "2026-11-27",
+        "confidence": "medium",
+        "notes": "营业依据为当前经营方点位或近期主管部门的具名记录。",
+        "subcategory": "boutique",
+        "hours_zh": null,
+        "hours_source": null,
+        "intro_short_zh": "在北二巷集中看四川不同地方的文创与伴手礼。",
+        "intro_short_en": "Browse souvenirs and designs from different parts of Sichuan in North Lane 2.",
+        "intro_long_zh": "在北二巷集中看四川不同地方的文创与伴手礼。按中文店名在东郊记忆园区北二巷定位。",
+        "intro_long_en": "Browse souvenirs and designs from different parts of Sichuan in North Lane 2. Use the full Chinese name when looking up this location."
+      },
+      "external_signals": [],
+      "location": null,
+      "amap": {
+        "status": "not-run",
+        "alternatives": []
+      },
+      "score": {
+        "total": 28,
+        "parts": {
+          "foreigner": 0,
+          "confidence": 12,
+          "sources": 10,
+          "complete": 6,
           "amap": 0
         },
         "external_used": false
@@ -2245,7 +2509,7 @@
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": "成都市青羊区光华大道二段601号附1号",
-        "address_en": null,
+        "address_en": "601-1 Guanghua Avenue, International Intangible Cultural Heritage Expo Park, Qingyang District, Chengdu",
         "district_zh": "青羊区",
         "nearest_metro": null,
         "foreigner_signals": {
@@ -2259,18 +2523,19 @@
         "official_url": "https://www.tivolihotels.com/en/tivoli-chengdu",
         "sources": [
           "https://www.tivolihotels.com/en/tivoli-chengdu",
-          "https://www.ghadiscovery.com/tivoli-hotels-and-resorts/tivoli-chengdu-at-cultural-heritage-park"
+          "https://www.minorhotels.com/minor-pro/assets/uploads/2025/09/25161823/Brochure_CityWideMinor_Berlin.pdf",
+          "https://www.tivolihotels.com/en/tivoli-chengdu/contact-us"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
-        "notes": "品牌参与的 GHA 官方订房页列出的豪华大床房起价，税费另计，页面摘要未列日期。 官网样本为每房每晚人民币 ¥832。当前价以所选日期及房型的报价为准。",
+        "notes": "分档依据：Minor Hotels 品牌组合明确将 Tivoli 列为 Luxury。 房价原取集团以外的会员订房渠道，现留空。",
         "subcategory": "hotel",
-        "intro_short_zh": "在成都非遗博览园一带游览时可作为住宿点。",
-        "intro_short_en": "A hotel for a visit to the Intangible Cultural Heritage Park.",
-        "intro_long_zh": "在成都非遗博览园一带游览时可作为住宿点。可在品牌官网查看房型和入住安排。",
-        "intro_long_en": "A hotel for a visit to the Intangible Cultural Heritage Park. See the hotel's own website for room types and check-in details.",
+        "intro_short_zh": "非遗博览园旁的酒店，可结合成都生态绿道。",
+        "intro_short_en": "A west Chengdu stay beside the Intangible Cultural Heritage Expo Park.",
+        "intro_long_zh": "酒店位于光华大道，邻近国际非物质文化遗产博览园。适合把非遗主题和绿道休闲放在同一天，不急着当天往返中心城区。",
+        "intro_long_en": "Give western Chengdu a separate stop on your itinerary. The hotel's English site describes the adjacent heritage park and its location along the Chengdu Ecological Greenway.",
         "star": null,
-        "price_band": "500-1000",
+        "price_band": null,
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -2300,7 +2565,9 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "pl_cd_feiyibolanyuantiwoli: unknown field 'hotel_class' is dropped on import"
+      ]
     },
     {
       "id": "pl_cd_fuqifeipian_zongdian",
@@ -2315,7 +2582,7 @@
         "name_en": "Fuqi Feipian (Flagship)",
         "aliases_zh": [],
         "aliases_en": [],
-        "address_zh": null,
+        "address_zh": "成都市锦江区总府路",
         "address_en": null,
         "district_zh": "锦江区",
         "nearest_metro": null,
@@ -2333,7 +2600,8 @@
         "sources": [
           "https://www.sccdysgs.com/",
           "https://sichuan.scol.com.cn/ggxw/202610/83348677.html",
-          "https://lzhbwg.mofcom.gov.cn/edi_ecms_web_front/thb/articledeail/991"
+          "https://lzhbwg.mofcom.gov.cn/edi_ecms_web_front/thb/articledeail/991",
+          "https://lzhbwg.mofcom.gov.cn/edi_ecms_web_front/thb/detail/1553530d391340e09fadfa0996eb523b"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
@@ -2359,12 +2627,80 @@
         "alternatives": []
       },
       "score": {
-        "total": 25,
+        "total": 26,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 3,
+          "complete": 4,
+          "amap": 0
+        },
+        "external_used": false
+      },
+      "flags": []
+    },
+    {
+      "id": "pl_cd_fuqin_night_market",
+      "source_file": "C8/chengdu-shopping.json",
+      "status": "pending",
+      "draft": {
+        "id": "pl_cd_fuqin_night_market",
+        "city": "chengdu",
+        "category": "shopping",
+        "tier": "main",
+        "name_zh": "抚琴夜市",
+        "name_en": "Fuqin Night Market",
+        "aliases_zh": [],
+        "aliases_en": [],
+        "address_zh": "抚琴街道",
+        "address_en": null,
+        "district_zh": "金牛区",
+        "nearest_metro": {
+          "station_zh": "抚琴",
+          "station_en": "Fuqin",
+          "line": "5号线",
+          "exit": null
+        },
+        "foreigner_signals": {
+          "english_signage": null,
+          "foreign_cards": null,
+          "english_service": null,
+          "evidence": [
+            "https://dzswgf.mofcom.gov.cn/news/123/2025/12/1764558462549.html",
+            "https://sichuan.scol.com.cn/ggxw/202610/83334866.html"
+          ]
+        },
+        "official_url": "https://dzswgf.mofcom.gov.cn/news/123/2025/12/1764558462549.html",
+        "sources": [
+          "https://dzswgf.mofcom.gov.cn/news/123/2025/12/1764558462549.html",
+          "https://sichuan.scol.com.cn/ggxw/202610/83334866.html",
+          "https://www.gochengdu.cn/en/article/column_164618479376578/1175",
+          "https://www.ndrc.gov.cn/xwdt/ztzl/czljxqgz/202112/t20211206_1306970.html"
+        ],
+        "checked_on": "2026-11-27",
+        "confidence": "medium",
+        "notes": "营业依据为当前经营方点位或近期主管部门的具名记录。",
+        "subcategory": "market",
+        "hours_zh": null,
+        "hours_source": null,
+        "intro_short_zh": "夜间可看成都社区摊档，顺手试几样小吃。",
+        "intro_short_en": "Browse a neighborhood evening market for small bites and local stalls.",
+        "intro_long_zh": "夜间可看成都社区摊档，顺手试几样小吃。按中文店名在抚琴街道定位。",
+        "intro_long_en": "Browse a neighborhood evening market for small bites and local stalls. Use the full Chinese name when looking up this location."
+      },
+      "external_signals": [],
+      "location": null,
+      "amap": {
+        "status": "not-run",
+        "alternatives": []
+      },
+      "score": {
+        "total": 28,
+        "parts": {
+          "foreigner": 0,
+          "confidence": 12,
+          "sources": 10,
+          "complete": 6,
           "amap": 0
         },
         "external_used": false
@@ -2379,14 +2715,14 @@
         "id": "pl_cd_furonghuang_chengdu",
         "city": "chengdu",
         "category": "food",
-        "tier": "main",
+        "tier": "backup",
         "name_zh": "芙蓉凰",
         "name_en": "Furong Huang",
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": null,
         "address_en": null,
-        "district_zh": "成都市",
+        "district_zh": null,
         "nearest_metro": null,
         "foreigner_signals": {
           "english_signage": null,
@@ -2394,23 +2730,24 @@
           "english_service": null,
           "evidence": [
             "https://news.chengdu.cn/2025/0902/68b6a15e3eb2f3537bf1404e.shtml?phone=yes",
-            "https://tire-uat.michelin.com.cn/news/2026/0903.html"
+            "https://sichuan.scol.com.cn/amsc/202609/83315752.html"
           ]
         },
         "official_url": "https://news.chengdu.cn/2025/0902/68b6a15e3eb2f3537bf1404e.shtml?phone=yes",
         "sources": [
           "https://news.chengdu.cn/2025/0902/68b6a15e3eb2f3537bf1404e.shtml?phone=yes",
-          "https://tire-uat.michelin.com.cn/news/2026/0903.html"
+          "https://sichuan.scol.com.cn/amsc/202609/83315752.html",
+          "https://www.gochengdu.cn/en/article/food/4836"
         ],
         "checked_on": "2026-11-27",
-        "confidence": "medium",
-        "notes": "营业依据为当前经营方点位或近期主管部门的具名记录。",
+        "confidence": "low",
+        "notes": "公开报道具名，现行门牌待补。 近期官方资料确认身份，具体到店位置待复核。 待人工处理。近期市属对外平台有具名记录，尚缺经营方或主管部门最新门牌、营业时间及预约规则。继续保留候补。",
         "subcategory": "local_cuisine",
         "hours_zh": null,
         "hours_source": null,
         "intro_short_zh": "成都的一处精致川味正餐选择。",
         "intro_short_en": "An option for a more elaborate Sichuan dinner.",
-        "intro_long_zh": "成都的一处精致川味正餐选择。按中文店名在成都市定位。",
+        "intro_long_zh": "成都的一处精致川味正餐选择。到访时按中文门店名辨认。",
         "intro_long_en": "An option for a more elaborate Sichuan dinner. Use the full Chinese name when looking up this location.",
         "cuisine_zh": "精致川菜",
         "price_per_person_cny": null,
@@ -2426,10 +2763,10 @@
         "alternatives": []
       },
       "score": {
-        "total": 25,
+        "total": 17,
         "parts": {
           "foreigner": 0,
-          "confidence": 12,
+          "confidence": 4,
           "sources": 10,
           "complete": 3,
           "amap": 0
@@ -2451,10 +2788,15 @@
         "name_en": "Fairfield by Marriott Chengdu Hi-Tech Zone",
         "aliases_zh": [],
         "aliases_en": [],
-        "address_zh": null,
-        "address_en": null,
-        "district_zh": null,
-        "nearest_metro": null,
+        "address_zh": "成都市高新区吉龙路888号",
+        "address_en": "888 Jilong Road, High-Tech Zone, Chengdu, China 610096",
+        "district_zh": "高新区",
+        "nearest_metro": {
+          "station_zh": "陆肖",
+          "station_en": "Luxiao",
+          "line": "6号线",
+          "exit": null
+        },
         "foreigner_signals": {
           "english_signage": null,
           "foreign_cards": null,
@@ -2466,16 +2808,18 @@
         "official_url": "https://www.marriott.com/en-us/hotels/ctufh-fairfield-chengdu-hi-tech-zone/overview/",
         "sources": [
           "https://www.marriott.com/en-us/hotels/ctufh-fairfield-chengdu-hi-tech-zone/overview/",
-          "https://www.marriott.com/en-us/destinations/china/chengdu.mi"
+          "https://www.marriott.com/en-us/destinations/china/chengdu.mi",
+          "https://help.marriott.com/s/article/Article-24483",
+          "https://www.marriott.com.cn/hotels/ctufh-fairfield-chengdu-hi-tech-zone/photos/"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
-        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sun, Dec 27 - Mon, Dec 28。 官网样本为每房每晚人民币 ¥256。当前价以所选日期及房型的报价为准。",
+        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sun, Dec 27 - Mon, Dec 28。 官网样本为每房每晚人民币 ¥256。当前价以所选日期及房型的报价为准。 分档依据：万豪集团列为 Select 精选服务品牌，本库按中档处理。",
         "subcategory": "hotel",
-        "intro_short_zh": "在成都高新区停留时可考虑。",
-        "intro_short_en": "A Fairfield hotel in the Chengdu Hi-Tech Zone.",
-        "intro_long_zh": "在成都高新区停留时可考虑。可在品牌官网查看房型和入住安排。",
-        "intro_long_en": "A Fairfield hotel in the Chengdu Hi-Tech Zone. See the hotel's own website for room types and check-in details.",
+        "intro_short_zh": "吉龙路的万枫，陆肖站可换乘地铁6号线。",
+        "intro_short_en": "A southern Chengdu hotel with Luxiao on Line 6 listed for transport.",
+        "intro_long_zh": "门店位于吉龙路888号。想在高新区多住一晚，可按万豪到店指南使用陆肖站。酒店明确列出中英文服务语言。",
+        "intro_long_en": "Use Luxiao station when planning subway trips from the Hi-Tech Zone. Marriott lists English among the languages spoken at this property.",
         "star": null,
         "price_band": "<500",
         "accepts_foreigners": true,
@@ -2497,17 +2841,19 @@
         "alternatives": []
       },
       "score": {
-        "total": 26,
+        "total": 31,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 4,
+          "complete": 9,
           "amap": 0
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "pl_cd_gaoxinwanfeng: unknown field 'hotel_class' is dropped on import"
+      ]
     },
     {
       "id": "pl_cd_gaoxinwanhao",
@@ -2522,9 +2868,9 @@
         "name_en": "Chengdu Marriott Hotel Financial Centre",
         "aliases_zh": [],
         "aliases_en": [],
-        "address_zh": null,
-        "address_en": null,
-        "district_zh": null,
+        "address_zh": "成都市高新区天府大道北段999号",
+        "address_en": "999 Tianfu Avenue North, High-Tech Zone, Chengdu, China 610041",
+        "district_zh": "高新区",
         "nearest_metro": null,
         "foreigner_signals": {
           "english_signage": null,
@@ -2537,16 +2883,18 @@
         "official_url": "https://www.marriott.com/en-us/hotels/ctumc-chengdu-marriott-hotel-financial-centre/overview/",
         "sources": [
           "https://www.marriott.com/en-us/hotels/ctumc-chengdu-marriott-hotel-financial-centre/overview/",
-          "https://www.marriott.com/en-us/destinations/china/chengdu.mi"
+          "https://www.marriott.com/en-us/destinations/china/chengdu.mi",
+          "https://help.marriott.com/s/article/Article-24483",
+          "https://www.marriott.com.cn/hotels/ctumc-chengdu-marriott-hotel-financial-centre/overview/"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
-        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sun, Dec 27 - Mon, Dec 28。 官网样本为每房每晚人民币 ¥529。当前价以所选日期及房型的报价为准。",
+        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sun, Dec 27 - Mon, Dec 28。 官网样本为每房每晚人民币 ¥529。当前价以所选日期及房型的报价为准。 分档依据：万豪集团将此品牌列为 Premium。",
         "subcategory": "hotel",
-        "intro_short_zh": "成都南部的一家万豪酒店。",
-        "intro_short_en": "A Marriott hotel in southern Chengdu.",
-        "intro_long_zh": "成都南部的一家万豪酒店。可在品牌官网查看房型和入住安排。",
-        "intro_long_en": "A Marriott hotel in southern Chengdu. See the hotel's own website for room types and check-in details.",
+        "intro_short_zh": "天府大道北段的万豪，可从金融城站或高新站到店。",
+        "intro_short_en": "A south Chengdu hotel with several metro approaches in the Financial City area.",
+        "intro_long_zh": "酒店在天府大道北段999号。官网同时列出金融城、高新和金融城北站。若行程集中在成都南部，可按当天路线选择地铁。",
+        "intro_long_en": "Choose among the Financial City, Hi-Tech Zone and Financial City North metro stops listed by Marriott. Chengdu South is one of its rail arrival references.",
         "star": null,
         "price_band": "500-1000",
         "accepts_foreigners": true,
@@ -2568,17 +2916,19 @@
         "alternatives": []
       },
       "score": {
-        "total": 26,
+        "total": 29,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 4,
+          "complete": 7,
           "amap": 0
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "pl_cd_gaoxinwanhao: unknown field 'hotel_class' is dropped on import"
+      ]
     },
     {
       "id": "pl_cd_guanxian",
@@ -2660,21 +3010,23 @@
         "name_en": "Gui Chu (Waterworks 1946)",
         "aliases_zh": [],
         "aliases_en": [],
-        "address_zh": "水厂1946",
+        "address_zh": "青羊上街水厂1946",
         "address_en": null,
-        "district_zh": "成都城西",
+        "district_zh": "青羊区",
         "nearest_metro": null,
         "foreigner_signals": {
           "english_signage": null,
           "foreign_cards": null,
           "english_service": null,
           "evidence": [
-            "https://news.chengdu.cn/2026/0923/6ab31edc44deea573f27a8a7.shtml"
+            "https://news.chengdu.cn/2026/0923/6ab31edc44deea573f27a8a7.shtml",
+            "https://sichuan.scol.com.cn/ggxw/202610/83335500.html"
           ]
         },
         "official_url": "https://news.chengdu.cn/2026/0923/6ab31edc44deea573f27a8a7.shtml",
         "sources": [
-          "https://news.chengdu.cn/2026/0923/6ab31edc44deea573f27a8a7.shtml"
+          "https://news.chengdu.cn/2026/0923/6ab31edc44deea573f27a8a7.shtml",
+          "https://sichuan.scol.com.cn/ggxw/202610/83335500.html"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
@@ -2684,7 +3036,7 @@
         "hours_source": null,
         "intro_short_zh": "城西看展逛街后，可留作一处餐饮候补。",
         "intro_short_en": "A restaurant fallback after visiting the renovated district.",
-        "intro_long_zh": "城西看展逛街后，可留作一处餐饮候补。按中文店名在水厂1946定位。",
+        "intro_long_zh": "城西看展逛街后，可留作一处餐饮候补。按中文店名在青羊上街水厂1946定位。",
         "intro_long_en": "A restaurant fallback after visiting the renovated district. Use the full Chinese name when looking up this location.",
         "cuisine_zh": "中餐",
         "price_per_person_cny": null,
@@ -2700,11 +3052,11 @@
         "alternatives": []
       },
       "score": {
-        "total": 21,
+        "total": 26,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
-          "sources": 5,
+          "sources": 10,
           "complete": 4,
           "amap": 0
         },
@@ -2852,38 +3204,40 @@
         "id": "pl_cd_haozidong_yadian",
         "city": "chengdu",
         "category": "food",
-        "tier": "main",
+        "tier": "backup",
         "name_zh": "耗子洞鸭店",
         "name_en": "Haozidong Duck Restaurant",
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": null,
         "address_en": null,
-        "district_zh": "成都市",
+        "district_zh": null,
         "nearest_metro": null,
         "foreigner_signals": {
           "english_signage": null,
           "foreign_cards": null,
           "english_service": null,
           "evidence": [
+            "https://lzhbwg.mofcom.gov.cn/edi_ecms_web_front/thb/detail/8f6b58ce9e57494ea1039872d43fee8c",
             "https://www.sccdysgs.com/",
             "https://sichuan.scol.com.cn/ggxw/202610/83348677.html"
           ]
         },
-        "official_url": "https://www.sccdysgs.com/",
+        "official_url": "https://lzhbwg.mofcom.gov.cn/edi_ecms_web_front/thb/detail/8f6b58ce9e57494ea1039872d43fee8c",
         "sources": [
+          "https://lzhbwg.mofcom.gov.cn/edi_ecms_web_front/thb/detail/8f6b58ce9e57494ea1039872d43fee8c",
           "https://www.sccdysgs.com/",
           "https://sichuan.scol.com.cn/ggxw/202610/83348677.html"
         ],
         "checked_on": "2026-11-27",
-        "confidence": "medium",
-        "notes": "营业依据为当前经营方点位或近期主管部门的具名记录。",
+        "confidence": "low",
+        "notes": "老字号身份可查，现行门店地址待补。 近期官方资料确认身份，具体到店位置待复核。 待人工处理。商务部老字号档案、饮食公司资料均支持品牌和菜品。近期资料未确认唯一现行散客门店、营业时段或预约规则。继续留候补。",
         "subcategory": "local_cuisine",
         "hours_zh": null,
         "hours_source": null,
         "intro_short_zh": "喜欢吃鸭，可以把成都老字号的鸭菜排在一餐里。",
         "intro_short_en": "Try a duck dish from a traditional Chengdu brand.",
-        "intro_long_zh": "喜欢吃鸭，可以把成都老字号的鸭菜排在一餐里。按中文店名在成都市定位。",
+        "intro_long_zh": "喜欢吃鸭，可以把成都老字号的鸭菜排在一餐里。到访时按中文门店名辨认。",
         "intro_long_en": "Try a duck dish from a traditional Chengdu brand. Use the full Chinese name when looking up this location.",
         "cuisine_zh": "川式鸭菜",
         "price_per_person_cny": null,
@@ -2899,10 +3253,10 @@
         "alternatives": []
       },
       "score": {
-        "total": 25,
+        "total": 17,
         "parts": {
           "foreigner": 0,
-          "confidence": 12,
+          "confidence": 4,
           "sources": 10,
           "complete": 3,
           "amap": 0
@@ -2991,9 +3345,9 @@
         "name_en": "Waldorf Astoria Chengdu",
         "aliases_zh": [],
         "aliases_en": [],
-        "address_zh": null,
-        "address_en": null,
-        "district_zh": null,
+        "address_zh": "成都市高新区天府大道北段1199号",
+        "address_en": "1199 Tianfu Avenue North, Chengdu, China 610041",
+        "district_zh": "高新区",
         "nearest_metro": null,
         "foreigner_signals": {
           "english_signage": null,
@@ -3006,16 +3360,18 @@
         "official_url": "https://www.hilton.com.cn/zh-cn/hotels/ctuwawa-waldorf-astoria-chengdu",
         "sources": [
           "https://www.hilton.com.cn/zh-cn/hotels/ctuwawa-waldorf-astoria-chengdu",
-          "https://www.hilton.com.cn/zh-cn/locations/china/sichuan-chengdu"
+          "https://www.hilton.com.cn/zh-cn/locations/china/sichuan-chengdu",
+          "https://ir.hilton.com/_assets/_de1e637820b6842c68b34801d11a8fd1/hilton/db/3577/34740/pdf/HLT_Investor_Presentation_-_November_2026.pdf",
+          "https://www.hilton.com/en/hotels/ctuwawa-waldorf-astoria-chengdu/hotel-location/"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
-        "notes": "希尔顿城市页显示 2026-11-27 入住、11-28 退房的起价。 官网样本为每房每晚人民币 ¥1,288。当前价以所选日期及房型的报价为准。",
+        "notes": "希尔顿城市页显示 2026-11-27 入住、11-28 退房的起价。 官网样本为每房每晚人民币 ¥1,288。当前价以所选日期及房型的报价为准。 分档依据：希尔顿集团将品牌列为 Luxury。",
         "subcategory": "hotel",
-        "intro_short_zh": "在成都南部游览时可考虑这里。",
-        "intro_short_en": "A Waldorf Astoria hotel in southern Chengdu.",
-        "intro_long_zh": "在成都南部游览时可考虑这里。可在品牌官网查看房型和入住安排。",
-        "intro_long_en": "A Waldorf Astoria hotel in southern Chengdu. See the hotel's own website for room types and check-in details.",
+        "intro_short_zh": "成都金融城的高层酒店，可安排双子塔一带的行程。",
+        "intro_short_en": "A Financial City hotel near Chengdu's Twin Towers.",
+        "intro_long_zh": "酒店在成都南部金融城片区。喜欢看城市天际线、想在城南逛新街区的人，可从双子塔附近安排半日游。",
+        "intro_long_en": "Use the hotel as a base for south Chengdu. Hilton's English page names the Twin Towers nearby and provides details on the property for planning arrival.",
         "star": null,
         "price_band": "1000-2000",
         "accepts_foreigners": true,
@@ -3037,17 +3393,19 @@
         "alternatives": []
       },
       "score": {
-        "total": 26,
+        "total": 29,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 4,
+          "complete": 7,
           "amap": 0
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "pl_cd_huaerdaofu: unknown field 'hotel_class' is dropped on import"
+      ]
     },
     {
       "id": "pl_cd_huangchengba_lingdi",
@@ -3197,7 +3555,7 @@
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": "双流机场T2到达大厅5号门旁",
-        "address_en": null,
+        "address_en": "Arrivals Hall, Terminal 2, near Door 5, Chengdu Shuangliu International Airport",
         "district_zh": "双流区",
         "nearest_metro": null,
         "foreigner_signals": {
@@ -3210,7 +3568,8 @@
         },
         "official_url": "https://www.cdairport.com/en/businesss.aspx?cid=10&k=&t=175&ter=0",
         "sources": [
-          "https://www.cdairport.com/en/businesss.aspx?cid=10&k=&t=175&ter=0"
+          "https://www.cdairport.com/en/businesss.aspx?cid=10&k=&t=175&ter=0",
+          "https://www.cdairport.com/index.aspx/terminal.aspx"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
@@ -3236,12 +3595,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 21,
+        "total": 28,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
-          "sources": 5,
-          "complete": 4,
+          "sources": 10,
+          "complete": 6,
           "amap": 0
         },
         "external_used": false
@@ -3309,6 +3668,70 @@
           "confidence": 12,
           "sources": 5,
           "complete": 1,
+          "amap": 0
+        },
+        "external_used": false
+      },
+      "flags": []
+    },
+    {
+      "id": "pl_cd_ifs_chengdu_retail",
+      "source_file": "C8/chengdu-shopping.json",
+      "status": "pending",
+      "draft": {
+        "id": "pl_cd_ifs_chengdu_retail",
+        "city": "chengdu",
+        "category": "shopping",
+        "tier": "main",
+        "name_zh": "成都IFS购物中心",
+        "name_en": "Chengdu IFS",
+        "aliases_zh": [],
+        "aliases_en": [],
+        "address_zh": "红星路三段1号",
+        "address_en": "1 Section 3, Hongxing Road, Jinjiang District, Chengdu",
+        "district_zh": "锦江区",
+        "nearest_metro": null,
+        "foreigner_signals": {
+          "english_signage": null,
+          "foreign_cards": null,
+          "english_service": null,
+          "evidence": [
+            "https://www.wharfholdings.com/file/140114%20CDIFS%20Opening%20Eng%20P%20FW.pdf",
+            "https://www.itotravel.com/zh-hk/pages/store-locations",
+            "https://www.cabep.com.cn/4/11116/2239486"
+          ]
+        },
+        "official_url": "https://www.wharfholdings.com/file/140114%20CDIFS%20Opening%20Eng%20P%20FW.pdf",
+        "sources": [
+          "https://www.wharfholdings.com/file/140114%20CDIFS%20Opening%20Eng%20P%20FW.pdf",
+          "https://www.itotravel.com/zh-hk/pages/store-locations",
+          "https://www.cabep.com.cn/4/11116/2239486",
+          "https://www.gochengdu.cn/en/article/city_services/711"
+        ],
+        "checked_on": "2026-11-27",
+        "confidence": "medium",
+        "notes": "营业依据为当前经营方点位或近期主管部门的具名记录。",
+        "subcategory": "mall",
+        "hours_zh": null,
+        "hours_source": null,
+        "intro_short_zh": "在春熙片区集中看时装与生活品牌，天气不好也可室内逛。",
+        "intro_short_en": "An indoor stop for fashion and lifestyle shops near Chunxi Road.",
+        "intro_long_zh": "在春熙片区集中看时装与生活品牌，天气不好也可室内逛。按中文店名在红星路三段1号定位。",
+        "intro_long_en": "An indoor stop for fashion and lifestyle shops near Chunxi Road. Use the full Chinese name when looking up this location."
+      },
+      "external_signals": [],
+      "location": null,
+      "amap": {
+        "status": "not-run",
+        "alternatives": []
+      },
+      "score": {
+        "total": 28,
+        "parts": {
+          "foreigner": 0,
+          "confidence": 12,
+          "sources": 10,
+          "complete": 6,
           "amap": 0
         },
         "external_used": false
@@ -3517,6 +3940,65 @@
       "flags": []
     },
     {
+      "id": "pl_cd_jinhehua_fashion_cd",
+      "source_file": "C8/chengdu-shopping.json",
+      "status": "pending",
+      "draft": {
+        "id": "pl_cd_jinhehua_fashion_cd",
+        "city": "chengdu",
+        "category": "shopping",
+        "tier": "main",
+        "name_zh": "金荷花国际时装城",
+        "name_en": "Jinhehua International Fashion City",
+        "aliases_zh": [],
+        "aliases_en": [],
+        "address_zh": "荷花池片区",
+        "address_en": null,
+        "district_zh": "金牛区",
+        "nearest_metro": null,
+        "foreigner_signals": {
+          "english_signage": null,
+          "foreign_cards": null,
+          "english_service": null,
+          "evidence": [
+            "https://news.chengdu.cn/2026/0930/6abcc39c44deea573f294130.shtml"
+          ]
+        },
+        "official_url": "https://news.chengdu.cn/2026/0930/6abcc39c44deea573f294130.shtml",
+        "sources": [
+          "https://news.chengdu.cn/2026/0930/6abcc39c44deea573f294130.shtml"
+        ],
+        "checked_on": "2026-11-27",
+        "confidence": "medium",
+        "notes": "营业依据为当前经营方点位或近期主管部门的具名记录。",
+        "subcategory": "market",
+        "hours_zh": null,
+        "hours_source": null,
+        "intro_short_zh": "喜欢逛衣服档口，可在荷花池的金荷花多对比几家。",
+        "intro_short_en": "Compare styles at several fashion stalls in Hehuachi.",
+        "intro_long_zh": "喜欢逛衣服档口，可在荷花池的金荷花多对比几家。按中文店名在荷花池片区定位。",
+        "intro_long_en": "Compare styles at several fashion stalls in Hehuachi. Use the full Chinese name when looking up this location."
+      },
+      "external_signals": [],
+      "location": null,
+      "amap": {
+        "status": "not-run",
+        "alternatives": []
+      },
+      "score": {
+        "total": 21,
+        "parts": {
+          "foreigner": 0,
+          "confidence": 12,
+          "sources": 5,
+          "complete": 4,
+          "amap": 0
+        },
+        "external_used": false
+      },
+      "flags": []
+    },
+    {
       "id": "pl_cd_jinli",
       "source_file": "C1/chengdu.json",
       "status": "pending",
@@ -3656,6 +4138,138 @@
       "flags": []
     },
     {
+      "id": "pl_cd_jushe",
+      "source_file": "C8/chengdu-hotel.json",
+      "status": "pending",
+      "draft": {
+        "id": "pl_cd_jushe",
+        "city": "chengdu",
+        "category": "hotel",
+        "tier": "main",
+        "name_zh": "成都居舍",
+        "name_en": "Upper House Chengdu",
+        "aliases_zh": [],
+        "aliases_en": [],
+        "address_zh": "笔帖式街81号",
+        "address_en": "81 Bitieshi Street, Jinjiang District, Chengdu, China 610021",
+        "district_zh": "锦江区",
+        "nearest_metro": null,
+        "foreigner_signals": {
+          "english_signage": null,
+          "foreign_cards": null,
+          "english_service": null,
+          "evidence": [
+            "https://www.upperhouse.com/en/chengdu/"
+          ]
+        },
+        "official_url": "https://www.upperhouse.com/en/chengdu/",
+        "sources": [
+          "https://www.upperhouse.com/en/chengdu/",
+          "https://www.swirehotels.com/en/Our-Story/Media/Press-Release/SH/2025/UH-Rebrand/"
+        ],
+        "checked_on": "2026-11-27",
+        "confidence": "medium",
+        "notes": "分档依据：太古酒店的居舍品牌公告与门店官网将其归为奢华精品酒店。 官网现行客房与预订页面可查，房价档留空。",
+        "subcategory": "hotel",
+        "intro_short_zh": "笔帖式街上的院落酒店，出门便能逛大慈寺和太古里。",
+        "intro_short_en": "A courtyard hotel tucked into Taikoo Li, next to Daci Temple.",
+        "intro_long_zh": "适合希望在成都中心住一晚又想看旧院落的游客。门店位于笔帖式街81号，官网英文页提供抵达指引，步行游览可从大慈寺一带开始。",
+        "intro_long_en": "Spend time in the lanes around Daci Temple without crossing town. The hotel incorporates a preserved courtyard and publishes English directions for arriving at its Bitieshi Street address.",
+        "star": null,
+        "price_band": null,
+        "accepts_foreigners": true,
+        "foreign_service": {
+          "english_front_desk": null,
+          "foreign_guest_share": null,
+          "foreign_guest_experience": null,
+          "international_brand": "Swire Hotels",
+          "evidence_zh": "太古酒店现行门店官网以中英文发布客房、预订、到店与双机场交通选择。",
+          "evidence": [
+            "https://www.upperhouse.com/en/chengdu/"
+          ]
+        }
+      },
+      "external_signals": [],
+      "location": null,
+      "amap": {
+        "status": "not-run",
+        "alternatives": []
+      },
+      "score": {
+        "total": 28,
+        "parts": {
+          "foreigner": 0,
+          "confidence": 12,
+          "sources": 10,
+          "complete": 6,
+          "amap": 0
+        },
+        "external_used": false
+      },
+      "flags": [
+        "pl_cd_jushe: unknown field 'hotel_class' is dropped on import"
+      ]
+    },
+    {
+      "id": "pl_cd_korea_fashion_hehuachi",
+      "source_file": "C8/chengdu-shopping.json",
+      "status": "pending",
+      "draft": {
+        "id": "pl_cd_korea_fashion_hehuachi",
+        "city": "chengdu",
+        "category": "shopping",
+        "tier": "backup",
+        "name_zh": "荷花池韩国城",
+        "name_en": "Hehuachi Korea Fashion Market",
+        "aliases_zh": [],
+        "aliases_en": [],
+        "address_zh": "荷花池片区",
+        "address_en": null,
+        "district_zh": "金牛区",
+        "nearest_metro": null,
+        "foreigner_signals": {
+          "english_signage": null,
+          "foreign_cards": null,
+          "english_service": null,
+          "evidence": [
+            "https://news.chengdu.cn/2026/0930/6abcc39c44deea573f294130.shtml"
+          ]
+        },
+        "official_url": "https://news.chengdu.cn/2026/0930/6abcc39c44deea573f294130.shtml",
+        "sources": [
+          "https://news.chengdu.cn/2026/0930/6abcc39c44deea573f294130.shtml"
+        ],
+        "checked_on": "2026-11-27",
+        "confidence": "medium",
+        "notes": "营业依据为当前经营方点位或近期主管部门的具名记录。",
+        "subcategory": "market",
+        "hours_zh": null,
+        "hours_source": null,
+        "intro_short_zh": "在荷花池可以把这座服装市场作为另一处挑衣地点。",
+        "intro_short_en": "Another clothing market to explore in the Hehuachi neighborhood.",
+        "intro_long_zh": "在荷花池可以把这座服装市场作为另一处挑衣地点。按中文店名在荷花池片区定位。",
+        "intro_long_en": "Another clothing market to explore in the Hehuachi neighborhood. Use the full Chinese name when looking up this location."
+      },
+      "external_signals": [],
+      "location": null,
+      "amap": {
+        "status": "not-run",
+        "alternatives": []
+      },
+      "score": {
+        "total": 21,
+        "parts": {
+          "foreigner": 0,
+          "confidence": 12,
+          "sources": 5,
+          "complete": 4,
+          "amap": 0
+        },
+        "external_used": false
+      },
+      "flags": []
+    },
+    {
       "id": "pl_cd_kuanmen_shuangliu",
       "source_file": "C8/chengdu-food.json",
       "status": "pending",
@@ -3669,7 +4283,7 @@
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": "双流机场T2，机场目录列158登机口",
-        "address_en": null,
+        "address_en": "Terminal 2, near Gate 158, Chengdu Shuangliu International Airport",
         "district_zh": "双流区",
         "nearest_metro": null,
         "foreigner_signals": {
@@ -3682,7 +4296,8 @@
         },
         "official_url": "https://www.cdairport.com/en/businesss.aspx?cid=10&k=&t=175&ter=0",
         "sources": [
-          "https://www.cdairport.com/en/businesss.aspx?cid=10&k=&t=175&ter=0"
+          "https://www.cdairport.com/en/businesss.aspx?cid=10&k=&t=175&ter=0",
+          "https://www.cdairport.com/index.aspx/terminal.aspx"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
@@ -3708,12 +4323,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 21,
+        "total": 28,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
-          "sources": 5,
-          "complete": 4,
+          "sources": 10,
+          "complete": 6,
           "amap": 0
         },
         "external_used": false
@@ -3800,10 +4415,15 @@
         "name_en": "Four Points by Sheraton Chengdu Kuanzhai Alley",
         "aliases_zh": [],
         "aliases_en": [],
-        "address_zh": null,
-        "address_en": null,
-        "district_zh": null,
-        "nearest_metro": null,
+        "address_zh": "成都市青羊区实业街30号",
+        "address_en": "30 Shiye Street, Qingyang District, Chengdu, China 610015",
+        "district_zh": "青羊区",
+        "nearest_metro": {
+          "station_zh": "宽窄巷子",
+          "station_en": "Kuanzhai Alleys",
+          "line": "4号线",
+          "exit": null
+        },
         "foreigner_signals": {
           "english_signage": null,
           "foreign_cards": null,
@@ -3815,16 +4435,19 @@
         "official_url": "https://www.marriott.com/en-us/hotels/ctukm-four-points-chengdu-kuanzhai-alley/overview/",
         "sources": [
           "https://www.marriott.com/en-us/hotels/ctukm-four-points-chengdu-kuanzhai-alley/overview/",
-          "https://www.marriott.com/en-us/destinations/china/chengdu.mi?pg=2"
+          "https://www.marriott.com/en-us/destinations/china/chengdu.mi?pg=2",
+          "https://help.marriott.com/s/article/Article-24483",
+          "https://www.marriott.com.cn/hotels/ctukm-four-points-chengdu-kuanzhai-alley/overview/",
+          "https://www.ruoergai.gov.cn/regxrmzf/c101368/202307/f1103c15f55a400c8de96b90564d321e.shtml"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
-        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Fri, Dec 25 - Sat, Dec 26。 官网样本为每房每晚人民币 ¥487。当前价以所选日期及房型的报价为准。",
+        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Fri, Dec 25 - Sat, Dec 26。 官网样本为每房每晚人民币 ¥487。当前价以所选日期及房型的报价为准。 分档依据：万豪集团列为 Select 精选服务品牌，本库按中档处理。",
         "subcategory": "hotel",
-        "intro_short_zh": "在宽窄巷子一带可选择福朋喜来登。",
-        "intro_short_en": "A Four Points hotel in the Kuanzhai Alley area.",
-        "intro_long_zh": "在宽窄巷子一带可选择福朋喜来登。可在品牌官网查看房型和入住安排。",
-        "intro_long_en": "A Four Points hotel in the Kuanzhai Alley area. See the hotel's own website for room types and check-in details.",
+        "intro_short_zh": "实业街的门店，宽窄巷子站在酒店交通指南里。",
+        "intro_short_en": "A Shiye Street hotel for exploring the old city by subway.",
+        "intro_long_zh": "住在青羊区实业街时，可用官网列出的宽窄巷子地铁站规划白天路线。万豪资料列出酒店服务语言包括英文。",
+        "intro_long_en": "Use the property's directions from Kuanzhai Alleys station. Marriott also lists English for travelers who plan to communicate with the hotel directly.",
         "star": null,
         "price_band": "<500",
         "accepts_foreigners": true,
@@ -3846,17 +4469,19 @@
         "alternatives": []
       },
       "score": {
-        "total": 26,
+        "total": 31,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 4,
+          "complete": 9,
           "amap": 0
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "pl_cd_kuanzhaifupeng: unknown field 'hotel_class' is dropped on import"
+      ]
     },
     {
       "id": "pl_cd_kuanzhaixiangzixierdun",
@@ -3871,9 +4496,9 @@
         "name_en": "Hilton Garden Inn Chengdu Kuanzhai Alley",
         "aliases_zh": [],
         "aliases_en": [],
-        "address_zh": null,
-        "address_en": null,
-        "district_zh": null,
+        "address_zh": "成都市金牛区西安南路63号",
+        "address_en": "63 Xi’an South Road, Jinniu District, Chengdu, China 610036",
+        "district_zh": "金牛区",
         "nearest_metro": null,
         "foreigner_signals": {
           "english_signage": null,
@@ -3886,16 +4511,18 @@
         "official_url": "https://www.hilton.com.cn/zh-cn/hotels/ctukzgi-hilton-garden-inn-chengdu-kuanzhai-alley",
         "sources": [
           "https://www.hilton.com.cn/zh-cn/hotels/ctukzgi-hilton-garden-inn-chengdu-kuanzhai-alley",
-          "https://www.hilton.com.cn/zh-cn/locations/china/sichuan-chengdu"
+          "https://www.hilton.com.cn/zh-cn/locations/china/sichuan-chengdu",
+          "https://ir.hilton.com/_assets/_de1e637820b6842c68b34801d11a8fd1/hilton/db/3577/34740/pdf/HLT_Investor_Presentation_-_November_2026.pdf",
+          "https://www.hilton.com/en/hotels/ctukzgi-hilton-garden-inn-chengdu-kuanzhai-alley/hotel-location/"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
-        "notes": "希尔顿城市页显示 2026-11-27 入住、11-28 退房的起价。 官网样本为每房每晚人民币 ¥348。当前价以所选日期及房型的报价为准。",
+        "notes": "希尔顿城市页显示 2026-11-27 入住、11-28 退房的起价。 官网样本为每房每晚人民币 ¥348。当前价以所选日期及房型的报价为准。 分档依据：希尔顿集团将品牌列为 Focused Service，本库按中档处理。",
         "subcategory": "hotel",
-        "intro_short_zh": "想逛宽窄巷子，可从这家酒店出发。",
-        "intro_short_en": "A hotel option for exploring the Kuanzhai Alley area.",
-        "intro_long_zh": "想逛宽窄巷子，可从这家酒店出发。可在品牌官网查看房型和入住安排。",
-        "intro_long_en": "A hotel option for exploring the Kuanzhai Alley area. See the hotel's own website for room types and check-in details.",
+        "intro_short_zh": "西安南路门店，从宽窄巷子一路逛到枣子巷。",
+        "intro_short_en": "A central stay for Kuanzhai Alley and food around Zaozi Lane.",
+        "intro_long_zh": "适合想在成都老街区多走走的人。酒店官网将宽窄巷子与枣子巷列为附近去处，住客也可使用店内健身房。",
+        "intro_long_en": "Make time for one outing around Kuanzhai Alley and another around Zaozi Lane's food stops. The hotel's English page also lists an on-site gym.",
         "star": null,
         "price_band": "<500",
         "accepts_foreigners": true,
@@ -3917,17 +4544,19 @@
         "alternatives": []
       },
       "score": {
-        "total": 26,
+        "total": 29,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 4,
+          "complete": 7,
           "amap": 0
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "pl_cd_kuanzhaixiangzixierdun: unknown field 'hotel_class' is dropped on import"
+      ]
     },
     {
       "id": "pl_cd_laitangyuan_zongfu",
@@ -4141,10 +4770,15 @@
         "name_en": "Canopy by Hilton Chengdu City Centre",
         "aliases_zh": [],
         "aliases_en": [],
-        "address_zh": null,
-        "address_en": null,
-        "district_zh": null,
-        "nearest_metro": null,
+        "address_zh": "成都市青羊区西御街5号",
+        "address_en": "5 Xiyu Street, Qingyang District, Chengdu, China",
+        "district_zh": "青羊区",
+        "nearest_metro": {
+          "station_zh": "天府广场",
+          "station_en": "Tianfu Square",
+          "line": "1、2号线",
+          "exit": null
+        },
         "foreigner_signals": {
           "english_signage": null,
           "foreign_cards": null,
@@ -4156,16 +4790,18 @@
         "official_url": "https://www.hilton.com.cn/zh-cn/hotels/ctulcpy-canopy-by-hilton-chengdu-city-centre",
         "sources": [
           "https://www.hilton.com.cn/zh-cn/hotels/ctulcpy-canopy-by-hilton-chengdu-city-centre",
-          "https://www.hilton.com.cn/zh-cn/locations/china/sichuan-chengdu"
+          "https://www.hilton.com.cn/zh-cn/locations/china/sichuan-chengdu",
+          "https://ir.hilton.com/_assets/_de1e637820b6842c68b34801d11a8fd1/hilton/db/3577/34740/pdf/HLT_Investor_Presentation_-_November_2026.pdf",
+          "https://www.hilton.com/en/hotels/ctulcpy-canopy-chengdu-city-centre/hotel-location/"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
-        "notes": "希尔顿城市页显示 2026-11-27 入住、11-28 退房的起价。 官网样本为每房每晚人民币 ¥643。当前价以所选日期及房型的报价为准。",
+        "notes": "希尔顿城市页显示 2026-11-27 入住、11-28 退房的起价。 官网样本为每房每晚人民币 ¥643。当前价以所选日期及房型的报价为准。 分档依据：希尔顿集团将品牌列为 Lifestyle，本库从严按高档处理。",
         "subcategory": "hotel",
-        "intro_short_zh": "在成都中心城区安排一晚的候选。",
-        "intro_short_en": "A Canopy hotel in central Chengdu.",
-        "intro_long_zh": "在成都中心城区安排一晚的候选。可在品牌官网查看房型和入住安排。",
-        "intro_long_en": "A Canopy hotel in central Chengdu. See the hotel's own website for room types and check-in details.",
+        "intro_short_zh": "天府广场片区的嘉悦里，可安排人民公园散步。",
+        "intro_short_en": "A city-center Canopy close to People's Park.",
+        "intro_long_zh": "把人民公园与成都中心城区排在同一天时，可从这里出发。品牌资料把公园和老城游览列为附近行程。",
+        "intro_long_en": "Use this central address for a slower stay with a break at People's Park. The hotel has an English page with arrival directions and suggestions for the old city.",
         "star": null,
         "price_band": "500-1000",
         "accepts_foreigners": true,
@@ -4187,17 +4823,19 @@
         "alternatives": []
       },
       "score": {
-        "total": 26,
+        "total": 31,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 4,
+          "complete": 9,
           "amap": 0
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "pl_cd_lingdijiayueli: unknown field 'hotel_class' is dropped on import"
+      ]
     },
     {
       "id": "pl_cd_lisi",
@@ -4212,9 +4850,9 @@
         "name_en": "The Ritz-Carlton, Chengdu",
         "aliases_zh": [],
         "aliases_en": [],
-        "address_zh": null,
-        "address_en": null,
-        "district_zh": null,
+        "address_zh": "成都市青羊区顺城大街269号",
+        "address_en": "269 Shuncheng Avenue, Qingyang District, Chengdu, China 610017",
+        "district_zh": "青羊区",
         "nearest_metro": null,
         "foreigner_signals": {
           "english_signage": null,
@@ -4227,16 +4865,19 @@
         "official_url": "https://www.ritzcarlton.com/en/hotels/cturz-the-ritz-carlton-chengdu/overview/",
         "sources": [
           "https://www.ritzcarlton.com/en/hotels/cturz-the-ritz-carlton-chengdu/overview/",
-          "https://www.marriott.com/en-us/destinations/china/chengdu.mi"
+          "https://www.marriott.com/en-us/destinations/china/chengdu.mi",
+          "https://help.marriott.com/s/article/Article-24483",
+          "https://www.ritzcarlton.com/zh-cn/hotels/cturz-the-ritz-carlton-chengdu/rooms/",
+          "https://www.ritzcarlton.com/en/hotels/cturz-the-ritz-carlton-chengdu/rooms/signature-accommodations/"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
-        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sun, Dec 27 - Mon, Dec 28。 官网样本为每房每晚人民币 ¥978。当前价以所选日期及房型的报价为准。",
+        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sun, Dec 27 - Mon, Dec 28。 官网样本为每房每晚人民币 ¥978。当前价以所选日期及房型的报价为准。 分档依据：万豪集团将此品牌列为 Luxury。",
         "subcategory": "hotel",
-        "intro_short_zh": "在成都中心城区停留时可考虑。",
-        "intro_short_en": "A Ritz-Carlton hotel in central Chengdu.",
-        "intro_long_zh": "在成都中心城区停留时可考虑。可在品牌官网查看房型和入住安排。",
-        "intro_long_en": "A Ritz-Carlton hotel in central Chengdu. See the hotel's own website for room types and check-in details.",
+        "intro_short_zh": "品牌列有英语服务，到成都东站可先查接驳。",
+        "intro_short_en": "A central Chengdu hotel with English listed and an indoor pool.",
+        "intro_long_zh": "门店页列出英语与中文。若从成都东站抵达，可按酒店到店信息规划下一段交通。回店可使用室内泳池。",
+        "intro_long_en": "If you want an English-listed property in central Chengdu, check the hotel's arrival information and its indoor pool before picking a room.",
         "star": null,
         "price_band": "500-1000",
         "accepts_foreigners": true,
@@ -4258,17 +4899,19 @@
         "alternatives": []
       },
       "score": {
-        "total": 26,
+        "total": 29,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 4,
+          "complete": 7,
           "amap": 0
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "pl_cd_lisi: unknown field 'hotel_class' is dropped on import"
+      ]
     },
     {
       "id": "pl_cd_lokal_taiguli",
@@ -4477,13 +5120,13 @@
         "id": "pl_cd_longquanyixierdun",
         "city": "chengdu",
         "category": "hotel",
-        "tier": "backup",
+        "tier": "main",
         "name_zh": "成都龙泉驿百悦希尔顿酒店",
         "name_en": "Hilton Chengdu Longquanyi",
         "aliases_zh": [],
         "aliases_en": [],
-        "address_zh": null,
-        "address_en": null,
+        "address_zh": "成都市龙泉驿区金桉路118号",
+        "address_en": "118 Jin’an Road, Longquanyi District, Chengdu, China 610101",
         "district_zh": "龙泉驿区",
         "nearest_metro": null,
         "foreigner_signals": {
@@ -4497,16 +5140,18 @@
         "official_url": "https://www.hilton.com.cn/zh-cn/hotels/ctulohi-hilton-chengdu-longquanyi",
         "sources": [
           "https://www.hilton.com.cn/zh-cn/hotels/ctulohi-hilton-chengdu-longquanyi",
-          "https://www.hilton.com.cn/zh-cn/locations/china/sichuan-chengdu"
+          "https://www.hilton.com.cn/zh-cn/locations/china/sichuan-chengdu",
+          "https://ir.hilton.com/_assets/_de1e637820b6842c68b34801d11a8fd1/hilton/db/3577/34740/pdf/HLT_Investor_Presentation_-_November_2026.pdf",
+          "https://www.hilton.com/en/hotels/ctulohi-hilton-chengdu-longquanyi/hotel-location/"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
-        "notes": "希尔顿城市页显示 2026-11-27 入住、11-28 退房的起价。 官网样本为每房每晚人民币 ¥510。当前价以所选日期及房型的报价为准。",
+        "notes": "希尔顿城市页显示 2026-11-27 入住、11-28 退房的起价。 官网样本为每房每晚人民币 ¥510。当前价以所选日期及房型的报价为准。 分档依据：希尔顿集团将品牌列为 Full Service，本库按高档处理。",
         "subcategory": "hotel",
-        "intro_short_zh": "龙泉驿区的一家希尔顿酒店。",
-        "intro_short_en": "A Hilton hotel in Longquanyi.",
-        "intro_long_zh": "龙泉驿区的一家希尔顿酒店。可在品牌官网查看房型和入住安排。",
-        "intro_long_en": "A Hilton hotel in Longquanyi. See the hotel's own website for room types and check-in details.",
+        "intro_short_zh": "龙泉驿金桉路的希尔顿，住客可用室内泳池。",
+        "intro_short_en": "An east Chengdu stay in Longquanyi with an indoor pool.",
+        "intro_long_zh": "在龙泉驿有几天行程时，可住金桉路118号。希尔顿门店页列出健身房和室内泳池，方便将休息时间放在店内。",
+        "intro_long_en": "Consider a separate night on the eastern side of Chengdu. The location guide gives the Longquanyi address, and the property offers an indoor pool.",
         "star": null,
         "price_band": "500-1000",
         "accepts_foreigners": true,
@@ -4528,17 +5173,19 @@
         "alternatives": []
       },
       "score": {
-        "total": 26,
+        "total": 29,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 4,
+          "complete": 7,
           "amap": 0
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "pl_cd_longquanyixierdun: unknown field 'hotel_class' is dropped on import"
+      ]
     },
     {
       "id": "pl_cd_luhu",
@@ -4752,7 +5399,7 @@
         "name_en": "Ma Wang Zi (Jinjiang)",
         "aliases_zh": [],
         "aliases_en": [],
-        "address_zh": null,
+        "address_zh": "成都市锦江区东糠市街1号",
         "address_en": null,
         "district_zh": "锦江区",
         "nearest_metro": null,
@@ -4761,14 +5408,14 @@
           "foreign_cards": null,
           "english_service": null,
           "evidence": [
-            "https://news.chengdu.cn/2025/0902/68b6a15e3eb2f3537bf1404e.shtml?phone=yes",
-            "https://tire-uat.michelin.com.cn/news/2026/0903.html"
+            "https://www.mawangzi.cn/",
+            "https://sichuan.scol.com.cn/amsc/202609/83315752.html"
           ]
         },
-        "official_url": "https://news.chengdu.cn/2025/0902/68b6a15e3eb2f3537bf1404e.shtml?phone=yes",
+        "official_url": "https://www.mawangzi.cn/",
         "sources": [
-          "https://news.chengdu.cn/2025/0902/68b6a15e3eb2f3537bf1404e.shtml?phone=yes",
-          "https://tire-uat.michelin.com.cn/news/2026/0903.html"
+          "https://www.mawangzi.cn/",
+          "https://sichuan.scol.com.cn/amsc/202609/83315752.html"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
@@ -4794,12 +5441,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 25,
+        "total": 26,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 3,
+          "complete": 4,
           "amap": 0
         },
         "external_used": false
@@ -4872,6 +5519,70 @@
       "flags": []
     },
     {
+      "id": "pl_cd_mixc_chengdu_shop",
+      "source_file": "C8/chengdu-shopping.json",
+      "status": "pending",
+      "draft": {
+        "id": "pl_cd_mixc_chengdu_shop",
+        "city": "chengdu",
+        "category": "shopping",
+        "tier": "main",
+        "name_zh": "成都万象城",
+        "name_en": "The MixC Chengdu",
+        "aliases_zh": [],
+        "aliases_en": [],
+        "address_zh": "双庆路8号",
+        "address_en": "8 Shuangqing Road, Chenghua District, Chengdu",
+        "district_zh": "成华区",
+        "nearest_metro": null,
+        "foreigner_signals": {
+          "english_signage": null,
+          "foreign_cards": null,
+          "english_service": null,
+          "evidence": [
+            "https://www.itotravel.com/zh-hk/pages/store-locations",
+            "https://hefang.net/zh/pages/%E7%BA%BF%E4%B8%8B%E9%97%A8%E5%BA%97",
+            "https://www.cabep.com.cn/4/11116/2239486"
+          ]
+        },
+        "official_url": "https://www.itotravel.com/zh-hk/pages/store-locations",
+        "sources": [
+          "https://www.itotravel.com/zh-hk/pages/store-locations",
+          "https://hefang.net/zh/pages/%E7%BA%BF%E4%B8%8B%E9%97%A8%E5%BA%97",
+          "https://www.cabep.com.cn/4/11116/2239486",
+          "https://www.gochengdu.cn/en/article/city_services/711"
+        ],
+        "checked_on": "2026-11-27",
+        "confidence": "medium",
+        "notes": "营业依据为当前经营方点位或近期主管部门的具名记录。",
+        "subcategory": "mall",
+        "hours_zh": null,
+        "hours_source": null,
+        "intro_short_zh": "在成华一带给购物、喝咖啡和吃饭留半天。",
+        "intro_short_en": "Set aside part of the day for shopping, coffee and a meal in Chenghua.",
+        "intro_long_zh": "在成华一带给购物、喝咖啡和吃饭留半天。按中文店名在双庆路8号定位。",
+        "intro_long_en": "Set aside part of the day for shopping, coffee and a meal in Chenghua. Use the full Chinese name when looking up this location."
+      },
+      "external_signals": [],
+      "location": null,
+      "amap": {
+        "status": "not-run",
+        "alternatives": []
+      },
+      "score": {
+        "total": 28,
+        "parts": {
+          "foreigner": 0,
+          "confidence": 12,
+          "sources": 10,
+          "complete": 6,
+          "amap": 0
+        },
+        "external_used": false
+      },
+      "flags": []
+    },
+    {
       "id": "pl_cd_mixun_chashi",
       "source_file": "C8/chengdu-food.json",
       "status": "pending",
@@ -4884,8 +5595,8 @@
         "name_en": "Mi Xun Teahouse",
         "aliases_zh": [],
         "aliases_en": [],
-        "address_zh": "太古里一带",
-        "address_en": null,
+        "address_zh": "笔帖式街81号成都居舍内",
+        "address_en": "Upper House Chengdu, 81 Bitieshi Street, Jinjiang District, Chengdu, China 610021",
         "district_zh": "锦江区",
         "nearest_metro": null,
         "foreigner_signals": {
@@ -4898,20 +5609,21 @@
         },
         "official_url": "https://www.upperhouse.com/en/chengdu/restaurants-and-bars/mi-xun-teahouse/",
         "sources": [
-          "https://www.upperhouse.com/en/chengdu/restaurants-and-bars/mi-xun-teahouse/"
+          "https://www.upperhouse.com/en/chengdu/restaurants-and-bars/mi-xun-teahouse/",
+          "https://www.upperhouse.com/en/chengdu/special-offers/mxt-hot-pot-for-two/"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
-        "notes": "营业依据为当前经营方点位或近期主管部门的具名记录。",
+        "notes": "营业依据为当前经营方点位或近期主管部门的具名记录。 居舍官网公开双人素食火锅套餐620元，折合每人310元。为套餐分摊参考，单点与其他餐段另计。",
         "subcategory": "vegetarian",
         "hours_zh": null,
         "hours_source": null,
         "intro_short_zh": "走过大慈寺和太古里时，可安排一顿以植物食材为主的川味素食。",
         "intro_short_en": "Plan a plant-forward Sichuan meal near Daci Temple and Taikoo Li.",
-        "intro_long_zh": "走过大慈寺和太古里时，可安排一顿以植物食材为主的川味素食。按中文店名在太古里一带定位。",
+        "intro_long_zh": "走过大慈寺和太古里时，可安排一顿以植物食材为主的川味素食。按中文店名在笔帖式街81号成都居舍内定位。",
         "intro_long_en": "Plan a plant-forward Sichuan meal near Daci Temple and Taikoo Li. Use the full Chinese name when looking up this location.",
         "cuisine_zh": "川味素食",
-        "price_per_person_cny": null,
+        "price_per_person_cny": 310,
         "english_menu": null,
         "halal": null,
         "vegetarian_friendly": true,
@@ -4924,12 +5636,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 21,
+        "total": 29,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
-          "sources": 5,
-          "complete": 4,
+          "sources": 10,
+          "complete": 7,
           "amap": 0
         },
         "external_used": false
@@ -4949,7 +5661,7 @@
         "name_en": "Pansunshi",
         "aliases_zh": [],
         "aliases_en": [],
-        "address_zh": null,
+        "address_zh": "成都市锦江区华兴正街64号",
         "address_en": null,
         "district_zh": "锦江区",
         "nearest_metro": null,
@@ -4967,7 +5679,9 @@
         "sources": [
           "https://www.sccdysgs.com/",
           "https://sichuan.scol.com.cn/ggxw/202610/83348677.html",
-          "https://lzhbwg.mofcom.gov.cn/edi_ecms_web_front/thb/articledeail/991"
+          "https://lzhbwg.mofcom.gov.cn/edi_ecms_web_front/thb/articledeail/991",
+          "https://lzhbwg.mofcom.gov.cn/edi_ecms_web_front/thb/detail/ae72d763817d44b091eccd096067d386",
+          "https://lzhbwg.mofcom.gov.cn/edi_ecms_web_front/thb/articledeail/1250"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
@@ -4993,12 +5707,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 25,
+        "total": 26,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 3,
+          "complete": 4,
           "amap": 0
         },
         "external_used": false
@@ -5217,8 +5931,8 @@
         "name_en": "Six Senses Qing Cheng Mountain",
         "aliases_zh": [],
         "aliases_en": [],
-        "address_zh": null,
-        "address_en": null,
+        "address_zh": "都江堰市东软大道2号",
+        "address_en": "2 Dong Ruan Road, Qingchengshan, Dujiangyan, China",
         "district_zh": "都江堰市",
         "nearest_metro": null,
         "foreigner_signals": {
@@ -5232,16 +5946,18 @@
         "official_url": "https://www.sixsenses.com/zh/hotels-resorts/asia-the-pacific/china/qing-cheng-mountain/",
         "sources": [
           "https://www.sixsenses.com/zh/hotels-resorts/asia-the-pacific/china/qing-cheng-mountain/",
-          "https://www.ihg.com/hotels/cn/zh/find-hotels/hotel-search?qDest=Chengdu%2C%20Sichuan%2C%20China&qPt=CASH&qCiD=31&qCoD=1&qCiMy=112026&qCoMy=002027&qAdlt=1&qChld=0&qRms=1&qRtP=6CBARC&qAAR=6CBARC&srb_u=1&qFS=false&qSrt=sHL&qRdU=km"
+          "https://www.ihg.com/hotels/cn/zh/find-hotels/hotel-search?qDest=Chengdu%2C%20Sichuan%2C%20China&qPt=CASH&qCiD=31&qCoD=1&qCiMy=112026&qCoMy=002027&qAdlt=1&qChld=0&qRms=1&qRtP=6CBARC&qAAR=6CBARC&srb_u=1&qFS=false&qSrt=sHL&qRdU=km",
+          "https://www.ihgplc.com/en/news-and-media/news-releases/2025/ihg-hotels-and-resorts-conversion-friendly-brands-fuel-growth-opportunities-for-owners",
+          "https://www.sixsenses.com/en/hotels-resorts/asia-the-pacific/china/qing-cheng-mountain/contact/"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
-        "notes": "洲际官网查 2026-12-31 至 2027-01-01 的单人跨年夜报价，包含页面列出的客房费用。 官网样本为每房每晚人民币 ¥2,622。当前价以所选日期及房型的报价为准。",
+        "notes": "洲际官网查 2026-12-31 至 2027-01-01 的单人跨年夜报价，包含页面列出的客房费用。 官网样本为每房每晚人民币 ¥2,622。当前价以所选日期及房型的报价为准。 分档依据：洲际酒店集团将该品牌列入 Luxury & Lifestyle。",
         "subcategory": "hotel",
-        "intro_short_zh": "可把这处度假酒店安排在青城山或都江堰行程。",
-        "intro_short_en": "A resort for a visit to Qingcheng Mountain or Dujiangyan.",
-        "intro_long_zh": "可把这处度假酒店安排在青城山或都江堰行程。可在品牌官网查看房型和入住安排。",
-        "intro_long_en": "A resort for a visit to Qingcheng Mountain or Dujiangyan. See the hotel's own website for room types and check-in details.",
+        "intro_short_zh": "在青城山脚住一晚，可把都江堰熊猫谷排入周边行程。",
+        "intro_short_en": "A Qingcheng Mountain stay for separate outings to the mountain and Panda Valley.",
+        "intro_long_zh": "把青城山和都江堰分开安排时，可在山脚留宿。六善官网介绍附近熊猫谷，也有英文目的地信息供事先规划。",
+        "intro_long_en": "Make Qingcheng Mountain its own stop outside central Chengdu. The resort describes an outing to Dujiangyan Panda Valley and shares more local ideas in English.",
         "star": null,
         "price_band": ">2000",
         "accepts_foreigners": true,
@@ -5255,6 +5971,69 @@
             "https://www.sixsenses.com/zh/hotels-resorts/asia-the-pacific/china/qing-cheng-mountain/"
           ]
         }
+      },
+      "external_signals": [],
+      "location": null,
+      "amap": {
+        "status": "not-run",
+        "alternatives": []
+      },
+      "score": {
+        "total": 29,
+        "parts": {
+          "foreigner": 0,
+          "confidence": 12,
+          "sources": 10,
+          "complete": 7,
+          "amap": 0
+        },
+        "external_used": false
+      },
+      "flags": [
+        "pl_cd_qingchengshanliushan: unknown field 'hotel_class' is dropped on import"
+      ]
+    },
+    {
+      "id": "pl_cd_qingshiqiao_seafood",
+      "source_file": "C8/chengdu-shopping.json",
+      "status": "pending",
+      "draft": {
+        "id": "pl_cd_qingshiqiao_seafood",
+        "city": "chengdu",
+        "category": "shopping",
+        "tier": "main",
+        "name_zh": "青石桥海鲜市场",
+        "name_en": "Qingshiqiao Seafood Market",
+        "aliases_zh": [],
+        "aliases_en": [],
+        "address_zh": "青石桥片区",
+        "address_en": null,
+        "district_zh": "锦江区",
+        "nearest_metro": null,
+        "foreigner_signals": {
+          "english_signage": null,
+          "foreign_cards": null,
+          "english_service": null,
+          "evidence": [
+            "https://scjgj.sc.gov.cn/scsjgj/c104536/2025/9/26/bba021463f6444b2949cc4a51e5a2755/files/%E5%90%88%E6%A0%BC-2025%E5%B9%B4%E7%AC%AC16%E5%8F%B7%E9%A3%9F%E5%93%81%E6%8A%BD%E6%A3%80%E4%BF%A1%E6%81%AF.pdf",
+            "https://www.thepaper.cn/newsDetail_forward_34359402"
+          ]
+        },
+        "official_url": "https://scjgj.sc.gov.cn/scsjgj/c104536/2025/9/26/bba021463f6444b2949cc4a51e5a2755/files/%E5%90%88%E6%A0%BC-2025%E5%B9%B4%E7%AC%AC16%E5%8F%B7%E9%A3%9F%E5%93%81%E6%8A%BD%E6%A3%80%E4%BF%A1%E6%81%AF.pdf",
+        "sources": [
+          "https://scjgj.sc.gov.cn/scsjgj/c104536/2025/9/26/bba021463f6444b2949cc4a51e5a2755/files/%E5%90%88%E6%A0%BC-2025%E5%B9%B4%E7%AC%AC16%E5%8F%B7%E9%A3%9F%E5%93%81%E6%8A%BD%E6%A3%80%E4%BF%A1%E6%81%AF.pdf",
+          "https://www.thepaper.cn/newsDetail_forward_34359402"
+        ],
+        "checked_on": "2026-11-27",
+        "confidence": "medium",
+        "notes": "营业依据为当前经营方点位或近期主管部门的具名记录。",
+        "subcategory": "market",
+        "hours_zh": null,
+        "hours_source": null,
+        "intro_short_zh": "可在锦江看成都居民怎么买水产和生鲜。",
+        "intro_short_en": "See how locals shop for fish and other fresh goods in central Chengdu.",
+        "intro_long_zh": "可在锦江看成都居民怎么买水产和生鲜。按中文店名在青石桥片区定位。",
+        "intro_long_en": "See how locals shop for fish and other fresh goods in central Chengdu. Use the full Chinese name when looking up this location."
       },
       "external_signals": [],
       "location": null,
@@ -5343,6 +6122,73 @@
       "flags": []
     },
     {
+      "id": "pl_cd_raffles_chengdu_retail",
+      "source_file": "C8/chengdu-shopping.json",
+      "status": "pending",
+      "draft": {
+        "id": "pl_cd_raffles_chengdu_retail",
+        "city": "chengdu",
+        "category": "shopping",
+        "tier": "main",
+        "name_zh": "成都来福士广场",
+        "name_en": "Raffles City Chengdu",
+        "aliases_zh": [],
+        "aliases_en": [],
+        "address_zh": "人民南路四段3号",
+        "address_en": null,
+        "district_zh": "武侯区",
+        "nearest_metro": {
+          "station_zh": "省体育馆",
+          "station_en": "Sichuan Provincial Gymnasium",
+          "line": "1、3号线",
+          "exit": null
+        },
+        "foreigner_signals": {
+          "english_signage": null,
+          "foreign_cards": null,
+          "english_service": null,
+          "evidence": [
+            "https://www.capitaland.com/en/find-a-property/global-property-listing/retail/raffles-city-chengdu.html"
+          ]
+        },
+        "official_url": "https://www.capitaland.com/en/find-a-property/global-property-listing/retail/raffles-city-chengdu.html",
+        "sources": [
+          "https://www.capitaland.com/en/find-a-property/global-property-listing/retail/raffles-city-chengdu.html",
+          "https://www.capitaland.com/content/dam/capitaland-sites/international/about-capitaland/sustainability/sustainability-reports/capitaland-global-sustainability-report-2013.pdf",
+          "https://www.csrc.gov.cn/sichuan/c104894/c7463304/content.shtml",
+          "https://www.gochengdu.cn/en/article/city_services_/824"
+        ],
+        "checked_on": "2026-11-27",
+        "confidence": "medium",
+        "notes": "营业依据为当前经营方点位或近期主管部门的具名记录。",
+        "subcategory": "mall",
+        "hours_zh": null,
+        "hours_source": null,
+        "intro_short_zh": "在人民南路可一站看零售、书店或找个室内歇脚点。",
+        "intro_short_en": "An indoor shopping break on Renmin South Road.",
+        "intro_long_zh": "在人民南路可一站看零售、书店或找个室内歇脚点。按中文店名在人民南路四段3号定位。",
+        "intro_long_en": "An indoor shopping break on Renmin South Road. Use the full Chinese name when looking up this location."
+      },
+      "external_signals": [],
+      "location": null,
+      "amap": {
+        "status": "not-run",
+        "alternatives": []
+      },
+      "score": {
+        "total": 28,
+        "parts": {
+          "foreigner": 0,
+          "confidence": 12,
+          "sources": 10,
+          "complete": 6,
+          "amap": 0
+        },
+        "external_used": false
+      },
+      "flags": []
+    },
+    {
       "id": "pl_cd_ralph_taiguli",
       "source_file": "C8/chengdu-food.json",
       "status": "pending",
@@ -5356,9 +6202,14 @@
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": "成都太古里",
-        "address_en": null,
+        "address_en": "Shop 2224B, Level 3, Taikoo Li Chengdu, 8 Middle Shamao Street, Jinjiang District, Chengdu",
         "district_zh": "锦江区",
-        "nearest_metro": null,
+        "nearest_metro": {
+          "station_zh": "春熙路",
+          "station_en": "Chunxi Road",
+          "line": "2、3号线",
+          "exit": null
+        },
         "foreigner_signals": {
           "english_signage": null,
           "foreign_cards": null,
@@ -5371,7 +6222,9 @@
         "official_url": "https://www.swireproperties.com/-/media/images/swireproperties/media/media-library/factsheets/taikoo-li-chengdu/taikoo-li-chengdu-factsheet_202510.ashx?sc_lang=zh-cn",
         "sources": [
           "https://www.swireproperties.com/-/media/images/swireproperties/media/media-library/factsheets/taikoo-li-chengdu/taikoo-li-chengdu-factsheet_202510.ashx?sc_lang=zh-cn",
-          "https://www.swireproperties.com/zh-cn/media/press-releases/2025/20250415_tklchengdu/"
+          "https://www.swireproperties.com/zh-cn/media/press-releases/2025/20250415_tklchengdu/",
+          "https://www.ralphlauren.com/global-rl-chengdu",
+          "https://www.swireproperties.com/-/media/images/swireproperties/media/media-library/factsheets/taikoo-li-chengdu/taikoo-li-chengdu-factsheet_202510.ashx?sc_lang=en"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
@@ -5397,12 +6250,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 26,
+        "total": 29,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 4,
+          "complete": 7,
           "amap": 0
         },
         "external_used": false
@@ -5735,6 +6588,69 @@
           "foreigner": 0,
           "confidence": 12,
           "sources": 5,
+          "complete": 4,
+          "amap": 0
+        },
+        "external_used": false
+      },
+      "flags": []
+    },
+    {
+      "id": "pl_cd_shibijia_kuanzhai_shop",
+      "source_file": "C8/chengdu-shopping.json",
+      "status": "pending",
+      "draft": {
+        "id": "pl_cd_shibijia_kuanzhai_shop",
+        "city": "chengdu",
+        "category": "shopping",
+        "tier": "backup",
+        "name_zh": "诗婢家（宽窄巷子）",
+        "name_en": "Shibijia, Kuanzhai Alley",
+        "aliases_zh": [],
+        "aliases_en": [],
+        "address_zh": "宽窄巷子片区",
+        "address_en": null,
+        "district_zh": "青羊区",
+        "nearest_metro": null,
+        "foreigner_signals": {
+          "english_signage": null,
+          "foreign_cards": null,
+          "english_service": null,
+          "evidence": [
+            "https://paper.people.com.cn/rmrbhwb/pc/content/202502/13/content_30056313.html",
+            "https://www.shibijia.com/"
+          ]
+        },
+        "official_url": "https://paper.people.com.cn/rmrbhwb/pc/content/202502/13/content_30056313.html",
+        "sources": [
+          "https://paper.people.com.cn/rmrbhwb/pc/content/202502/13/content_30056313.html",
+          "https://www.shibijia.com/",
+          "https://shibijia.com/contact/12",
+          "https://www.shibijia.com/profile"
+        ],
+        "checked_on": "2026-11-27",
+        "confidence": "low",
+        "notes": "品牌官网与往期报道可核，宽窄巷子门店的门牌与现行营业待证。 近期官方资料确认身份，具体到店位置待复核。 待人工处理。品牌官网公布琴台路的总店／美术馆地址。宽窄点位目前只有历史或合作记录，现行独立分店、营业时段和预约不明。继续留候补。",
+        "subcategory": "time_honored_brand",
+        "hours_zh": null,
+        "hours_source": null,
+        "intro_short_zh": "在老街找本地书画纸笔和小型文创。",
+        "intro_short_en": "A place to look for brushes, paper and art gifts in the old lanes.",
+        "intro_long_zh": "在老街找本地书画纸笔和小型文创。按中文店名在宽窄巷子片区定位。",
+        "intro_long_en": "A place to look for brushes, paper and art gifts in the old lanes. Use the full Chinese name when looking up this location."
+      },
+      "external_signals": [],
+      "location": null,
+      "amap": {
+        "status": "not-run",
+        "alternatives": []
+      },
+      "score": {
+        "total": 18,
+        "parts": {
+          "foreigner": 0,
+          "confidence": 4,
+          "sources": 10,
           "complete": 4,
           "amap": 0
         },
@@ -6146,56 +7062,46 @@
       "flags": []
     },
     {
-      "id": "pl_cd_taigulixierdun",
-      "source_file": "C8/chengdu-hotel.json",
+      "id": "pl_cd_sisyphe_waterworks_1946",
+      "source_file": "C8/chengdu-shopping.json",
       "status": "pending",
       "draft": {
-        "id": "pl_cd_taigulixierdun",
+        "id": "pl_cd_sisyphe_waterworks_1946",
         "city": "chengdu",
-        "category": "hotel",
+        "category": "shopping",
         "tier": "main",
-        "name_zh": "成都太古里希尔顿花园酒店",
-        "name_en": "Hilton Garden Inn Chengdu Taikoo Li",
+        "name_zh": "西西弗书店（水厂1946店）",
+        "name_en": "Sisyphe Bookstore, Waterworks 1946",
         "aliases_zh": [],
         "aliases_en": [],
-        "address_zh": null,
+        "address_zh": "青羊上街水厂1946内",
         "address_en": null,
-        "district_zh": null,
+        "district_zh": "青羊区",
         "nearest_metro": null,
         "foreigner_signals": {
           "english_signage": null,
           "foreign_cards": null,
           "english_service": null,
           "evidence": [
-            "https://www.hilton.com.cn/zh-cn/hotels/ctutlgi-hilton-garden-inn-chengdu-taikoo-li"
+            "https://news.chengdu.cn/2026/0923/6ab31edc44deea573f27a8a7.shtml",
+            "https://www2.xinhuanet.com/20261015/0c8cde63b5594fe8937d492ea2f87b74/c.html"
           ]
         },
-        "official_url": "https://www.hilton.com.cn/zh-cn/hotels/ctutlgi-hilton-garden-inn-chengdu-taikoo-li",
+        "official_url": "https://news.chengdu.cn/2026/0923/6ab31edc44deea573f27a8a7.shtml",
         "sources": [
-          "https://www.hilton.com.cn/zh-cn/hotels/ctutlgi-hilton-garden-inn-chengdu-taikoo-li",
-          "https://www.hilton.com.cn/zh-cn/locations/china/sichuan-chengdu"
+          "https://news.chengdu.cn/2026/0923/6ab31edc44deea573f27a8a7.shtml",
+          "https://www2.xinhuanet.com/20261015/0c8cde63b5594fe8937d492ea2f87b74/c.html"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
-        "notes": "希尔顿城市页显示 2026-11-27 入住、11-28 退房的起价。 官网样本为每房每晚人民币 ¥378。当前价以所选日期及房型的报价为准。",
-        "subcategory": "hotel",
-        "intro_short_zh": "可作为太古里一带游览的住宿点。",
-        "intro_short_en": "A base for exploring the Taikoo Li area.",
-        "intro_long_zh": "可作为太古里一带游览的住宿点。可在品牌官网查看房型和入住安排。",
-        "intro_long_en": "A base for exploring the Taikoo Li area. See the hotel's own website for room types and check-in details.",
-        "star": null,
-        "price_band": "<500",
-        "accepts_foreigners": true,
-        "foreign_service": {
-          "english_front_desk": null,
-          "foreign_guest_share": null,
-          "foreign_guest_experience": null,
-          "international_brand": "Hilton",
-          "evidence_zh": "成都太古里希尔顿花园酒店由国际酒店品牌或集团 Hilton 的官网正式列出并提供预订入口。",
-          "evidence": [
-            "https://www.hilton.com.cn/zh-cn/hotels/ctutlgi-hilton-garden-inn-chengdu-taikoo-li"
-          ]
-        }
+        "notes": "营业依据为当前经营方点位或近期主管部门的具名记录。",
+        "subcategory": "boutique",
+        "hours_zh": null,
+        "hours_source": null,
+        "intro_short_zh": "在旧水厂改造的街区逛书店，能找中文书和小礼物。",
+        "intro_short_en": "Browse books and small gifts in the former waterworks complex.",
+        "intro_long_zh": "在旧水厂改造的街区逛书店，能找中文书和小礼物。按中文店名在青羊上街水厂1946内定位。",
+        "intro_long_en": "Browse books and small gifts in the former waterworks complex. Use the full Chinese name when looking up this location."
       },
       "external_signals": [],
       "location": null,
@@ -6217,6 +7123,140 @@
       "flags": []
     },
     {
+      "id": "pl_cd_skp_chengdu_shop",
+      "source_file": "C8/chengdu-shopping.json",
+      "status": "pending",
+      "draft": {
+        "id": "pl_cd_skp_chengdu_shop",
+        "city": "chengdu",
+        "category": "shopping",
+        "tier": "main",
+        "name_zh": "成都SKP",
+        "name_en": "Chengdu SKP",
+        "aliases_zh": [],
+        "aliases_en": [],
+        "address_zh": "天府大道北段",
+        "address_en": null,
+        "district_zh": "高新区",
+        "nearest_metro": null,
+        "foreigner_signals": {
+          "english_signage": null,
+          "foreign_cards": null,
+          "english_service": null,
+          "evidence": [
+            "https://skp-beijing.com/shop?c=chengdu"
+          ]
+        },
+        "official_url": "https://skp-beijing.com/shop?c=chengdu",
+        "sources": [
+          "https://skp-beijing.com/shop?c=chengdu"
+        ],
+        "checked_on": "2026-11-27",
+        "confidence": "medium",
+        "notes": "营业依据为当前经营方点位或近期主管部门的具名记录。",
+        "subcategory": "mall",
+        "hours_zh": null,
+        "hours_source": null,
+        "intro_short_zh": "想在成都南部看国际时装和配饰，可安排交子一带这家商场。",
+        "intro_short_en": "A south Chengdu stop for international fashion and accessories.",
+        "intro_long_zh": "想在成都南部看国际时装和配饰，可安排交子一带这家商场。按中文店名在天府大道北段定位。",
+        "intro_long_en": "A south Chengdu stop for international fashion and accessories. Use the full Chinese name when looking up this location."
+      },
+      "external_signals": [],
+      "location": null,
+      "amap": {
+        "status": "not-run",
+        "alternatives": []
+      },
+      "score": {
+        "total": 21,
+        "parts": {
+          "foreigner": 0,
+          "confidence": 12,
+          "sources": 5,
+          "complete": 4,
+          "amap": 0
+        },
+        "external_used": false
+      },
+      "flags": []
+    },
+    {
+      "id": "pl_cd_taigulixierdun",
+      "source_file": "C8/chengdu-hotel.json",
+      "status": "pending",
+      "draft": {
+        "id": "pl_cd_taigulixierdun",
+        "city": "chengdu",
+        "category": "hotel",
+        "tier": "backup",
+        "name_zh": "成都太古里希尔顿花园酒店",
+        "name_en": "Hilton Garden Inn Chengdu Taikoo Li",
+        "aliases_zh": [],
+        "aliases_en": [],
+        "address_zh": "成都市成华区双林路266号",
+        "address_en": "266 Shuanglin Road, Chenghua District, Chengdu, China 610051",
+        "district_zh": "成华区",
+        "nearest_metro": null,
+        "foreigner_signals": {
+          "english_signage": null,
+          "foreign_cards": null,
+          "english_service": null,
+          "evidence": [
+            "https://www.hilton.com.cn/zh-cn/hotels/ctutlgi-hilton-garden-inn-chengdu-taikoo-li"
+          ]
+        },
+        "official_url": "https://www.hilton.com.cn/zh-cn/hotels/ctutlgi-hilton-garden-inn-chengdu-taikoo-li",
+        "sources": [
+          "https://www.hilton.com.cn/zh-cn/hotels/ctutlgi-hilton-garden-inn-chengdu-taikoo-li",
+          "https://www.hilton.com.cn/zh-cn/locations/china/sichuan-chengdu",
+          "https://ir.hilton.com/_assets/_de1e637820b6842c68b34801d11a8fd1/hilton/db/3577/34740/pdf/HLT_Investor_Presentation_-_November_2026.pdf",
+          "https://www.hilton.com/en/hotels/ctutlgi-hilton-garden-inn-chengdu-taikoo-li/hotel-location/"
+        ],
+        "checked_on": "2026-11-27",
+        "confidence": "medium",
+        "notes": "希尔顿城市页显示 2026-11-27 入住、11-28 退房的起价。 官网样本为每房每晚人民币 ¥378。当前价以所选日期及房型的报价为准。 分档依据：希尔顿集团将品牌列为 Focused Service，本库按中档处理。 希尔顿中国页面代码 CTUTLGI 现显示成都天府熊猫塔希尔顿花园酒店，英文仍为 Hilton Garden Inn Chengdu Taikoo Li。请人审核定展示名称。",
+        "subcategory": "hotel",
+        "intro_short_zh": "成华双林路的门店，可把天府熊猫塔排在附近行程中。",
+        "intro_short_en": "A Shuanglin Road base near the Tianfu Panda Tower.",
+        "intro_long_zh": "门店地址在双林路266号。希尔顿列出天府熊猫塔、成都339及东郊记忆方向的游览选择，适合安排在成华区活动。",
+        "intro_long_en": "The address is in Chenghua, near the Tianfu Panda Tower. Consider it for eastern Chengdu plans, including the shopping around 339 or an outing to Eastern Suburb Memory.",
+        "star": null,
+        "price_band": "<500",
+        "accepts_foreigners": true,
+        "foreign_service": {
+          "english_front_desk": null,
+          "foreign_guest_share": null,
+          "foreign_guest_experience": null,
+          "international_brand": "Hilton",
+          "evidence_zh": "成都太古里希尔顿花园酒店由国际酒店品牌或集团 Hilton 的官网正式列出并提供预订入口。",
+          "evidence": [
+            "https://www.hilton.com.cn/zh-cn/hotels/ctutlgi-hilton-garden-inn-chengdu-taikoo-li"
+          ]
+        }
+      },
+      "external_signals": [],
+      "location": null,
+      "amap": {
+        "status": "not-run",
+        "alternatives": []
+      },
+      "score": {
+        "total": 29,
+        "parts": {
+          "foreigner": 0,
+          "confidence": 12,
+          "sources": 10,
+          "complete": 7,
+          "amap": 0
+        },
+        "external_used": false
+      },
+      "flags": [
+        "pl_cd_taigulixierdun: unknown field 'hotel_class' is dropped on import"
+      ]
+    },
+    {
       "id": "pl_cd_taolin_shuichang",
       "source_file": "C8/chengdu-food.json",
       "status": "pending",
@@ -6229,9 +7269,9 @@
         "name_en": "Taolin (Waterworks 1946)",
         "aliases_zh": [],
         "aliases_en": [],
-        "address_zh": "水厂1946",
+        "address_zh": "青羊上街水厂1946",
         "address_en": null,
-        "district_zh": "成都城西",
+        "district_zh": "青羊区",
         "nearest_metro": null,
         "foreigner_signals": {
           "english_signage": null,
@@ -6239,12 +7279,14 @@
           "english_service": null,
           "evidence": [
             "https://news.chengdu.cn/2026/0923/6ab31edc44deea573f27a8a7.shtml",
+            "https://sichuan.scol.com.cn/ggxw/202610/83335500.html",
             "https://news.chengdu.cn/2026/0425/69ecd17b8f007a160c619def.shtml"
           ]
         },
         "official_url": "https://news.chengdu.cn/2026/0923/6ab31edc44deea573f27a8a7.shtml",
         "sources": [
           "https://news.chengdu.cn/2026/0923/6ab31edc44deea573f27a8a7.shtml",
+          "https://sichuan.scol.com.cn/ggxw/202610/83335500.html",
           "https://news.chengdu.cn/2026/0425/69ecd17b8f007a160c619def.shtml"
         ],
         "checked_on": "2026-11-27",
@@ -6255,7 +7297,7 @@
         "hours_source": null,
         "intro_short_zh": "在老厂区改造的街区里，可留一餐川菜。",
         "intro_short_en": "A Sichuan meal in a repurposed industrial district.",
-        "intro_long_zh": "在老厂区改造的街区里，可留一餐川菜。按中文店名在水厂1946定位。",
+        "intro_long_zh": "在老厂区改造的街区里，可留一餐川菜。按中文店名在青羊上街水厂1946定位。",
         "intro_long_en": "A Sichuan meal in a repurposed industrial district. Use the full Chinese name when looking up this location.",
         "cuisine_zh": "川菜",
         "price_per_person_cny": null,
@@ -6572,7 +7614,7 @@
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": "双流机场，机场目录列129登机口",
-        "address_en": null,
+        "address_en": "Near Gate 129, Chengdu Shuangliu International Airport",
         "district_zh": "双流区",
         "nearest_metro": null,
         "foreigner_signals": {
@@ -6585,7 +7627,8 @@
         },
         "official_url": "https://www.cdairport.com/en/businesss.aspx?cid=10&k=&t=175&ter=0",
         "sources": [
-          "https://www.cdairport.com/en/businesss.aspx?cid=10&k=&t=175&ter=0"
+          "https://www.cdairport.com/en/businesss.aspx?cid=10&k=&t=175&ter=0",
+          "https://www.cdairport.com/index.aspx/terminal.aspx"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
@@ -6611,12 +7654,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 21,
+        "total": 28,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
-          "sources": 5,
-          "complete": 4,
+          "sources": 10,
+          "complete": 6,
           "amap": 0
         },
         "external_used": false
@@ -6636,9 +7679,9 @@
         "name_en": "Fairfield by Marriott Chengdu Tianfu Square",
         "aliases_zh": [],
         "aliases_en": [],
-        "address_zh": null,
-        "address_en": null,
-        "district_zh": null,
+        "address_zh": "成都市武侯区人民南路三段1号",
+        "address_en": "1 Section 3 Renmin South Road, Wuhou District, Chengdu, China 610000",
+        "district_zh": "武侯区",
         "nearest_metro": null,
         "foreigner_signals": {
           "english_signage": null,
@@ -6651,16 +7694,18 @@
         "official_url": "https://www.marriott.com/en-us/hotels/ctutf-fairfield-chengdu-tianfu-square/overview/",
         "sources": [
           "https://www.marriott.com/en-us/hotels/ctutf-fairfield-chengdu-tianfu-square/overview/",
-          "https://www.marriott.com/en-us/destinations/china/chengdu.mi"
+          "https://www.marriott.com/en-us/destinations/china/chengdu.mi",
+          "https://help.marriott.com/s/article/Article-24483",
+          "https://www.marriott.com.cn/hotels/ctutf-fairfield-chengdu-tianfu-square/overview/"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
-        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sun, Dec 27 - Mon, Dec 28。 官网样本为每房每晚人民币 ¥351。当前价以所选日期及房型的报价为准。",
+        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sun, Dec 27 - Mon, Dec 28。 官网样本为每房每晚人民币 ¥351。当前价以所选日期及房型的报价为准。 分档依据：万豪集团列为 Select 精选服务品牌，本库按中档处理。",
         "subcategory": "hotel",
-        "intro_short_zh": "可把天府广场一带作为行程起点。",
-        "intro_short_en": "A stay near Tianfu Square.",
-        "intro_long_zh": "可把天府广场一带作为行程起点。可在品牌官网查看房型和入住安排。",
-        "intro_long_en": "A stay near Tianfu Square. See the hotel's own website for room types and check-in details.",
+        "intro_short_zh": "人民南路三段的万枫，可从华西坝或新南门规划抵达。",
+        "intro_short_en": "A Renmin South Road stay with two metro stops in the hotel guide.",
+        "intro_long_zh": "出行前看万豪的到店信息，选择华西坝或新南门。门店还列成都南站和成都东站，可按所乘火车选路线。",
+        "intro_long_en": "Check whether Huaxiba or Xinnanmen works better for your arrival. The hotel also lists both Chengdu East and South railway stations and includes English among its spoken languages.",
         "star": null,
         "price_band": "<500",
         "accepts_foreigners": true,
@@ -6682,17 +7727,19 @@
         "alternatives": []
       },
       "score": {
-        "total": 26,
+        "total": 29,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 4,
+          "complete": 7,
           "amap": 0
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "pl_cd_tianfuguangchangwanfeng: unknown field 'hotel_class' is dropped on import"
+      ]
     },
     {
       "id": "pl_cd_tianfujichangzhan",
@@ -6842,7 +7889,7 @@
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": "成都太古里一带",
-        "address_en": null,
+        "address_en": "Basement Level 1, Upper House Chengdu, 81 Bitieshi Street, Jinjiang District, Chengdu, China 610021",
         "district_zh": "锦江区",
         "nearest_metro": null,
         "foreigner_signals": {
@@ -6857,7 +7904,9 @@
         "official_url": "https://www.upperhouse.com/en/chengdu/restaurants-and-bars/tivano/",
         "sources": [
           "https://www.upperhouse.com/en/chengdu/restaurants-and-bars/tivano/",
-          "https://www.upperhouse.com/tc/chengdu/special-offers/tivano-lunch-set/"
+          "https://www.upperhouse.com/tc/chengdu/special-offers/tivano-lunch-set/",
+          "https://www.upperhouse.com/tc/chengdu/restaurants-and-bars/tivano/",
+          "https://www.upperhouse.com/en/chengdu/"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
@@ -6883,12 +7932,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 28,
+        "total": 29,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 6,
+          "complete": 7,
           "amap": 0
         },
         "external_used": false
@@ -6909,7 +7958,7 @@
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": "双流机场T2到达大厅5号门旁",
-        "address_en": null,
+        "address_en": "Arrivals Hall, Terminal 2, near Door 5, Chengdu Shuangliu International Airport",
         "district_zh": "双流区",
         "nearest_metro": null,
         "foreigner_signals": {
@@ -6922,7 +7971,8 @@
         },
         "official_url": "https://www.cdairport.com/en/businesss.aspx?cid=10&k=&t=175&ter=0",
         "sources": [
-          "https://www.cdairport.com/en/businesss.aspx?cid=10&k=&t=175&ter=0"
+          "https://www.cdairport.com/en/businesss.aspx?cid=10&k=&t=175&ter=0",
+          "https://www.cdairport.com/index.aspx/terminal.aspx"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
@@ -6948,11 +7998,72 @@
         "alternatives": []
       },
       "score": {
-        "total": 21,
+        "total": 28,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
-          "sources": 5,
+          "sources": 10,
+          "complete": 6,
+          "amap": 0
+        },
+        "external_used": false
+      },
+      "flags": []
+    },
+    {
+      "id": "pl_cd_waterworks_1946_shops",
+      "source_file": "C8/chengdu-shopping.json",
+      "status": "pending",
+      "draft": {
+        "id": "pl_cd_waterworks_1946_shops",
+        "city": "chengdu",
+        "category": "shopping",
+        "tier": "main",
+        "name_zh": "水厂1946",
+        "name_en": "Waterworks 1946",
+        "aliases_zh": [],
+        "aliases_en": [],
+        "address_zh": "青羊上街55号、131号",
+        "address_en": null,
+        "district_zh": "青羊区",
+        "nearest_metro": null,
+        "foreigner_signals": {
+          "english_signage": null,
+          "foreign_cards": null,
+          "english_service": null,
+          "evidence": [
+            "https://www2.xinhuanet.com/20261015/0c8cde63b5594fe8937d492ea2f87b74/c.html",
+            "https://news.chengdu.cn/2026/0923/6ab31edc44deea573f27a8a7.shtml"
+          ]
+        },
+        "official_url": "https://www2.xinhuanet.com/20261015/0c8cde63b5594fe8937d492ea2f87b74/c.html",
+        "sources": [
+          "https://www2.xinhuanet.com/20261015/0c8cde63b5594fe8937d492ea2f87b74/c.html",
+          "https://news.chengdu.cn/2026/0923/6ab31edc44deea573f27a8a7.shtml"
+        ],
+        "checked_on": "2026-11-27",
+        "confidence": "medium",
+        "notes": "营业依据为当前经营方点位或近期主管部门的具名记录。",
+        "subcategory": "mall",
+        "hours_zh": null,
+        "hours_source": null,
+        "intro_short_zh": "逛旧水厂改造的店街，可顺路找文创、餐饮和休息处。",
+        "intro_short_en": "Explore shops, cafés and design goods set in a former waterworks.",
+        "intro_long_zh": "逛旧水厂改造的店街，可顺路找文创、餐饮和休息处。按中文店名在青羊上街55号、131号定位。",
+        "intro_long_en": "Explore shops, cafés and design goods set in a former waterworks. Use the full Chinese name when looking up this location."
+      },
+      "external_signals": [],
+      "location": null,
+      "amap": {
+        "status": "not-run",
+        "alternatives": []
+      },
+      "score": {
+        "total": 26,
+        "parts": {
+          "foreigner": 0,
+          "confidence": 12,
+          "sources": 10,
           "complete": 4,
           "amap": 0
         },
@@ -7035,14 +8146,14 @@
         "id": "pl_cd_wjiudian",
         "city": "chengdu",
         "category": "hotel",
-        "tier": "main",
+        "tier": "backup",
         "name_zh": "成都W酒店",
         "name_en": "W Chengdu",
         "aliases_zh": [],
         "aliases_en": [],
-        "address_zh": null,
-        "address_en": null,
-        "district_zh": null,
+        "address_zh": "成都市高新区交子大道300号",
+        "address_en": "300 Jiaozi Avenue, Gaoxin District, Chengdu, China 610041",
+        "district_zh": "高新区",
         "nearest_metro": null,
         "foreigner_signals": {
           "english_signage": null,
@@ -7055,16 +8166,18 @@
         "official_url": "https://www.marriott.com/en-us/hotels/ctuwh-w-chengdu/overview/",
         "sources": [
           "https://www.marriott.com/en-us/hotels/ctuwh-w-chengdu/overview/",
-          "https://www.marriott.com/en-us/destinations/china/chengdu.mi"
+          "https://www.marriott.com/en-us/destinations/china/chengdu.mi",
+          "https://help.marriott.com/s/article/Article-24483",
+          "https://www.marriott.com.cn/hotels/ctuwh-w-chengdu/overview/"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
-        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sun, Dec 27 - Mon, Dec 28。 官网样本为每房每晚人民币 ¥898。当前价以所选日期及房型的报价为准。",
+        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sun, Dec 27 - Mon, Dec 28。 官网样本为每房每晚人民币 ¥898。当前价以所选日期及房型的报价为准。 分档依据：万豪集团将此品牌列为 Luxury。",
         "subcategory": "hotel",
-        "intro_short_zh": "可作为成都高新区行程的住宿点。",
-        "intro_short_en": "A stay in Chengdu's Hi-Tech Zone.",
-        "intro_long_zh": "可作为成都高新区行程的住宿点。可在品牌官网查看房型和入住安排。",
-        "intro_long_en": "A stay in Chengdu's Hi-Tech Zone. See the hotel's own website for room types and check-in details.",
+        "intro_short_zh": "交子大道的W，金融城站和交子大道站都可查。",
+        "intro_short_en": "A Jiaozi Avenue option with two metro stops listed by Marriott.",
+        "intro_long_zh": "想在金融城一带逛现代街区，可从交子大道300号步行出发。品牌列出金融城、交子大道两站和英语服务。",
+        "intro_long_en": "Plan a separate afternoon in the Financial City area. The hotel lists English and gives directions involving both Financial City and Jiaozi Avenue stations.",
         "star": null,
         "price_band": "500-1000",
         "accepts_foreigners": true,
@@ -7086,17 +8199,93 @@
         "alternatives": []
       },
       "score": {
-        "total": 26,
+        "total": 29,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 4,
+          "complete": 7,
           "amap": 0
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "pl_cd_wjiudian: unknown field 'hotel_class' is dropped on import"
+      ]
+    },
+    {
+      "id": "pl_cd_wuhou_yujiang_huangguan",
+      "source_file": "C8/chengdu-hotel.json",
+      "status": "pending",
+      "draft": {
+        "id": "pl_cd_wuhou_yujiang_huangguan",
+        "city": "chengdu",
+        "category": "hotel",
+        "tier": "main",
+        "name_zh": "成都武侯渝江皇冠假日酒店",
+        "name_en": "Crowne Plaza Chengdu Wuhou",
+        "aliases_zh": [],
+        "aliases_en": [],
+        "address_zh": "潮音路2号",
+        "address_en": "2 Chaoyin Road, Wuhou District, Chengdu, China 610014",
+        "district_zh": "武侯区",
+        "nearest_metro": null,
+        "foreigner_signals": {
+          "english_signage": null,
+          "foreign_cards": null,
+          "english_service": null,
+          "evidence": [
+            "https://www.ihg.com/crowneplaza/hotels/us/en/chengdu/ctuza/hoteldetail"
+          ]
+        },
+        "official_url": "https://www.ihg.com/crowneplaza/hotels/us/en/chengdu/ctuza/hoteldetail",
+        "sources": [
+          "https://www.ihg.com/crowneplaza/hotels/us/en/chengdu/ctuza/hoteldetail",
+          "https://www.ihgplc.com/en/news-and-media/news-releases/2025/ihg-hotels-and-resorts-conversion-friendly-brands-fuel-growth-opportunities-for-owners",
+          "https://www.ihg.com/crowneplaza/hotels/us/en/chengdu/ctuza/hoteldetail/directions"
+        ],
+        "checked_on": "2026-11-27",
+        "confidence": "medium",
+        "notes": "分档依据：洲际酒店集团将该品牌列为 Premium。",
+        "subcategory": "hotel",
+        "intro_short_zh": "武侯潮音路酒店，出发可计划地铁9号线或17号线。",
+        "intro_short_en": "A Wuhou hotel with access to Metro lines 9 and 17 listed nearby.",
+        "intro_long_zh": "如果行程偏向成都西南部，可选潮音路2号这家酒店。洲际的周边页列出两条地铁线，适合按目的地方向灵活规划。",
+        "intro_long_en": "Start with IHG's local guide for routes from Chaoyin Road. It lists both Metro Lines 9 and 17, useful when planning trips in western Chengdu.",
+        "star": null,
+        "price_band": null,
+        "accepts_foreigners": true,
+        "foreign_service": {
+          "english_front_desk": null,
+          "foreign_guest_share": null,
+          "foreign_guest_experience": null,
+          "international_brand": "IHG Hotels & Resorts",
+          "evidence_zh": "洲际门店英文官网列有预订入口、到店方式和游客信息。",
+          "evidence": [
+            "https://www.ihg.com/crowneplaza/hotels/us/en/chengdu/ctuza/hoteldetail"
+          ]
+        }
+      },
+      "external_signals": [],
+      "location": null,
+      "amap": {
+        "status": "not-run",
+        "alternatives": []
+      },
+      "score": {
+        "total": 28,
+        "parts": {
+          "foreigner": 0,
+          "confidence": 12,
+          "sources": 10,
+          "complete": 6,
+          "amap": 0
+        },
+        "external_used": false
+      },
+      "flags": [
+        "pl_cd_wuhou_yujiang_huangguan: unknown field 'hotel_class' is dropped on import"
+      ]
     },
     {
       "id": "pl_cd_wuhouci",
@@ -7177,13 +8366,13 @@
         "id": "pl_cd_xianggelila",
         "city": "chengdu",
         "category": "hotel",
-        "tier": "backup",
+        "tier": "main",
         "name_zh": "成都香格里拉",
         "name_en": "Shangri-La Chengdu",
         "aliases_zh": [],
         "aliases_en": [],
-        "address_zh": null,
-        "address_en": null,
+        "address_zh": "成都市滨江东路9号",
+        "address_en": "9 Binjiang East Road, Chengdu, China 610021",
         "district_zh": null,
         "nearest_metro": null,
         "foreigner_signals": {
@@ -7196,16 +8385,19 @@
         },
         "official_url": "https://www.shangri-la.com/cn/shangrila/city/chengdu/",
         "sources": [
-          "https://www.shangri-la.com/cn/shangrila/city/chengdu/"
+          "https://www.shangri-la.com/cn/shangrila/city/chengdu/",
+          "https://www.shangri-la.com/group/our-businesses/",
+          "https://www.shangri-la.com/cn/chengdu/shangrila/about/map-directions/",
+          "https://www.shangri-la.com/chengdu/shangrila/about/map-directions/"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
-        "notes": "品牌城市目录展示的平均晚价，未列入住日期。 官网样本为每房每晚人民币 ¥955。当前价以所选日期及房型的报价为准。",
+        "notes": "品牌城市目录展示的平均晚价，未列入住日期。 官网样本为每房每晚人民币 ¥955。当前价以所选日期及房型的报价为准。 分档依据：香格里拉集团将 Shangri-La 酒店品牌定位于亚洲奢华酒店。",
         "subcategory": "hotel",
-        "intro_short_zh": "酒店邻近合江亭一带。",
-        "intro_short_en": "A hotel in the Hejiang Pavilion area.",
-        "intro_long_zh": "酒店邻近合江亭一带。可在品牌官网查看房型和入住安排。",
-        "intro_long_en": "A hotel in the Hejiang Pavilion area. See the hotel's own website for room types and check-in details.",
+        "intro_short_zh": "住在锦江边，把安顺廊桥和合江亭安排在一次散步里。",
+        "intro_short_en": "A riverside stay near Anshun Bridge and Hejiang Pavilion.",
+        "intro_long_zh": "酒店在滨江东路，位置页沿锦江介绍安顺廊桥和合江亭。喜欢河岸步行的游客可以留出半天，也可先用英文页查看双流机场到店选择。",
+        "intro_long_en": "Set aside an evening for the riverfront. The hotel's English guide points to Anshun Bridge and Hejiang Pavilion and has separate directions from Shuangliu Airport.",
         "star": null,
         "price_band": "500-1000",
         "accepts_foreigners": true,
@@ -7227,17 +8419,19 @@
         "alternatives": []
       },
       "score": {
-        "total": 21,
+        "total": 29,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
-          "sources": 5,
-          "complete": 4,
+          "sources": 10,
+          "complete": 7,
           "amap": 0
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "pl_cd_xianggelila: unknown field 'hotel_class' is dropped on import"
+      ]
     },
     {
       "id": "pl_cd_xiaonantang_jiaozi",
@@ -7312,7 +8506,7 @@
         "id": "pl_cd_xieshenglong_yulindong",
         "city": "chengdu",
         "category": "food",
-        "tier": "backup",
+        "tier": "main",
         "name_zh": "协盛隆川饼（玉林东路店）",
         "name_en": "Xieshenglong Sichuan Pastries (East Yulin Road)",
         "aliases_zh": [],
@@ -7643,38 +8837,39 @@
         "id": "pl_cd_xujiacai_chengdu",
         "city": "chengdu",
         "category": "food",
-        "tier": "main",
+        "tier": "backup",
         "name_zh": "许家菜",
         "name_en": "Xu's Cuisine",
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": null,
         "address_en": null,
-        "district_zh": "成都市",
+        "district_zh": null,
         "nearest_metro": null,
         "foreigner_signals": {
           "english_signage": null,
           "foreign_cards": null,
           "english_service": null,
           "evidence": [
-            "https://news.chengdu.cn/2025/0902/68b6a15e3eb2f3537bf1404e.shtml?phone=yes",
-            "https://tire-uat.michelin.com.cn/news/2026/0903.html"
+            "https://jyc.mypt.edu.cn/index/index/employdetail.html?data=MDAwMDAwMDAwMJG6n3_Ed6imi4qQtLh5eNyKqLKvsoizpsp5u9GGrZ6ujs6WZMKGcdKLoJDStXqn1ZDPqaE",
+            "https://sichuan.scol.com.cn/amsc/202609/83315752.html"
           ]
         },
-        "official_url": "https://news.chengdu.cn/2025/0902/68b6a15e3eb2f3537bf1404e.shtml?phone=yes",
+        "official_url": "https://jyc.mypt.edu.cn/index/index/employdetail.html?data=MDAwMDAwMDAwMJG6n3_Ed6imi4qQtLh5eNyKqLKvsoizpsp5u9GGrZ6ujs6WZMKGcdKLoJDStXqn1ZDPqaE",
         "sources": [
-          "https://news.chengdu.cn/2025/0902/68b6a15e3eb2f3537bf1404e.shtml?phone=yes",
-          "https://tire-uat.michelin.com.cn/news/2026/0903.html"
+          "https://jyc.mypt.edu.cn/index/index/employdetail.html?data=MDAwMDAwMDAwMJG6n3_Ed6imi4qQtLh5eNyKqLKvsoizpsp5u9GGrZ6ujs6WZMKGcdKLoJDStXqn1ZDPqaE",
+          "https://sichuan.scol.com.cn/amsc/202609/83315752.html",
+          "https://www.gochengdu.cn/en/article/food/4836"
         ],
         "checked_on": "2026-11-27",
-        "confidence": "medium",
-        "notes": "营业依据为当前经营方点位或近期主管部门的具名记录。",
+        "confidence": "low",
+        "notes": "公开资料可认定品牌在运营，拟收门店地址待一手资料。 近期官方资料确认身份，具体到店位置待复核。 待人工处理。近期市属对外平台确认品牌经营，多处同系列门店并存。没有锁定本记录应对应的门店，地址、营业时间与预约均留空。",
         "subcategory": "local_cuisine",
         "hours_zh": null,
         "hours_source": null,
         "intro_short_zh": "想分食几道川菜时，可把许家菜纳入候选。",
         "intro_short_en": "A sit-down option for sharing Sichuan dishes.",
-        "intro_long_zh": "想分食几道川菜时，可把许家菜纳入候选。按中文店名在成都市定位。",
+        "intro_long_zh": "想分食几道川菜时，可把许家菜纳入候选。到访时按中文门店名辨认。",
         "intro_long_en": "A sit-down option for sharing Sichuan dishes. Use the full Chinese name when looking up this location.",
         "cuisine_zh": "川菜",
         "price_per_person_cny": null,
@@ -7690,10 +8885,10 @@
         "alternatives": []
       },
       "score": {
-        "total": 25,
+        "total": 17,
         "parts": {
           "foreigner": 0,
-          "confidence": 12,
+          "confidence": 4,
           "sources": 10,
           "complete": 3,
           "amap": 0
@@ -7763,6 +8958,498 @@
           "confidence": 4,
           "sources": 5,
           "complete": 3,
+          "amap": 0
+        },
+        "external_used": false
+      },
+      "flags": []
+    },
+    {
+      "id": "pl_cd_yaohua_kuanzhai_shop",
+      "source_file": "C8/chengdu-shopping.json",
+      "status": "pending",
+      "draft": {
+        "id": "pl_cd_yaohua_kuanzhai_shop",
+        "city": "chengdu",
+        "category": "shopping",
+        "tier": "main",
+        "name_zh": "天府得物·耀华1938（宽窄巷子旗舰店）",
+        "name_en": "Tianfu Gifts × Yaohua 1938, Kuanzhai Flagship",
+        "aliases_zh": [],
+        "aliases_en": [],
+        "address_zh": "宽窄巷子内",
+        "address_en": null,
+        "district_zh": "青羊区",
+        "nearest_metro": null,
+        "foreigner_signals": {
+          "english_signage": null,
+          "foreign_cards": null,
+          "english_service": null,
+          "evidence": [
+            "https://sc.people.com.cn/n2/2025/0731/c407319-41308875.html",
+            "https://www.cinn.cn/2026/04-30/brY0A0w1.html"
+          ]
+        },
+        "official_url": "https://sc.people.com.cn/n2/2025/0731/c407319-41308875.html",
+        "sources": [
+          "https://sc.people.com.cn/n2/2025/0731/c407319-41308875.html",
+          "https://www.cinn.cn/2026/04-30/brY0A0w1.html"
+        ],
+        "checked_on": "2026-11-27",
+        "confidence": "medium",
+        "notes": "营业依据为当前经营方点位或近期主管部门的具名记录。",
+        "subcategory": "time_honored_brand",
+        "hours_zh": null,
+        "hours_source": null,
+        "intro_short_zh": "在老字号旗舰店挑成都糕点或四川竹编陶器。",
+        "intro_short_en": "Browse Chengdu pastries and Sichuan crafts at this heritage-brand flagship.",
+        "intro_long_zh": "在老字号旗舰店挑成都糕点或四川竹编陶器。按中文店名在宽窄巷子内定位。",
+        "intro_long_en": "Browse Chengdu pastries and Sichuan crafts at this heritage-brand flagship. Use the full Chinese name when looking up this location."
+      },
+      "external_signals": [],
+      "location": null,
+      "amap": {
+        "status": "not-run",
+        "alternatives": []
+      },
+      "score": {
+        "total": 26,
+        "parts": {
+          "foreigner": 0,
+          "confidence": 12,
+          "sources": 10,
+          "complete": 4,
+          "amap": 0
+        },
+        "external_used": false
+      },
+      "flags": []
+    },
+    {
+      "id": "pl_cd_yibisi_dongzhan",
+      "source_file": "C8/chengdu-hotel.json",
+      "status": "pending",
+      "draft": {
+        "id": "pl_cd_yibisi_dongzhan",
+        "city": "chengdu",
+        "category": "hotel",
+        "tier": "main",
+        "name_zh": "宜必思成都火车东站酒店",
+        "name_en": "ibis Chengdu East Railway Station Hotel",
+        "aliases_zh": [],
+        "aliases_en": [],
+        "address_zh": "建材路18号",
+        "address_en": "18 Jiancai Road, Chenghua District, Chengdu, China 610058",
+        "district_zh": "成华区",
+        "nearest_metro": null,
+        "foreigner_signals": {
+          "english_signage": null,
+          "foreign_cards": null,
+          "english_service": null,
+          "evidence": [
+            "https://all.accor.com/hotel/B375/index.en.shtml"
+          ]
+        },
+        "official_url": "https://all.accor.com/hotel/B375/index.en.shtml",
+        "sources": [
+          "https://all.accor.com/hotel/B375/index.en.shtml",
+          "https://group.accor.com/en/news-stories/midscale-economy-brands-novotel-mercure-ibis"
+        ],
+        "checked_on": "2026-11-27",
+        "confidence": "medium",
+        "notes": "分档依据：雅高集团将宜必思及宜必思尚品归为经济型。",
+        "subcategory": "hotel",
+        "intro_short_zh": "成华建材路的经济型酒店，可安排火车行程前后住宿。",
+        "intro_short_en": "A Jiancai Road hotel for a trip involving Chengdu East Railway Station.",
+        "intro_long_zh": "酒店订房页列出建材路18号，适合成华区有行程的人。若要从成都东站坐车，按门店地址另行安排去车站的接驳。",
+        "intro_long_en": "Use Chenghua as a base before or after an east-station rail trip. Accor gives the Jiancai Road address for planning that last leg from the station.",
+        "star": null,
+        "price_band": null,
+        "accepts_foreigners": true,
+        "foreign_service": {
+          "english_front_desk": null,
+          "foreign_guest_share": null,
+          "foreign_guest_experience": null,
+          "international_brand": "Accor",
+          "evidence_zh": "雅高门店英文页提供地址、房型和预订入口，面向所有旅客。",
+          "evidence": [
+            "https://all.accor.com/hotel/B375/index.en.shtml"
+          ]
+        }
+      },
+      "external_signals": [],
+      "location": null,
+      "amap": {
+        "status": "not-run",
+        "alternatives": []
+      },
+      "score": {
+        "total": 28,
+        "parts": {
+          "foreigner": 0,
+          "confidence": 12,
+          "sources": 10,
+          "complete": 6,
+          "amap": 0
+        },
+        "external_used": false
+      },
+      "flags": [
+        "pl_cd_yibisi_dongzhan: unknown field 'hotel_class' is dropped on import"
+      ]
+    },
+    {
+      "id": "pl_cd_yibisi_kuanzhai_central",
+      "source_file": "C8/chengdu-hotel.json",
+      "status": "pending",
+      "draft": {
+        "id": "pl_cd_yibisi_kuanzhai_central",
+        "city": "chengdu",
+        "category": "hotel",
+        "tier": "main",
+        "name_zh": "宜必思成都宽窄巷子中心酒店",
+        "name_en": "ibis Chengdu China Lane Central",
+        "aliases_zh": [],
+        "aliases_en": [],
+        "address_zh": "国信广场8楼",
+        "address_en": "28 Dongchenggenxia Street, Chengdu, China 610031",
+        "district_zh": "青羊区",
+        "nearest_metro": null,
+        "foreigner_signals": {
+          "english_signage": null,
+          "foreign_cards": null,
+          "english_service": null,
+          "evidence": [
+            "https://all.accor.com/hotel/B8T8/index.en.shtml"
+          ]
+        },
+        "official_url": "https://all.accor.com/hotel/B8T8/index.en.shtml",
+        "sources": [
+          "https://all.accor.com/hotel/B8T8/index.en.shtml",
+          "https://group.accor.com/en/news-stories/midscale-economy-brands-novotel-mercure-ibis"
+        ],
+        "checked_on": "2026-11-27",
+        "confidence": "medium",
+        "notes": "分档依据：雅高集团将宜必思及宜必思尚品归为经济型。",
+        "subcategory": "hotel",
+        "intro_short_zh": "青羊国信广场的宜必思，骡马市可搭地铁1号线或4号线。",
+        "intro_short_en": "A Qingyang ibis with Luomashi station listed for metro access.",
+        "intro_long_zh": "门店在国信广场8楼。住在青羊区时，可经骡马市站规划地铁出行，也可用雅高英文页找到楼层和房型。",
+        "intro_long_en": "Look for the hotel on the eighth floor of Guoxin Square. Accor lists Luomashi on Metro Lines 1 and 4 for trips from the neighborhood.",
+        "star": null,
+        "price_band": null,
+        "accepts_foreigners": true,
+        "foreign_service": {
+          "english_front_desk": null,
+          "foreign_guest_share": null,
+          "foreign_guest_experience": null,
+          "international_brand": "Accor",
+          "evidence_zh": "雅高中英文门店页提供位置、房型与直接预订入口，面向所有旅客。",
+          "evidence": [
+            "https://all.accor.com/hotel/B8T8/index.en.shtml"
+          ]
+        }
+      },
+      "external_signals": [],
+      "location": null,
+      "amap": {
+        "status": "not-run",
+        "alternatives": []
+      },
+      "score": {
+        "total": 28,
+        "parts": {
+          "foreigner": 0,
+          "confidence": 12,
+          "sources": 10,
+          "complete": 6,
+          "amap": 0
+        },
+        "external_used": false
+      },
+      "flags": [
+        "pl_cd_yibisi_kuanzhai_central: unknown field 'hotel_class' is dropped on import"
+      ]
+    },
+    {
+      "id": "pl_cd_yibisi_meiguoling",
+      "source_file": "C8/chengdu-hotel.json",
+      "status": "pending",
+      "draft": {
+        "id": "pl_cd_yibisi_meiguoling",
+        "city": "chengdu",
+        "category": "hotel",
+        "tier": "main",
+        "name_zh": "宜必思成都美洲中心酒店",
+        "name_en": "ibis Chengdu American Center Hotel",
+        "aliases_zh": [],
+        "aliases_en": [],
+        "address_zh": "南三环五段美洲花园68栋",
+        "address_en": "Building 68, Meizhou Huayuan, Chengdu, China 610041",
+        "district_zh": "武侯区",
+        "nearest_metro": null,
+        "foreigner_signals": {
+          "english_signage": null,
+          "foreign_cards": null,
+          "english_service": null,
+          "evidence": [
+            "https://all.accor.com/hotel/A8N9/index.en.shtml"
+          ]
+        },
+        "official_url": "https://all.accor.com/hotel/A8N9/index.en.shtml",
+        "sources": [
+          "https://all.accor.com/hotel/A8N9/index.en.shtml",
+          "https://group.accor.com/en/news-stories/midscale-economy-brands-novotel-mercure-ibis"
+        ],
+        "checked_on": "2026-11-27",
+        "confidence": "medium",
+        "notes": "分档依据：雅高集团将宜必思及宜必思尚品归为经济型。",
+        "subcategory": "hotel",
+        "intro_short_zh": "多住几天的实用选择，门店有自助洗衣房。",
+        "intro_short_en": "A Chengdu ibis with self-service laundry for a longer visit.",
+        "intro_long_zh": "雅高的位置页指向美洲花园68栋。适合连续住几天、想在酒店打理衣物的人。英文门店页可先确认名称和到店位置。",
+        "intro_long_en": "Pack a little lighter for a multi-day trip. The property lists self-service laundry, and the English listing identifies Building 68 in Meizhou Garden.",
+        "star": null,
+        "price_band": null,
+        "accepts_foreigners": true,
+        "foreign_service": {
+          "english_front_desk": null,
+          "foreign_guest_share": null,
+          "foreign_guest_experience": null,
+          "international_brand": "Accor",
+          "evidence_zh": "雅高门店英文页提供房型、到店信息及预订入口，面向所有旅客。",
+          "evidence": [
+            "https://all.accor.com/hotel/A8N9/index.en.shtml"
+          ]
+        }
+      },
+      "external_signals": [],
+      "location": null,
+      "amap": {
+        "status": "not-run",
+        "alternatives": []
+      },
+      "score": {
+        "total": 28,
+        "parts": {
+          "foreigner": 0,
+          "confidence": 12,
+          "sources": 10,
+          "complete": 6,
+          "amap": 0
+        },
+        "external_used": false
+      },
+      "flags": [
+        "pl_cd_yibisi_meiguoling: unknown field 'hotel_class' is dropped on import"
+      ]
+    },
+    {
+      "id": "pl_cd_yibisi_shududasha",
+      "source_file": "C8/chengdu-hotel.json",
+      "status": "pending",
+      "draft": {
+        "id": "pl_cd_yibisi_shududasha",
+        "city": "chengdu",
+        "category": "hotel",
+        "tier": "main",
+        "name_zh": "宜必思成都春熙路蜀都大厦酒店",
+        "name_en": "ibis Chengdu Chunxi Road Shudu Mansion Hotel",
+        "aliases_zh": [],
+        "aliases_en": [],
+        "address_zh": "成都市锦江区署袜北三街20号",
+        "address_en": null,
+        "district_zh": "锦江区",
+        "nearest_metro": null,
+        "foreigner_signals": {
+          "english_signage": null,
+          "foreign_cards": null,
+          "english_service": null,
+          "evidence": [
+            "https://all.accor.com/hotel/B255/index.en.shtml"
+          ]
+        },
+        "official_url": "https://all.accor.com/hotel/B255/index.en.shtml",
+        "sources": [
+          "https://all.accor.com/hotel/B255/index.en.shtml",
+          "https://group.accor.com/en/news-stories/midscale-economy-brands-novotel-mercure-ibis",
+          "https://all.accor.com/hotel/B255/index.zh.shtml"
+        ],
+        "checked_on": "2026-11-27",
+        "confidence": "medium",
+        "notes": "分档依据：雅高集团将宜必思及宜必思尚品归为经济型。 英文地址街名转写不完整，门牌待核。",
+        "subcategory": "hotel",
+        "intro_short_zh": "蜀都大厦门店，适合从春熙路逛到大慈寺。",
+        "intro_short_en": "A simple base for Chunxi Road and an outing to Daci Temple.",
+        "intro_long_zh": "第一次想把春熙路步行街和大慈寺放进同一天，可选这家锦江区宜必思。用雅高的英文页提前核对路线与床型。",
+        "intro_long_en": "Stay in Jinjiang when your plans revolve around the pedestrian shopping streets. Accor lists Daci Temple among the nearby stops, as well as room options in English.",
+        "star": null,
+        "price_band": null,
+        "accepts_foreigners": true,
+        "foreign_service": {
+          "english_front_desk": null,
+          "foreign_guest_share": null,
+          "foreign_guest_experience": null,
+          "international_brand": "Accor",
+          "evidence_zh": "雅高门店英文页列有房型与预订入口，面向所有旅客。",
+          "evidence": [
+            "https://all.accor.com/hotel/B255/index.en.shtml"
+          ]
+        }
+      },
+      "external_signals": [],
+      "location": null,
+      "amap": {
+        "status": "not-run",
+        "alternatives": []
+      },
+      "score": {
+        "total": 26,
+        "parts": {
+          "foreigner": 0,
+          "confidence": 12,
+          "sources": 10,
+          "complete": 4,
+          "amap": 0
+        },
+        "external_used": false
+      },
+      "flags": [
+        "pl_cd_yibisi_shududasha: unknown field 'hotel_class' is dropped on import"
+      ]
+    },
+    {
+      "id": "pl_cd_yibisi_wuhouci",
+      "source_file": "C8/chengdu-hotel.json",
+      "status": "pending",
+      "draft": {
+        "id": "pl_cd_yibisi_wuhouci",
+        "city": "chengdu",
+        "category": "hotel",
+        "tier": "main",
+        "name_zh": "宜必思成都武侯祠酒店",
+        "name_en": "ibis Chengdu Temple of Marquis",
+        "aliases_zh": [],
+        "aliases_en": [],
+        "address_zh": "一环路西一段13号附1号",
+        "address_en": "13, West Section 1, First Ring Road, Wuhou District, Chengdu, China 610041",
+        "district_zh": "武侯区",
+        "nearest_metro": null,
+        "foreigner_signals": {
+          "english_signage": null,
+          "foreign_cards": null,
+          "english_service": null,
+          "evidence": [
+            "https://all.accor.com/hotel/B107/index.en.shtml"
+          ]
+        },
+        "official_url": "https://all.accor.com/hotel/B107/index.en.shtml",
+        "sources": [
+          "https://all.accor.com/hotel/B107/index.en.shtml",
+          "https://group.accor.com/en/news-stories/midscale-economy-brands-novotel-mercure-ibis"
+        ],
+        "checked_on": "2026-11-27",
+        "confidence": "medium",
+        "notes": "分档依据：雅高集团将宜必思及宜必思尚品归为经济型。",
+        "subcategory": "hotel",
+        "intro_short_zh": "在武侯区住一晚，可给锦里和少陵路多留一点时间。",
+        "intro_short_en": "A Wuhou option for visiting Jinli and dining around Shaoling Road.",
+        "intro_long_zh": "这家门店位于一环路西段。雅高的位置介绍点到锦里与少陵路，可在老街游览之外，另留一餐给武侯街区。",
+        "intro_long_en": "If you plan to spend a day in Wuhou, use the hotel's English listing to plan around Jinli and Shaoling Road. The property also serves breakfast.",
+        "star": null,
+        "price_band": null,
+        "accepts_foreigners": true,
+        "foreign_service": {
+          "english_front_desk": null,
+          "foreign_guest_share": null,
+          "foreign_guest_experience": null,
+          "international_brand": "Accor",
+          "evidence_zh": "雅高门店英文页列有房型及预订入口，面向所有旅客。",
+          "evidence": [
+            "https://all.accor.com/hotel/B107/index.en.shtml"
+          ]
+        }
+      },
+      "external_signals": [],
+      "location": null,
+      "amap": {
+        "status": "not-run",
+        "alternatives": []
+      },
+      "score": {
+        "total": 28,
+        "parts": {
+          "foreigner": 0,
+          "confidence": 12,
+          "sources": 10,
+          "complete": 6,
+          "amap": 0
+        },
+        "external_used": false
+      },
+      "flags": [
+        "pl_cd_yibisi_wuhouci: unknown field 'hotel_class' is dropped on import"
+      ]
+    },
+    {
+      "id": "pl_cd_yidu_paradise_walk_cd",
+      "source_file": "C8/chengdu-shopping.json",
+      "status": "pending",
+      "draft": {
+        "id": "pl_cd_yidu_paradise_walk_cd",
+        "city": "chengdu",
+        "category": "shopping",
+        "tier": "backup",
+        "name_zh": "龙湖成都驿都天街",
+        "name_en": "Longfor Chengdu Yidu Paradise Walk",
+        "aliases_zh": [],
+        "aliases_en": [],
+        "address_zh": "地铁行政学院站B口外",
+        "address_en": null,
+        "district_zh": "龙泉驿区",
+        "nearest_metro": {
+          "station_zh": "行政学院",
+          "station_en": null,
+          "line": "2号线",
+          "exit": "B"
+        },
+        "foreigner_signals": {
+          "english_signage": null,
+          "foreign_cards": null,
+          "english_service": null,
+          "evidence": [
+            "https://www.thepaper.cn/newsDetail_forward_34476104"
+          ]
+        },
+        "official_url": "https://www.thepaper.cn/newsDetail_forward_34476104",
+        "sources": [
+          "https://www.thepaper.cn/newsDetail_forward_34476104",
+          "https://www.longfor.com/detail/220_3d6a91fd05b0e59f66afb10581acf1f7.html"
+        ],
+        "checked_on": "2026-11-27",
+        "confidence": "medium",
+        "notes": "营业依据为当前经营方点位或近期主管部门的具名记录。",
+        "subcategory": "mall",
+        "hours_zh": null,
+        "hours_source": null,
+        "intro_short_zh": "去龙泉驿时，可按地铁出口找到这家新开的购物中心。",
+        "intro_short_en": "A newer Longquanyi mall by Exit B of Chengdu Administration Institute station.",
+        "intro_long_zh": "去龙泉驿时，可按地铁出口找到这家新开的购物中心。按中文店名在地铁行政学院站B口外定位。",
+        "intro_long_en": "A newer Longquanyi mall by Exit B of Chengdu Administration Institute station. Use the full Chinese name when looking up this location."
+      },
+      "external_signals": [],
+      "location": null,
+      "amap": {
+        "status": "not-run",
+        "alternatives": []
+      },
+      "score": {
+        "total": 28,
+        "parts": {
+          "foreigner": 0,
+          "confidence": 12,
+          "sources": 10,
+          "complete": 6,
           "amap": 0
         },
         "external_used": false
@@ -7918,21 +9605,21 @@
         "aliases_en": [],
         "address_zh": null,
         "address_en": null,
-        "district_zh": "成都市",
+        "district_zh": null,
         "nearest_metro": null,
         "foreigner_signals": {
           "english_signage": null,
           "foreign_cards": null,
           "english_service": null,
           "evidence": [
-            "https://news.chengdu.cn/2025/0902/68b6a15e3eb2f3537bf1404e.shtml?phone=yes",
-            "https://tire-uat.michelin.com.cn/news/2026/0903.html"
+            "https://www.yintancy.cn/4",
+            "https://sichuan.scol.com.cn/amsc/202609/83315752.html"
           ]
         },
-        "official_url": "https://news.chengdu.cn/2025/0902/68b6a15e3eb2f3537bf1404e.shtml?phone=yes",
+        "official_url": "https://www.yintancy.cn/4",
         "sources": [
-          "https://news.chengdu.cn/2025/0902/68b6a15e3eb2f3537bf1404e.shtml?phone=yes",
-          "https://tire-uat.michelin.com.cn/news/2026/0903.html"
+          "https://www.yintancy.cn/4",
+          "https://sichuan.scol.com.cn/amsc/202609/83315752.html"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
@@ -7942,7 +9629,7 @@
         "hours_source": null,
         "intro_short_zh": "适合为精致川菜单独留出用餐时间。",
         "intro_short_en": "Allow time for a full Sichuan meal at Silver Pot.",
-        "intro_long_zh": "适合为精致川菜单独留出用餐时间。按中文店名在成都市定位。",
+        "intro_long_zh": "适合为精致川菜单独留出用餐时间。到访时按中文门店名辨认。",
         "intro_long_en": "Allow time for a full Sichuan meal at Silver Pot. Use the full Chinese name when looking up this location.",
         "cuisine_zh": "精致川菜",
         "price_per_person_cny": null,
@@ -7971,6 +9658,67 @@
       "flags": []
     },
     {
+      "id": "pl_cd_yintai_in99_cd",
+      "source_file": "C8/chengdu-shopping.json",
+      "status": "pending",
+      "draft": {
+        "id": "pl_cd_yintai_in99_cd",
+        "city": "chengdu",
+        "category": "shopping",
+        "tier": "main",
+        "name_zh": "成都银泰中心in99",
+        "name_en": "Chengdu Yintai Centre in99",
+        "aliases_zh": [],
+        "aliases_en": [],
+        "address_zh": "金融城片区",
+        "address_en": null,
+        "district_zh": "高新区",
+        "nearest_metro": null,
+        "foreigner_signals": {
+          "english_signage": null,
+          "foreign_cards": null,
+          "english_service": null,
+          "evidence": [
+            "https://www.china-yintai.com/zh-CN/news/detail/185",
+            "https://www.saludworld.com.cn/Main/store/94"
+          ]
+        },
+        "official_url": "https://www.china-yintai.com/zh-CN/news/detail/185",
+        "sources": [
+          "https://www.china-yintai.com/zh-CN/news/detail/185",
+          "https://www.saludworld.com.cn/Main/store/94"
+        ],
+        "checked_on": "2026-11-27",
+        "confidence": "medium",
+        "notes": "营业依据为当前经营方点位或近期主管部门的具名记录。",
+        "subcategory": "mall",
+        "hours_zh": null,
+        "hours_source": null,
+        "intro_short_zh": "在金融城一带集中看时装和配饰，适合室内慢逛。",
+        "intro_short_en": "An indoor Financial City stop for fashion and accessories.",
+        "intro_long_zh": "在金融城一带集中看时装和配饰，适合室内慢逛。按中文店名在金融城片区定位。",
+        "intro_long_en": "An indoor Financial City stop for fashion and accessories. Use the full Chinese name when looking up this location."
+      },
+      "external_signals": [],
+      "location": null,
+      "amap": {
+        "status": "not-run",
+        "alternatives": []
+      },
+      "score": {
+        "total": 26,
+        "parts": {
+          "foreigner": 0,
+          "confidence": 12,
+          "sources": 10,
+          "complete": 4,
+          "amap": 0
+        },
+        "external_used": false
+      },
+      "flags": []
+    },
+    {
       "id": "pl_cd_yongle_fandian",
       "source_file": "C8/chengdu-food.json",
       "status": "pending",
@@ -7983,23 +9731,25 @@
         "name_en": "Yongle Restaurant",
         "aliases_zh": [],
         "aliases_en": [],
-        "address_zh": null,
+        "address_zh": "肖家河中街32号",
         "address_en": null,
-        "district_zh": "成都市",
+        "district_zh": "武侯区",
         "nearest_metro": null,
         "foreigner_signals": {
           "english_signage": null,
           "foreign_cards": null,
           "english_service": null,
           "evidence": [
+            "https://static.cdsb.com/micropub/Articles/202509/18cd004a212ff18db689ba1051672ee2.html",
             "https://news.chengdu.cn/2026/0425/69ecd17b8f007a160c619def.shtml",
-            "https://tire-uat.michelin.com.cn/news/2026/0903.html"
+            "https://sichuan.scol.com.cn/amsc/202609/83315752.html"
           ]
         },
-        "official_url": "https://news.chengdu.cn/2026/0425/69ecd17b8f007a160c619def.shtml",
+        "official_url": "https://static.cdsb.com/micropub/Articles/202509/18cd004a212ff18db689ba1051672ee2.html",
         "sources": [
+          "https://static.cdsb.com/micropub/Articles/202509/18cd004a212ff18db689ba1051672ee2.html",
           "https://news.chengdu.cn/2026/0425/69ecd17b8f007a160c619def.shtml",
-          "https://tire-uat.michelin.com.cn/news/2026/0903.html"
+          "https://sichuan.scol.com.cn/amsc/202609/83315752.html"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
@@ -8009,7 +9759,7 @@
         "hours_source": null,
         "intro_short_zh": "可用一桌家常做法认识成都川菜。",
         "intro_short_en": "Try a home-style Sichuan meal at this local restaurant.",
-        "intro_long_zh": "可用一桌家常做法认识成都川菜。按中文店名在成都市定位。",
+        "intro_long_zh": "可用一桌家常做法认识成都川菜。按中文店名在肖家河中街32号定位。",
         "intro_long_en": "Try a home-style Sichuan meal at this local restaurant. Use the full Chinese name when looking up this location.",
         "cuisine_zh": "成都家常川菜",
         "price_per_person_cny": null,
@@ -8025,12 +9775,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 25,
+        "total": 26,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 3,
+          "complete": 4,
           "amap": 0
         },
         "external_used": false
@@ -8105,6 +9855,65 @@
       "flags": []
     },
     {
+      "id": "pl_cd_yulin_erxiang_market",
+      "source_file": "C8/chengdu-shopping.json",
+      "status": "pending",
+      "draft": {
+        "id": "pl_cd_yulin_erxiang_market",
+        "city": "chengdu",
+        "category": "shopping",
+        "tier": "main",
+        "name_zh": "玉林二巷菜市场",
+        "name_en": "Yulin Second Lane Market",
+        "aliases_zh": [],
+        "aliases_en": [],
+        "address_zh": "玉林东街转入玉林二巷",
+        "address_en": null,
+        "district_zh": "武侯区",
+        "nearest_metro": null,
+        "foreigner_signals": {
+          "english_signage": null,
+          "foreign_cards": null,
+          "english_service": null,
+          "evidence": [
+            "https://m.thepaper.cn/newsDetail_forward_33397055"
+          ]
+        },
+        "official_url": "https://m.thepaper.cn/newsDetail_forward_33397055",
+        "sources": [
+          "https://m.thepaper.cn/newsDetail_forward_33397055"
+        ],
+        "checked_on": "2026-11-27",
+        "confidence": "medium",
+        "notes": "营业依据为当前经营方点位或近期主管部门的具名记录。",
+        "subcategory": "market",
+        "hours_zh": null,
+        "hours_source": null,
+        "intro_short_zh": "买菜摊点夹在小店之间，适合步行看看玉林的日常。",
+        "intro_short_en": "Walk past produce stalls and small shops in a lived-in Yulin lane.",
+        "intro_long_zh": "买菜摊点夹在小店之间，适合步行看看玉林的日常。按中文店名在玉林东街转入玉林二巷定位。",
+        "intro_long_en": "Walk past produce stalls and small shops in a lived-in Yulin lane. Use the full Chinese name when looking up this location."
+      },
+      "external_signals": [],
+      "location": null,
+      "amap": {
+        "status": "not-run",
+        "alternatives": []
+      },
+      "score": {
+        "total": 21,
+        "parts": {
+          "foreigner": 0,
+          "confidence": 12,
+          "sources": 5,
+          "complete": 4,
+          "amap": 0
+        },
+        "external_used": false
+      },
+      "flags": []
+    },
+    {
       "id": "pl_cd_yun_gaoxin",
       "source_file": "C8/chengdu-food.json",
       "status": "pending",
@@ -8112,7 +9921,7 @@
         "id": "pl_cd_yun_gaoxin",
         "city": "chengdu",
         "category": "food",
-        "tier": "backup",
+        "tier": "main",
         "name_zh": "运·中餐厅",
         "name_en": "YUN Chinese Restaurant",
         "aliases_zh": [],
@@ -8235,6 +10044,65 @@
       "flags": []
     },
     {
+      "id": "pl_cd_zhengshantang_jinsha",
+      "source_file": "C8/chengdu-shopping.json",
+      "status": "pending",
+      "draft": {
+        "id": "pl_cd_zhengshantang_jinsha",
+        "city": "chengdu",
+        "category": "shopping",
+        "tier": "backup",
+        "name_zh": "正山堂（成都金沙遗址路店）",
+        "name_en": "Zhengshantang, Chengdu Jinsha",
+        "aliases_zh": [],
+        "aliases_en": [],
+        "address_zh": "金沙遗址路10–12号初月茶行",
+        "address_en": null,
+        "district_zh": "青羊区",
+        "nearest_metro": null,
+        "foreigner_signals": {
+          "english_signage": null,
+          "foreign_cards": null,
+          "english_service": null,
+          "evidence": [
+            "https://lapsang.cn/Customer.Asp"
+          ]
+        },
+        "official_url": "https://lapsang.cn/Customer.Asp",
+        "sources": [
+          "https://lapsang.cn/Customer.Asp"
+        ],
+        "checked_on": "2026-11-27",
+        "confidence": "medium",
+        "notes": "营业依据为当前经营方点位或近期主管部门的具名记录。",
+        "subcategory": "boutique",
+        "hours_zh": null,
+        "hours_source": null,
+        "intro_short_zh": "到金沙一带可以看盒装茶叶与门店茶品。",
+        "intro_short_en": "Browse packaged tea near Jinsha at this shop listed by the tea maker.",
+        "intro_long_zh": "到金沙一带可以看盒装茶叶与门店茶品。按中文店名在金沙遗址路10–12号初月茶行定位。",
+        "intro_long_en": "Browse packaged tea near Jinsha at this shop listed by the tea maker. Use the full Chinese name when looking up this location."
+      },
+      "external_signals": [],
+      "location": null,
+      "amap": {
+        "status": "not-run",
+        "alternatives": []
+      },
+      "score": {
+        "total": 21,
+        "parts": {
+          "foreigner": 0,
+          "confidence": 12,
+          "sources": 5,
+          "complete": 4,
+          "amap": 0
+        },
+        "external_used": false
+      },
+      "flags": []
+    },
+    {
       "id": "pl_cd_zhilefang_taiguli",
       "source_file": "C8/chengdu-food.json",
       "status": "pending",
@@ -8242,7 +10110,7 @@
         "id": "pl_cd_zhilefang_taiguli",
         "city": "chengdu",
         "category": "food",
-        "tier": "main",
+        "tier": "backup",
         "name_zh": "芝乐坊餐厅（成都太古里店）",
         "name_en": "The Cheesecake Factory (Taikoo Li Chengdu)",
         "aliases_zh": [],
@@ -8261,11 +10129,12 @@
         },
         "official_url": "https://www.swireproperties.com/-/media/images/swireproperties/media/media-library/factsheets/taikoo-li-chengdu/taikoo-li-chengdu-factsheet_202510.ashx?sc_lang=zh-cn",
         "sources": [
-          "https://www.swireproperties.com/-/media/images/swireproperties/media/media-library/factsheets/taikoo-li-chengdu/taikoo-li-chengdu-factsheet_202510.ashx?sc_lang=zh-cn"
+          "https://www.swireproperties.com/-/media/images/swireproperties/media/media-library/factsheets/taikoo-li-chengdu/taikoo-li-chengdu-factsheet_202510.ashx?sc_lang=zh-cn",
+          "https://cn.thecheesecakefactory.com/sc/locations/"
         ],
         "checked_on": "2026-11-27",
-        "confidence": "medium",
-        "notes": "营业依据为当前经营方点位或近期主管部门的具名记录。",
+        "confidence": "low",
+        "notes": "营业依据为当前经营方点位或近期主管部门的具名记录。 待人工处理。太古地产2025年资料列过该店，未从品牌现行门店目录核到成都门店继续开放。其他公开线索指向闭店，但尚无可引用的经营方闭店公告，因此暂停推荐并降候补。",
         "subcategory": "western",
         "hours_zh": null,
         "hours_source": null,
@@ -8287,11 +10156,11 @@
         "alternatives": []
       },
       "score": {
-        "total": 21,
+        "total": 18,
         "parts": {
           "foreigner": 0,
-          "confidence": 12,
-          "sources": 5,
+          "confidence": 4,
+          "sources": 10,
           "complete": 4,
           "amap": 0
         },
@@ -8376,26 +10245,28 @@
         "id": "pl_cd_zhujizhimian_shuichang",
         "city": "chengdu",
         "category": "food",
-        "tier": "backup",
+        "tier": "main",
         "name_zh": "竹记制面铺（水厂1946店）",
         "name_en": "Zhu Ji Noodle Shop (Waterworks 1946)",
         "aliases_zh": [],
         "aliases_en": [],
-        "address_zh": "水厂1946",
+        "address_zh": "青羊上街水厂1946",
         "address_en": null,
-        "district_zh": "成都城西",
+        "district_zh": "青羊区",
         "nearest_metro": null,
         "foreigner_signals": {
           "english_signage": null,
           "foreign_cards": null,
           "english_service": null,
           "evidence": [
-            "https://news.chengdu.cn/2026/0923/6ab31edc44deea573f27a8a7.shtml"
+            "https://news.chengdu.cn/2026/0923/6ab31edc44deea573f27a8a7.shtml",
+            "https://sichuan.scol.com.cn/ggxw/202610/83335500.html"
           ]
         },
         "official_url": "https://news.chengdu.cn/2026/0923/6ab31edc44deea573f27a8a7.shtml",
         "sources": [
-          "https://news.chengdu.cn/2026/0923/6ab31edc44deea573f27a8a7.shtml"
+          "https://news.chengdu.cn/2026/0923/6ab31edc44deea573f27a8a7.shtml",
+          "https://sichuan.scol.com.cn/ggxw/202610/83335500.html"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
@@ -8405,7 +10276,7 @@
         "hours_source": null,
         "intro_short_zh": "逛改造后的街区想吃一碗面时可考虑。",
         "intro_short_en": "A noodle option while visiting Waterworks 1946.",
-        "intro_long_zh": "逛改造后的街区想吃一碗面时可考虑。按中文店名在水厂1946定位。",
+        "intro_long_zh": "逛改造后的街区想吃一碗面时可考虑。按中文店名在青羊上街水厂1946定位。",
         "intro_long_en": "A noodle option while visiting Waterworks 1946. Use the full Chinese name when looking up this location.",
         "cuisine_zh": "面食",
         "price_per_person_cny": null,
@@ -8421,11 +10292,11 @@
         "alternatives": []
       },
       "score": {
-        "total": 21,
+        "total": 26,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
-          "sources": 5,
+          "sources": 10,
           "complete": 4,
           "amap": 0
         },
@@ -8447,7 +10318,7 @@
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": "双流机场T1，机场目录列120登机口旁",
-        "address_en": null,
+        "address_en": "Terminal 1, near Gate 120, Chengdu Shuangliu International Airport",
         "district_zh": "双流区",
         "nearest_metro": null,
         "foreigner_signals": {
@@ -8460,7 +10331,8 @@
         },
         "official_url": "https://www.cdairport.com/en/businesss.aspx?cid=10&k=&t=175&ter=0",
         "sources": [
-          "https://www.cdairport.com/en/businesss.aspx?cid=10&k=&t=175&ter=0"
+          "https://www.cdairport.com/en/businesss.aspx?cid=10&k=&t=175&ter=0",
+          "https://www.cdairport.com/index.aspx/terminal.aspx"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
@@ -8486,17 +10358,90 @@
         "alternatives": []
       },
       "score": {
-        "total": 21,
+        "total": 28,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
-          "sources": 5,
-          "complete": 4,
+          "sources": 10,
+          "complete": 6,
           "amap": 0
         },
         "external_used": false
       },
       "flags": []
+    },
+    {
+      "id": "pl_cd_zongfu_huangguan",
+      "source_file": "C8/chengdu-hotel.json",
+      "status": "pending",
+      "draft": {
+        "id": "pl_cd_zongfu_huangguan",
+        "city": "chengdu",
+        "category": "hotel",
+        "tier": "main",
+        "name_zh": "成都总府皇冠假日酒店",
+        "name_en": "Crowne Plaza Chengdu City Center",
+        "aliases_zh": [],
+        "aliases_en": [],
+        "address_zh": "总府街31号",
+        "address_en": null,
+        "district_zh": "锦江区",
+        "nearest_metro": null,
+        "foreigner_signals": {
+          "english_signage": null,
+          "foreign_cards": null,
+          "english_service": null,
+          "evidence": [
+            "https://www.ihg.com/crowneplaza/hotels/us/en/chengdu/ctuch/hoteldetail"
+          ]
+        },
+        "official_url": "https://www.ihg.com/crowneplaza/hotels/us/en/chengdu/ctuch/hoteldetail",
+        "sources": [
+          "https://www.ihg.com/crowneplaza/hotels/us/en/chengdu/ctuch/hoteldetail",
+          "https://www.ihgplc.com/en/news-and-media/news-releases/2025/ihg-hotels-and-resorts-conversion-friendly-brands-fuel-growth-opportunities-for-owners"
+        ],
+        "checked_on": "2026-11-27",
+        "confidence": "medium",
+        "notes": "分档依据：洲际酒店集团将该品牌列为 Premium。",
+        "subcategory": "hotel",
+        "intro_short_zh": "总府街出门，可把春熙路和太古里放进同一天。",
+        "intro_short_en": "A Zongfu Street base near Chunxi Road, IFS and Taikoo Li.",
+        "intro_long_zh": "酒店在锦江区总府街。对第一次逛中心城区的人，春熙路、成都IFS和太古里是品牌列出的附近去处。",
+        "intro_long_en": "Give central Chengdu an unhurried day from this Crowne Plaza. Its English hotel page identifies the shopping streets and gives the street address for arrival.",
+        "star": null,
+        "price_band": null,
+        "accepts_foreigners": true,
+        "foreign_service": {
+          "english_front_desk": null,
+          "foreign_guest_share": null,
+          "foreign_guest_experience": null,
+          "international_brand": "IHG Hotels & Resorts",
+          "evidence_zh": "洲际集团提供此门店的中英文介绍、预订入口和本地游览交通信息。",
+          "evidence": [
+            "https://www.ihg.com/crowneplaza/hotels/us/en/chengdu/ctuch/hoteldetail"
+          ]
+        }
+      },
+      "external_signals": [],
+      "location": null,
+      "amap": {
+        "status": "not-run",
+        "alternatives": []
+      },
+      "score": {
+        "total": 26,
+        "parts": {
+          "foreigner": 0,
+          "confidence": 12,
+          "sources": 10,
+          "complete": 4,
+          "amap": 0
+        },
+        "external_used": false
+      },
+      "flags": [
+        "pl_cd_zongfu_huangguan: unknown field 'hotel_class' is dropped on import"
+      ]
     }
   ]
 }

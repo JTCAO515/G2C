@@ -12,6 +12,7 @@ from dataclasses import dataclass, replace
 from contextlib import contextmanager, ExitStack, nullcontext
 import json
 import logging
+import time
 
 # The worker must be ready (or fail startup) before accepting any work (#176).
 from cj_feasibility import solver as _solver_runtime
@@ -604,6 +605,8 @@ class RunWorker:
                 missing = supplement(text, answered, locale)
                 if missing:
                     state = self._event(binding, state, 'text_delta', missing)
+            # A taxi destination only when the answer's map tools returned exactly one distinct place.
+            destination = destinations[0] if destinations and len(set(destinations)) == 1 and isinstance(destinations[0], LioDestination) else None
             if split_layout and state.text.strip():
                 # #1989 (D-1, LIO-answer-rich.1): the library places this answer names, bound to its final text.
                 # Off unless CJ_LIO_ENTITIES=on; a failure here never touches the answer.
@@ -615,11 +618,19 @@ class RunWorker:
                         state = self._event(binding, state, 'effect_committed', linked)
                 except Exception as error:
                     logging.getLogger('cj_usage.audit').info('LIO_ENTITIES_UNAVAILABLE run_id=%s error=%s', binding.run_id, type(error).__name__)
+                # #1990 (D-2): tool cards from a fixed table and this turn's own results. Off unless CJ_LIO_CARDS=on.
+                try:
+                    from cj_message.lio_cards import card_effect
+                    from cj_message.lio_followups import topics as question_topics
+                    drawn = card_effect(text, locale, destination=destination, adcode=getattr(self.lio_city_context, 'adcode', None),
+                                        taxi_topic='taxi' in question_topics(text), now=time.time())
+                    if drawn is not None:
+                        state = self._event(binding, state, 'effect_committed', drawn)
+                except Exception as error:
+                    logging.getLogger('cj_usage.audit').info('LIO_CARDS_UNAVAILABLE run_id=%s error=%s', binding.run_id, type(error).__name__)
             if split_layout and (answered or state.text).strip():
                 # W2-1 (#1727): fixed action buttons for a two-bubble answer; none when nothing applies.
                 from cj_message.lio_followups import allowed_actions, chips_for, followups_payload
-                # A taxi destination only when the answer's map tools returned exactly one distinct place.
-                destination = destinations[0] if destinations and len(set(destinations)) == 1 and isinstance(destinations[0], LioDestination) else None
                 actions = [action.wire() for action in allowed_actions(text, locale, destination=destination)]
                 # Tap-to-ask chips need a one-time ticket stored with the message; without one (no store,
                 # or the write failed) the chips are left out, never shown untappable.
@@ -633,6 +644,15 @@ class RunWorker:
                 if actions or tickets:
                     state = self._event(binding, state, 'effect_committed',
                                         LioFollowups(followups_payload(actions, zip(labels, tickets) if tickets else ())).effect())
+            if split_layout and state.text.strip() and self.lio_memory is not None and hasattr(self.lio_memory, 'consent_prompt'):
+                # #1999 (M-1): the one-time "may Lio remember your preferences?" marker; code only, no model, nothing stored
+                # about the preference. A failure here never touches the answer.
+                try:
+                    marker = self.lio_memory.consent_prompt(binding, text)
+                    if marker is not None:
+                        state = self._event(binding, state, 'effect_committed', marker)
+                except Exception as error:
+                    logging.getLogger('cj_usage.audit').info('LIO_MEMORY_PROMPT_UNAVAILABLE run_id=%s error=%s', binding.run_id, type(error).__name__)
             if self.drafts is not None and command['creation_intent'] == 'consider_trip':
                 phase='draft'
                 state, proposal_id = self._draft(binding, state, text, stored)
