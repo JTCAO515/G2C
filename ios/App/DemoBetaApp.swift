@@ -42,7 +42,8 @@ struct DemoBetaRootView: View {
                    toolsSessionIsCurrent: {
                     guard case .signedIn = root.accounts.state else { return false }
                     return root.trip === trip
-                }, answerFeedback: trip.feedback?.lioAnswer, leaveToSignIn: signOut) {
+                }, answerFeedback: trip.feedback?.lioAnswer, leaveToSignIn: signOut,
+                   chatTripPlaces: trip.messages.lioChatTripPlaces) {
                     LioMenuSettings(shell: shell)
                     NavigationLink(shell.language.text("Delete account", "注销账号")) {
                         LioAccountDeletion(shell: shell, root: root)

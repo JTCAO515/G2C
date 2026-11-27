@@ -352,6 +352,32 @@ public final class LioTimelineHTTP {
         return try LioTripHistoryWire.decodePage(bytes, before: before, conversationID: conversationID, version: version)
     }
 
+    /// #1723 PR-2: one structured trip read, returned as received for the caller to check against its card.
+    /// Only the trip id is sent. A 200 body is kept up to `tripStructuredMaximumBytes` and any other status's
+    /// body up to 64 KB; a longer body throws. Nothing here is logged.
+    public struct TripStructuredResponse: Sendable, Equatable {
+        public let status: Int
+        /// The response's single `X-Request-ID`, which a read.3 body must repeat; nil when absent or repeated.
+        public let requestID: String?
+        public let bytes: Data
+
+        public init(status: Int, requestID: String?, bytes: Data) {
+            self.status = status
+            self.requestID = requestID
+            self.bytes = bytes
+        }
+    }
+    public static let tripStructuredMaximumBytes = 1_000_000
+
+    public func readTripStructured(tripID: String) async throws -> TripStructuredResponse {
+        let token = try await bearer()
+        let (response, body) = try await transport.readTripStructured(tripID: tripID, bearer: token)
+        let status = response.status.code
+        let bytes = try await json(response, body, limit: status == 200 ? Self.tripStructuredMaximumBytes : 65_536)
+        let traces = response.headerFields.filter { $0.name.canonicalName == "x-request-id" }
+        return TripStructuredResponse(status: status, requestID: traces.count == 1 ? traces.first?.value : nil, bytes: bytes)
+    }
+
     func submitUndo(_ undo: LioTripHistoryWire.Undo) async throws -> LioTripHistoryClient.SubmissionResult {
         observe(.undo)
         let token = try await bearer()

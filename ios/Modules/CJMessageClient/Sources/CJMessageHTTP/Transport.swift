@@ -274,6 +274,14 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
                                  operation: "readLioTripHistoryV\(version)", bearer: bearer)
     }
 
+    /// #1723 PR-2: TRIP-structured-read.3 for one trip. The query carries the trip id and nothing else
+    /// (the route answers 400 to any other parameter).
+    func readTripStructured(tripID: String, bearer: String) async throws -> (HTTPResponse, HTTPBody?) {
+        guard MessageTripSelection.identifier(tripID) else { throw MessageHTTPFailure.invalidConfiguration }
+        return try await lioRead(path: "/v7/trip-structured", query: [URLQueryItem(name: "trip_id", value: tripID)],
+                                 operation: "readTripStructuredV7", bearer: bearer)
+    }
+
     func sendLioUndo(_ undo: LioTripHistoryWire.Undo, bearer: String) async throws -> (HTTPResponse, HTTPBody?) {
         guard let messages, messages.wire == .lio else { throw MessageHTTPFailure.productionActivationUnavailable }
         let path = undo.version == 3 ? "/v3/lio/trip-undos" : "/v\(undo.version)/lio/trip/undo"

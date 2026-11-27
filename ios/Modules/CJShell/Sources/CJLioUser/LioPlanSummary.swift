@@ -329,6 +329,28 @@ final class LioSavedPlansModel {
         reload()
     }
 
+    /// #1723 PR-2: chat trips whose places are being read before they are saved.
+    private(set) var savingTripIDs: Set<String> = []
+    func isSaving(_ plan: LioPlanSummary) -> Bool { savingTripIDs.contains(plan.tripID) }
+
+    /// #1723 PR-2 (places read on): a saved copy of this trip at this version or newer counts as saved, since it
+    /// may carry the read's confirmed places or the newer version the read found.
+    func hasSavedCopy(of plan: LioPlanSummary) -> Bool {
+        plans.contains { $0.tripID == plan.tripID && $0.tripVersion >= plan.tripVersion }
+    }
+
+    /// #1723 PR-2: reads the card's trip for its places, then saves what that decided (the summary on any doubt or
+    /// failure, within the reader's deadline). Nil when nothing was started (no store, or already saving it).
+    @discardableResult
+    func save(_ plan: LioPlanSummary, reference: LioChatTripReference,
+              places: LioChatTripPlaces) async -> LioChatTripPlaces.Outcome? {
+        guard store != nil, savingTripIDs.insert(plan.tripID).inserted else { return nil }
+        defer { savingTripIDs.remove(plan.tripID) }
+        let result = await places.plan(for: reference, summary: plan)
+        save(result.plan)
+        return result.outcome
+    }
+
     /// #1725: saves a popular route as a trip with checked places; nil when nothing was saved.
     @discardableResult
     func saveTemplate(_ roadbook: LioRoadbook) -> LioPlanSummary? {

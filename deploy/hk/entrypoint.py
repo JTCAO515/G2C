@@ -56,6 +56,10 @@ def _runtime_gate(database, runtime):
             marker=checkpoint.verified(control()/'demo-schema55.json')
             if marker['state']!='COMPLETE'or marker['lineage']!=release['lineage']:
                 raise ValueError('HK native4 accounting cutover incomplete')
+        if checkpoint.versions()[-1]>=59:
+            marker=checkpoint.verified(control()/'demo-schema59.json')
+            if marker['state']!='COMPLETE'or marker['lineage']!=release['lineage']:
+                raise ValueError('HK service and chip cutover incomplete')
 
 
 def ready(database, runtime=None):
