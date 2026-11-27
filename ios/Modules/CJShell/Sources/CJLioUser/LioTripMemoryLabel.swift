@@ -29,7 +29,7 @@ struct LioTripMemoryLabel: Equatable {
     /// The label for a canvas, or nil: no plan, a plan with no memories, or either switch off.
     static func make(for plan: LioPlanSummary?, labelEnabled: Bool, canvasEnabled: Bool) -> Self? {
         guard labelEnabled, canvasEnabled, let used = plan?.memoryUsed, !used.items.isEmpty else { return nil }
-        return Self(entries: used.items.prefix(LioTimelineWire.MemoryUsed.maximumItems).map { Entry(itemID: $0.itemID, title: $0.title) },
+        return Self(entries: used.items.prefix(3).map { Entry(itemID: $0.itemID, title: $0.title) },
                     total: max(used.total, used.items.count))
     }
 
@@ -62,7 +62,7 @@ public enum LioMemoryOpening: Equatable, Sendable {
 
     /// `loaded` is the ids the memory page has read; nil while it has not read any yet.
     public static func target(itemID: String?, loaded: [String]?) -> Self {
-        guard let itemID, LioTimelineWire.MemoryUsed.validItemID(itemID), let loaded, loaded.contains(itemID) else { return .list }
+        guard let itemID, LioTimelineWire.validMemoryItemID(itemID), let loaded, loaded.contains(itemID) else { return .list }
         return .item(itemID)
     }
 }
@@ -151,3 +151,20 @@ struct LioTripMemoryLabelView: View {
     }
 }
 #endif
+
+extension LioTimelineWire.MemoryUsed {
+    /// The wire's rules (`LIO-answer-rich.1`, `memory.used`) applied to values that were stored: one to three items, a
+    /// total of 1...99 that is at least the number listed, no item twice. A single bad item is dropped on its own; nothing
+    /// left, or a list that breaks a rule as a whole, means none. Used when a saved plan is read back, so a file edited by
+    /// hand (or written by a newer app) cannot put a longer list or a bad id on the screen.
+    static func validated(_ listed: [Item?], total: Int) -> LioTimelineWire.MemoryUsed? {
+        guard (1...3).contains(listed.count), (1...99).contains(total), total >= listed.count else { return nil }
+        let ids = listed.compactMap { $0?.itemID }
+        guard Set(ids).count == ids.count else { return nil }
+        let items = listed.compactMap { item -> Item? in
+            guard let item, LioTimelineWire.validMemoryItemID(item.itemID), LioTimelineWire.validMemoryTitle(item.title) else { return nil }
+            return item
+        }
+        return items.isEmpty ? nil : LioTimelineWire.MemoryUsed(items: items, total: total)
+    }
+}

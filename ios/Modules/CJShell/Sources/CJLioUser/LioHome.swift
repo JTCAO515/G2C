@@ -101,6 +101,8 @@ public struct LioHome<MenuContent: View>: View {
     @State private var memoryBusy = false
     @State private var memoryPending = false
     @State private var memoryNotice: String?
+    /// #2001: "My memory" opened from the line under an answer.
+    @State private var showsMemoryNotePage = false
     @State private var activeMemory: LioMemoryWire.Tag?
     @State private var activeMemoryTurn: Data?
     @State private var memoryFeedback: [LioMemoryWire.Tag: LioMemoryFeedback] = [:]
@@ -418,6 +420,12 @@ public struct LioHome<MenuContent: View>: View {
             LioEmergencySupportSheet(language: language, draftStorage: activeSupportDraft)
         }
         .sheet(isPresented: $showsProblemNotes) { problemNotesSheet }
+        .sheet(isPresented: $showsMemoryNotePage) {
+            if let savedMemory {
+                savedMemory.environment(\.lioMemorySuggestions, memorySuggestions)
+                    .environment(\.lioCloseMemory) { showsMemoryNotePage = false }
+            }
+        }
         .safeAreaInset(edge: .top, spacing: 0) {
             if restoringChat && warmRestoration { sessionRecoveryBanner }
         }
@@ -1344,6 +1352,10 @@ public struct LioHome<MenuContent: View>: View {
                 if answerRichOn, turn.status == .finished, !turn.cards.isEmpty {
                     LioAnswerCards(cards: turn.cards, language: language, routable: chatRoutableTools,
                                    open: { openCard($0) })
+                }
+                if turn.status == .finished, let note = turn.memoryNote {
+                    LioMemoryNoteLine(note: note, language: language,
+                                      open: savedMemory == nil ? nil : { showsMemoryNotePage = true })
                 }
                 if answerLayoutOn, turn.status == .finished, !(turn.followups.isEmpty && turn.chips.isEmpty) {
                     LioAnswerFollowups(actions: turn.followups, chips: turn.chips, open: { openFollowup($0) },

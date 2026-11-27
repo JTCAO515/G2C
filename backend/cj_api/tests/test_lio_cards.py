@@ -110,6 +110,10 @@ class Stored(unittest.TestCase):
             self.assertIsNone(cards.wire(cards.effect([broken], 1)), field)
         half = json.loads(json.dumps(card)); del half['open']['parameters']['lng']
         self.assertIsNone(cards.wire(cards.effect([half], 1)))
+        for field in ('destination', 'lat', 'lng'):            # stored values were stripped when built: a padded one is damaged
+            padded = json.loads(json.dumps(card)); padded['open']['parameters'][field] = ' ' + padded['open']['parameters'][field] + ' '
+            self.assertIsNone(cards.wire(cards.effect([padded], 1)), field)
+        self.assertEqual(cards.wire(cards.effect([card], 1)), [card])
 
     def test_a_damaged_record_reads_as_nothing_and_never_raises(self):
         for value in ('lio_cards:', 'lio_cards:oops', 'lio_cards:[]', 'lio_cards:{}', 'lio_cards:{"cards":1,"issued_at":1}',

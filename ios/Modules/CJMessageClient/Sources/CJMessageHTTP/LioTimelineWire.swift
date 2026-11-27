@@ -309,8 +309,7 @@ public enum LioTimelineWire {
         /// answer holds a preference, so the App may ask once. It is not consent; the choice is written with
         /// `PUT /v1/lio/memory/consent`.
         public let memoryPrompt: Bool
-        /// `memory.used` (#2010, M-5): the saved memories the server gave Lio for this plan. Display only; nil when the
-        /// row has none or what it sent fails the contract's rules.
+        /// `memory.used` (#2001): which of the traveller's remembered preferences the server gave the model for this answer.
         public let memoryUsed: MemoryUsed?
 
         public init(entities: [Entity] = [], cards: [Card] = [], memoryPrompt: Bool = false, memoryUsed: MemoryUsed? = nil) {
@@ -321,46 +320,43 @@ public enum LioTimelineWire {
         }
     }
 
-    /// `rich.memory.used` and `used_total` of LIO-answer-rich.1 (#2010): up to 3 memory items the answer was based on,
-    /// and how many were used in all. The ids are the memory items' own; the titles are the server's words at the time
-    /// of the read and are for display only.
+    /// One to three remembered items the answer was based on, most relevant first, and how many there were in all
+    /// (`used_total`, at least the number listed). `title` is the item's current title, one line of at most 40 characters;
+    /// it never carries the remembered text.
     public struct MemoryUsed: Sendable, Equatable {
         public struct Item: Sendable, Equatable {
             public let itemID: String
             public let title: String
             public init(itemID: String, title: String) { self.itemID = itemID; self.title = title }
         }
-        public static let maximumItems = 3
-        public static let maximumTitle = 40
-        public static let maximumTotal = 99
-
         public let items: [Item]
-        /// At least `items.count`, at most 99.
         public let total: Int
+        public init(items: [Item], total: Int) { self.items = items; self.total = total }
+    }
 
-        private init(items: [Item], total: Int) { self.items = items; self.total = total }
+    static let maximumMemoryUsedItems = 3
+    static let maximumMemoryUsedTotal = 99
+    static let maximumMemoryTitleLength = 40
 
-        /// The contract's rules. The list is dropped whole when it is empty or longer than 3, or when `total` is outside
-        /// 1...99 or below the number the server listed (a slot that is not even an item counts as listed). One item that
-        /// fails its rule (an id of the wrong form, a title over 40 characters or on more than one line, an id already
-        /// listed) is dropped alone; nothing left means nil.
-        public static func validated(_ listed: [Item?], total: Int) -> MemoryUsed? {
-            guard (1...maximumItems).contains(listed.count), (1...maximumTotal).contains(total), total >= listed.count else { return nil }
-            var seen = Set<String>()
-            let kept = listed.compactMap { $0 }.filter { validItemID($0.itemID) && validTitle($0.title) && seen.insert($0.itemID).inserted }
-            return kept.isEmpty ? nil : MemoryUsed(items: kept, total: total)
+    /// `^[A-Za-z0-9][A-Za-z0-9_.:-]{0,255}$`
+    public static func validMemoryItemID(_ value: String) -> Bool {
+        let bytes = Array(value.utf8)
+        guard (1...256).contains(bytes.count), bytes[0] != 95, bytes[0] != 46, bytes[0] != 58, bytes[0] != 45 else { return false }
+        return bytes.allSatisfy {
+            (48...57).contains($0) || (65...90).contains($0) || (97...122).contains($0) || $0 == 95 || $0 == 46 || $0 == 58 || $0 == 45
         }
+    }
 
-        /// `^[A-Za-z0-9][A-Za-z0-9_.:-]{0,255}$`.
-        public static func validItemID(_ value: String) -> Bool {
-            let bytes = Array(value.utf8)
-            guard (1...256).contains(bytes.count) else { return false }
-            func alphanumeric(_ byte: UInt8) -> Bool { (48...57).contains(byte) || (65...90).contains(byte) || (97...122).contains(byte) }
-            return alphanumeric(bytes[0]) && bytes.dropFirst().allSatisfy { alphanumeric($0) || [46, 45, 58, 95].contains($0) }
+    /// One line of 1–40 characters with no control, line-separator or zero-width characters (the contract's pattern).
+    public static func validMemoryTitle(_ value: String) -> Bool {
+        let scalars = value.unicodeScalars
+        guard (1...maximumMemoryTitleLength).contains(scalars.count) else { return false }
+        return !scalars.contains { scalar in
+            switch scalar.value {
+            case 0x00...0x1F, 0x7F...0x9F, 0x200B...0x200F, 0x2028...0x202E, 0x2060...0x2064, 0xFEFF: true
+            default: false
+            }
         }
-
-        /// 1 to 40 characters on one line: no control, format or line-separator character, no space at either end.
-        public static func validTitle(_ value: String) -> Bool { LioTimelineWire.validText(value, limit: maximumTitle) }
     }
 
     /// A city as a card names it (`{id, zh, en}`), for display only.
@@ -501,10 +497,7 @@ public enum LioTimelineWire {
         // `rich` only rides on a completed row that has an answer; anywhere else it is ignored.
         var rich = (state == .completed && !wire.answer.isEmpty) ? validRich(wire.rich) : nil
         // A plan reply carries no cards (contract: `cards` needs `trip = null`).
-        // What it may carry is the places and, from #2010, the memories its plan was based on.
-        if trip != nil, let kept = rich {
-            rich = kept.entities.isEmpty && kept.memoryUsed == nil ? nil : Rich(entities: kept.entities, memoryUsed: kept.memoryUsed)
-        }
+        if trip != nil, let kept = rich { rich = kept.entities.isEmpty ? nil : Rich(entities: kept.entities) }
         return Message(id: wire.messageID, question: wire.text, answer: wire.answer, state: state,
                        activity: wire.activity, sources: sources, trip: trip, memoryTags: tags,
                        layout: layout, followups: shown.0, chips: shown.1, rich: rich)
@@ -529,17 +522,23 @@ public enum LioTimelineWire {
             cards.sort { (Card.Kind.allCases.firstIndex(of: $0.kind) ?? 0) < (Card.Kind.allCases.firstIndex(of: $1.kind) ?? 0) }
         }
         let prompt = wire.memory?.prompt == "consent"
-        let used = wire.memory.flatMap(validMemoryUsed)
-        return entities.isEmpty && cards.isEmpty && !prompt && used == nil
-            ? nil : Rich(entities: entities, cards: cards, memoryPrompt: prompt, memoryUsed: used)
+        let used = validMemoryUsed(wire.memory)
+        return entities.isEmpty && cards.isEmpty && !prompt && used == nil ? nil
+            : Rich(entities: entities, cards: cards, memoryPrompt: prompt, memoryUsed: used)
     }
 
-    /// `memory.used` with `used_total` (#2010): both or neither; the rules are `MemoryUsed.validated`'s.
-    private static func validMemoryUsed(_ wire: Snapshot.Row.RichWire.MemoryWire) -> MemoryUsed? {
-        guard let listed = wire.used, let total = wire.usedTotal else { return nil }
-        return MemoryUsed.validated(listed.map { slot in
-            slot.value.map { MemoryUsed.Item(itemID: $0.itemID, title: $0.title) }
-        }, total: total)
+    /// `used` and `used_total` come together. More than three items, a total outside 1...99 or below the number listed,
+    /// or one item listed twice drops `used` whole; a single bad item is dropped on its own; nothing left means none.
+    private static func validMemoryUsed(_ wire: Snapshot.Row.RichWire.MemoryWire?) -> MemoryUsed? {
+        guard let wire, let listed = wire.used, let total = wire.usedTotal,
+              (1...maximumMemoryUsedItems).contains(listed.count),
+              (1...maximumMemoryUsedTotal).contains(total), total >= listed.count else { return nil }
+        let items = listed.compactMap { entry -> MemoryUsed.Item? in
+            guard let entry = entry.value, validMemoryItemID(entry.itemID), validMemoryTitle(entry.title) else { return nil }
+            return MemoryUsed.Item(itemID: entry.itemID, title: entry.title)
+        }
+        guard !items.isEmpty, Set(listed.compactMap { $0.value?.itemID }).count == listed.compactMap({ $0.value?.itemID }).count else { return nil }
+        return MemoryUsed(items: items, total: total)
     }
 
     /// The contract's card rules, as far as the App can see them: a known type; the type's own tool and a label from
@@ -682,7 +681,7 @@ public enum LioTimelineWire {
 
     /// Non-empty after trimming, within the limit, and without control, separator, zero-width or bidirectional
     /// format characters (the contract's rule for values and labels).
-    fileprivate static func validText(_ value: String, limit: Int) -> Bool {
+    private static func validText(_ value: String, limit: Int) -> Bool {
         let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
         guard trimmed == value, !value.isEmpty, value.count <= limit, value.utf8.count <= limit * 4 else { return false }
         return value.unicodeScalars.allSatisfy { scalar in
@@ -747,7 +746,7 @@ public enum LioTimelineWire {
             struct RichWire: Decodable {
                 let version: String
                 let entities: [LossyEntity]?
-                /// `memory.prompt` (#1999) and `memory.used` with `used_total` (#2010). Each is read on its own.
+                /// `memory.prompt` (#1999) and `memory.used` with `used_total` (#2001).
                 let memory: MemoryWire?
                 struct MemoryWire: Decodable {
                     let prompt: String?
@@ -764,6 +763,7 @@ public enum LioTimelineWire {
                     }
                     init(from decoder: Decoder) throws {
                         let c = try decoder.container(keyedBy: CodingKeys.self)
+                        // Each part is read on its own: a broken one is none and does not hide the others.
                         prompt = (try? c.decodeIfPresent(String.self, forKey: .prompt)) ?? nil
                         used = (try? c.decodeIfPresent([LossyUsed].self, forKey: .used)) ?? nil
                         usedTotal = (try? c.decodeIfPresent(Int.self, forKey: .usedTotal)) ?? nil

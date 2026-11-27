@@ -120,7 +120,7 @@ final class LioRouter {
     /// Shows "My memory" in the Me tab, at one item when it is still saved (#2010). An id that is not a memory item's
     /// form opens the list. The page that opens decides whether the item is still there; the list is the fallback.
     func openMemory(itemID: String? = nil) {
-        memoryRequest = MemoryRequest(itemID: itemID.flatMap { LioTimelineWire.MemoryUsed.validItemID($0) ? $0 : nil })
+        memoryRequest = MemoryRequest(itemID: itemID.flatMap { LioTimelineWire.validMemoryItemID($0) ? $0 : nil })
         tab = .me
     }
 
