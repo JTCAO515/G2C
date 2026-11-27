@@ -668,6 +668,9 @@ class NationalLioPlanning:
             ordinal_days=intake.duration_days if calendar is not None and undated else None,
             bind_unbooked_self=True)
         if missing or questions or not complete_fixed:
+            # Which of the three stopped the plan (field names and counts only): Hong Kong v2 retest, 2026-11-28.
+            logging.getLogger('cj_usage.audit').info('LIO_PLANNING_NEEDS_DETAILS run_id=%s missing=%s fixed_questions=%s complete_fixed=%s',
+                binding.run_id,','.join(sorted(str(field)for field in missing))or'-',len(questions),bool(complete_fixed))
             state=context(worker,binding,state,dict(authority=authority,status='needs_details',city=resolution))
             required=[]
             if any(field in missing for field in ('start_date','arrival.date')):required.append('start_date')

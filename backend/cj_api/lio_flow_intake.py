@@ -312,6 +312,32 @@ _FIXED_HINT=re.compile(r'订好|订了|买好|买了|订票|订位|订房|预订
                        r'[一二三四五六七八九十两]{1,3}\s*[点时]|\bnoon\b|midnight|o.?clock|中午|正午|午夜',re.I)
 
 
+def _booking_mark(item):
+    """`b`/`i`/`c` (the schema's booking enum) from the booking evidence parse_flow's dump carries under its alias, or `N`."""
+    evidence=item.get('booking_evidence')
+    status=evidence.get('status')if type(evidence)is dict else item.get('booking_status')
+    return status[:1]if type(status)is str and status else'N'
+
+
+def fixed_items_structure(items):
+    """Structure only, never the traveler's words: one short token per fixed item with code-owned values: kind (schema literal),
+    locked (T/F/N), booking status initial (the schema's enum), the NAMES of the date, clock, zone and place fields that are set,
+    how many later details, the length of its quote and label, whether a fixed word matched, how many unknown and uncertain
+    fields, and whether the wish rule would drop it. For the Hong Kong v2 retest of 2026-11-28, whose intake output is not kept."""
+    rows=[]
+    for item in items:
+        if type(item)is not dict:rows.append('?');continue
+        text=str(item.get('quote'))+' '+str(item.get('label'))
+        when=[key for key in _WHEN_WHERE if not key.endswith('place')and item.get(key)is not None]
+        where=[key for key in('start_place','end_place')if item.get(key)is not None]
+        rows.append('%s|lock=%s|book=%s|when=%s|where=%s|detail=%d|q=%d|l=%d|mark=%d|hint=%d|unk=%d|unc=%d|wish=%d'%(
+            item.get('kind'),{True:'T',False:'F',None:'N'}.get(item.get('locked'),'?'),_booking_mark(item),','.join(when)or'-',
+            ','.join(where)or'-',len(item.get('detail_refs')or()),len(str(item.get('quote'))),len(str(item.get('label'))),
+            int(_FIXED_MARK.search(text)is not None),int(_FIXED_HINT.search(text)is not None),len(item.get('unknown_fields')or()),
+            len(item.get('uncertain_fields')or{}),_drop_wish_items([dict(item)])))
+    return rows
+
+
 def _drop_wish_items(items):
     """A sightseeing wish is not a fixed arrangement. Hong Kong run 869c104a (v2, 2026-11-28): 「第一天故宫和景山，第二天颐和园」 came
     back as `intent` items and the plan stopped to ask for their participants, dates and clocks. An item is dropped, as if it had
@@ -319,7 +345,7 @@ def _drop_wish_items(items):
     zone or place, no later detail, and neither its quote nor its label carries a 「fixed / booked / locked」 word. Anything else
     keeps its normal handling. Returns the number dropped."""
     def wish(item):
-        return (type(item)is dict and item.get('kind')=='intent' and item.get('locked')is not True and item.get('booking_status')is None
+        return (type(item)is dict and item.get('kind')=='intent' and item.get('locked')is not True and item.get('booking_status')is None and item.get('booking_evidence')is None
                 and not item.get('detail_refs')and all(item.get(key)is None for key in _WHEN_WHERE)
                 and not _FIXED_MARK.search(str(item.get('quote'))+' '+str(item.get('label')))
                 and not _FIXED_HINT.search(str(item.get('quote'))+' '+str(item.get('label'))))
@@ -576,6 +602,10 @@ def parse_flow(raw,turns,refs,message_id,previous,*,schema=FlowIntake,memory_off
                 and 'start_date' not in data['uncertain_fields']
                 and any(ref['field']=='start_date'for ref in data['field_sources'])):
             unknown[:]=[field for field in unknown if field!='start_date']
+        if data['fixed_items']:
+            import logging
+            logging.getLogger('cj_usage.audit').info('LIO_INTAKE_FIXED_ITEMS message_id=%s count=%s items=%s',message_id,
+                len(data['fixed_items']),';'.join(fixed_items_structure(data['fixed_items'])))
         wishes=_drop_wish_items(data['fixed_items'])
         if wishes:
             import logging
