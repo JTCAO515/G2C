@@ -24,6 +24,7 @@
 | `pharmacy` | types `090601`（药房） | 药房 / Pharmacy |
 | `toilet` | types `200300`（公共厕所） | 公共厕所 / Public toilets |
 | `luggage` | 不用 types，固定关键字 `keywords=行李寄存` | 行李寄存（按名称搜索，结果可能不全） / Luggage storage (found by name; some may be missing) |
+| `community` | 不用 types，固定关键字 `keywords=社区服务中心`（#2006，统筹 2026-11-27 按 JT 预授权增补） | 社区服务（按名称搜索，结果可能不全） / Community services (found by name; some may be missing) |
 
 - 高德没有「是否支持外卡」的信息：服务端和 App 都不得声称某台 ATM 支持外卡。
 - 不提供换汇、银行网点类别。
@@ -42,10 +43,10 @@
 ```
 
 - `categories`：1–4 个，不重复。
-- **`luggage` 只能单独请求**：`["luggage"]` 合法；`luggage` 与任何其他类别同时出现时，返回 `400 invalid_request`，不调用供应商、不计次。这样每次查询仍只有 1 次高德周边检索（中心点为 WGS-84 时另加 1 次坐标转换，同 NEARBY.1）。
+- **`luggage` 和 `community` 只能单独请求**：`["luggage"]`、`["community"]` 合法；它们与任何其他类别（包括彼此）同时出现时，返回 `400 invalid_request`，不调用供应商、不计次。这样每次查询仍只有 1 次高德周边检索（中心点为 WGS-84 时另加 1 次坐标转换，同 NEARBY.1）。
 - 其余七个类别可以任意组合，组合后合并为一次 types 检索。
 - `center`、`radius_m`、`sort`、`request_id` 的规则同 NEARBY.1；未知字段一律拒绝（`400 invalid_request`）。
-- `"version": "NEARBY.1"` 的请求里出现 `atm`、`pharmacy`、`toilet`、`luggage` 中任何一个，返回 `400 invalid_request`。
+- `"version": "NEARBY.1"` 的请求里出现 `atm`、`pharmacy`、`toilet`、`luggage`、`community` 中任何一个，返回 `400 invalid_request`。
 
 ## 响应
 
@@ -65,7 +66,7 @@
 ```
 
 - `type_code` 原样返回高德的 6 位类别码。响应里没有类别字段，由 App 自己给每一条标类别：
-  - **只请求一个必需品类别时**（`atm`、`pharmacy`、`toilet`、`luggage` 中的一个），每一条都标成这个类别，不看 `type_code`。App 的「必需品」每次只请求一个类别，`luggage` 也只能单独请求。`luggage` 的结果是按名称检索到的，各条的 `type_code` 是该地点自己的类别，可能各不相同。
+  - **只请求一个必需品类别时**（`atm`、`pharmacy`、`toilet`、`luggage`、`community` 中的一个），每一条都标成这个类别，不看 `type_code`。App 的「必需品」每次只请求一个类别，`luggage` 和 `community` 也只能单独请求。`luggage` 和 `community` 的结果是按名称检索到的，各条的 `type_code` 是该地点自己的类别，可能各不相同。
   - **其余情况**（一次请求多个类别，或只请求一个吃喝玩逛类别），App 按 `type_code` 前缀标类别，与 NEARBY.1 的做法相同。按以下顺序比较，先匹配的为准：`1603` → `atm`，`090601` → `pharmacy`，`2003` → `toilet`，`0505` → `coffee`，其余 `05` → `food`，`11` → `sights`，`06` → `shopping`。哪个前缀都对不上的条目，不标类别。标出的类别可能不在本次请求的类别里，例如只请求 `food` 时，咖啡馆标为 `coffee`。
 - 没有结果时 `items` 为空数组；缺少必需字段的条数计入 `omitted_items`，规则同 NEARBY.1。
 
@@ -74,13 +75,13 @@
 - 与 NEARBY.1 同一份计数（服务 `amap-nearby.1`）：每人每天 ≤100 次、合计 ≤3,000 次周边搜索，只共用高德合计 ¥500。新增类别**不新增额度**。
 - 每次查询（缓存未命中）调用高德 1 次周边搜索；输入为 WGS-84 时另有 1 次坐标转换，规则同 NEARBY.1。
 - **额度用完**：返回 `429 {"error": "quota_exceeded"}`，不调用供应商。每日额度和合计额度用完都是这个返回。App 显示「今日附近次数已用完」或同义的固定文案，不重试。
-- 短时缓存的键包含检索方式：types 或固定关键字。`luggage` 与其他类别的结果不会互相命中。
+- 短时缓存的键包含检索方式：types 或固定关键字。`luggage`、`community` 与其他类别的结果不会互相命中，两者之间也不会。
 
 ## 错误
 
 | 状态 | `error` | 含义 |
 |---|---|---|
-| 400 | `invalid_request` | 请求格式不符；含 `luggage` 与其他类别混用；NEARBY.1 使用了新类别 |
+| 400 | `invalid_request` | 请求格式不符；`luggage` 或 `community` 与其他类别混用；NEARBY.1 使用了新类别 |
 | 401 | `sign_in_required` | 未登录 |
 | 403 | `not_enabled` | 账号不在名单或服务未开启 |
 | 409 | `request_already_used` | 同一 `request_id` 已用过 |
@@ -99,8 +100,10 @@
 | NEARBY.2，`["pharmacy", "toilet"]` | 200，高德 types `090601\|200300`，1 次周边检索 |
 | NEARBY.2，`["luggage"]` | 200，高德 keywords `行李寄存`，不带 types |
 | NEARBY.2，`["luggage", "toilet"]` | 400 `invalid_request`，不调用、不计次 |
+| NEARBY.2，`["community"]` | 200，高德 keywords `社区服务中心`，不带 types |
+| NEARBY.2，`["community", "atm"]` | 400 `invalid_request`，不调用、不计次 |
 | NEARBY.2，`["food", "coffee"]` | 200，与 NEARBY.1 相同 |
-| NEARBY.1，`["atm"]` 或 `["luggage"]` | 400 `invalid_request`，不调用、不计次 |
+| NEARBY.1，`["atm"]`、`["luggage"]` 或 `["community"]` | 400 `invalid_request`，不调用、不计次 |
 | NEARBY.1，`["food"]` | 200，行为不变 |
 | NEARBY.2，`["exchange"]` 或 `["bank"]` | 400 `invalid_request`（不提供） |
 | 当日第 101 次（或合计第 3,001 次） | 429 `quota_exceeded`，不调用 |
