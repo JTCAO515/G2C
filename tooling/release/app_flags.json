@@ -30,6 +30,10 @@
       "plist": "G2CTransportEnabled"
     },
     {
+      "setting": "G2C_TRANSPORT_HUBS_DRAFT_ENABLED",
+      "plist": "G2CTransportHubsDraftEnabled"
+    },
+    {
       "setting": "G2C_METRO_NEARBY_ENABLED",
       "plist": "G2CMetroNearbyEnabled"
     },
@@ -103,6 +107,7 @@
       "G2C_HOTEL_ENABLED",
       "G2C_ROADBOOK_ENABLED",
       "G2C_TRANSPORT_ENABLED",
+      "G2C_TRANSPORT_HUBS_DRAFT_ENABLED",
       "G2C_METRO_NEARBY_ENABLED",
       "G2C_NEARBY_ESSENTIALS_ENABLED",
       "G2C_ARRIVAL_MODE_ENABLED",
