@@ -38,7 +38,7 @@
 
 - Asia/Shanghai 每日每人 50 次（路由 `/v1/tools/flights`），与 `TRANSPORT.1` 的机票共用同一计数（M4 条目 14：两处合计 50 次）；用尽返回 `429 quota_exceeded`。
 - 错误正文 `{"error": "<代码>"}`：`400 invalid_request`、`401 sign_in_required`、`403 not_enabled`、`413 request_too_large`、`429 quota_exceeded`（账号每日次数用尽）、`429 rate_limited`（飞常准自己限流）、`502 supplier_unavailable`、`503 unavailable`（本地计数不可用）、`503 not_enabled`（供应商停用期间，见下）、`504 supplier_timeout`。供应商的错误信息不回显，供应商应答里出现密钥的结果整体丢弃。
-- 飞常准返回需要付费（HTTP 402 或 RPC 402）时，与城际机票共用的停用标记立即生效，两处都停止调用，直到人工确认后移除；停用期间（停用标记存在，或凭据文件读取失败）本路由返回 `503 not_enabled`，客户端应当按「暂时不能查询」处理，不要重试。服务端只允许 `getFlightList`、`getFlightStatus` 两个只读工具。
+- 飞常准返回需要付费（HTTP 402 或 RPC 402）时，与城际机票共用的停用标记立即生效，两处都停止调用，直到人工确认后移除；停用期间（停用标记存在，或香港内测授权校验失败，例如试用期已过）本路由返回 `503 not_enabled`，客户端应当按「暂时不能查询」处理，不要重试。服务端只允许 `getFlightList`、`getFlightStatus` 两个只读工具。
 
 ## 隐私
 
