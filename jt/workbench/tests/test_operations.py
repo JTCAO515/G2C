@@ -1,6 +1,5 @@
-"""Demo routes, contract transitions, role gates and initial setup codes."""
+"""Demo routes, contract transitions, role gates and the first administrator."""
 
-import base64
 import re
 
 import psycopg
@@ -8,9 +7,9 @@ import pytest
 from fastapi.testclient import TestClient
 
 from jt.workbench.app import SESSION_COOKIE, create_app
-from jt.workbench.auth import SETUP_LIFETIME, AccessDenied, Auth
+from jt.workbench.auth import AccessDenied, Auth, InvalidAccount
 from jt.workbench.operations import DemoOperations
-from jt.workbench.security import PasswordHash, totp_at_step
+from jt.workbench.security import PasswordHash
 from jt.workbench.store import Account, MemoryStore, Role
 
 
@@ -24,10 +23,9 @@ def clients(audit_store=None):
     auth = Auth(store, clock=lambda: NOW, monotonic=lambda: NOW)
     password = PasswordHash.make(PASSWORD)
     tokens = {}
-    for index, role in enumerate(Role, 1):
-        seed = bytes([index]) * 20
-        store.save_account(Account(role.value, role, password, seed))
-        tokens[role] = auth.login(role.value, PASSWORD, totp_at_step(seed, NOW // 30))
+    for role in Role:
+        store.save_account(Account(role.value, role, password))
+        tokens[role] = auth.login(role.value, PASSWORD)
     source = DemoOperations()
     app = create_app(auth, operations=source)
     return store, source, app, tokens
@@ -133,27 +131,24 @@ def test_queue_opens_linked_cases_from_all_four_playbooks():
         assert response.headers["location"] in operator.get(links[0]).text
 
 
-def test_initial_admin_setup_is_one_use_and_allows_reissue_only_before_binding():
+def test_first_administrator_is_created_once_and_never_logs_the_password():
     store = MemoryStore()
-    clock = [NOW]
-    auth = Auth(store, clock=lambda: clock[0], monotonic=lambda: clock[0])
+    auth = Auth(store, clock=lambda: NOW, monotonic=lambda: NOW)
     username = "demo-initial"
-    old = auth.issue_initial_admin_setup(username)
-    assert store.account(username).password is None and store.account(username).totp_seed is None
-    assert old not in repr(store.audit_events())
-    clock[0] += SETUP_LIFETIME
-    seed = bytes(range(20))
-    code = totp_at_step(seed, clock[0] // 30)
-    encoded = base64.b32encode(seed).decode()
-    assert not auth.bind_account(username, old, PASSWORD, encoded, code)
-    new = auth.issue_initial_admin_setup(username)
-    assert new != old
+    assert not auth.has_admin()
+    for invalid in ("short-pass", "x" * 129):
+        with pytest.raises(InvalidAccount):
+            auth.bootstrap_admin(username, invalid)
+    with pytest.raises(InvalidAccount):
+        auth.bootstrap_admin("Not Valid", PASSWORD)
+    assert store.accounts() == ()
+    auth.bootstrap_admin(username, PASSWORD)
+    assert auth.has_admin()
+    account = store.account(username)
+    assert account.role is Role.ADMIN and account.enabled and account.password.matches(PASSWORD)
+    assert PASSWORD not in repr(store.audit_events()) + repr(account)
     with pytest.raises(AccessDenied):
-        auth.issue_initial_admin_setup("different-admin")
-    assert not auth.bind_account(username, old, PASSWORD, encoded, code)
-    assert auth.bind_account(username, new, PASSWORD, encoded, code)
-    assert not auth.bind_account(username, new, PASSWORD, encoded, code)
-    with pytest.raises(AccessDenied):
-        auth.issue_initial_admin_setup(username)
-    clock[0] += 30
-    assert auth.login(username, PASSWORD, totp_at_step(seed, clock[0] // 30))
+        auth.bootstrap_admin("different-admin", PASSWORD)
+    assert store.account("different-admin") is None
+    assert auth.login(username, PASSWORD)
+    assert auth.login(username, "wrong password value") is None
