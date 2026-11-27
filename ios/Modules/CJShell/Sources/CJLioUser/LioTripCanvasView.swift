@@ -20,12 +20,16 @@ struct LioTripCanvasScreen: View {
     var openChat: (() -> Void)?
     /// The map view's place (#1996 / T-3). Nil shows a placeholder where it will go; the timeline never depends on it.
     var map: ((LioTripCanvas) -> AnyView)?
+    /// #2010: the label's own switch. With it off the canvas is exactly what it was.
+    var memoryLabelEnabled = LioTripMemoryLabelFeature.enabledInBuild
+    var canvasEnabled = LioTripCanvasFeature.enabledInBuild
     @State private var model: LioTripCanvasModel?
 
     var body: some View {
         Group {
             if let model {
-                LioTripCanvasView(language: language, model: model, openChat: openChat, map: map)
+                LioTripCanvasView(language: language, model: model, openChat: openChat, map: map,
+                                  memoryLabel: .make(for: plan, labelEnabled: memoryLabelEnabled, canvasEnabled: canvasEnabled))
             } else {
                 LioTheme.paper.ignoresSafeArea()
             }
@@ -46,6 +50,9 @@ struct LioTripCanvasView: View {
     let model: LioTripCanvasModel
     var openChat: (() -> Void)?
     var map: ((LioTripCanvas) -> AnyView)?
+    /// #2010: "Based on your preferences" for the whole plan; nil shows nothing.
+    var memoryLabel: LioTripMemoryLabel?
+    @Environment(LioRouter.self) private var router: LioRouter?
     @State private var mode: Mode = .timeline
     @State private var editing: LioTripCanvas.Point?
     @State private var wish = ""
@@ -60,6 +67,10 @@ struct LioTripCanvasView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: LioTheme.Spacing.md) {
                 header
+                if let memoryLabel {
+                    LioTripMemoryLabelView(label: memoryLabel, language: language,
+                                           open: router.map { router in { router.openMemory(itemID: $0) } })
+                }
                 modePicker
                 switch mode {
                 case .timeline: timeline
