@@ -308,6 +308,24 @@ public final class NoRedirectTransport: ClientTransport, Sendable {
                                  operation: "readLioTripUndoV\(undo.version)", bearer: bearer)
     }
 
+    /// `POST /v4/lio/trip-undos`: the undo of an automatic save (`LIO-trip-undo.4` or `.5`). The body is the request's own
+    /// bytes; the route takes no query.
+    func sendLioTripUndo(_ undo: LioTripUndoWire.Request, bearer: String) async throws -> (HTTPResponse, HTTPBody?) {
+        guard let messages, messages.wire == .lio else { throw MessageHTTPFailure.productionActivationUnavailable }
+        var request = HTTPRequest(method: .post, scheme: nil, authority: nil, path: "/v4/lio/trip-undos")
+        request.headerFields[.authorization] = "Bearer " + bearer
+        request.headerFields[.contentType] = "application/octet-stream"
+        request.headerFields[.accept] = "application/json"
+        return try await sendLocalWrite(request, body: HTTPBody(undo.body), baseURL: messages.endpoint.url,
+                                        operationID: "undoLioTripV4", capability: messages.boundary, messageWire: nil)
+    }
+
+    /// `GET /v4/lio/trip-undo-receipts`: whether that same action was committed.
+    func readLioTripUndoReceipt(_ undo: LioTripUndoWire.Request, bearer: String) async throws -> (HTTPResponse, HTTPBody?) {
+        try await lioRead(path: "/v4/lio/trip-undo-receipts", query: undo.query,
+                          operation: "readLioTripUndoReceiptV4", bearer: bearer)
+    }
+
     func sendLioMemoryChoice(_ action: LioMemoryWire.Action, bearer: String) async throws -> (HTTPResponse, HTTPBody?) {
         try await lioMemoryRequest(action, bearer: bearer, path: "/v1/lio/memory/actions", operation: "chooseLioMemoryV1")
     }

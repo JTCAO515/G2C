@@ -324,6 +324,22 @@ def test_app_copy_carries_a_hotels_filter_fields_and_every_places_amap_id():
     assert list(stay) == list(generate.APP_KEYS) == list(sight)
 
 
+@pytest.mark.parametrize('host', ['https://www.booking.com/hotel/cn/x.html', 'https://hotels.ctrip.com/h/1.html', 'http://m.tripadvisor.com.hk/x',
+                                  'https://www.agoda.com/x', 'https://www.hotels.com/ho1/', 'https://hotel.elong.com/x', 'https://www.ly.com/x',
+                                  'https://www.airbnb.com/rooms/1', 'https://www.trivago.com/x'])
+def test_a_booking_channel_is_never_a_source_so_its_price_never_gets_in(host):
+    for entry in ({**C8_HOTEL, 'sources': [*C8_HOTEL['sources'], host]}, {**C1, 'category': 'food', 'subcategory': 'local',
+                                                                         'price_per_person_cny': 80, 'sources': [host]}):
+        errors, _ = placelib.check_draft(entry)
+        assert errors and 'third-party' in errors[0]
+
+
+def test_the_operators_own_page_may_carry_a_price_and_a_hotel_class_is_checked():
+    assert placelib.check_draft(C8_HOTEL)[0] == []
+    assert placelib.check_draft({**C8_HOTEL, 'hotel_class': 'luxury'})[0] == []
+    assert placelib.check_draft({**C8_HOTEL, 'hotel_class': 'five-star'})[0]
+
+
 @pytest.mark.parametrize('damage', ['server', 'app', 'source'])
 def test_a_changed_fact_without_regeneration_is_detected(tmp_path, damage):
     lay = layout(tmp_path)

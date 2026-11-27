@@ -1,7 +1,7 @@
 {
   "version": "g2c-places-candidates.1",
   "city": "shenzhen",
-  "generated_on": "2026-11-27",
+  "generated_on": "2026-11-28",
   "candidates": [
     {
       "id": "pl_sz_79yuchuan_guangming",
@@ -249,6 +249,7 @@
         "intro_long_en": "The hotel is inside Xihuicheng Shopping Plaza. For trips farther afield, Hilton's location information points to Shajing on Line 11.",
         "star": null,
         "price_band": "<500",
+        "hotel_class": "midscale",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -278,9 +279,7 @@
         },
         "external_used": false
       },
-      "flags": [
-        "pl_sz_baoanhuashengxierdun: unknown field 'hotel_class' is dropped on import"
-      ]
+      "flags": []
     },
     {
       "id": "pl_sz_baoanruiji",
@@ -324,6 +323,7 @@
         "intro_long_en": "On the Bao'an side of Shenzhen, Marriott names Bao Hua on Line 5 and Bao An on Line 11 for arrival. The hotel's language list includes English.",
         "star": null,
         "price_band": ">2000",
+        "hotel_class": "luxury",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -353,9 +353,7 @@
         },
         "external_used": false
       },
-      "flags": [
-        "pl_sz_baoanruiji: unknown field 'hotel_class' is dropped on import"
-      ]
+      "flags": []
     },
     {
       "id": "pl_sz_chiwan_tianhou",
@@ -368,7 +366,10 @@
         "tier": "main",
         "name_zh": "天后博物馆（赤湾天后宫）",
         "name_en": "Tin Hau Museum (Chiwan Tin Hau Temple)",
-        "aliases_zh": [],
+        "aliases_zh": [
+          "赤湾天后宫",
+          "天后博物馆"
+        ],
         "aliases_en": [],
         "address_zh": "南山区赤湾6号",
         "address_en": null,
@@ -422,7 +423,21 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "赤湾天后宫",
+          "lang": "zh",
+          "url": "https://www.sz.gov.cn/szzt2010/szwtt/wtcg/whcg/content/post_11644501.html",
+          "kind": "manual"
+        },
+        {
+          "alias": "天后博物馆",
+          "lang": "zh",
+          "url": "https://wtl.sz.gov.cn/ggfw/whl/bwgylb/index.html",
+          "kind": "discovery"
+        }
+      ]
     },
     {
       "id": "pl_sz_coastal_city_nanshan",
@@ -638,8 +653,15 @@
         "tier": "main",
         "name_zh": "大芬油画村",
         "name_en": "Dafen Oil Painting Village",
-        "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_zh": [
+          "大芬村",
+          "大芬油畫村"
+        ],
+        "aliases_en": [
+          "Dafen",
+          "Dafen oilpainting village",
+          "Dafen Village"
+        ],
         "address_zh": null,
         "address_en": null,
         "district_zh": "龙岗区",
@@ -692,7 +714,39 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "大芬村",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q1019090",
+          "kind": "label"
+        },
+        {
+          "alias": "Dafen",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q1019090",
+          "kind": "label"
+        },
+        {
+          "alias": "Dafen oilpainting village",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q1019090",
+          "kind": "wikidata"
+        },
+        {
+          "alias": "Dafen Village",
+          "lang": "en",
+          "url": "https://en.wikipedia.org/wiki/Dafen_Village",
+          "kind": "wikipedia"
+        },
+        {
+          "alias": "大芬油畫村",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q1019090",
+          "kind": "published_traditional"
+        }
+      ]
     },
     {
       "id": "pl_sz_dafulan_jichang",
@@ -772,8 +826,14 @@
         "tier": "main",
         "name_zh": "大梅沙海滨公园",
         "name_en": "Dameisha Beach Park",
-        "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_zh": [
+          "大梅沙",
+          "大梅沙海濱公園"
+        ],
+        "aliases_en": [
+          "Dameisha Beach",
+          "Dameisha"
+        ],
         "address_zh": "深圳市盐田区梅沙街道梅沙社区盐梅路东大梅沙海滨公园",
         "address_en": null,
         "district_zh": "盐田区",
@@ -826,7 +886,33 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "大梅沙",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q25101745",
+          "kind": "wikidata"
+        },
+        {
+          "alias": "Dameisha Beach",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q25101745",
+          "kind": "label"
+        },
+        {
+          "alias": "Dameisha",
+          "lang": "en",
+          "url": "https://en.wikipedia.org/wiki/Dameisha?redirect=no",
+          "kind": "redirect"
+        },
+        {
+          "alias": "大梅沙海濱公園",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q25101745",
+          "kind": "published_traditional"
+        }
+      ]
     },
     {
       "id": "pl_sz_dangdai_yishu_guihua",
@@ -839,8 +925,12 @@
         "tier": "main",
         "name_zh": "深圳市当代艺术与城市规划馆",
         "name_en": "Shenzhen Museum of Contemporary Art and Urban Planning",
-        "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_zh": [
+          "当代艺术与城市规划展览馆"
+        ],
+        "aliases_en": [
+          "Museum of Contemporary Art & Planning Exhibition, Shenzhen"
+        ],
         "address_zh": null,
         "address_en": null,
         "district_zh": "福田区",
@@ -894,7 +984,21 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "当代艺术与城市规划展览馆",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q17498976",
+          "kind": "label"
+        },
+        {
+          "alias": "Museum of Contemporary Art & Planning Exhibition, Shenzhen",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q17498976",
+          "kind": "label"
+        }
+      ]
     },
     {
       "id": "pl_sz_dapeng_dizhi",
@@ -907,7 +1011,10 @@
         "tier": "main",
         "name_zh": "大鹏半岛国家地质公园",
         "name_en": "Dapeng Peninsula National Geopark",
-        "aliases_zh": [],
+        "aliases_zh": [
+          "大鹏半岛地质公园",
+          "深圳大鹏半岛国家地质公园"
+        ],
         "aliases_en": [],
         "address_zh": "深圳市大鹏新区南澳街道新大社区地质公园路1号",
         "address_en": null,
@@ -961,7 +1068,21 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "大鹏半岛地质公园",
+          "lang": "zh",
+          "url": "https://www.dpxq.gov.cn/ztzl/pyxsj/wzdp/zjd/content/post_11593231.html",
+          "kind": "manual"
+        },
+        {
+          "alias": "深圳大鹏半岛国家地质公园",
+          "lang": "zh",
+          "url": "https://www.sz.gov.cn/szzt2010/gysz/zrgy/content/mpost_10775858.html",
+          "kind": "discovery"
+        }
+      ]
     },
     {
       "id": "pl_sz_dapeng_suocheng",
@@ -974,8 +1095,13 @@
         "tier": "main",
         "name_zh": "大鹏所城文化旅游区",
         "name_en": "Dapeng Fortress Cultural Tourism Area",
-        "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_zh": [
+          "大鹏所城"
+        ],
+        "aliases_en": [
+          "Dapeng Ancient City",
+          "Dapeng Fortress"
+        ],
         "address_zh": "深圳市大鹏新区鹏城村",
         "address_en": null,
         "district_zh": "大鹏新区",
@@ -1028,7 +1154,27 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "大鹏所城",
+          "lang": "zh",
+          "url": "https://www.dpxq.gov.cn/ztzl/pyxsj/wzdp/zjd/content/post_11551556.html",
+          "kind": "manual"
+        },
+        {
+          "alias": "Dapeng Ancient City",
+          "lang": "en",
+          "url": "https://www.haoliday.com/en/explore/shenzhen/p/dapeng-fortress",
+          "kind": "manual"
+        },
+        {
+          "alias": "Dapeng Fortress",
+          "lang": "en",
+          "url": "https://www.haoliday.com/en/explore/shenzhen/p/dapeng-fortress",
+          "kind": "manual"
+        }
+      ]
     },
     {
       "id": "pl_sz_dashahe",
@@ -1146,6 +1292,7 @@
         "intro_long_en": "Set up a city stay near Futian's shopping area. The hotel points to rail service to Hong Kong from Futian Station and lists an outdoor rooftop pool.",
         "star": null,
         "price_band": "500-1000",
+        "hotel_class": "upscale",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -1175,9 +1322,7 @@
         },
         "external_used": false
       },
-      "flags": [
-        "pl_sz_dazhonghuaxierdun: unknown field 'hotel_class' is dropped on import"
-      ]
+      "flags": []
     },
     {
       "id": "pl_sz_diwangna_futian",
@@ -1193,7 +1338,7 @@
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": "南园路98号",
-        "address_en": null,
+        "address_en": "98 Nanyuan Road, Futian District, Shenzhen, China",
         "district_zh": "福田区",
         "nearest_metro": null,
         "foreigner_signals": {
@@ -1206,9 +1351,10 @@
         },
         "official_url": "https://dewan-e-khass.com/",
         "sources": [
-          "https://dewan-e-khass.com/"
+          "https://dewan-e-khass.com/",
+          "https://dewan-e-khass.com/contact-us/"
         ],
-        "checked_on": "2026-11-27",
+        "checked_on": "2026-11-28",
         "confidence": "medium",
         "notes": "经营方明示清真食材并公开英文菜单。 营业依据为当前经营方点位或近期主管部门的具名记录。",
         "subcategory": "halal",
@@ -1232,12 +1378,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 21,
+        "total": 28,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
-          "sources": 5,
-          "complete": 4,
+          "sources": 10,
+          "complete": 6,
           "amap": 0
         },
         "external_used": false
@@ -1255,8 +1401,15 @@
         "tier": "main",
         "name_zh": "东门老街",
         "name_en": "Dongmen Old Street",
-        "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_zh": [
+          "东门商业区",
+          "東門步行街",
+          "東門老街",
+          "東門商業區"
+        ],
+        "aliases_en": [
+          "Dongmen"
+        ],
         "address_zh": null,
         "address_en": null,
         "district_zh": "罗湖区",
@@ -1309,7 +1462,44 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "hours_zh: Codex could not confirm it from an official page; check by hand",
+        "ticket.price_cny: Codex could not confirm it from an official page; check by hand",
+        "ticket.booking: Codex could not confirm it from an official page; check by hand",
+        "official_url: Codex could not confirm it from an official page; check by hand"
+      ],
+      "alias_evidence": [
+        {
+          "alias": "东门商业区",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q3499068",
+          "kind": "label"
+        },
+        {
+          "alias": "Dongmen",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q3499068",
+          "kind": "label"
+        },
+        {
+          "alias": "東門步行街",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q3499068",
+          "kind": "wikidata"
+        },
+        {
+          "alias": "東門老街",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q3499068",
+          "kind": "published_traditional"
+        },
+        {
+          "alias": "東門商業區",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q3499068",
+          "kind": "published_traditional"
+        }
+      ]
     },
     {
       "id": "pl_sz_dongwan_shenye",
@@ -1889,6 +2079,7 @@
         "intro_long_en": "Use this central Futian address for a trip built around subway travel. The property lists English and gives directions for travelers arriving via Futian Railway Station.",
         "star": null,
         "price_band": "500-1000",
+        "hotel_class": "midscale",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -1918,9 +2109,7 @@
         },
         "external_used": false
       },
-      "flags": [
-        "pl_sz_futianfupeng: unknown field 'hotel_class' is dropped on import"
-      ]
+      "flags": []
     },
     {
       "id": "pl_sz_futianxilaideng",
@@ -1970,6 +2159,7 @@
         "intro_long_en": "Use the property directions if arriving by high-speed rail at Futian. The hotel lists Chinese, English and Korean among its spoken languages.",
         "star": null,
         "price_band": "1000-2000",
+        "hotel_class": "upscale",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -1999,9 +2189,7 @@
         },
         "external_used": false
       },
-      "flags": [
-        "pl_sz_futianxilaideng: unknown field 'hotel_class' is dropped on import"
-      ]
+      "flags": []
     },
     {
       "id": "pl_sz_gankeng",
@@ -2014,8 +2202,13 @@
         "tier": "main",
         "name_zh": "甘坑古镇文化旅游区",
         "name_en": "Gankeng Ancient Town Cultural Tourism Area",
-        "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_zh": [
+          "甘坑古镇"
+        ],
+        "aliases_en": [
+          "Gankeng Ancient Town",
+          "Gankeng Hakka Town"
+        ],
         "address_zh": "深圳市龙岗区吉华街道甘坑社区甘李路18号",
         "address_en": null,
         "district_zh": "龙岗区",
@@ -2068,7 +2261,27 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "甘坑古镇",
+          "lang": "zh",
+          "url": "https://www.eyeshenzhen.com/content/2023-05/12/content_30213409.htm",
+          "kind": "manual"
+        },
+        {
+          "alias": "Gankeng Ancient Town",
+          "lang": "en",
+          "url": "https://www.eyeshenzhen.com/content/2023-05/12/content_30213409.htm",
+          "kind": "manual"
+        },
+        {
+          "alias": "Gankeng Hakka Town",
+          "lang": "en",
+          "url": "https://www.haoliday.com/en/explore/shenzhen/p/ganken-hakka-town",
+          "kind": "manual"
+        }
+      ]
     },
     {
       "id": "pl_sz_guangming_rugedian",
@@ -2255,6 +2468,7 @@
         "intro_long_en": "Plan a Guangming stay around Fenghuangcheng for the metro or Guangmingcheng for mainline rail. English is among the languages the hotel lists.",
         "star": null,
         "price_band": "<500",
+        "hotel_class": "midscale",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -2284,79 +2498,6 @@
         },
         "external_used": false
       },
-      "flags": [
-        "pl_sz_guangmingfupeng: unknown field 'hotel_class' is dropped on import"
-      ]
-    },
-    {
-      "id": "pl_sz_guangmingxierdun",
-      "source_file": "C8/shenzhen-hotel.json",
-      "status": "pending",
-      "draft": {
-        "id": "pl_sz_guangmingxierdun",
-        "city": "shenzhen",
-        "category": "hotel",
-        "tier": "backup",
-        "name_zh": "深圳光明希尔顿花园酒店",
-        "name_en": "Hilton Garden Inn Shenzhen Guangming",
-        "aliases_zh": [],
-        "aliases_en": [],
-        "address_zh": null,
-        "address_en": null,
-        "district_zh": "光明区",
-        "nearest_metro": null,
-        "foreigner_signals": {
-          "english_signage": null,
-          "foreign_cards": null,
-          "english_service": null,
-          "evidence": [
-            "https://www.hilton.com.cn/zh-cn/hotels/szxshgi-hilton-garden-inn-shenzhen-guangming"
-          ]
-        },
-        "official_url": "https://www.hilton.com.cn/zh-cn/hotels/szxshgi-hilton-garden-inn-shenzhen-guangming",
-        "sources": [
-          "https://www.hilton.com.cn/zh-cn/hotels/szxshgi-hilton-garden-inn-shenzhen-guangming",
-          "https://www.hilton.com.cn/zh-cn/locations/china/guangdong-shenzhen"
-        ],
-        "checked_on": "2026-11-27",
-        "confidence": "medium",
-        "notes": "希尔顿城市页显示 2026-11-27 入住、11-28 退房的起价。 官网样本为每房每晚人民币 ¥426。当前价以所选日期及房型的报价为准。",
-        "subcategory": "hotel",
-        "intro_short_zh": "在光明区停留的一处住宿选择。",
-        "intro_short_en": "A hotel option in Guangming.",
-        "intro_long_zh": "在光明区停留的一处住宿选择。可在品牌官网查看房型和入住安排。",
-        "intro_long_en": "A hotel option in Guangming. See the hotel's own website for room types and check-in details.",
-        "star": null,
-        "price_band": "<500",
-        "accepts_foreigners": true,
-        "foreign_service": {
-          "english_front_desk": null,
-          "foreign_guest_share": null,
-          "foreign_guest_experience": null,
-          "international_brand": "Hilton",
-          "evidence_zh": "深圳光明希尔顿花园酒店由国际酒店品牌或集团 Hilton 的官网正式列出并提供预订入口。",
-          "evidence": [
-            "https://www.hilton.com.cn/zh-cn/hotels/szxshgi-hilton-garden-inn-shenzhen-guangming"
-          ]
-        }
-      },
-      "external_signals": [],
-      "location": null,
-      "amap": {
-        "status": "not-run",
-        "alternatives": []
-      },
-      "score": {
-        "total": 26,
-        "parts": {
-          "foreigner": 0,
-          "confidence": 12,
-          "sources": 10,
-          "complete": 4,
-          "amap": 0
-        },
-        "external_used": false
-      },
       "flags": []
     },
     {
@@ -2370,7 +2511,10 @@
         "tier": "main",
         "name_zh": "观澜版画基地",
         "name_en": "Guanlan Printmaking Base",
-        "aliases_zh": [],
+        "aliases_zh": [
+          "观澜版画村",
+          "观澜版画原创产业基地"
+        ],
         "aliases_en": [],
         "address_zh": null,
         "address_en": null,
@@ -2384,16 +2528,17 @@
         },
         "official_url": null,
         "sources": [
-          "http://www.szlhq.gov.cn/zjlh/tslh/yxlh/content/post_4613509.html"
+          "http://www.szlhq.gov.cn/zjlh/tslh/yxlh/content/post_4613509.html",
+          "https://www.sz.gov.cn/cn/xxgk/zfxxgj/gqdt/content/post_11462632.html"
         ],
-        "checked_on": "2026-11-18",
+        "checked_on": "2026-11-27",
         "confidence": "low",
         "notes": "官方目录沿用既有候选记录的核对日，晋级前应重读。",
         "subcategory": "experience",
         "hours_zh": null,
         "hours_source": null,
         "ticket": {
-          "booking": null,
+          "booking": "none",
           "passport_required": null,
           "price_cny": null,
           "closed_weekdays": null,
@@ -2414,17 +2559,35 @@
         "alternatives": []
       },
       "score": {
-        "total": 10,
+        "total": 15,
         "parts": {
           "foreigner": 0,
           "confidence": 4,
-          "sources": 5,
+          "sources": 10,
           "complete": 1,
           "amap": 0
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "hours_zh: Codex could not confirm it from an official page; check by hand",
+        "ticket.price_cny: Codex could not confirm it from an official page; check by hand",
+        "official_url: Codex could not confirm it from an official page; check by hand"
+      ],
+      "alias_evidence": [
+        {
+          "alias": "观澜版画村",
+          "lang": "zh",
+          "url": "https://www.szlhq.gov.cn/gkmlpt/content/11/11418/post_11418979.html",
+          "kind": "manual"
+        },
+        {
+          "alias": "观澜版画原创产业基地",
+          "lang": "zh",
+          "url": "https://www.szlhq.gov.cn/zjlh/wzlh/yzlh/content/post_11495481.html",
+          "kind": "manual"
+        }
+      ]
     },
     {
       "id": "pl_sz_guanlan_guxu",
@@ -2437,7 +2600,9 @@
         "tier": "main",
         "name_zh": "观澜古墟",
         "name_en": "Guanlan Ancient Market",
-        "aliases_zh": [],
+        "aliases_zh": [
+          "深圳观澜古墟"
+        ],
         "aliases_en": [],
         "address_zh": null,
         "address_en": null,
@@ -2491,7 +2656,15 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "深圳观澜古墟",
+          "lang": "zh",
+          "url": "https://you.ctrip.com/sight/shenzhen26/136593065.html",
+          "kind": "manual"
+        }
+      ]
     },
     {
       "id": "pl_sz_guanshanyue",
@@ -2504,7 +2677,10 @@
         "tier": "main",
         "name_zh": "深圳市关山月美术馆",
         "name_en": "Guan Shanyue Art Museum",
-        "aliases_zh": [],
+        "aliases_zh": [
+          "关山月美术馆",
+          "關山月美術館"
+        ],
         "aliases_en": [],
         "address_zh": "深圳市红荔路6026号",
         "address_en": null,
@@ -2558,7 +2734,21 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "关山月美术馆",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q16926285",
+          "kind": "label"
+        },
+        {
+          "alias": "關山月美術館",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q16926285",
+          "kind": "published_traditional"
+        }
+      ]
     },
     {
       "id": "pl_sz_guiyan_night_market",
@@ -2630,7 +2820,10 @@
         "tier": "main",
         "name_zh": "蛇口海上世界",
         "name_en": "Sea World",
-        "aliases_zh": [],
+        "aliases_zh": [
+          "海上世界",
+          "深圳海上世界"
+        ],
         "aliases_en": [],
         "address_zh": null,
         "address_en": null,
@@ -2684,7 +2877,21 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "海上世界",
+          "lang": "zh",
+          "url": "https://sg.trip.com/travel-guide/attraction/shenzhen/sea-world-10558635",
+          "kind": "manual"
+        },
+        {
+          "alias": "深圳海上世界",
+          "lang": "zh",
+          "url": "https://you.ctrip.com/sight/shenzhen26/5815.html",
+          "kind": "manual"
+        }
+      ]
     },
     {
       "id": "pl_sz_haishang_wenhua",
@@ -2698,7 +2905,10 @@
         "name_zh": "海上世界文化艺术中心",
         "name_en": "Sea World Culture and Arts Center",
         "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_en": [
+          "Sea World Cultural and Arts Center",
+          "Sea World Culture and Arts Centre"
+        ],
         "address_zh": "南山区招商街道望海路1187号海上世界文化艺术中心2楼",
         "address_en": null,
         "district_zh": "南山区",
@@ -2751,7 +2961,21 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "Sea World Cultural and Arts Center",
+          "lang": "en",
+          "url": "https://en.wikipedia.org/wiki/Sea_World_Cultural_and_Arts_Center?redirect=no",
+          "kind": "redirect"
+        },
+        {
+          "alias": "Sea World Culture and Arts Centre",
+          "lang": "en",
+          "url": "https://en.wikipedia.org/wiki/Sea_World_Culture_and_Arts_Centre?redirect=no",
+          "kind": "redirect"
+        }
+      ]
     },
     {
       "id": "pl_sz_haotang_futian",
@@ -3026,8 +3250,13 @@
         "tier": "main",
         "name_zh": "光明虹桥公园",
         "name_en": "Guangming Hongqiao Park",
-        "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_zh": [
+          "虹桥公园（深圳）",
+          "虹桥公园"
+        ],
+        "aliases_en": [
+          "Hongqiao Park"
+        ],
         "address_zh": "深圳市光明区光明科林路与茶林路交口",
         "address_en": null,
         "district_zh": "光明区",
@@ -3080,7 +3309,27 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "Hongqiao Park",
+          "lang": "en",
+          "url": "https://www.sz.gov.cn/en_szgov/news/infocus/park/csgy/content/post_11886627.html",
+          "kind": "manual"
+        },
+        {
+          "alias": "虹桥公园（深圳）",
+          "lang": "zh",
+          "url": "https://zh.wikipedia.org/wiki/虹桥公园_(深圳)",
+          "kind": "manual"
+        },
+        {
+          "alias": "虹桥公园",
+          "lang": "zh",
+          "url": "https://cgj.sz.gov.cn/xsmh/gysz/csgy/content/post_10775009.html",
+          "kind": "manual"
+        }
+      ]
     },
     {
       "id": "pl_sz_huanlegangwan",
@@ -3093,8 +3342,12 @@
         "tier": "main",
         "name_zh": "欢乐港湾",
         "name_en": "OH Bay",
-        "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_zh": [
+          "深圳市欢乐港湾旅游景区"
+        ],
+        "aliases_en": [
+          "OH Bay Shenzhen"
+        ],
         "address_zh": "深圳市宝安区新安街道海天路与宝华路交汇处",
         "address_en": null,
         "district_zh": "宝安区",
@@ -3147,7 +3400,21 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "OH Bay Shenzhen",
+          "lang": "en",
+          "url": "https://www.trip.com/guide/attraction/oh-bay-shenzhen.html",
+          "kind": "manual"
+        },
+        {
+          "alias": "深圳市欢乐港湾旅游景区",
+          "lang": "zh",
+          "url": "https://wtl.sz.gov.cn/ggfw/lyl/jqjdylb/index.html",
+          "kind": "manual"
+        }
+      ]
     },
     {
       "id": "pl_sz_huanlegu",
@@ -3160,8 +3427,13 @@
         "tier": "main",
         "name_zh": "深圳欢乐谷",
         "name_en": "Shenzhen Happy Valley",
-        "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_zh": [
+          "深圳歡樂谷"
+        ],
+        "aliases_en": [
+          "Happy Valley Shenzhen",
+          "Happy Valley, Shenzhen"
+        ],
         "address_zh": "深圳市南山区侨城西街18号",
         "address_en": null,
         "district_zh": "南山区",
@@ -3214,7 +3486,27 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "Happy Valley Shenzhen",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q3127204",
+          "kind": "label"
+        },
+        {
+          "alias": "Happy Valley, Shenzhen",
+          "lang": "en",
+          "url": "https://en.wikipedia.org/wiki/Happy_Valley%2C_Shenzhen?redirect=no",
+          "kind": "redirect"
+        },
+        {
+          "alias": "深圳歡樂谷",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q3127204",
+          "kind": "published_traditional"
+        }
+      ]
     },
     {
       "id": "pl_sz_huaqiang_electronics_world",
@@ -3294,7 +3586,9 @@
         "tier": "main",
         "name_zh": "华强北步行街景区",
         "name_en": "Huaqiangbei Pedestrian Street Scenic Area",
-        "aliases_zh": [],
+        "aliases_zh": [
+          "华强北步行街"
+        ],
         "aliases_en": [],
         "address_zh": "深圳市福田区华强北步行街",
         "address_en": null,
@@ -3348,7 +3642,15 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "华强北步行街",
+          "lang": "zh",
+          "url": "https://wtl.sz.gov.cn/ggfw/lyl/jqjdylb/index.html",
+          "kind": "discovery"
+        }
+      ]
     },
     {
       "id": "pl_sz_huaqiangbei_bowuguan",
@@ -3361,8 +3663,12 @@
         "tier": "main",
         "name_zh": "深圳市福田区华强北博物馆",
         "name_en": "Huaqiangbei Museum, Futian District, Shenzhen",
-        "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_zh": [
+          "华强北博物馆"
+        ],
+        "aliases_en": [
+          "Huaqiangbei Museum"
+        ],
         "address_zh": "深圳市福田区华强北路1058号广博现代之窗大厦5楼",
         "address_en": null,
         "district_zh": "福田区",
@@ -3415,7 +3721,21 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "Huaqiangbei Museum",
+          "lang": "en",
+          "url": "https://sg.trip.com/travel-guide/attraction/shenzhen/huaqiangbei-museum-117061681",
+          "kind": "manual"
+        },
+        {
+          "alias": "华强北博物馆",
+          "lang": "zh",
+          "url": "https://wtl.sz.gov.cn/ggfw/whl/bwgylb/content/post_11719305.html",
+          "kind": "manual"
+        }
+      ]
     },
     {
       "id": "pl_sz_huaqiaocheng_chuangyi",
@@ -3428,8 +3748,13 @@
         "tier": "main",
         "name_zh": "华侨城创意文化园",
         "name_en": "OCT-LOFT",
-        "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_zh": [
+          "华侨城创意园",
+          "華僑城創意園"
+        ],
+        "aliases_en": [
+          "OCT Loft"
+        ],
         "address_zh": null,
         "address_en": null,
         "district_zh": "南山区",
@@ -3482,7 +3807,27 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "华侨城创意园",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q136532533",
+          "kind": "label"
+        },
+        {
+          "alias": "OCT Loft",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q136532533",
+          "kind": "label"
+        },
+        {
+          "alias": "華僑城創意園",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q136532533",
+          "kind": "published_traditional"
+        }
+      ]
     },
     {
       "id": "pl_sz_hudson_jichang",
@@ -3565,9 +3910,14 @@
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": "布心路3008号",
-        "address_en": null,
+        "address_en": "3008 Buxin Road, Luohu District, Shenzhen",
         "district_zh": "罗湖区",
-        "nearest_metro": null,
+        "nearest_metro": {
+          "station_zh": "水贝",
+          "station_en": "Shuibei",
+          "line": "3号线",
+          "exit": null
+        },
         "foreigner_signals": {
           "english_signage": null,
           "foreign_cards": null,
@@ -3580,9 +3930,11 @@
         "official_url": "https://amr.sz.gov.cn/xxgk/xwzx/mtbd/content/post_12081084.html",
         "sources": [
           "https://amr.sz.gov.cn/xxgk/xwzx/mtbd/content/post_12081084.html",
-          "https://www.sz.gov.cn/szzt2010/yhyshj/yszx/content/mpost_13055716.html"
+          "https://www.sz.gov.cn/szzt2010/yhyshj/yszx/content/mpost_13055716.html",
+          "https://www.eyeshenzhen.com/content/2020-09/28/content_18804581.htm",
+          "https://www.sz.gov.cn/en_szgov/life/transport/metro/content/post_12870342.html"
         ],
-        "checked_on": "2026-11-27",
+        "checked_on": "2026-11-28",
         "confidence": "medium",
         "notes": "营业依据为当前经营方点位或近期主管部门的具名记录。",
         "subcategory": "market",
@@ -3600,12 +3952,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 26,
+        "total": 30,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 4,
+          "complete": 8,
           "amap": 0
         },
         "external_used": false
@@ -3745,77 +4097,6 @@
       "flags": []
     },
     {
-      "id": "pl_sz_jichangfupeng",
-      "source_file": "C8/shenzhen-hotel.json",
-      "status": "pending",
-      "draft": {
-        "id": "pl_sz_jichangfupeng",
-        "city": "shenzhen",
-        "category": "hotel",
-        "tier": "backup",
-        "name_zh": "深圳宝安机场福朋喜来登酒店",
-        "name_en": "Four Points by Sheraton Shenzhen Airport",
-        "aliases_zh": [],
-        "aliases_en": [],
-        "address_zh": null,
-        "address_en": null,
-        "district_zh": null,
-        "nearest_metro": null,
-        "foreigner_signals": {
-          "english_signage": null,
-          "foreign_cards": null,
-          "english_service": null,
-          "evidence": [
-            "https://www.marriott.com/en-us/hotels/szxap-four-points-shenzhen-airport/overview/"
-          ]
-        },
-        "official_url": "https://www.marriott.com/en-us/hotels/szxap-four-points-shenzhen-airport/overview/",
-        "sources": [
-          "https://www.marriott.com/en-us/hotels/szxap-four-points-shenzhen-airport/overview/",
-          "https://www.marriott.com/en-us/destinations/china/shenzhen.mi?pg=3"
-        ],
-        "checked_on": "2026-11-27",
-        "confidence": "medium",
-        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sat, Dec 26 - Sun, Dec 27。 官网样本为每房每晚人民币 ¥480。当前价以所选日期及房型的报价为准。",
-        "subcategory": "hotel",
-        "intro_short_zh": "可作为宝安机场前后过夜候选。",
-        "intro_short_en": "An overnight option around a Bao'an Airport trip.",
-        "intro_long_zh": "可作为宝安机场前后过夜候选。可在品牌官网查看房型和入住安排。",
-        "intro_long_en": "An overnight option around a Bao'an Airport trip. See the hotel's own website for room types and check-in details.",
-        "star": null,
-        "price_band": "<500",
-        "accepts_foreigners": true,
-        "foreign_service": {
-          "english_front_desk": null,
-          "foreign_guest_share": null,
-          "foreign_guest_experience": null,
-          "international_brand": "Marriott Bonvoy",
-          "evidence_zh": "深圳宝安机场福朋喜来登酒店由国际酒店品牌或集团 Marriott Bonvoy 的官网正式列出并提供预订入口。",
-          "evidence": [
-            "https://www.marriott.com/en-us/hotels/szxap-four-points-shenzhen-airport/overview/"
-          ]
-        }
-      },
-      "external_signals": [],
-      "location": null,
-      "amap": {
-        "status": "not-run",
-        "alternatives": []
-      },
-      "score": {
-        "total": 26,
-        "parts": {
-          "foreigner": 0,
-          "confidence": 12,
-          "sources": 10,
-          "complete": 4,
-          "amap": 0
-        },
-        "external_used": false
-      },
-      "flags": []
-    },
-    {
       "id": "pl_sz_jichanghuaidexierdun",
       "source_file": "C8/shenzhen-hotel.json",
       "status": "pending",
@@ -3857,6 +4138,7 @@
         "intro_long_en": "Plan a separate ride from this Fuyong address to the terminal. The Hilton page gives the hotel location and lists an on-site restaurant.",
         "star": null,
         "price_band": "<500",
+        "hotel_class": "midscale",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -3886,9 +4168,7 @@
         },
         "external_used": false
       },
-      "flags": [
-        "pl_sz_jichanghuaidexierdun: unknown field 'hotel_class' is dropped on import"
-      ]
+      "flags": []
     },
     {
       "id": "pl_sz_jiliguopu_jichang",
@@ -3904,7 +4184,7 @@
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": "深圳机场T3五层东侧5R-01-06",
-        "address_en": null,
+        "address_en": "Terminal 3, Level 5, east side, unit 5R-01-06, Shenzhen Bao'an International Airport",
         "district_zh": "宝安区",
         "nearest_metro": null,
         "foreigner_signals": {
@@ -3919,9 +4199,10 @@
         "official_url": "https://www.szairport.com/szairport/zcys/202507/b01794d4a7404ababd648c90dc8d6a7a.shtml",
         "sources": [
           "https://www.szairport.com/szairport/zcys/202507/b01794d4a7404ababd648c90dc8d6a7a.shtml",
-          "https://www.szairport.com/szairport/msmk/Dining.shtml"
+          "https://www.szairport.com/szairport/msmk/Dining.shtml",
+          "https://www.szairport.com/szairporten/msmk/Dining.shtml"
         ],
-        "checked_on": "2026-11-27",
+        "checked_on": "2026-11-28",
         "confidence": "medium",
         "notes": "营业依据为当前经营方点位或近期主管部门的具名记录。",
         "subcategory": "local_cuisine",
@@ -3945,12 +4226,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 28,
+        "total": 29,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 6,
+          "complete": 7,
           "amap": 0
         },
         "external_used": false
@@ -4072,6 +4353,7 @@
         "intro_long_en": "Start with Chegongmiao for flexible routes across Shenzhen. Check the hotel's directions for exit J1 and its listed languages, which include English.",
         "star": null,
         "price_band": "1000-2000",
+        "hotel_class": "luxury",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -4101,9 +4383,7 @@
         },
         "external_used": false
       },
-      "flags": [
-        "pl_sz_jinmaowan: unknown field 'hotel_class' is dropped on import"
-      ]
+      "flags": []
     },
     {
       "id": "pl_sz_jinxiu_zhonghua",
@@ -4116,8 +4396,12 @@
         "tier": "main",
         "name_zh": "锦绣中华民俗文化村",
         "name_en": "Splendid China Folk Village",
-        "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_zh": [
+          "深圳锦绣中华·民俗村"
+        ],
+        "aliases_en": [
+          "Splendid China Shenzhen"
+        ],
         "address_zh": "深圳市南山区深南大道9012号",
         "address_en": null,
         "district_zh": "南山区",
@@ -4170,7 +4454,21 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "深圳锦绣中华·民俗村",
+          "lang": "zh",
+          "url": "https://www.ctgii.com/scenic/theme_park/63",
+          "kind": "manual"
+        },
+        {
+          "alias": "Splendid China Shenzhen",
+          "lang": "en",
+          "url": "https://cantontravelguide.com/en/places/shenzhen/attractions/splendid-china-folk-village",
+          "kind": "manual"
+        }
+      ]
     },
     {
       "id": "pl_sz_jitianniu_jichang",
@@ -4413,6 +4711,7 @@
         "intro_long_en": "Pick this Conrad if you want to spend more of the trip in Qianhai. The hotel publishes a separate English location guide with travel options for arrival.",
         "star": null,
         "price_band": ">2000",
+        "hotel_class": "luxury",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -4442,9 +4741,7 @@
         },
         "external_used": false
       },
-      "flags": [
-        "pl_sz_kanglaide: unknown field 'hotel_class' is dropped on import"
-      ]
+      "flags": []
     },
     {
       "id": "pl_sz_kejia_minsu",
@@ -4716,8 +5013,13 @@
         "tier": "main",
         "name_zh": "莲花山公园",
         "name_en": "Lianhua Mountain Park",
-        "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_zh": [
+          "莲花山 (深圳)",
+          "蓮花山公園"
+        ],
+        "aliases_en": [
+          "Lianhuashan Park"
+        ],
         "address_zh": "深圳市福田区红荔路6030号",
         "address_en": null,
         "district_zh": "福田区",
@@ -4777,7 +5079,27 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "莲花山 (深圳)",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q15941172",
+          "kind": "wikidata"
+        },
+        {
+          "alias": "Lianhuashan Park",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q15941172",
+          "kind": "label"
+        },
+        {
+          "alias": "蓮花山公園",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q15941172",
+          "kind": "published_traditional"
+        }
+      ]
     },
     {
       "id": "pl_sz_lisi",
@@ -4821,6 +5143,7 @@
         "intro_long_en": "Check which railway station serves your trip before arrival. The property lists both Futian and Shenzhen North, and offers an outdoor pool for time back at the hotel.",
         "star": null,
         "price_band": ">2000",
+        "hotel_class": "luxury",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -4850,9 +5173,7 @@
         },
         "external_used": false
       },
-      "flags": [
-        "pl_sz_lisi: unknown field 'hotel_class' is dropped on import"
-      ]
+      "flags": []
     },
     {
       "id": "pl_sz_longgangwanfeng",
@@ -4896,6 +5217,7 @@
         "intro_long_en": "If you're spending time in Longgang, staying here keeps the focus on eastern Shenzhen. Marriott lists English as a property language and gives the Fu'an Boulevard address.",
         "star": null,
         "price_band": "<500",
+        "hotel_class": "midscale",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -4921,79 +5243,6 @@
           "confidence": 12,
           "sources": 10,
           "complete": 7,
-          "amap": 0
-        },
-        "external_used": false
-      },
-      "flags": [
-        "pl_sz_longgangwanfeng: unknown field 'hotel_class' is dropped on import"
-      ]
-    },
-    {
-      "id": "pl_sz_longhuayilin",
-      "source_file": "C8/shenzhen-hotel.json",
-      "status": "pending",
-      "draft": {
-        "id": "pl_sz_longhuayilin",
-        "city": "shenzhen",
-        "category": "hotel",
-        "tier": "backup",
-        "name_zh": "深圳龙华希尔顿逸林酒店",
-        "name_en": "DoubleTree by Hilton Shenzhen Longhua",
-        "aliases_zh": [],
-        "aliases_en": [],
-        "address_zh": null,
-        "address_en": null,
-        "district_zh": "龙华区",
-        "nearest_metro": null,
-        "foreigner_signals": {
-          "english_signage": null,
-          "foreign_cards": null,
-          "english_service": null,
-          "evidence": [
-            "https://www.hilton.com.cn/zh-cn/hotels/szxdjdi-doubletree-by-hilton-shenzhen-longhua"
-          ]
-        },
-        "official_url": "https://www.hilton.com.cn/zh-cn/hotels/szxdjdi-doubletree-by-hilton-shenzhen-longhua",
-        "sources": [
-          "https://www.hilton.com.cn/zh-cn/hotels/szxdjdi-doubletree-by-hilton-shenzhen-longhua",
-          "https://www.hilton.com.cn/zh-cn/locations/china/guangdong-shenzhen"
-        ],
-        "checked_on": "2026-11-27",
-        "confidence": "medium",
-        "notes": "希尔顿城市页显示 2026-11-27 入住、11-28 退房的起价。 官网样本为每房每晚人民币 ¥605。当前价以所选日期及房型的报价为准。",
-        "subcategory": "hotel",
-        "intro_short_zh": "龙华区的希尔顿逸林酒店。",
-        "intro_short_en": "A DoubleTree hotel in Longhua.",
-        "intro_long_zh": "龙华区的希尔顿逸林酒店。可在品牌官网查看房型和入住安排。",
-        "intro_long_en": "A DoubleTree hotel in Longhua. See the hotel's own website for room types and check-in details.",
-        "star": null,
-        "price_band": "500-1000",
-        "accepts_foreigners": true,
-        "foreign_service": {
-          "english_front_desk": null,
-          "foreign_guest_share": null,
-          "foreign_guest_experience": null,
-          "international_brand": "Hilton",
-          "evidence_zh": "深圳龙华希尔顿逸林酒店由国际酒店品牌或集团 Hilton 的官网正式列出并提供预订入口。",
-          "evidence": [
-            "https://www.hilton.com.cn/zh-cn/hotels/szxdjdi-doubletree-by-hilton-shenzhen-longhua"
-          ]
-        }
-      },
-      "external_signals": [],
-      "location": null,
-      "amap": {
-        "status": "not-run",
-        "alternatives": []
-      },
-      "score": {
-        "total": 26,
-        "parts": {
-          "foreigner": 0,
-          "confidence": 12,
-          "sources": 10,
-          "complete": 4,
           "amap": 0
         },
         "external_used": false
@@ -5176,6 +5425,7 @@
         "intro_long_en": "Choose this Luohu property if you want an afternoon away from the street after sightseeing. The hotel lists a skyline pool and English among its languages.",
         "star": null,
         "price_band": "1000-2000",
+        "hotel_class": "luxury",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -5205,9 +5455,7 @@
         },
         "external_used": false
       },
-      "flags": [
-        "pl_sz_luohuruiji: unknown field 'hotel_class' is dropped on import"
-      ]
+      "flags": []
     },
     {
       "id": "pl_sz_maluanshan",
@@ -5426,7 +5674,12 @@
         "address_zh": "深南大道与沙河西路交汇处",
         "address_en": "9668 Shennan Avenue, Shenzhen",
         "district_zh": "南山区",
-        "nearest_metro": null,
+        "nearest_metro": {
+          "station_zh": "高新园",
+          "station_en": "Hi-Tech Park",
+          "line": "1号线",
+          "exit": "A"
+        },
         "foreigner_signals": {
           "english_signage": null,
           "foreign_cards": null,
@@ -5440,9 +5693,12 @@
         "sources": [
           "https://jtys.sz.gov.cn/szsjtysjwzgkml/szsjtysjwzgkml/seztfw/jtly/wyk/content/post_12990018.html",
           "https://www.eyeshenzhen.com/content/2020-09/28/content_18804581.htm",
-          "https://www.eyeshenzhen.com/content/2025-07/09/content_31585397.htm"
+          "https://www.eyeshenzhen.com/content/2025-07/09/content_31585397.htm",
+          "https://www.sz.gov.cn/ztfw/jtly/wyk_184755/content/mpost_12990019.html",
+          "https://www.sz.gov.cn/szzt2010/szwtt/wtcg/tycg/content/post_11136104.html",
+          "https://www.sz.gov.cn/en_szgov/life/transport/metro/content/post_12870342.html"
         ],
-        "checked_on": "2026-11-27",
+        "checked_on": "2026-11-28",
         "confidence": "medium",
         "notes": "营业依据为当前经营方点位或近期主管部门的具名记录。",
         "subcategory": "mall",
@@ -5460,12 +5716,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 28,
+        "total": 30,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 6,
+          "complete": 8,
           "amap": 0
         },
         "external_used": false
@@ -5550,7 +5806,9 @@
         "tier": "main",
         "name_zh": "深圳市南山博物馆",
         "name_en": "Shenzhen Nanshan Museum",
-        "aliases_zh": [],
+        "aliases_zh": [
+          "南山博物馆"
+        ],
         "aliases_en": [],
         "address_zh": "南山区南山大道2093号",
         "address_en": null,
@@ -5604,7 +5862,15 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "南山博物馆",
+          "lang": "zh",
+          "url": "https://www.szns.gov.cn/mlns/whns/whcg/content/post_12588499.html",
+          "kind": "manual"
+        }
+      ]
     },
     {
       "id": "pl_sz_nanshanwanhao",
@@ -5649,6 +5915,7 @@
         "intro_long_en": "Stay in Houhai for a visit centered on Nanshan. Use the operator's arrival information to plan a route from Houhai station or toward Shekou.",
         "star": null,
         "price_band": "1000-2000",
+        "hotel_class": "upscale",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -5678,9 +5945,7 @@
         },
         "external_used": false
       },
-      "flags": [
-        "pl_sz_nanshanwanhao: unknown field 'hotel_class' is dropped on import"
-      ]
+      "flags": []
     },
     {
       "id": "pl_sz_nanshanweisiting",
@@ -5730,6 +5995,7 @@
         "intro_long_en": "Make this one base for the OCT area's theme parks. Marriott also lists English and Korean among the hotel's spoken languages.",
         "star": null,
         "price_band": "1000-2000",
+        "hotel_class": "upscale",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -5759,9 +6025,7 @@
         },
         "external_used": false
       },
-      "flags": [
-        "pl_sz_nanshanweisiting: unknown field 'hotel_class' is dropped on import"
-      ]
+      "flags": []
     },
     {
       "id": "pl_sz_nanshanxianggelila",
@@ -5811,6 +6075,7 @@
         "intro_long_en": "Stay in the Huiyun Center for a Shenzhen Bay itinerary. RAIL IN mall is next door, and the property page helps you choose between room outlooks.",
         "star": null,
         "price_band": ">2000",
+        "hotel_class": "luxury",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -5840,79 +6105,6 @@
         },
         "external_used": false
       },
-      "flags": [
-        "pl_sz_nanshanxianggelila: unknown field 'hotel_class' is dropped on import"
-      ]
-    },
-    {
-      "id": "pl_sz_nanshanxilaideng",
-      "source_file": "C8/shenzhen-hotel.json",
-      "status": "pending",
-      "draft": {
-        "id": "pl_sz_nanshanxilaideng",
-        "city": "shenzhen",
-        "category": "hotel",
-        "tier": "backup",
-        "name_zh": "深圳博林天瑞喜来登酒店",
-        "name_en": "Sheraton Shenzhen Nanshan",
-        "aliases_zh": [],
-        "aliases_en": [],
-        "address_zh": null,
-        "address_en": null,
-        "district_zh": null,
-        "nearest_metro": null,
-        "foreigner_signals": {
-          "english_signage": null,
-          "foreign_cards": null,
-          "english_service": null,
-          "evidence": [
-            "https://www.marriott.com/en-us/hotels/szxsn-sheraton-shenzhen-nanshan/overview/"
-          ]
-        },
-        "official_url": "https://www.marriott.com/en-us/hotels/szxsn-sheraton-shenzhen-nanshan/overview/",
-        "sources": [
-          "https://www.marriott.com/en-us/hotels/szxsn-sheraton-shenzhen-nanshan/overview/",
-          "https://www.marriott.com/en-us/destinations/china/shenzhen.mi?pg=2"
-        ],
-        "checked_on": "2026-11-27",
-        "confidence": "medium",
-        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sat, Dec 26 - Sun, Dec 27。 官网样本为每房每晚人民币 ¥1,122。当前价以所选日期及房型的报价为准。",
-        "subcategory": "hotel",
-        "intro_short_zh": "南山区的喜来登酒店。",
-        "intro_short_en": "A Sheraton hotel in Nanshan.",
-        "intro_long_zh": "南山区的喜来登酒店。可在品牌官网查看房型和入住安排。",
-        "intro_long_en": "A Sheraton hotel in Nanshan. See the hotel's own website for room types and check-in details.",
-        "star": null,
-        "price_band": "1000-2000",
-        "accepts_foreigners": true,
-        "foreign_service": {
-          "english_front_desk": null,
-          "foreign_guest_share": null,
-          "foreign_guest_experience": null,
-          "international_brand": "Marriott Bonvoy",
-          "evidence_zh": "深圳博林天瑞喜来登酒店由国际酒店品牌或集团 Marriott Bonvoy 的官网正式列出并提供预订入口。",
-          "evidence": [
-            "https://www.marriott.com/en-us/hotels/szxsn-sheraton-shenzhen-nanshan/overview/"
-          ]
-        }
-      },
-      "external_signals": [],
-      "location": null,
-      "amap": {
-        "status": "not-run",
-        "alternatives": []
-      },
-      "score": {
-        "total": 26,
-        "parts": {
-          "foreigner": 0,
-          "confidence": 12,
-          "sources": 10,
-          "complete": 4,
-          "amap": 0
-        },
-        "external_used": false
-      },
       "flags": []
     },
     {
@@ -5926,8 +6118,12 @@
         "tier": "main",
         "name_zh": "南头古城（新安古城）",
         "name_en": "Nantou Ancient City (Xin'an Ancient City)",
-        "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_zh": [
+          "南头古城"
+        ],
+        "aliases_en": [
+          "Nantou Ancient Town"
+        ],
         "address_zh": null,
         "address_en": null,
         "district_zh": "南山区",
@@ -5980,7 +6176,21 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "Nantou Ancient Town",
+          "lang": "en",
+          "url": "https://www.eyeshenzhen.com/content/2023-04/27/content_30192822.htm",
+          "kind": "manual"
+        },
+        {
+          "alias": "南头古城",
+          "lang": "zh",
+          "url": "https://wtl.sz.gov.cn/lyfw/lyxw/content/post_10984289.html",
+          "kind": "discovery"
+        }
+      ]
     },
     {
       "id": "pl_sz_noajiudian",
@@ -6024,6 +6234,7 @@
         "intro_long_en": "Choose NOA if you like former industrial textures and want a café in the building. The English property page describes its design and art exhibitions.",
         "star": null,
         "price_band": "500-1000",
+        "hotel_class": "upscale",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -6053,9 +6264,7 @@
         },
         "external_used": false
       },
-      "flags": [
-        "pl_sz_noajiudian: unknown field 'hotel_class' is dropped on import"
-      ]
+      "flags": []
     },
     {
       "id": "pl_sz_one_avenue_sz",
@@ -6137,7 +6346,9 @@
         "name_zh": "平安金融中心云际观光层",
         "name_en": "Free Sky at Ping An Finance Centre",
         "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_en": [
+          "Free Sky Observation Deck"
+        ],
         "address_zh": "深圳市福田区益田路5033号",
         "address_en": null,
         "district_zh": "福田区",
@@ -6192,7 +6403,15 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "Free Sky Observation Deck",
+          "lang": "en",
+          "url": "https://m.waug.com/en/activities/157419",
+          "kind": "manual"
+        }
+      ]
     },
     {
       "id": "pl_sz_pinghu",
@@ -6507,6 +6726,7 @@
         "intro_long_en": "For a stay in western Bao'an, look up Bihaiwan in the hotel's arrival guide. The airport is also listed, so you can plan the onward journey before you travel.",
         "star": null,
         "price_band": "<500",
+        "hotel_class": "midscale",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -6536,9 +6756,7 @@
         },
         "external_used": false
       },
-      "flags": [
-        "pl_sz_qianhaiwanfeng: unknown field 'hotel_class' is dropped on import"
-      ]
+      "flags": []
     },
     {
       "id": "pl_sz_qianhaixiaochu_jichang",
@@ -6696,11 +6914,12 @@
           "english_service": null,
           "evidence": []
         },
-        "official_url": null,
+        "official_url": "https://cgj.sz.gov.cn/xsmh/gysz/sqgy/content/post_10813626.html",
         "sources": [
-          "https://www.baoan.gov.cn/xxgk/wgkzl/jggk/srdjydf/content/post_12991132.html"
+          "https://www.baoan.gov.cn/xxgk/wgkzl/jggk/srdjydf/content/post_12991132.html",
+          "https://cgj.sz.gov.cn/xsmh/gysz/sqgy/content/post_10813626.html"
         ],
-        "checked_on": "2026-11-18",
+        "checked_on": "2026-11-27",
         "confidence": "low",
         "notes": "官方目录沿用既有候选记录的核对日，晋级前应重读。",
         "subcategory": "street",
@@ -6728,17 +6947,21 @@
         "alternatives": []
       },
       "score": {
-        "total": 12,
+        "total": 18,
         "parts": {
           "foreigner": 0,
           "confidence": 4,
-          "sources": 5,
-          "complete": 3,
+          "sources": 10,
+          "complete": 4,
           "amap": 0
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "hours_zh: Codex could not confirm it from an official page; check by hand",
+        "ticket.price_cny: Codex could not confirm it from an official page; check by hand",
+        "ticket.booking: Codex could not confirm it from an official page; check by hand"
+      ]
     },
     {
       "id": "pl_sz_qingqing_shijie",
@@ -6752,7 +6975,10 @@
         "name_zh": "青青世界",
         "name_en": "Qingqing World",
         "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_en": [
+          "Evergreen Resort (Shenzhen)",
+          "Qingqing Shijie"
+        ],
         "address_zh": "深圳市南山区月亮湾青青路1号",
         "address_en": null,
         "district_zh": "南山区",
@@ -6805,7 +7031,21 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "Evergreen Resort (Shenzhen)",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q136465463",
+          "kind": "label"
+        },
+        {
+          "alias": "Qingqing Shijie",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q136465463",
+          "kind": "wikidata"
+        }
+      ]
     },
     {
       "id": "pl_sz_qiye_jichang",
@@ -6886,7 +7126,9 @@
         "tier": "main",
         "name_zh": "人才公园",
         "name_en": "Talent Park",
-        "aliases_zh": [],
+        "aliases_zh": [
+          "深圳人才公园"
+        ],
         "aliases_en": [],
         "address_zh": "深圳市南山区粤海街道蔚蓝海岸社区科苑南路3329号",
         "address_en": null,
@@ -6898,16 +7140,18 @@
           "english_service": null,
           "evidence": []
         },
-        "official_url": null,
+        "official_url": "https://www.szns.gov.cn/mlns/stns/lc/csgy/content/post_12595660.html",
         "sources": [
-          "https://www.sz.gov.cn/szzt2010/gysz/csgy/content/mpost_10826592.html"
+          "https://www.sz.gov.cn/szzt2010/gysz/csgy/content/mpost_10826592.html",
+          "https://www.sz.gov.cn/en_szgov/news/infocus/park/csgy/content/post_10986925.html",
+          "https://www.szns.gov.cn/mlns/stns/lc/csgy/content/post_12595660.html"
         ],
-        "checked_on": "2026-11-18",
+        "checked_on": "2026-11-27",
         "confidence": "low",
         "notes": "官方目录沿用既有候选记录的核对日，晋级前应重读。",
         "subcategory": "park",
-        "hours_zh": null,
-        "hours_source": null,
+        "hours_zh": "06:00–23:00。",
+        "hours_source": "https://www.sz.gov.cn/en_szgov/news/infocus/park/csgy/content/post_10986925.html",
         "ticket": {
           "booking": null,
           "passport_required": null,
@@ -6930,17 +7174,28 @@
         "alternatives": []
       },
       "score": {
-        "total": 12,
+        "total": 20,
         "parts": {
           "foreigner": 0,
           "confidence": 4,
-          "sources": 5,
-          "complete": 3,
+          "sources": 10,
+          "complete": 6,
           "amap": 0
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "ticket.price_cny: Codex could not confirm it from an official page; check by hand",
+        "ticket.booking: Codex could not confirm it from an official page; check by hand"
+      ],
+      "alias_evidence": [
+        {
+          "alias": "深圳人才公园",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q125343447",
+          "kind": "label"
+        }
+      ]
     },
     {
       "id": "pl_sz_rujia_neo_changlong",
@@ -6990,6 +7245,7 @@
         "intro_long_en": "This works for a rail-focused stopover. Changlong is on Line 5, which also serves Shenzhen North and Buji, the interchange for Shenzhen East Railway Station. The hotel lists self-service laundry and confirms it receives foreign guests.",
         "star": null,
         "price_band": null,
+        "hotel_class": "economy",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -7020,7 +7276,7 @@
         "external_used": false
       },
       "flags": [
-        "pl_sz_rujia_neo_changlong: unknown field 'hotel_class' is dropped on import"
+        "no price band: it cannot enter the library until the operator's own page gives a rate"
       ]
     },
     {
@@ -7071,6 +7327,7 @@
         "intro_long_en": "Pick this hotel if you want to spend an evening around Dongmen's shops and Leyuan Road food street. The branch accepts international guests. On Line 3, its directions point to Shaibu Exit D1.",
         "star": null,
         "price_band": null,
+        "hotel_class": "economy",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -7101,7 +7358,7 @@
         "external_used": false
       },
       "flags": [
-        "pl_sz_rujia_neo_shaibu: unknown field 'hotel_class' is dropped on import"
+        "no price band: it cannot enter the library until the operator's own page gives a rate"
       ]
     },
     {
@@ -7151,6 +7408,7 @@
         "intro_long_en": "The hotel identifies Dongjiaotou Exit A for arrivals. Its Shiyun Road address puts you in Shekou near the Sea World area, handy if your plans also involve the cruise homeport. The branch confirms it receives overseas guests.",
         "star": null,
         "price_band": null,
+        "hotel_class": "economy",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -7181,7 +7439,7 @@
         "external_used": false
       },
       "flags": [
-        "pl_sz_rujia_neo_shekou: unknown field 'hotel_class' is dropped on import"
+        "no price band: it cannot enter the library until the operator's own page gives a rate"
       ]
     },
     {
@@ -7491,6 +7749,7 @@
         "intro_long_en": "Choose this property for a flexible family stay on the Shekou coast. The hotel describes views across the bay and has both indoor and outdoor swimming pools.",
         "star": null,
         "price_band": "500-1000",
+        "hotel_class": "upscale",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -7520,9 +7779,7 @@
         },
         "external_used": false
       },
-      "flags": [
-        "pl_sz_shekounanhaixierdun: unknown field 'hotel_class' is dropped on import"
-      ]
+      "flags": []
     },
     {
       "id": "pl_sz_shenzhen_bay_mixc",
@@ -7738,7 +7995,9 @@
         "name_zh": "深圳美术馆（新馆）",
         "name_en": "Shenzhen Art Museum (New Hall)",
         "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_en": [
+          "Shenzhen Art Museum (New Venue)"
+        ],
         "address_zh": "深圳市龙华区民治街道大岭社区腾龙路30号1栋",
         "address_en": null,
         "district_zh": "龙华区",
@@ -7791,7 +8050,15 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "Shenzhen Art Museum (New Venue)",
+          "lang": "en",
+          "url": "https://www.szlhq.gov.cn/english/explore_longhua/facilities/content/post_11019366.html",
+          "kind": "manual"
+        }
+      ]
     },
     {
       "id": "pl_sz_shenzhenbei",
@@ -7879,7 +8146,12 @@
         "address_zh": "深圳市龙华区红山6979商业中心三期10栋301",
         "address_en": "301, Tower 10, Hongshan 6979 Business Center, Longhua District, Shenzhen, China 518000",
         "district_zh": "龙华区",
-        "nearest_metro": null,
+        "nearest_metro": {
+          "station_zh": "红山",
+          "station_en": "Hongshan",
+          "line": "4、6号线",
+          "exit": "D1"
+        },
         "foreigner_signals": {
           "english_signage": null,
           "foreign_cards": null,
@@ -7893,9 +8165,11 @@
           "https://www.marriott.com/en-us/hotels/szxns-moxy-shenzhen-north-station/overview/",
           "https://www.marriott.com/en-us/destinations/china/shenzhen.mi",
           "https://help.marriott.com/s/article/Article-24483",
-          "https://www.marriott.com.cn/hotels/szxns-moxy-shenzhen-north-station/overview/"
+          "https://www.marriott.com.cn/hotels/szxns-moxy-shenzhen-north-station/overview/",
+          "https://www.marriott.com/en-us/hotels/szxns-moxy-shenzhen-north-station/experiences/",
+          "https://www.sz.gov.cn/en_szgov/life/transport/metro/content/post_12870342.html"
         ],
-        "checked_on": "2026-11-27",
+        "checked_on": "2026-11-28",
         "confidence": "medium",
         "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sat, Dec 26 - Sun, Dec 27。 官网样本为每房每晚人民币 ¥510。当前价以所选日期及房型的报价为准。 分档依据：万豪集团将 Moxy 定位为平价的 Select 酒店品牌，本库按经济型处理。",
         "subcategory": "hotel",
@@ -7905,6 +8179,7 @@
         "intro_long_en": "This Moxy is a rail-oriented stop in Longhua. Check the operator's directions for Hongshan and Shenzhen North, and use the English property information to plan arrival.",
         "star": null,
         "price_band": "500-1000",
+        "hotel_class": "economy",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -7924,19 +8199,17 @@
         "alternatives": []
       },
       "score": {
-        "total": 29,
+        "total": 31,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 7,
+          "complete": 9,
           "amap": 0
         },
         "external_used": false
       },
-      "flags": [
-        "pl_sz_shenzhenbeimoxy: unknown field 'hotel_class' is dropped on import"
-      ]
+      "flags": []
     },
     {
       "id": "pl_sz_shenzhendong",
@@ -8089,7 +8362,9 @@
         "tier": "main",
         "name_zh": "深圳湾公园（滨海休闲带）",
         "name_en": "Shenzhen Bay Park",
-        "aliases_zh": [],
+        "aliases_zh": [
+          "深圳湾公园"
+        ],
         "aliases_en": [],
         "address_zh": "深圳市西南部深圳湾沿岸",
         "address_en": null,
@@ -8143,7 +8418,15 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "深圳湾公园",
+          "lang": "zh",
+          "url": "https://www.szns.gov.cn/mlns/stns/kh/bhgy/content/post_12595646.html",
+          "kind": "manual"
+        }
+      ]
     },
     {
       "id": "pl_sz_shenzhenwanwanyi",
@@ -8187,6 +8470,7 @@
         "intro_long_en": "Look up High-Tech South or Hi-Tech Park before heading out. The hotel's location guide lists both stops so you can choose the route that suits the day.",
         "star": null,
         "price_band": "500-1000",
+        "hotel_class": "midscale",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -8216,9 +8500,7 @@
         },
         "external_used": false
       },
-      "flags": [
-        "pl_sz_shenzhenwanwanyi: unknown field 'hotel_class' is dropped on import"
-      ]
+      "flags": []
     },
     {
       "id": "pl_sz_shenzhenzhan",
@@ -8301,8 +8583,13 @@
         "tier": "main",
         "name_zh": "深圳世界之窗",
         "name_en": "Window of the World",
-        "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_zh": [
+          "世界之窗",
+          "世界之窗 (深圳)"
+        ],
+        "aliases_en": [
+          "Shenzhen Window of the World"
+        ],
         "address_zh": "深圳市南山区深南大道9037号",
         "address_en": null,
         "district_zh": "南山区",
@@ -8355,7 +8642,27 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "世界之窗",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q2302764",
+          "kind": "label"
+        },
+        {
+          "alias": "世界之窗 (深圳)",
+          "lang": "zh",
+          "url": "https://zh.wikipedia.org/wiki/%E4%B8%96%E7%95%8C%E4%B9%8B%E7%AA%97_(%E6%B7%B1%E5%9C%B3)",
+          "kind": "wikipedia"
+        },
+        {
+          "alias": "Shenzhen Window of the World",
+          "lang": "en",
+          "url": "https://en.wikipedia.org/wiki/Shenzhen_Window_of_the_World?redirect=no",
+          "kind": "redirect"
+        }
+      ]
     },
     {
       "id": "pl_sz_shimin_zhongxin",
@@ -8369,7 +8676,9 @@
         "name_zh": "深圳市民中心广场",
         "name_en": "Civic Center Square",
         "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_en": [
+          "Civic Center Plaza"
+        ],
         "address_zh": null,
         "address_en": null,
         "district_zh": "福田区",
@@ -8422,7 +8731,15 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "Civic Center Plaza",
+          "lang": "en",
+          "url": "https://shenzhen.citywalk.group/en/comprehensivepark/civic-center-square/",
+          "kind": "manual"
+        }
+      ]
     },
     {
       "id": "pl_sz_shizuka_shenzhen",
@@ -8903,7 +9220,9 @@
         "tier": "backup",
         "name_zh": "塘朗山公园",
         "name_en": "Tanglang Mountain Park",
-        "aliases_zh": [],
+        "aliases_zh": [
+          "塘朗山"
+        ],
         "aliases_en": [],
         "address_zh": "深圳市南山区龙珠大道龙珠六路51号",
         "address_en": null,
@@ -8915,16 +9234,17 @@
           "english_service": null,
           "evidence": []
         },
-        "official_url": null,
+        "official_url": "https://cgj.sz.gov.cn/xsmh/gysz/twf/jytb/content/post_10840038.html",
         "sources": [
-          "https://cgj.sz.gov.cn/xsmh/gysz/zrgy/content/post_10830426.html"
+          "https://cgj.sz.gov.cn/xsmh/gysz/zrgy/content/post_10830426.html",
+          "https://cgj.sz.gov.cn/xsmh/gysz/twf/jytb/content/post_10840038.html"
         ],
-        "checked_on": "2026-11-18",
+        "checked_on": "2026-11-27",
         "confidence": "low",
         "notes": "官方目录沿用既有候选记录的核对日，晋级前应重读。",
         "subcategory": "park",
-        "hours_zh": null,
-        "hours_source": null,
+        "hours_zh": "07:30–22:00，个别登山道的临时关闭按公园公告。",
+        "hours_source": "https://cgj.sz.gov.cn/xsmh/gysz/twf/jytb/content/post_10840038.html",
         "ticket": {
           "booking": null,
           "passport_required": null,
@@ -8947,17 +9267,28 @@
         "alternatives": []
       },
       "score": {
-        "total": 12,
+        "total": 20,
         "parts": {
           "foreigner": 0,
           "confidence": 4,
-          "sources": 5,
-          "complete": 3,
+          "sources": 10,
+          "complete": 6,
           "amap": 0
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "ticket.price_cny: Codex could not confirm it from an official page; check by hand",
+        "ticket.booking: Codex could not confirm it from an official page; check by hand"
+      ],
+      "alias_evidence": [
+        {
+          "alias": "塘朗山",
+          "lang": "zh",
+          "url": "https://cgj.sz.gov.cn/xsmh/gysz/zrgy/content/post_10830426.html",
+          "kind": "discovery"
+        }
+      ]
     },
     {
       "id": "pl_sz_tianyushui_zhuoyue",
@@ -9139,6 +9470,7 @@
         "intro_long_en": "If you'd like a park break between city outings, the hotel sits next to Lianhuashan and Bijia Mountain parks. Use the property's UpperHills address when getting directions.",
         "star": null,
         "price_band": ">2000",
+        "hotel_class": "luxury",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -9168,9 +9500,7 @@
         },
         "external_used": false
       },
-      "flags": [
-        "pl_sz_wenhuadongfang: unknown field 'hotel_class' is dropped on import"
-      ]
+      "flags": []
     },
     {
       "id": "pl_sz_wolfgang_jichang",
@@ -9251,8 +9581,13 @@
         "tier": "main",
         "name_zh": "梧桐山风景区",
         "name_en": "Wutong Mountain Scenic Area",
-        "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_zh": [
+          "梧桐山"
+        ],
+        "aliases_en": [
+          "Wutong Mountain National Park",
+          "Wutong Mountain"
+        ],
         "address_zh": null,
         "address_en": null,
         "district_zh": "罗湖区",
@@ -9305,7 +9640,27 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "Wutong Mountain National Park",
+          "lang": "en",
+          "url": "https://www.sz.gov.cn/en_szgov/travel/natural/content/post_1354173.html",
+          "kind": "manual"
+        },
+        {
+          "alias": "Wutong Mountain",
+          "lang": "en",
+          "url": "https://www.yantian.gov.cn/English/news/content/post_4121094.html",
+          "kind": "manual"
+        },
+        {
+          "alias": "梧桐山",
+          "lang": "zh",
+          "url": "https://cgj.sz.gov.cn/xsmh/gysz/zrgy/content/post_10775158.html",
+          "kind": "discovery"
+        }
+      ]
     },
     {
       "id": "pl_sz_xianggong_luohu",
@@ -9386,8 +9741,15 @@
         "tier": "main",
         "name_zh": "深圳仙湖植物园",
         "name_en": "Fairylake Botanical Garden",
-        "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_zh": [
+          "仙湖植物园",
+          "深圳市仙湖植物园",
+          "深圳市中国科学院仙湖植物园"
+        ],
+        "aliases_en": [
+          "Fairy Lake Botanical Garden",
+          "Xianhu Botanical Garden"
+        ],
         "address_zh": "深圳市罗湖区莲塘仙湖路160号",
         "address_en": null,
         "district_zh": "罗湖区",
@@ -9440,7 +9802,39 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "仙湖植物园",
+          "lang": "zh",
+          "url": "https://zh.wikipedia.org/wiki/%E4%BB%99%E6%B9%96%E6%A4%8D%E7%89%A9%E5%9B%AD",
+          "kind": "wikipedia"
+        },
+        {
+          "alias": "深圳市仙湖植物园",
+          "lang": "zh",
+          "url": "https://zh.wikipedia.org/wiki/%E6%B7%B1%E5%9C%B3%E5%B8%82%E4%BB%99%E6%B9%96%E6%A4%8D%E7%89%A9%E5%9B%AD?redirect=no",
+          "kind": "redirect"
+        },
+        {
+          "alias": "深圳市中国科学院仙湖植物园",
+          "lang": "zh",
+          "url": "https://zh.wikipedia.org/wiki/%E6%B7%B1%E5%9C%B3%E5%B8%82%E4%B8%AD%E5%9B%BD%E7%A7%91%E5%AD%A6%E9%99%A2%E4%BB%99%E6%B9%96%E6%A4%8D%E7%89%A9%E5%9B%AD?redirect=no",
+          "kind": "redirect"
+        },
+        {
+          "alias": "Fairy Lake Botanical Garden",
+          "lang": "en",
+          "url": "https://en.wikipedia.org/wiki/Fairy_Lake_Botanical_Garden",
+          "kind": "wikipedia"
+        },
+        {
+          "alias": "Xianhu Botanical Garden",
+          "lang": "en",
+          "url": "https://en.wikipedia.org/wiki/Xianhu_Botanical_Garden?redirect=no",
+          "kind": "redirect"
+        }
+      ]
     },
     {
       "id": "pl_sz_xiaomeisha",
@@ -9453,8 +9847,12 @@
         "tier": "main",
         "name_zh": "小梅沙海滨公园",
         "name_en": "Xiaomeisha Beach Park",
-        "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_zh": [
+          "小梅沙海滨乐园"
+        ],
+        "aliases_en": [
+          "Xiaomeisha Beach"
+        ],
         "address_zh": null,
         "address_en": null,
         "district_zh": "盐田区",
@@ -9507,7 +9905,21 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "小梅沙海滨乐园",
+          "lang": "zh",
+          "url": "https://www.haoliday.com/zh/explore/shenzhen/p/xiaomeisha",
+          "kind": "manual"
+        },
+        {
+          "alias": "Xiaomeisha Beach",
+          "lang": "en",
+          "url": "https://www.haoliday.com/en/explore/shenzhen/p/xiaomeisha",
+          "kind": "manual"
+        }
+      ]
     },
     {
       "id": "pl_sz_xichong",
@@ -9520,8 +9932,12 @@
         "tier": "main",
         "name_zh": "西冲",
         "name_en": "Xichong",
-        "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_zh": [
+          "西涌国际滨海旅游区"
+        ],
+        "aliases_en": [
+          "Xichong Beach"
+        ],
         "address_zh": "深圳市大鹏新区西涌湾",
         "address_en": null,
         "district_zh": "大鹏新区",
@@ -9574,7 +9990,21 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "西涌国际滨海旅游区",
+          "lang": "zh",
+          "url": "https://you.ctrip.com/sight/shenzhen26/69547224.html",
+          "kind": "manual"
+        },
+        {
+          "alias": "Xichong Beach",
+          "lang": "en",
+          "url": "https://www.trip.com/travel-guide/attraction/shenzhen/xichong-beach-69547224/",
+          "kind": "manual"
+        }
+      ]
     },
     {
       "id": "pl_sz_xinhu_shiyishaoji",
@@ -9719,7 +10149,10 @@
         "tier": "main",
         "name_zh": "杨梅坑（东山片区）",
         "name_en": "Yangmeikeng (Dongshan Area)",
-        "aliases_zh": [],
+        "aliases_zh": [
+          "东山（杨梅坑）片区",
+          "杨梅坑"
+        ],
         "aliases_en": [],
         "address_zh": "深圳市大鹏新区南澳办事处杨梅坑",
         "address_en": null,
@@ -9773,7 +10206,21 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "东山（杨梅坑）片区",
+          "lang": "zh",
+          "url": "https://www.dpxq.gov.cn/ztzl/pyxsj/wzdp/zjd/content/post_11584517.html",
+          "kind": "manual"
+        },
+        {
+          "alias": "杨梅坑",
+          "lang": "zh",
+          "url": "https://www.dpxq.gov.cn/ztzl/pyxsj/wzdp/zjd/content/post_11584517.html",
+          "kind": "manual"
+        }
+      ]
     },
     {
       "id": "pl_sz_yesheng_dongwuyuan",
@@ -9786,8 +10233,17 @@
         "tier": "main",
         "name_zh": "深圳市野生动物园",
         "name_en": "Shenzhen Safari Park",
-        "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_zh": [
+          "深圳野生动物园",
+          "西麗野生動物園",
+          "深圳动物园"
+        ],
+        "aliases_en": [
+          "Safari Park Shenzhen",
+          "Shenzhen Wildlife Park",
+          "Shenzhen Zoo",
+          "Shenzhen Wild Animal Zoo"
+        ],
         "address_zh": "深圳市南山区西丽湖路东侧",
         "address_en": null,
         "district_zh": "南山区",
@@ -9840,7 +10296,51 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "深圳野生动物园",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q25058046",
+          "kind": "label"
+        },
+        {
+          "alias": "西麗野生動物園",
+          "lang": "zh",
+          "url": "https://zh.wikipedia.org/wiki/%E8%A5%BF%E9%BA%97%E9%87%8E%E7%94%9F%E5%8B%95%E7%89%A9%E5%9C%92?redirect=no",
+          "kind": "redirect"
+        },
+        {
+          "alias": "深圳动物园",
+          "lang": "zh",
+          "url": "https://zh.wikipedia.org/wiki/%E6%B7%B1%E5%9C%B3%E5%8A%A8%E7%89%A9%E5%9B%AD?redirect=no",
+          "kind": "redirect"
+        },
+        {
+          "alias": "Safari Park Shenzhen",
+          "lang": "en",
+          "url": "https://en.wikipedia.org/wiki/Safari_Park_Shenzhen?redirect=no",
+          "kind": "redirect"
+        },
+        {
+          "alias": "Shenzhen Wildlife Park",
+          "lang": "en",
+          "url": "https://en.wikipedia.org/wiki/Shenzhen_Wildlife_Park?redirect=no",
+          "kind": "redirect"
+        },
+        {
+          "alias": "Shenzhen Zoo",
+          "lang": "en",
+          "url": "https://en.wikipedia.org/wiki/Shenzhen_Zoo?redirect=no",
+          "kind": "redirect"
+        },
+        {
+          "alias": "Shenzhen Wild Animal Zoo",
+          "lang": "en",
+          "url": "https://en.wikipedia.org/wiki/Shenzhen_Wild_Animal_Zoo?redirect=no",
+          "kind": "redirect"
+        }
+      ]
     },
     {
       "id": "pl_sz_yibisi_nanxinlu",
@@ -9882,6 +10382,7 @@
         "intro_long_en": "The English property page gives the Nanxin Road address and describes access toward Shekou Port. It makes a practical base if your plans take you through western Nanshan.",
         "star": null,
         "price_band": null,
+        "hotel_class": "economy",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -9912,7 +10413,7 @@
         "external_used": false
       },
       "flags": [
-        "pl_sz_yibisi_nanxinlu: unknown field 'hotel_class' is dropped on import"
+        "no price band: it cannot enter the library until the operator's own page gives a rate"
       ]
     },
     {
@@ -10054,8 +10555,15 @@
         "tier": "main",
         "name_zh": "北京园博园",
         "name_en": "Beijing Garden Expo Park",
-        "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_zh": [
+          "深圳国际园林花卉博览园",
+          "深圳园博园",
+          "深圳園博園",
+          "深圳國際園林花卉博覽園"
+        ],
+        "aliases_en": [
+          "Shenzhen International Garden and Flower Expo Park"
+        ],
         "address_zh": "深圳市福田区深南大道竹子林四路（深南大道与侨城东路交会处）",
         "address_en": null,
         "district_zh": "福田区",
@@ -10108,7 +10616,39 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "深圳国际园林花卉博览园",
+          "lang": "zh",
+          "url": "https://cgj.sz.gov.cn/xsmh/gysz/csgy/content/post_10774656.html",
+          "kind": "manual"
+        },
+        {
+          "alias": "深圳园博园",
+          "lang": "zh",
+          "url": "https://cgj.sz.gov.cn/xsmh/gysz/csgy/content/post_10774656.html",
+          "kind": "manual"
+        },
+        {
+          "alias": "Shenzhen International Garden and Flower Expo Park",
+          "lang": "en",
+          "url": "https://www.sz.gov.cn/en_szgov/news/infocus/park/csgy/content/post_11027886.html",
+          "kind": "manual"
+        },
+        {
+          "alias": "深圳園博園",
+          "lang": "zh",
+          "url": "https://zh.wikipedia.org/wiki/%E6%B7%B1%E5%9C%B3%E5%9C%92%E5%8D%9A%E5%9C%92?redirect=no",
+          "kind": "published_traditional"
+        },
+        {
+          "alias": "深圳國際園林花卉博覽園",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q11153009",
+          "kind": "published_traditional"
+        }
+      ]
     },
     {
       "id": "pl_sz_yubainian_jichang",
@@ -10523,8 +11063,12 @@
         "tier": "backup",
         "name_zh": "中英街",
         "name_en": "Chung Ying Street",
-        "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_zh": [
+          "深圳中英街"
+        ],
+        "aliases_en": [
+          "Zhongying Street"
+        ],
         "address_zh": "深圳市盐田区沙头角边境特别管理区",
         "address_en": null,
         "district_zh": "盐田区",
@@ -10577,7 +11121,21 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "Zhongying Street",
+          "lang": "en",
+          "url": "https://en.wikipedia.org/wiki/Zhongying_Street?redirect=no",
+          "kind": "redirect"
+        },
+        {
+          "alias": "深圳中英街",
+          "lang": "zh",
+          "url": "https://wtl.sz.gov.cn/gkmlpt/content/12/12977/post_12977370.html",
+          "kind": "discovery"
+        }
+      ]
     },
     {
       "id": "pl_sz_zhuoyixiaochu_jichang",
@@ -10593,7 +11151,7 @@
         "aliases_zh": [],
         "aliases_en": [],
         "address_zh": "深圳机场T3一层国际到达1H-02-01",
-        "address_en": null,
+        "address_en": "Terminal 3, Level 1, international arrivals, unit 1H-02-01, Shenzhen Bao'an International Airport",
         "district_zh": "宝安区",
         "nearest_metro": null,
         "foreigner_signals": {
@@ -10608,9 +11166,10 @@
         "official_url": "https://www.szairport.com/szairport/zcys/202409/e3552a10554b441ba10e7655c1a59974.shtml",
         "sources": [
           "https://www.szairport.com/szairport/zcys/202409/e3552a10554b441ba10e7655c1a59974.shtml",
-          "https://www.szairport.com/szairport/msmk/Dining.shtml"
+          "https://www.szairport.com/szairport/msmk/Dining.shtml",
+          "https://www.szairport.com/szairporten/msmk/Dining.shtml"
         ],
-        "checked_on": "2026-11-27",
+        "checked_on": "2026-11-28",
         "confidence": "medium",
         "notes": "营业依据为当前经营方点位或近期主管部门的具名记录。",
         "subcategory": "local_cuisine",
@@ -10634,12 +11193,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 28,
+        "total": 29,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 6,
+          "complete": 7,
           "amap": 0
         },
         "external_used": false

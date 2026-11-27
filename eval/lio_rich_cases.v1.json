@@ -319,8 +319,13 @@
      "pl_gz_chenjiaci"
     ]
    ],
-   "acceptable": [],
-   "note": "Baiyun Mountain is \"Baiyun Mountain Scenic Area\" in the pack: no link expected"
+   "acceptable": [
+    [
+     "Baiyun Mountain",
+     "pl_gz_baiyunshan"
+    ]
+   ],
+   "note": "Baiyun Mountain is \"Baiyun Mountain Scenic Area\" in the pack; once its alias (C1 aliases, 2026-11-28) is in the pack, linking it is acceptable, not required"
   },
   {
    "id": "gz-4-zh",

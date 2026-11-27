@@ -1,7 +1,7 @@
 {
   "version": "g2c-places-candidates.1",
   "city": "chongqing",
-  "generated_on": "2026-11-27",
+  "generated_on": "2026-11-28",
   "candidates": [
     {
       "id": "pl_cq_anxin_jiazhou",
@@ -138,8 +138,12 @@
         "tier": "main",
         "name_zh": "白帝城·瞿塘峡景区",
         "name_en": "Baidi City and Qutang Gorge",
-        "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_zh": [
+          "奉节白帝城·瞿塘峡景区"
+        ],
+        "aliases_en": [
+          "White Emperor City Qutang Gorge Scenic Spot"
+        ],
         "address_zh": null,
         "address_en": null,
         "district_zh": "奉节县",
@@ -150,18 +154,20 @@
           "english_service": null,
           "evidence": []
         },
-        "official_url": null,
+        "official_url": "https://www.bdcqtx.com/",
         "sources": [
-          "https://whlyw.cq.gov.cn/hdjl_221/xzzq/202601/t20260106_15295212.html"
+          "https://whlyw.cq.gov.cn/hdjl_221/xzzq/202601/t20260106_15295212.html",
+          "https://www.cqfj.gov.cn/bm_168/whhlyfzwyh/zwxx_61736/dt_61738/202504/t20250424_14552275.html",
+          "https://www.cqfj.gov.cn/bm_168/whhlyfzwyh/zwgk_61739/zfxxgkml/lyly/ggfw/gglvjgml/202512/t20251217_15252703.html"
         ],
-        "checked_on": "2026-11-18",
+        "checked_on": "2026-11-27",
         "confidence": "low",
         "notes": "官方目录沿用既有候选记录的核对日，晋级前应重读。目录通讯地址为经营方办公点，实际入口待复核。",
         "subcategory": "history",
-        "hours_zh": null,
-        "hours_source": null,
+        "hours_zh": "07:40–19:00，摆渡船需另看班次。",
+        "hours_source": "https://www.cqfj.gov.cn/bm_168/whhlyfzwyh/zwxx_61736/dt_61738/202504/t20250424_14552275.html",
         "ticket": {
-          "booking": null,
+          "booking": "required",
           "passport_required": null,
           "price_cny": null,
           "closed_weekdays": null,
@@ -182,17 +188,33 @@
         "alternatives": []
       },
       "score": {
-        "total": 10,
+        "total": 18,
         "parts": {
           "foreigner": 0,
           "confidence": 4,
-          "sources": 5,
-          "complete": 1,
+          "sources": 10,
+          "complete": 4,
           "amap": 0
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "ticket.price_cny: Codex could not confirm it from an official page; check by hand"
+      ],
+      "alias_evidence": [
+        {
+          "alias": "White Emperor City Qutang Gorge Scenic Spot",
+          "lang": "en",
+          "url": "https://www.trip.com/travel-guide/attraction/fengjie-county/white-emperor-city-qutang-gorge-scenic-spot-76355/",
+          "kind": "manual"
+        },
+        {
+          "alias": "奉节白帝城·瞿塘峡景区",
+          "lang": "zh",
+          "url": "https://admin.cq.gov.cn/zjcq/cycq/zmjd/zqaaaaajjq/202606/t20260604_15729050.html",
+          "kind": "manual"
+        }
+      ]
     },
     {
       "id": "pl_cq_baiheliang",
@@ -205,8 +227,15 @@
         "tier": "main",
         "name_zh": "白鹤梁水下博物馆",
         "name_en": "Baiheliang Underwater Museum",
-        "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_zh": [
+          "重庆白鹤梁水下博物馆景区",
+          "重庆白鹤梁水下博物馆",
+          "白鶴梁水下博物館"
+        ],
+        "aliases_en": [
+          "White Crane Ridge Underwater Museum",
+          "Baiheliang Museum"
+        ],
         "address_zh": "重庆市涪陵白鹤梁大道388号",
         "address_en": null,
         "district_zh": "涪陵区",
@@ -260,7 +289,39 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "White Crane Ridge Underwater Museum",
+          "lang": "en",
+          "url": "https://en.wikipedia.org/wiki/White_Crane_Ridge_Underwater_Museum?redirect=no",
+          "kind": "redirect"
+        },
+        {
+          "alias": "Baiheliang Museum",
+          "lang": "en",
+          "url": "https://en.wikipedia.org/wiki/Baiheliang_Museum?redirect=no",
+          "kind": "redirect"
+        },
+        {
+          "alias": "重庆白鹤梁水下博物馆景区",
+          "lang": "zh",
+          "url": "https://whlyw.cq.gov.cn/hdjl_221/xzzq/202601/t20260106_15295212.html",
+          "kind": "discovery"
+        },
+        {
+          "alias": "重庆白鹤梁水下博物馆",
+          "lang": "zh",
+          "url": "https://www.3gmuseum.cn/web/article/1430010139317059584/web/content_1430010139317059584.html",
+          "kind": "discovery"
+        },
+        {
+          "alias": "白鶴梁水下博物館",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q18110081",
+          "kind": "published_traditional"
+        }
+      ]
     },
     {
       "id": "pl_cq_baniang_huayuan",
@@ -435,6 +496,7 @@
         "intro_long_en": "Choose this property if your intercity trains use Chongqing North. Marriott provides the Xiangjin Road address and lists English among the languages spoken at the hotel.",
         "star": null,
         "price_band": "<500",
+        "hotel_class": "midscale",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -464,9 +526,7 @@
         },
         "external_used": false
       },
-      "flags": [
-        "pl_cq_beizhanfupeng: unknown field 'hotel_class' is dropped on import"
-      ]
+      "flags": []
     },
     {
       "id": "pl_cq_bishan_qingzhen_biquan",
@@ -672,8 +732,13 @@
         "tier": "main",
         "name_zh": "长江索道",
         "name_en": "Yangtze River Cableway",
-        "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_zh": [
+          "重庆长江索道景区",
+          "長江索道"
+        ],
+        "aliases_en": [
+          "Yangtze River Ropeway"
+        ],
         "address_zh": "重庆市渝中区新华路151号",
         "address_en": null,
         "district_zh": "渝中区",
@@ -733,7 +798,27 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "Yangtze River Ropeway",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q21051796",
+          "kind": "label"
+        },
+        {
+          "alias": "重庆长江索道景区",
+          "lang": "zh",
+          "url": "https://whlyw.cq.gov.cn/hdjl_221/xzzq/202601/t20260106_15295212.html",
+          "kind": "discovery"
+        },
+        {
+          "alias": "長江索道",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q21051796",
+          "kind": "published_traditional"
+        }
+      ]
     },
     {
       "id": "pl_cq_chaotianmen",
@@ -746,7 +831,9 @@
         "tier": "main",
         "name_zh": "朝天门广场",
         "name_en": "Chaotianmen Square",
-        "aliases_zh": [],
+        "aliases_zh": [
+          "朝天門廣場"
+        ],
         "aliases_en": [],
         "address_zh": null,
         "address_en": null,
@@ -800,7 +887,15 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "朝天門廣場",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q126282054",
+          "kind": "published_traditional"
+        }
+      ]
     },
     {
       "id": "pl_cq_chaotianmen_yingdige",
@@ -845,6 +940,7 @@
         "intro_long_en": "Stay on the Chaotianmen side of the peninsula if a river outing is on your list. The hotel overlooks the confluence and lists English as one of its languages.",
         "star": null,
         "price_band": null,
+        "hotel_class": "upscale",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -876,7 +972,7 @@
         "external_used": false
       },
       "flags": [
-        "pl_cq_chaotianmen_yingdige: unknown field 'hotel_class' is dropped on import"
+        "no price band: it cannot enter the library until the operator's own page gives a rate"
       ]
     },
     {
@@ -1146,7 +1242,9 @@
         "tier": "main",
         "name_zh": "重庆动物园",
         "name_en": "Chongqing Zoo",
-        "aliases_zh": [],
+        "aliases_zh": [
+          "重慶動物園"
+        ],
         "aliases_en": [],
         "address_zh": "重庆市九龙坡区杨家坪西郊一村一号",
         "address_en": null,
@@ -1158,16 +1256,18 @@
           "english_service": null,
           "evidence": []
         },
-        "official_url": null,
+        "official_url": "https://cgj.cq.gov.cn/cgyw/zqgy/sssdgyjs/elgy/202506/t20250617_14719846.html",
         "sources": [
-          "https://whlyw.cq.gov.cn/hdjl_221/xzzq/202601/t20260106_15295212.html"
+          "https://whlyw.cq.gov.cn/hdjl_221/xzzq/202601/t20260106_15295212.html",
+          "https://cqjlp.gov.cn/bmjz/qzfbm_97119/qwhlyw_97727/zwgk_97124/gkml/jczwgk/ggwhfwly/ggfw/ggwljgml/202608/t20260807_15904141.html",
+          "https://cgj.cq.gov.cn/cgyw/zqgy/sssdgyjs/elgy/202506/t20250617_14719846.html"
         ],
-        "checked_on": "2026-11-18",
+        "checked_on": "2026-11-27",
         "confidence": "low",
         "notes": "官方目录沿用既有候选记录的核对日，晋级前应重读。",
         "subcategory": "experience",
-        "hours_zh": null,
-        "hours_source": null,
+        "hours_zh": "08:00–17:30，16:30停止检票。",
+        "hours_source": "https://cqjlp.gov.cn/bmjz/qzfbm_97119/qwhlyw_97727/zwgk_97124/gkml/jczwgk/ggwhfwly/ggfw/ggwljgml/202608/t20260807_15904141.html",
         "ticket": {
           "booking": null,
           "passport_required": null,
@@ -1190,17 +1290,28 @@
         "alternatives": []
       },
       "score": {
-        "total": 12,
+        "total": 20,
         "parts": {
           "foreigner": 0,
           "confidence": 4,
-          "sources": 5,
-          "complete": 3,
+          "sources": 10,
+          "complete": 6,
           "amap": 0
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "ticket.price_cny: Codex could not confirm it from an official page; check by hand",
+        "ticket.booking: Codex could not confirm it from an official page; check by hand"
+      ],
+      "alias_evidence": [
+        {
+          "alias": "重慶動物園",
+          "lang": "zh",
+          "url": "https://zh.wikipedia.org/wiki/%E9%87%8D%E6%85%B6%E5%8B%95%E7%89%A9%E5%9C%92?redirect=no",
+          "kind": "published_traditional"
+        }
+      ]
     },
     {
       "id": "pl_cq_chongqing_huanlegu",
@@ -1213,7 +1324,9 @@
         "tier": "main",
         "name_zh": "重庆欢乐谷",
         "name_en": "Chongqing Happy Valley",
-        "aliases_zh": [],
+        "aliases_zh": [
+          "重庆欢乐谷景区"
+        ],
         "aliases_en": [],
         "address_zh": "重庆市两江新区金渝大道29号",
         "address_en": null,
@@ -1227,14 +1340,15 @@
         },
         "official_url": null,
         "sources": [
-          "https://whlyw.cq.gov.cn/hdjl_221/xzzq/202601/t20260106_15295212.html"
+          "https://whlyw.cq.gov.cn/hdjl_221/xzzq/202601/t20260106_15295212.html",
+          "https://www.ljxq.gov.cn/jz/ljjd_504288/zwgk/zfxxgkml/jczwgk/ggwhfwly/ggfw/ggwlmulu/202603/t20260304_15491947.html"
         ],
-        "checked_on": "2026-11-18",
+        "checked_on": "2026-11-27",
         "confidence": "low",
         "notes": "官方目录沿用既有候选记录的核对日，晋级前应重读。",
         "subcategory": "experience",
-        "hours_zh": null,
-        "hours_source": null,
+        "hours_zh": "街道公示参考日场10:00–18:30，节假日或暑期夜场与实际开闭园看公园当日公告。",
+        "hours_source": "https://www.ljxq.gov.cn/jz/ljjd_504288/zwgk/zfxxgkml/jczwgk/ggwhfwly/ggfw/ggwlmulu/202603/t20260304_15491947.html",
         "ticket": {
           "booking": null,
           "passport_required": null,
@@ -1257,17 +1371,29 @@
         "alternatives": []
       },
       "score": {
-        "total": 12,
+        "total": 18,
         "parts": {
           "foreigner": 0,
           "confidence": 4,
-          "sources": 5,
-          "complete": 3,
+          "sources": 10,
+          "complete": 4,
           "amap": 0
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "ticket.price_cny: Codex could not confirm it from an official page; check by hand",
+        "ticket.booking: Codex could not confirm it from an official page; check by hand",
+        "official_url: Codex could not confirm it from an official page; check by hand"
+      ],
+      "alias_evidence": [
+        {
+          "alias": "重庆欢乐谷景区",
+          "lang": "zh",
+          "url": "https://whlyw.cq.gov.cn/hdjl_221/xzzq/202601/t20260106_15295212.html",
+          "kind": "discovery"
+        }
+      ]
     },
     {
       "id": "pl_cq_chongqing_kejiguan",
@@ -1281,7 +1407,9 @@
         "name_zh": "重庆科技馆",
         "name_en": "Chongqing Science and Technology Museum",
         "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_en": [
+          "Chongqing Science & Technology Museum"
+        ],
         "address_zh": "江北区江北城文星门街7号",
         "address_en": null,
         "district_zh": "江北区",
@@ -1292,20 +1420,23 @@
           "english_service": null,
           "evidence": []
         },
-        "official_url": null,
+        "official_url": "https://www.cqkjg.cn/",
         "sources": [
-          "https://whlyw.cq.gov.cn/hdjl_221/xzzq/202601/t20260106_15295212.html"
+          "https://whlyw.cq.gov.cn/hdjl_221/xzzq/202601/t20260106_15295212.html",
+          "https://www.cqkjg.cn/",
+          "https://www.cqkjg.cn/web/article/1372789352271437824/web/content_1372789352271437824.html",
+          "https://www.cqkjg.cn/web/article/1435492770967257088/web/content_1435492770967257088.html"
         ],
-        "checked_on": "2026-11-18",
+        "checked_on": "2026-11-27",
         "confidence": "low",
         "notes": "官方目录沿用既有候选记录的核对日，晋级前应重读。",
         "subcategory": "museum",
-        "hours_zh": null,
-        "hours_source": null,
+        "hours_zh": "周二至周日09:30–17:00。周一闭馆，法定节假日及特殊情况看馆方通告。",
+        "hours_source": "https://www.cqkjg.cn/",
         "ticket": {
-          "booking": null,
+          "booking": "none",
           "passport_required": null,
-          "price_cny": null,
+          "price_cny": 0,
           "closed_weekdays": null,
           "booking_channel_zh": null,
           "booking_url": null
@@ -1324,17 +1455,25 @@
         "alternatives": []
       },
       "score": {
-        "total": 12,
+        "total": 20,
         "parts": {
           "foreigner": 0,
           "confidence": 4,
-          "sources": 5,
-          "complete": 3,
+          "sources": 10,
+          "complete": 6,
           "amap": 0
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "Chongqing Science & Technology Museum",
+          "lang": "en",
+          "url": "https://en.wikipedia.org/wiki/Chongqing_Science_%26_Technology_Museum?redirect=no",
+          "kind": "redirect"
+        }
+      ]
     },
     {
       "id": "pl_cq_chongqing_meishuguan",
@@ -1347,8 +1486,13 @@
         "tier": "main",
         "name_zh": "重庆美术馆",
         "name_en": "Chongqing Art Museum",
-        "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_zh": [
+          "重庆市美术馆"
+        ],
+        "aliases_en": [
+          "Chongqing Art Gallery",
+          "Chongqing Museum of Art"
+        ],
         "address_zh": "渝中区临江路1号",
         "address_en": null,
         "district_zh": "渝中区",
@@ -1359,21 +1503,24 @@
           "english_service": null,
           "evidence": []
         },
-        "official_url": null,
+        "official_url": "https://www.cqartmuseum.cn/",
         "sources": [
           "https://whlyw.cq.gov.cn/hdjl_221/xzzq/202601/t20260115_15320860.html",
-          "https://www.cqkz.gov.cn/kz/fzhggwyh_80934/zwgk_72016/zfxxgkml/jczwgk/ggwhfwlyjczwgk/ggfw/ggwljgml/202603/t20260304_15493778.html"
+          "https://www.cqkz.gov.cn/kz/fzhggwyh_80934/zwgk_72016/zfxxgkml/jczwgk/ggwhfwlyjczwgk/ggfw/ggwljgml/202603/t20260304_15493778.html",
+          "https://www.cqartmuseum.cn/html/1232269654423306240/web/content_1232269654423306240.html",
+          "https://whlyw.cq.gov.cn/zwxx_221/bmdt/tzgg/202601/t20260115_15320690.html",
+          "https://www.cqartmuseum.cn/"
         ],
-        "checked_on": "2026-11-18",
+        "checked_on": "2026-11-27",
         "confidence": "low",
         "notes": "官方目录沿用既有候选记录的核对日，晋级前应重读。",
         "subcategory": "museum",
-        "hours_zh": null,
-        "hours_source": null,
+        "hours_zh": "周二至周日10:00–18:00，17:30停止入馆。周一通常闭馆，法定节假日正常开放。",
+        "hours_source": "https://www.cqartmuseum.cn/html/1232269654423306240/web/content_1232269654423306240.html",
         "ticket": {
           "booking": null,
           "passport_required": null,
-          "price_cny": null,
+          "price_cny": 0,
           "closed_weekdays": null,
           "booking_channel_zh": null,
           "booking_url": null
@@ -1382,6 +1529,98 @@
         "intro_short_en": "See the interlocking red forms of Chongqing Art Museum.",
         "intro_long_zh": "在解放碑附近看重庆美术馆展览。先看看建筑的交错外形，再按当日展讯选展厅。",
         "intro_long_en": "See the interlocking red forms of Chongqing Art Museum. Look at the building on your way to an exhibition chosen from the current program.",
+        "visit_minutes": null,
+        "best_time_zh": null
+      },
+      "external_signals": [],
+      "location": null,
+      "amap": {
+        "status": "not-run",
+        "alternatives": []
+      },
+      "score": {
+        "total": 20,
+        "parts": {
+          "foreigner": 0,
+          "confidence": 4,
+          "sources": 10,
+          "complete": 6,
+          "amap": 0
+        },
+        "external_used": false
+      },
+      "flags": [
+        "ticket.booking: Codex could not confirm it from an official page; check by hand"
+      ],
+      "alias_evidence": [
+        {
+          "alias": "重庆市美术馆",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q85884867",
+          "kind": "wikidata"
+        },
+        {
+          "alias": "Chongqing Art Gallery",
+          "lang": "en",
+          "url": "https://en.wikipedia.org/wiki/Chongqing_Art_Gallery?redirect=no",
+          "kind": "redirect"
+        },
+        {
+          "alias": "Chongqing Museum of Art",
+          "lang": "en",
+          "url": "https://en.wikipedia.org/wiki/Chongqing_Museum_of_Art?redirect=no",
+          "kind": "redirect"
+        }
+      ]
+    },
+    {
+      "id": "pl_cq_chongqing_yuanboyuan",
+      "source_file": "C1/chongqing.json",
+      "status": "pending",
+      "draft": {
+        "id": "pl_cq_chongqing_yuanboyuan",
+        "city": "chongqing",
+        "category": "attraction",
+        "tier": "main",
+        "name_zh": "重庆园博园",
+        "name_en": "Yuanbo Garden",
+        "aliases_zh": [
+          "重庆市园博园"
+        ],
+        "aliases_en": [],
+        "address_zh": "重庆市两江新区龙景路1号",
+        "address_en": null,
+        "district_zh": "两江新区",
+        "nearest_metro": null,
+        "foreigner_signals": {
+          "english_signage": null,
+          "foreign_cards": null,
+          "english_service": null,
+          "evidence": []
+        },
+        "official_url": null,
+        "sources": [
+          "https://whlyw.cq.gov.cn/hdjl_221/xzzq/202601/t20260106_15295212.html",
+          "https://cgj.cq.gov.cn/zwxx_173/gsgg/tzgg/202110/t20211012_9796147.html"
+        ],
+        "checked_on": "2026-11-27",
+        "confidence": "low",
+        "notes": "官方目录沿用既有候选记录的核对日，晋级前应重读。",
+        "subcategory": "park",
+        "hours_zh": null,
+        "hours_source": null,
+        "ticket": {
+          "booking": null,
+          "passport_required": null,
+          "price_cny": 0,
+          "closed_weekdays": null,
+          "booking_channel_zh": null,
+          "booking_url": null
+        },
+        "intro_short_zh": "在重庆园博园沿湖比较不同园景",
+        "intro_short_en": "Compare different garden styles beside the lake at Chongqing Garden Expo Park.",
+        "intro_long_zh": "在重庆园博园沿湖比较不同园景。园区较大，可挑相邻展园，用桥、岸与庭院连出一段路线。",
+        "intro_long_en": "Compare different garden styles beside the lake at Chongqing Garden Expo Park. The grounds are extensive, so group nearby gardens and connect them with shoreline paths or bridges.",
         "visit_minutes": null,
         "best_time_zh": null
       },
@@ -1402,74 +1641,19 @@
         },
         "external_used": false
       },
-      "flags": []
-    },
-    {
-      "id": "pl_cq_chongqing_yuanboyuan",
-      "source_file": "C1/chongqing.json",
-      "status": "pending",
-      "draft": {
-        "id": "pl_cq_chongqing_yuanboyuan",
-        "city": "chongqing",
-        "category": "attraction",
-        "tier": "main",
-        "name_zh": "重庆园博园",
-        "name_en": "Yuanbo Garden",
-        "aliases_zh": [],
-        "aliases_en": [],
-        "address_zh": "重庆市两江新区龙景路1号",
-        "address_en": null,
-        "district_zh": "两江新区",
-        "nearest_metro": null,
-        "foreigner_signals": {
-          "english_signage": null,
-          "foreign_cards": null,
-          "english_service": null,
-          "evidence": []
-        },
-        "official_url": null,
-        "sources": [
-          "https://whlyw.cq.gov.cn/hdjl_221/xzzq/202601/t20260106_15295212.html"
-        ],
-        "checked_on": "2026-11-18",
-        "confidence": "low",
-        "notes": "官方目录沿用既有候选记录的核对日，晋级前应重读。",
-        "subcategory": "park",
-        "hours_zh": null,
-        "hours_source": null,
-        "ticket": {
-          "booking": null,
-          "passport_required": null,
-          "price_cny": null,
-          "closed_weekdays": null,
-          "booking_channel_zh": null,
-          "booking_url": null
-        },
-        "intro_short_zh": "在重庆园博园沿湖比较不同园景",
-        "intro_short_en": "Compare different garden styles beside the lake at Chongqing Garden Expo Park.",
-        "intro_long_zh": "在重庆园博园沿湖比较不同园景。园区较大，可挑相邻展园，用桥、岸与庭院连出一段路线。",
-        "intro_long_en": "Compare different garden styles beside the lake at Chongqing Garden Expo Park. The grounds are extensive, so group nearby gardens and connect them with shoreline paths or bridges.",
-        "visit_minutes": null,
-        "best_time_zh": null
-      },
-      "external_signals": [],
-      "location": null,
-      "amap": {
-        "status": "not-run",
-        "alternatives": []
-      },
-      "score": {
-        "total": 12,
-        "parts": {
-          "foreigner": 0,
-          "confidence": 4,
-          "sources": 5,
-          "complete": 3,
-          "amap": 0
-        },
-        "external_used": false
-      },
-      "flags": []
+      "flags": [
+        "hours_zh: Codex could not confirm it from an official page; check by hand",
+        "ticket.booking: Codex could not confirm it from an official page; check by hand",
+        "official_url: Codex could not confirm it from an official page; check by hand"
+      ],
+      "alias_evidence": [
+        {
+          "alias": "重庆市园博园",
+          "lang": "zh",
+          "url": "https://cgj.cq.gov.cn/cgyw/zqgy/sssdgyjs/ppsgy/202506/t20250617_14719799.html",
+          "kind": "manual"
+        }
+      ]
     },
     {
       "id": "pl_cq_chongqing_ziran",
@@ -1483,7 +1667,9 @@
         "name_zh": "重庆自然博物馆",
         "name_en": "Chongqing Natural History Museum",
         "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_en": [
+          "Chongqing Museum of Natural History"
+        ],
         "address_zh": "重庆市北碚区金华路398号",
         "address_en": null,
         "district_zh": "北碚区",
@@ -1494,20 +1680,22 @@
           "english_service": null,
           "evidence": []
         },
-        "official_url": null,
+        "official_url": "https://www.cmnh.org.cn/",
         "sources": [
-          "https://whlyw.cq.gov.cn/hdjl_221/xzzq/202601/t20260106_15295212.html"
+          "https://whlyw.cq.gov.cn/hdjl_221/xzzq/202601/t20260106_15295212.html",
+          "https://wap.cq.gov.cn/zjcq/bywh/whss/bwg/202606/t20260604_15728865.html",
+          "https://www.cmnh.org.cn/web/column/col5005098.html"
         ],
-        "checked_on": "2026-11-18",
+        "checked_on": "2026-11-27",
         "confidence": "low",
         "notes": "官方目录沿用既有候选记录的核对日，晋级前应重读。",
         "subcategory": "museum",
-        "hours_zh": null,
-        "hours_source": null,
+        "hours_zh": "主馆09:00–17:00，周一闭馆，法定节假日除外。",
+        "hours_source": "https://wap.cq.gov.cn/zjcq/bywh/whss/bwg/202606/t20260604_15728865.html",
         "ticket": {
           "booking": null,
           "passport_required": null,
-          "price_cny": null,
+          "price_cny": 0,
           "closed_weekdays": null,
           "booking_channel_zh": null,
           "booking_url": null
@@ -1526,17 +1714,27 @@
         "alternatives": []
       },
       "score": {
-        "total": 12,
+        "total": 20,
         "parts": {
           "foreigner": 0,
           "confidence": 4,
-          "sources": 5,
-          "complete": 3,
+          "sources": 10,
+          "complete": 6,
           "amap": 0
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "ticket.booking: Codex could not confirm it from an official page; check by hand"
+      ],
+      "alias_evidence": [
+        {
+          "alias": "Chongqing Museum of Natural History",
+          "lang": "en",
+          "url": "https://en.wikipedia.org/wiki/Chongqing_Museum_of_Natural_History?redirect=no",
+          "kind": "redirect"
+        }
+      ]
     },
     {
       "id": "pl_cq_chongqingbei",
@@ -1812,7 +2010,9 @@
         "tier": "main",
         "name_zh": "重庆磁器口古镇",
         "name_en": "Ciqikou Ancient Town",
-        "aliases_zh": [],
+        "aliases_zh": [
+          "磁器口古镇"
+        ],
         "aliases_en": [],
         "address_zh": "沙坪坝区磁器口南街1号",
         "address_en": null,
@@ -1866,7 +2066,20 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "hours_zh: Codex could not confirm it from an official page; check by hand",
+        "ticket.price_cny: Codex could not confirm it from an official page; check by hand",
+        "ticket.booking: Codex could not confirm it from an official page; check by hand",
+        "official_url: Codex could not confirm it from an official page; check by hand"
+      ],
+      "alias_evidence": [
+        {
+          "alias": "磁器口古镇",
+          "lang": "zh",
+          "url": "https://www.cq.gov.cn/zjcq/cycq/jplyxl/dsy/dsjp/202608/t20260826_15982326.html",
+          "kind": "manual"
+        }
+      ]
     },
     {
       "id": "pl_cq_ciqikou_hiex",
@@ -1917,6 +2130,7 @@
         "intro_long_en": "Plan a day in Ciqikou and use Shijingpo on Line 1 for local trips. Check the hotel's English arrival information and its list of accepted cards before you go.",
         "star": null,
         "price_band": null,
+        "hotel_class": "midscale",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -1948,7 +2162,7 @@
         "external_used": false
       },
       "flags": [
-        "pl_cq_ciqikou_hiex: unknown field 'hotel_class' is dropped on import"
+        "no price band: it cannot enter the library until the operator's own page gives a rate"
       ]
     },
     {
@@ -2173,8 +2387,12 @@
         "tier": "main",
         "name_zh": "弹子石老街",
         "name_en": "Danzishi Old Street",
-        "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_zh": [
+          "长嘉汇弹子石老街"
+        ],
+        "aliases_en": [
+          "Landmark Riverside Danzishi Old Street"
+        ],
         "address_zh": "重庆市南岸区南滨路弹子石老街",
         "address_en": null,
         "district_zh": "南岸区",
@@ -2187,18 +2405,19 @@
         },
         "official_url": null,
         "sources": [
-          "https://whlyw.cq.gov.cn/hdjl_221/xzzq/202601/t20260106_15295212.html"
+          "https://whlyw.cq.gov.cn/hdjl_221/xzzq/202601/t20260106_15295212.html",
+          "https://www.cqna.gov.cn/bm/qwhlyw/zwgk_59968/zfxxgkml/jczwgkwlw/ly/ggfw_407286/gglyjgml/202601/t20260130_15368257.html"
         ],
-        "checked_on": "2026-11-18",
+        "checked_on": "2026-11-27",
         "confidence": "low",
         "notes": "官方目录沿用既有候选记录的核对日，晋级前应重读。",
         "subcategory": "street",
-        "hours_zh": null,
-        "hours_source": null,
+        "hours_zh": "10:00–22:00。",
+        "hours_source": "https://www.cqna.gov.cn/bm/qwhlyw/zwgk_59968/zfxxgkml/jczwgkwlw/ly/ggfw_407286/gglyjgml/202601/t20260130_15368257.html",
         "ticket": {
           "booking": null,
           "passport_required": null,
-          "price_cny": null,
+          "price_cny": 0,
           "closed_weekdays": null,
           "booking_channel_zh": null,
           "booking_url": null
@@ -2217,17 +2436,34 @@
         "alternatives": []
       },
       "score": {
-        "total": 12,
+        "total": 18,
         "parts": {
           "foreigner": 0,
           "confidence": 4,
-          "sources": 5,
-          "complete": 3,
+          "sources": 10,
+          "complete": 4,
           "amap": 0
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "ticket.booking: Codex could not confirm it from an official page; check by hand",
+        "official_url: Codex could not confirm it from an official page; check by hand"
+      ],
+      "alias_evidence": [
+        {
+          "alias": "Landmark Riverside Danzishi Old Street",
+          "lang": "en",
+          "url": "https://www.trip.com/travel-guide/attraction/chongqing/landmark-riverside-danzishi-old-street-36374740/",
+          "kind": "manual"
+        },
+        {
+          "alias": "长嘉汇弹子石老街",
+          "lang": "zh",
+          "url": "https://www.cqna.gov.cn/bm/qwhlyw/zwgk_59968/zfxxgkml/jczwgkwlw/ly/ggfw_407286/gglyjgml/202601/t20260130_15368257.html",
+          "kind": "manual"
+        }
+      ]
     },
     {
       "id": "pl_cq_dazu_shike",
@@ -2240,8 +2476,13 @@
         "tier": "main",
         "name_zh": "重庆大足石刻景区",
         "name_en": "Dazu Rock Carvings",
-        "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_zh": [
+          "大足石刻",
+          "大足石窟"
+        ],
+        "aliases_en": [
+          "Dazu Stone Carvings"
+        ],
         "address_zh": null,
         "address_en": null,
         "district_zh": "大足区",
@@ -2295,7 +2536,27 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "大足石刻",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q651278",
+          "kind": "label"
+        },
+        {
+          "alias": "大足石窟",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q651278",
+          "kind": "wikidata"
+        },
+        {
+          "alias": "Dazu Stone Carvings",
+          "lang": "en",
+          "url": "https://en.wikipedia.org/wiki/Dazu_Stone_Carvings?redirect=no",
+          "kind": "redirect"
+        }
+      ]
     },
     {
       "id": "pl_cq_diaoyucheng",
@@ -2308,8 +2569,20 @@
         "tier": "main",
         "name_zh": "合川钓鱼城",
         "name_en": "Diaoyu Fortress",
-        "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_zh": [
+          "钓鱼城遗址",
+          "钓鱼城",
+          "重庆合川钓鱼城景区",
+          "釣魚城",
+          "釣魚城遺址"
+        ],
+        "aliases_en": [
+          "Diaoyu Cheng",
+          "Site of Diaoyu Fortress",
+          "Diaoyucheng",
+          "Fishing City",
+          "Diaoyucheng Fortress"
+        ],
         "address_zh": null,
         "address_en": null,
         "district_zh": "合川区",
@@ -2320,20 +2593,22 @@
           "english_service": null,
           "evidence": []
         },
-        "official_url": null,
+        "official_url": "https://www.hcdyc.cn/",
         "sources": [
-          "https://whlyw.cq.gov.cn/hdjl_221/xzzq/202601/t20260106_15295212.html"
+          "https://whlyw.cq.gov.cn/hdjl_221/xzzq/202601/t20260106_15295212.html",
+          "https://www.hcdyc.cn/",
+          "https://www.hc.gov.cn/bmjd/bm_100475/whlyw/zwgk_101411/jczwgk/lylyxxgk/ggfw/gglyjgml/202605/t20260526_15703196.html"
         ],
-        "checked_on": "2026-11-18",
+        "checked_on": "2026-11-27",
         "confidence": "low",
         "notes": "官方目录沿用既有候选记录的核对日，晋级前应重读。",
         "subcategory": "history",
-        "hours_zh": null,
-        "hours_source": null,
+        "hours_zh": "08:30–17:00，内部步道及摆渡车另有时段。",
+        "hours_source": "https://www.hcdyc.cn/",
         "ticket": {
-          "booking": null,
+          "booking": "required",
           "passport_required": null,
-          "price_cny": null,
+          "price_cny": 60,
           "closed_weekdays": null,
           "booking_channel_zh": null,
           "booking_url": null
@@ -2352,17 +2627,79 @@
         "alternatives": []
       },
       "score": {
-        "total": 10,
+        "total": 18,
         "parts": {
           "foreigner": 0,
           "confidence": 4,
-          "sources": 5,
-          "complete": 1,
+          "sources": 10,
+          "complete": 4,
           "amap": 0
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "钓鱼城遗址",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q195821",
+          "kind": "label"
+        },
+        {
+          "alias": "钓鱼城",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q195821",
+          "kind": "wikidata"
+        },
+        {
+          "alias": "Diaoyu Cheng",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q195821",
+          "kind": "wikidata"
+        },
+        {
+          "alias": "Site of Diaoyu Fortress",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q195821",
+          "kind": "wikidata"
+        },
+        {
+          "alias": "Diaoyucheng",
+          "lang": "en",
+          "url": "https://en.wikipedia.org/wiki/Diaoyucheng",
+          "kind": "wikipedia"
+        },
+        {
+          "alias": "Fishing City",
+          "lang": "en",
+          "url": "https://en.wikipedia.org/wiki/Fishing_City?redirect=no",
+          "kind": "redirect"
+        },
+        {
+          "alias": "Diaoyucheng Fortress",
+          "lang": "en",
+          "url": "https://en.wikipedia.org/wiki/Diaoyucheng_Fortress?redirect=no",
+          "kind": "redirect"
+        },
+        {
+          "alias": "重庆合川钓鱼城景区",
+          "lang": "zh",
+          "url": "https://whlyw.cq.gov.cn/hdjl_221/xzzq/202601/t20260106_15295212.html",
+          "kind": "discovery"
+        },
+        {
+          "alias": "釣魚城",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q195821",
+          "kind": "published_traditional"
+        },
+        {
+          "alias": "釣魚城遺址",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q195821",
+          "kind": "published_traditional"
+        }
+      ]
     },
     {
       "id": "pl_cq_dingjiapo_wangshuhua",
@@ -2440,8 +2777,13 @@
         "tier": "main",
         "name_zh": "鹅岭贰厂",
         "name_en": "Testbed 2 Arts Center",
-        "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_zh": [
+          "鹅岭贰厂文创公园",
+          "鹅岭二厂"
+        ],
+        "aliases_en": [
+          "Testbed 2"
+        ],
         "address_zh": null,
         "address_en": null,
         "district_zh": "渝中区",
@@ -2494,7 +2836,27 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "鹅岭贰厂文创公园",
+          "lang": "zh",
+          "url": "https://www.cqyz.gov.cn/zjyz/lyyz/rmdkd/202202/t20220215_10397729.html",
+          "kind": "manual"
+        },
+        {
+          "alias": "鹅岭二厂",
+          "lang": "zh",
+          "url": "https://admin.cq.gov.cn/ywdt/bmts/202308/t20230814_12237650.html",
+          "kind": "manual"
+        },
+        {
+          "alias": "Testbed 2",
+          "lang": "en",
+          "url": "https://www.ichongqing.info/attraction/testbed-2-arts-center/",
+          "kind": "manual"
+        }
+      ]
     },
     {
       "id": "pl_cq_eling_gongyuan",
@@ -2507,7 +2869,9 @@
         "tier": "main",
         "name_zh": "鹅岭公园",
         "name_en": "Eling Park",
-        "aliases_zh": [],
+        "aliases_zh": [
+          "鵝嶺公園"
+        ],
         "aliases_en": [],
         "address_zh": null,
         "address_en": null,
@@ -2561,7 +2925,15 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "鵝嶺公園",
+          "lang": "zh",
+          "url": "https://zh.wikipedia.org/wiki/%E9%B5%9D%E5%B6%BA%E5%85%AC%E5%9C%92?redirect=no",
+          "kind": "published_traditional"
+        }
+      ]
     },
     {
       "id": "pl_cq_fengdu_mingshan",
@@ -2574,7 +2946,9 @@
         "tier": "backup",
         "name_zh": "丰都名山风景区",
         "name_en": "Fengdu Mingshan Scenic Area",
-        "aliases_zh": [],
+        "aliases_zh": [
+          "重庆丰都名山风景区"
+        ],
         "aliases_en": [],
         "address_zh": "丰都县名山街道名山路152号",
         "address_en": null,
@@ -2588,18 +2962,19 @@
         },
         "official_url": null,
         "sources": [
-          "https://whlyw.cq.gov.cn/hdjl_221/xzzq/202601/t20260106_15295212.html"
+          "https://whlyw.cq.gov.cn/hdjl_221/xzzq/202601/t20260106_15295212.html",
+          "https://www.cqfd.gov.cn/bm/whhlyfzwyh/zwgk_36090/zfxxgkml/jczwgk/ggwhfwly/ggfw_273610/ggwljgml/202605/t20260526_15705366.html"
         ],
-        "checked_on": "2026-11-18",
+        "checked_on": "2026-11-27",
         "confidence": "low",
         "notes": "官方目录沿用既有候选记录的核对日，晋级前应重读。",
         "subcategory": "history",
-        "hours_zh": null,
-        "hours_source": null,
+        "hours_zh": "3–11月08:00–17:20，16:50停止入园。淡季08:00–16:50，16:20停止入园。",
+        "hours_source": "https://www.cqfd.gov.cn/bm/whhlyfzwyh/zwgk_36090/zfxxgkml/jczwgk/ggwhfwly/ggfw_273610/ggwljgml/202605/t20260526_15705366.html",
         "ticket": {
           "booking": null,
           "passport_required": null,
-          "price_cny": null,
+          "price_cny": 90,
           "closed_weekdays": null,
           "booking_channel_zh": null,
           "booking_url": null
@@ -2618,17 +2993,28 @@
         "alternatives": []
       },
       "score": {
-        "total": 12,
+        "total": 18,
         "parts": {
           "foreigner": 0,
           "confidence": 4,
-          "sources": 5,
-          "complete": 3,
+          "sources": 10,
+          "complete": 4,
           "amap": 0
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "ticket.booking: Codex could not confirm it from an official page; check by hand",
+        "official_url: Codex could not confirm it from an official page; check by hand"
+      ],
+      "alias_evidence": [
+        {
+          "alias": "重庆丰都名山风景区",
+          "lang": "zh",
+          "url": "https://whlyw.cq.gov.cn/hdjl_221/xzzq/202601/t20260106_15295212.html",
+          "kind": "discovery"
+        }
+      ]
     },
     {
       "id": "pl_cq_fengdu_xueyudong",
@@ -2641,7 +3027,9 @@
         "tier": "backup",
         "name_zh": "丰都雪玉洞",
         "name_en": "Fengdu Snow Jade Cave",
-        "aliases_zh": [],
+        "aliases_zh": [
+          "重庆丰都雪玉洞景区"
+        ],
         "aliases_en": [],
         "address_zh": "丰都县包鸾镇日照坝村雪玉洞景区",
         "address_en": null,
@@ -2655,18 +3043,19 @@
         },
         "official_url": null,
         "sources": [
-          "https://whlyw.cq.gov.cn/hdjl_221/xzzq/202601/t20260106_15295212.html"
+          "https://whlyw.cq.gov.cn/hdjl_221/xzzq/202601/t20260106_15295212.html",
+          "https://www.cqfd.gov.cn/bm/whhlyfzwyh/zwgk_36090/zfxxgkml/jczwgk/ggwhfwly/ggfw_273610/ggwljgml/202605/t20260526_15705366.html"
         ],
-        "checked_on": "2026-11-18",
+        "checked_on": "2026-11-27",
         "confidence": "low",
         "notes": "官方目录沿用既有候选记录的核对日，晋级前应重读。",
         "subcategory": "park",
-        "hours_zh": null,
-        "hours_source": null,
+        "hours_zh": "08:30–17:30。",
+        "hours_source": "https://www.cqfd.gov.cn/bm/whhlyfzwyh/zwgk_36090/zfxxgkml/jczwgk/ggwhfwly/ggfw_273610/ggwljgml/202605/t20260526_15705366.html",
         "ticket": {
           "booking": null,
           "passport_required": null,
-          "price_cny": null,
+          "price_cny": 98,
           "closed_weekdays": null,
           "booking_channel_zh": null,
           "booking_url": null
@@ -2685,17 +3074,28 @@
         "alternatives": []
       },
       "score": {
-        "total": 12,
+        "total": 18,
         "parts": {
           "foreigner": 0,
           "confidence": 4,
-          "sources": 5,
-          "complete": 3,
+          "sources": 10,
+          "complete": 4,
           "amap": 0
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "ticket.booking: Codex could not confirm it from an official page; check by hand",
+        "official_url: Codex could not confirm it from an official page; check by hand"
+      ],
+      "alias_evidence": [
+        {
+          "alias": "重庆丰都雪玉洞景区",
+          "lang": "zh",
+          "url": "https://whlyw.cq.gov.cn/hdjl_221/xzzq/202601/t20260106_15295212.html",
+          "kind": "discovery"
+        }
+      ]
     },
     {
       "id": "pl_cq_ganpopo_laoxao",
@@ -2850,20 +3250,21 @@
           "english_service": null,
           "evidence": []
         },
-        "official_url": null,
+        "official_url": "https://gt517.com/",
         "sources": [
-          "https://whlyw.cq.gov.cn/hdjl_221/xzzq/202601/t20260106_15295212.html"
+          "https://whlyw.cq.gov.cn/hdjl_221/xzzq/202601/t20260106_15295212.html",
+          "https://gt517.com/"
         ],
-        "checked_on": "2026-11-18",
+        "checked_on": "2026-11-27",
         "confidence": "low",
         "notes": "官方目录沿用既有候选记录的核对日，晋级前应重读。",
         "subcategory": "history",
-        "hours_zh": null,
-        "hours_source": null,
+        "hours_zh": "古镇官方攻略列入园08:30–17:30。",
+        "hours_source": "https://gt517.com/",
         "ticket": {
           "booking": null,
           "passport_required": null,
-          "price_cny": null,
+          "price_cny": 0,
           "closed_weekdays": null,
           "booking_channel_zh": null,
           "booking_url": null
@@ -2882,17 +3283,19 @@
         "alternatives": []
       },
       "score": {
-        "total": 12,
+        "total": 20,
         "parts": {
           "foreigner": 0,
           "confidence": 4,
-          "sources": 5,
-          "complete": 3,
+          "sources": 10,
+          "complete": 6,
           "amap": 0
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "ticket.booking: Codex could not confirm it from an official page; check by hand"
+      ]
     },
     {
       "id": "pl_cq_gongye_bolanyuan",
@@ -2905,7 +3308,9 @@
         "tier": "main",
         "name_zh": "重庆工业文化博览园",
         "name_en": "Chongqing Industrial Museum Park",
-        "aliases_zh": [],
+        "aliases_zh": [
+          "重庆工业博物馆"
+        ],
         "aliases_en": [],
         "address_zh": "重庆市大渡口区义渡路999号",
         "address_en": null,
@@ -2919,18 +3324,19 @@
         },
         "official_url": null,
         "sources": [
-          "https://whlyw.cq.gov.cn/hdjl_221/xzzq/202601/t20260106_15295212.html"
+          "https://whlyw.cq.gov.cn/hdjl_221/xzzq/202601/t20260106_15295212.html",
+          "https://whlyw.cq.gov.cn/hdjl_221/xzzq/202601/t20260115_15320860.html"
         ],
-        "checked_on": "2026-11-18",
+        "checked_on": "2026-11-27",
         "confidence": "low",
         "notes": "官方目录沿用既有候选记录的核对日，晋级前应重读。",
         "subcategory": "museum",
-        "hours_zh": null,
-        "hours_source": null,
+        "hours_zh": "馆内09:00–17:00。",
+        "hours_source": "https://whlyw.cq.gov.cn/hdjl_221/xzzq/202601/t20260115_15320860.html",
         "ticket": {
           "booking": null,
           "passport_required": null,
-          "price_cny": null,
+          "price_cny": 0,
           "closed_weekdays": null,
           "booking_channel_zh": null,
           "booking_url": null
@@ -2949,17 +3355,28 @@
         "alternatives": []
       },
       "score": {
-        "total": 12,
+        "total": 18,
         "parts": {
           "foreigner": 0,
           "confidence": 4,
-          "sources": 5,
-          "complete": 3,
+          "sources": 10,
+          "complete": 4,
           "amap": 0
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "ticket.booking: Codex could not confirm it from an official page; check by hand",
+        "official_url: Codex could not confirm it from an official page; check by hand"
+      ],
+      "alias_evidence": [
+        {
+          "alias": "重庆工业博物馆",
+          "lang": "zh",
+          "url": "https://www.cq.gov.cn/zwgk/zfxxgkml/zdlyxxgk/shgysy/ggwhty/whly/201909/t20190924_8807327.html",
+          "kind": "manual"
+        }
+      ]
     },
     {
       "id": "pl_cq_guanyinqiao",
@@ -2972,8 +3389,12 @@
         "tier": "main",
         "name_zh": "观音桥商圈",
         "name_en": "Guanyinqiao Shopping District",
-        "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_zh": [
+          "重庆观音桥商圈"
+        ],
+        "aliases_en": [
+          "Guanyinqiao Pedestrian Street"
+        ],
         "address_zh": null,
         "address_en": null,
         "district_zh": "江北区",
@@ -3026,7 +3447,26 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "hours_zh: Codex could not confirm it from an official page; check by hand",
+        "ticket.price_cny: Codex could not confirm it from an official page; check by hand",
+        "ticket.booking: Codex could not confirm it from an official page; check by hand",
+        "official_url: Codex could not confirm it from an official page; check by hand"
+      ],
+      "alias_evidence": [
+        {
+          "alias": "Guanyinqiao Pedestrian Street",
+          "lang": "en",
+          "url": "https://www.trip.com/travel-guide/attraction/chongqing/guanyinqiao-pedestrian-street-10559506",
+          "kind": "manual"
+        },
+        {
+          "alias": "重庆观音桥商圈",
+          "lang": "zh",
+          "url": "https://whlyw.cq.gov.cn/hdjl_221/xzzq/202601/t20260106_15295212.html",
+          "kind": "discovery"
+        }
+      ]
     },
     {
       "id": "pl_cq_hanhai_haiyang",
@@ -3093,7 +3533,12 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "hours_zh: Codex could not confirm it from an official page; check by hand",
+        "ticket.price_cny: Codex could not confirm it from an official page; check by hand",
+        "ticket.booking: Codex could not confirm it from an official page; check by hand",
+        "official_url: Codex could not confirm it from an official page; check by hand"
+      ]
     },
     {
       "id": "pl_cq_heishangu",
@@ -3106,7 +3551,10 @@
         "tier": "main",
         "name_zh": "万盛黑山谷",
         "name_en": "Wansheng Black Valley",
-        "aliases_zh": [],
+        "aliases_zh": [
+          "万盛黑山谷景区",
+          "重庆万盛黑山谷景区"
+        ],
         "aliases_en": [],
         "address_zh": null,
         "address_en": null,
@@ -3120,14 +3568,15 @@
         },
         "official_url": null,
         "sources": [
-          "https://whlyw.cq.gov.cn/hdjl_221/xzzq/202601/t20260106_15295212.html"
+          "https://whlyw.cq.gov.cn/hdjl_221/xzzq/202601/t20260106_15295212.html",
+          "https://ws.cq.gov.cn/bm/lfw/bmgkml/jczwgk/lyly/ggfw_390205/lyfw/Ajjbqk/202512/t20251217_15251052.html"
         ],
-        "checked_on": "2026-11-18",
+        "checked_on": "2026-11-27",
         "confidence": "low",
         "notes": "官方目录沿用既有候选记录的核对日，晋级前应重读。",
         "subcategory": "park",
-        "hours_zh": null,
-        "hours_source": null,
+        "hours_zh": "官方售票时段：3–10月08:30–15:30，11月–次年2月09:00–15:00。闭园时间看景区公告。",
+        "hours_source": "https://ws.cq.gov.cn/bm/lfw/bmgkml/jczwgk/lyly/ggfw_390205/lyfw/Ajjbqk/202512/t20251217_15251052.html",
         "ticket": {
           "booking": null,
           "passport_required": null,
@@ -3150,17 +3599,35 @@
         "alternatives": []
       },
       "score": {
-        "total": 10,
+        "total": 17,
         "parts": {
           "foreigner": 0,
           "confidence": 4,
-          "sources": 5,
-          "complete": 1,
+          "sources": 10,
+          "complete": 3,
           "amap": 0
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "ticket.price_cny: Codex could not confirm it from an official page; check by hand",
+        "ticket.booking: Codex could not confirm it from an official page; check by hand",
+        "official_url: Codex could not confirm it from an official page; check by hand"
+      ],
+      "alias_evidence": [
+        {
+          "alias": "万盛黑山谷景区",
+          "lang": "zh",
+          "url": "https://www.cq.gov.cn/zjcq/cycq/zmjd/zqaaaaajjq/202606/t20260604_15729059.html",
+          "kind": "manual"
+        },
+        {
+          "alias": "重庆万盛黑山谷景区",
+          "lang": "zh",
+          "url": "https://whlyw.cq.gov.cn/hdjl_221/xzzq/202601/t20260106_15295212.html",
+          "kind": "discovery"
+        }
+      ]
     },
     {
       "id": "pl_cq_heyanchuancai",
@@ -3238,7 +3705,9 @@
         "tier": "main",
         "name_zh": "鸿恩寺公园",
         "name_en": "Hong'en Temple Park",
-        "aliases_zh": [],
+        "aliases_zh": [
+          "鸿恩寺森林公园"
+        ],
         "aliases_en": [],
         "address_zh": "重庆市江北区大石坝七村200号",
         "address_en": null,
@@ -3292,7 +3761,20 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "hours_zh: Codex could not confirm it from an official page; check by hand",
+        "ticket.price_cny: Codex could not confirm it from an official page; check by hand",
+        "ticket.booking: Codex could not confirm it from an official page; check by hand",
+        "official_url: Codex could not confirm it from an official page; check by hand"
+      ],
+      "alias_evidence": [
+        {
+          "alias": "鸿恩寺森林公园",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q97621239",
+          "kind": "label"
+        }
+      ]
     },
     {
       "id": "pl_cq_hongyadong",
@@ -3306,10 +3788,12 @@
         "name_zh": "洪崖洞民俗风貌区",
         "name_en": "Hongyadong",
         "aliases_zh": [
-          "洪崖洞"
+          "洪崖洞",
+          "重庆洪崖洞民俗风貌区"
         ],
         "aliases_en": [
-          "Hongya Cave"
+          "Hongya Cave",
+          "Hongya dong"
         ],
         "address_zh": "重庆市渝中区嘉滨路88号",
         "address_en": null,
@@ -3364,7 +3848,33 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "洪崖洞",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q32171478",
+          "kind": "legacy"
+        },
+        {
+          "alias": "Hongya Cave",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q32171478",
+          "kind": "legacy"
+        },
+        {
+          "alias": "Hongya dong",
+          "lang": "en",
+          "url": "https://en.wikipedia.org/wiki/Hongya_dong?redirect=no",
+          "kind": "redirect"
+        },
+        {
+          "alias": "重庆洪崖洞民俗风貌区",
+          "lang": "zh",
+          "url": "https://whlyw.cq.gov.cn/hdjl_221/xzzq/202601/t20260106_15295212.html",
+          "kind": "discovery"
+        }
+      ]
     },
     {
       "id": "pl_cq_hongyan",
@@ -3377,8 +3887,12 @@
         "tier": "main",
         "name_zh": "红岩革命纪念馆",
         "name_en": "Hongyan Revolution Memorial Hall",
-        "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_zh": [
+          "重庆红岩革命纪念馆"
+        ],
+        "aliases_en": [
+          "Hongyan Revolutionary Memorial Hall"
+        ],
         "address_zh": "渝中区红岩村52号",
         "address_en": null,
         "district_zh": "渝中区",
@@ -3389,20 +3903,23 @@
           "english_service": null,
           "evidence": []
         },
-        "official_url": null,
+        "official_url": "https://www.hongyanmuseum.cn/",
         "sources": [
-          "https://whlyw.cq.gov.cn/hdjl_221/xzzq/202601/t20260106_15295212.html"
+          "https://whlyw.cq.gov.cn/hdjl_221/xzzq/202601/t20260106_15295212.html",
+          "https://www.cqyz.gov.cn/bm_229/qwhlyw/zwgk_97157/jczwgk/xxgk/ggfw_122762/ggwljg_122627/202508/t20250819_14915593.html",
+          "https://whlyw.cq.gov.cn/hdjl_221/xzzq/202601/t20260115_15320860.html",
+          "https://whlyw.cq.gov.cn/zwxx_221/bmdt/tzgg/202511/t20251103_15136018.html"
         ],
-        "checked_on": "2026-11-18",
+        "checked_on": "2026-11-27",
         "confidence": "low",
         "notes": "官方目录沿用既有候选记录的核对日，晋级前应重读。",
         "subcategory": "museum",
-        "hours_zh": null,
-        "hours_source": null,
+        "hours_zh": "红岩村52号馆09:00–17:00，停止入场时间及临时安排见馆方公告。",
+        "hours_source": "https://www.cqyz.gov.cn/bm_229/qwhlyw/zwgk_97157/jczwgk/xxgk/ggfw_122762/ggwljg_122627/202508/t20250819_14915593.html",
         "ticket": {
-          "booking": null,
+          "booking": "none",
           "passport_required": null,
-          "price_cny": null,
+          "price_cny": 0,
           "closed_weekdays": null,
           "booking_channel_zh": null,
           "booking_url": null
@@ -3421,17 +3938,31 @@
         "alternatives": []
       },
       "score": {
-        "total": 12,
+        "total": 20,
         "parts": {
           "foreigner": 0,
           "confidence": 4,
-          "sources": 5,
-          "complete": 3,
+          "sources": 10,
+          "complete": 6,
           "amap": 0
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "Hongyan Revolutionary Memorial Hall",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q48889752",
+          "kind": "label"
+        },
+        {
+          "alias": "重庆红岩革命纪念馆",
+          "lang": "zh",
+          "url": "https://whlyw.cq.gov.cn/hdjl_221/xzzq/202601/t20260106_15295212.html",
+          "kind": "discovery"
+        }
+      ]
     },
     {
       "id": "pl_cq_huangmingkang",
@@ -3509,8 +4040,13 @@
         "tier": "main",
         "name_zh": "重庆湖广会馆",
         "name_en": "Huguang Guild Hall",
-        "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_zh": [
+          "湖广会馆",
+          "重慶湖廣會館"
+        ],
+        "aliases_en": [
+          "Huguang Huiguan"
+        ],
         "address_zh": "渝中区芭蕉园1号",
         "address_en": null,
         "district_zh": "渝中区",
@@ -3523,14 +4059,15 @@
         },
         "official_url": null,
         "sources": [
-          "https://whlyw.cq.gov.cn/hdjl_221/xzzq/202601/t20260106_15295212.html"
+          "https://whlyw.cq.gov.cn/hdjl_221/xzzq/202601/t20260106_15295212.html",
+          "https://www.cqyz.gov.cn/bm_229/qwhlyw/zwgk_97157/jczwgk/xxgk/ggfw_122762/ggwljg_122627/202508/t20250819_14915593.html"
         ],
-        "checked_on": "2026-11-18",
+        "checked_on": "2026-11-27",
         "confidence": "low",
         "notes": "官方目录沿用既有候选记录的核对日，晋级前应重读。",
         "subcategory": "history",
-        "hours_zh": null,
-        "hours_source": null,
+        "hours_zh": "09:00–18:00，17:00停售。",
+        "hours_source": "https://www.cqyz.gov.cn/bm_229/qwhlyw/zwgk_97157/jczwgk/xxgk/ggfw_122762/ggwljg_122627/202508/t20250819_14915593.html",
         "ticket": {
           "booking": null,
           "passport_required": null,
@@ -3553,17 +4090,41 @@
         "alternatives": []
       },
       "score": {
-        "total": 12,
+        "total": 18,
         "parts": {
           "foreigner": 0,
           "confidence": 4,
-          "sources": 5,
-          "complete": 3,
+          "sources": 10,
+          "complete": 4,
           "amap": 0
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "ticket.price_cny: Codex could not confirm it from an official page; check by hand",
+        "ticket.booking: Codex could not confirm it from an official page; check by hand",
+        "official_url: Codex could not confirm it from an official page; check by hand"
+      ],
+      "alias_evidence": [
+        {
+          "alias": "湖广会馆",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q16078575",
+          "kind": "wikidata"
+        },
+        {
+          "alias": "Huguang Huiguan",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q16078575",
+          "kind": "label"
+        },
+        {
+          "alias": "重慶湖廣會館",
+          "lang": "zh",
+          "url": "https://zh.wikipedia.org/wiki/%E9%87%8D%E6%85%B6%E6%B9%96%E5%BB%A3%E6%9C%83%E9%A4%A8?redirect=no",
+          "kind": "published_traditional"
+        }
+      ]
     },
     {
       "id": "pl_cq_ifs_chongqing_retail",
@@ -3630,77 +4191,6 @@
       "flags": []
     },
     {
-      "id": "pl_cq_jiafayilin",
-      "source_file": "C8/chongqing-hotel.json",
-      "status": "pending",
-      "draft": {
-        "id": "pl_cq_jiafayilin",
-        "city": "chongqing",
-        "category": "hotel",
-        "tier": "backup",
-        "name_zh": "重庆嘉发希尔顿逸林酒店",
-        "name_en": "DoubleTree by Hilton Hotel Chongqing - Nan'an",
-        "aliases_zh": [],
-        "aliases_en": [],
-        "address_zh": null,
-        "address_en": null,
-        "district_zh": "南岸区",
-        "nearest_metro": null,
-        "foreigner_signals": {
-          "english_signage": null,
-          "foreign_cards": null,
-          "english_service": null,
-          "evidence": [
-            "https://www.hilton.com.cn/zh-cn/hotels/ckgnadi-doubletree-by-hilton-hotel-chongqing--nanan"
-          ]
-        },
-        "official_url": "https://www.hilton.com.cn/zh-cn/hotels/ckgnadi-doubletree-by-hilton-hotel-chongqing--nanan",
-        "sources": [
-          "https://www.hilton.com.cn/zh-cn/hotels/ckgnadi-doubletree-by-hilton-hotel-chongqing--nanan",
-          "https://www.hilton.com.cn/zh-cn/locations/china/chongqing-chongqing"
-        ],
-        "checked_on": "2026-11-27",
-        "confidence": "medium",
-        "notes": "希尔顿城市页显示 2026-11-27 入住、11-28 退房的起价。 官网样本为每房每晚人民币 ¥418。当前价以所选日期及房型的报价为准。",
-        "subcategory": "hotel",
-        "intro_short_zh": "在南岸一带安排住宿可考虑这里。",
-        "intro_short_en": "A DoubleTree hotel in Nan'an.",
-        "intro_long_zh": "在南岸一带安排住宿可考虑这里。可在品牌官网查看房型和入住安排。",
-        "intro_long_en": "A DoubleTree hotel in Nan'an. See the hotel's own website for room types and check-in details.",
-        "star": null,
-        "price_band": "<500",
-        "accepts_foreigners": true,
-        "foreign_service": {
-          "english_front_desk": null,
-          "foreign_guest_share": null,
-          "foreign_guest_experience": null,
-          "international_brand": "Hilton",
-          "evidence_zh": "重庆嘉发希尔顿逸林酒店由国际酒店品牌或集团 Hilton 的官网正式列出并提供预订入口。",
-          "evidence": [
-            "https://www.hilton.com.cn/zh-cn/hotels/ckgnadi-doubletree-by-hilton-hotel-chongqing--nanan"
-          ]
-        }
-      },
-      "external_signals": [],
-      "location": null,
-      "amap": {
-        "status": "not-run",
-        "alternatives": []
-      },
-      "score": {
-        "total": 26,
-        "parts": {
-          "foreigner": 0,
-          "confidence": 12,
-          "sources": 10,
-          "complete": 4,
-          "amap": 0
-        },
-        "external_used": false
-      },
-      "flags": []
-    },
-    {
       "id": "pl_cq_jiahe_xiabu_store",
       "source_file": "C8/chongqing-shopping.json",
       "status": "pending",
@@ -3731,11 +4221,14 @@
           "https://www.rongchang.gov.cn/zwxx/bmjz/202504/t20250429_14571083.html",
           "https://www.rongchang.gov.cn/bm/qwhlyw/bmdt/202408/t20240802_13456855.html",
           "https://www.rongchang.gov.cn/bm/qwhlyw/zwgk_70831/zfxxgkml_160173/jczwgk_158289/ggwhfwlyjczwgk/ggfw/qwhd/202605/t20260527_15708393.html",
-          "https://www.rongchang.gov.cn/bm/qwhlyw/zwgk_70831/zfxxgkml_160173/jczwgk_158289/ggwhfwlyjczwgk/ggfw/qwhd/202606/t20260625_15776464.html"
+          "https://www.rongchang.gov.cn/bm/qwhlyw/zwgk_70831/zfxxgkml_160173/jczwgk_158289/ggwhfwlyjczwgk/ggfw/qwhd/202606/t20260625_15776464.html",
+          "https://www.cqnews.net/app/content_1494771752297852928.html",
+          "https://www.cqnews.net/web/content_1494772447292354560.html",
+          "https://www.rongchang.gov.cn/bm/qwhlyw/bmdt/202505/t20250506_14584739.html"
         ],
-        "checked_on": "2026-11-27",
+        "checked_on": "2026-11-28",
         "confidence": "medium",
-        "notes": "区政府公开活动曾列店名，当前散客开放与门牌需进一步核对。 近期官方资料确认身份，具体到店位置待复核。 区文旅委活动日程核到2026年6月及7月在加合夏布办体验，区政府旧资料确认夏布小镇商家身份。日常散客开放、门牌及预约规则仍待核，继续保留候补。",
+        "notes": "区政府公开活动曾列店名，当前散客开放与门牌需进一步核对。 近期官方资料确认身份，具体到店位置待复核。 区文旅委活动日程核到2026年6月及7月在加合夏布办体验，区政府旧资料确认夏布小镇商家身份。日常散客开放、门牌及预约规则仍待核，继续保留候补。 重庆非遗发布的清单分别列工坊为荣滨南路东段47号附10号、传承所为附14号。现有公开资料尚未确定哪个门牌对应散客零售入口。",
         "subcategory": "boutique",
         "hours_zh": null,
         "hours_source": null,
@@ -3775,7 +4268,9 @@
         "name_zh": "重庆建川博物馆",
         "name_en": "Jianchuan Museum",
         "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_en": [
+          "Chongqing Jianchuan Museum"
+        ],
         "address_zh": "重庆市九龙坡区谢家湾鹤皋村1号",
         "address_en": null,
         "district_zh": "九龙坡区",
@@ -3788,18 +4283,20 @@
         },
         "official_url": null,
         "sources": [
-          "https://whlyw.cq.gov.cn/hdjl_221/xzzq/202601/t20260106_15295212.html"
+          "https://whlyw.cq.gov.cn/hdjl_221/xzzq/202601/t20260106_15295212.html",
+          "https://cqjlp.gov.cn/bmjz/qzfbm_97119/qwhlyw_97727/zwgk_97124/gkml/jczwgk/ggwhfwly/ggfw/ggwljgml/202601/t20260116_15326595.html",
+          "https://cqjlp.gov.cn/bmjz/qzfbm_97119/qwhlyw_97727/zwgk_97124/gkml/jczwgk/ggwhfwly/ggfw/ggwljgml/202608/t20260807_15904141.html"
         ],
-        "checked_on": "2026-11-18",
+        "checked_on": "2026-11-27",
         "confidence": "low",
         "notes": "官方目录沿用既有候选记录的核对日，晋级前应重读。",
         "subcategory": "museum",
-        "hours_zh": null,
-        "hours_source": null,
+        "hours_zh": "09:00–17:30，17:00停止入馆。除夕闭馆。",
+        "hours_source": "https://cqjlp.gov.cn/bmjz/qzfbm_97119/qwhlyw_97727/zwgk_97124/gkml/jczwgk/ggwhfwly/ggfw/ggwljgml/202601/t20260116_15326595.html",
         "ticket": {
-          "booking": null,
+          "booking": "none",
           "passport_required": null,
-          "price_cny": null,
+          "price_cny": 50,
           "closed_weekdays": null,
           "booking_channel_zh": null,
           "booking_url": null
@@ -3818,17 +4315,27 @@
         "alternatives": []
       },
       "score": {
-        "total": 12,
+        "total": 18,
         "parts": {
           "foreigner": 0,
           "confidence": 4,
-          "sources": 5,
-          "complete": 3,
+          "sources": 10,
+          "complete": 4,
           "amap": 0
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "official_url: Codex could not confirm it from an official page; check by hand"
+      ],
+      "alias_evidence": [
+        {
+          "alias": "Chongqing Jianchuan Museum",
+          "lang": "en",
+          "url": "https://www.jc-museum.cn/en/512dzg/ticket/",
+          "kind": "manual"
+        }
+      ]
     },
     {
       "id": "pl_cq_jiangbeiyilin",
@@ -3878,6 +4385,7 @@
         "intro_long_en": "Consider this DoubleTree for a shopping day in Guanyinqiao. The English directions name Paradise Walk and describe the neighborhood.",
         "star": null,
         "price_band": "<500",
+        "hotel_class": "upscale",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -3907,9 +4415,7 @@
         },
         "external_used": false
       },
-      "flags": [
-        "pl_cq_jiangbeiyilin: unknown field 'hotel_class' is dropped on import"
-      ]
+      "flags": []
     },
     {
       "id": "pl_cq_jiangbeizuixierdun",
@@ -3953,6 +4459,7 @@
         "intro_long_en": "Choose this side of the river if your plans are centered on Jiangbeizui. Hilton's location information identifies Building 3 at Lifan Center.",
         "star": null,
         "price_band": "<500",
+        "hotel_class": "midscale",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -3982,9 +4489,7 @@
         },
         "external_used": false
       },
-      "flags": [
-        "pl_cq_jiangbeizuixierdun: unknown field 'hotel_class' is dropped on import"
-      ]
+      "flags": []
     },
     {
       "id": "pl_cq_jiangyuan_qianjiang",
@@ -4127,8 +4632,19 @@
         "tier": "main",
         "name_zh": "解放碑",
         "name_en": "Jiefangbei Monument",
-        "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_zh": [
+          "抗战胜利纪功碑暨人民解放纪念碑",
+          "重庆解放碑",
+          "精神堡垒",
+          "重庆人民解放纪念碑",
+          "抗战胜利纪功碑",
+          "重慶解放碑",
+          "抗戰勝利紀功碑"
+        ],
+        "aliases_en": [
+          "Chongqing People's Liberation Monument",
+          "Liberation Monument in Chongqing"
+        ],
         "address_zh": null,
         "address_en": null,
         "district_zh": "渝中区",
@@ -4182,7 +4698,63 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "抗战胜利纪功碑暨人民解放纪念碑",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q6683399",
+          "kind": "label"
+        },
+        {
+          "alias": "重庆解放碑",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q6683399",
+          "kind": "wikidata"
+        },
+        {
+          "alias": "Chongqing People's Liberation Monument",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q6683399",
+          "kind": "label"
+        },
+        {
+          "alias": "精神堡垒",
+          "lang": "zh",
+          "url": "https://zh.wikipedia.org/wiki/%E7%B2%BE%E7%A5%9E%E5%A0%A1%E5%9E%92?redirect=no",
+          "kind": "redirect"
+        },
+        {
+          "alias": "重庆人民解放纪念碑",
+          "lang": "zh",
+          "url": "https://zh.wikipedia.org/wiki/%E9%87%8D%E5%BA%86%E4%BA%BA%E6%B0%91%E8%A7%A3%E6%94%BE%E7%BA%AA%E5%BF%B5%E7%A2%91?redirect=no",
+          "kind": "redirect"
+        },
+        {
+          "alias": "抗战胜利纪功碑",
+          "lang": "zh",
+          "url": "https://zh.wikipedia.org/wiki/%E6%8A%97%E6%88%98%E8%83%9C%E5%88%A9%E7%BA%AA%E5%8A%9F%E7%A2%91?redirect=no",
+          "kind": "redirect"
+        },
+        {
+          "alias": "Liberation Monument in Chongqing",
+          "lang": "en",
+          "url": "https://en.wikipedia.org/wiki/Liberation_Monument_in_Chongqing",
+          "kind": "wikipedia"
+        },
+        {
+          "alias": "重慶解放碑",
+          "lang": "zh",
+          "url": "https://zh.wikipedia.org/wiki/%E9%87%8D%E6%85%B6%E8%A7%A3%E6%94%BE%E7%A2%91?redirect=no",
+          "kind": "published_traditional"
+        },
+        {
+          "alias": "抗戰勝利紀功碑",
+          "lang": "zh",
+          "url": "https://zh.wikipedia.org/wiki/%E6%8A%97%E6%88%B0%E5%8B%9D%E5%88%A9%E7%B4%80%E5%8A%9F%E7%A2%91?redirect=no",
+          "kind": "published_traditional"
+        }
+      ]
     },
     {
       "id": "pl_cq_jiefangbeiwanhao",
@@ -4199,7 +4771,7 @@
         "aliases_en": [],
         "address_zh": "重庆市民生路235号",
         "address_en": "235 Minsheng Road, Chongqing, China 400010",
-        "district_zh": null,
+        "district_zh": "渝中区",
         "nearest_metro": null,
         "foreigner_signals": {
           "english_signage": null,
@@ -4214,9 +4786,11 @@
           "https://www.marriott.com/en-us/hotels/ckgjw-jw-marriott-hotel-chongqing/overview/",
           "https://www.marriott.com/en-us/destinations/china/chongqing.mi",
           "https://help.marriott.com/s/article/Article-24483",
-          "https://www.marriott.com.cn/hotels/ckgjw-jw-marriott-hotel-chongqing/overview/"
+          "https://www.marriott.com.cn/hotels/ckgjw-jw-marriott-hotel-chongqing/overview/",
+          "https://www.marriott.com.cn/hotels/ckgjw-jw-marriott-hotel-chongqing/",
+          "https://kjj.cq.gov.cn/zwxx_176/tzgg/202403/t20240320_13051556.html"
         ],
-        "checked_on": "2026-11-27",
+        "checked_on": "2026-11-28",
         "confidence": "medium",
         "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sat, Dec 26 - Sun, Dec 27。 官网样本为每房每晚人民币 ¥651。当前价以所选日期及房型的报价为准。 分档依据：万豪集团将此品牌列为 Luxury。",
         "subcategory": "hotel",
@@ -4226,6 +4800,7 @@
         "intro_long_en": "This address keeps you in the Yuzhong Peninsula. Marriott lists English among the hotel's languages and an indoor pool for a break between city outings.",
         "star": null,
         "price_band": "500-1000",
+        "hotel_class": "luxury",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -4255,9 +4830,7 @@
         },
         "external_used": false
       },
-      "flags": [
-        "pl_cq_jiefangbeiwanhao: unknown field 'hotel_class' is dropped on import"
-      ]
+      "flags": []
     },
     {
       "id": "pl_cq_jiefangbeiweisiting",
@@ -4301,6 +4874,7 @@
         "intro_long_en": "Use Xiaoshizi on Line 1 or Linjiangmen on Line 2 depending on the day's plans. The property lists English as one of its spoken languages.",
         "star": null,
         "price_band": "1000-2000",
+        "hotel_class": "upscale",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -4330,9 +4904,7 @@
         },
         "external_used": false
       },
-      "flags": [
-        "pl_cq_jiefangbeiweisiting: unknown field 'hotel_class' is dropped on import"
-      ]
+      "flags": []
     },
     {
       "id": "pl_cq_jindaoxia",
@@ -4359,14 +4931,15 @@
         },
         "official_url": null,
         "sources": [
-          "https://whlyw.cq.gov.cn/hdjl_221/xzzq/202601/t20260106_15295212.html"
+          "https://whlyw.cq.gov.cn/hdjl_221/xzzq/202601/t20260106_15295212.html",
+          "https://www.beibei.gov.cn/bm/qwhlyw/zwgk_58246/zfxxgk_bm/jczfxxgk/lyly/ggfw/gglyjgml/202312/t20231205_12655980.html"
         ],
-        "checked_on": "2026-11-18",
+        "checked_on": "2026-11-27",
         "confidence": "low",
         "notes": "官方目录沿用既有候选记录的核对日，晋级前应重读。",
         "subcategory": "park",
-        "hours_zh": null,
-        "hours_source": null,
+        "hours_zh": "区旅游目录载08:30–16:00，路线及季节性调整看当期公告。",
+        "hours_source": "https://www.beibei.gov.cn/bm/qwhlyw/zwgk_58246/zfxxgk_bm/jczfxxgk/lyly/ggfw/gglyjgml/202312/t20231205_12655980.html",
         "ticket": {
           "booking": null,
           "passport_required": null,
@@ -4389,17 +4962,21 @@
         "alternatives": []
       },
       "score": {
-        "total": 12,
+        "total": 18,
         "parts": {
           "foreigner": 0,
           "confidence": 4,
-          "sources": 5,
-          "complete": 3,
+          "sources": 10,
+          "complete": 4,
           "amap": 0
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "ticket.price_cny: Codex could not confirm it from an official page; check by hand",
+        "ticket.booking: Codex could not confirm it from an official page; check by hand",
+        "official_url: Codex could not confirm it from an official page; check by hand"
+      ]
     },
     {
       "id": "pl_cq_jinfoshan",
@@ -4412,8 +4989,15 @@
         "tier": "main",
         "name_zh": "金佛山",
         "name_en": "Jinfo Mountain",
-        "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_zh": [
+          "金佛山风景名胜区",
+          "重庆金佛山"
+        ],
+        "aliases_en": [
+          "Mount Jinfo",
+          "Jinfo Shan",
+          "Golden Buddha Mountain"
+        ],
         "address_zh": null,
         "address_en": null,
         "district_zh": "南川区",
@@ -4466,7 +5050,44 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "hours_zh: Codex could not confirm it from an official page; check by hand",
+        "ticket.price_cny: Codex could not confirm it from an official page; check by hand",
+        "ticket.booking: Codex could not confirm it from an official page; check by hand",
+        "official_url: Codex could not confirm it from an official page; check by hand"
+      ],
+      "alias_evidence": [
+        {
+          "alias": "金佛山风景名胜区",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q3321893",
+          "kind": "wikidata"
+        },
+        {
+          "alias": "Mount Jinfo",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q3321893",
+          "kind": "label"
+        },
+        {
+          "alias": "Jinfo Shan",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q3321893",
+          "kind": "wikidata"
+        },
+        {
+          "alias": "Golden Buddha Mountain",
+          "lang": "en",
+          "url": "https://en.wikipedia.org/wiki/Golden_Buddha_Mountain?redirect=no",
+          "kind": "redirect"
+        },
+        {
+          "alias": "重庆金佛山",
+          "lang": "zh",
+          "url": "https://whlyw.cq.gov.cn/hdjl_221/xzzq/202601/t20260106_15295212.html",
+          "kind": "discovery"
+        }
+      ]
     },
     {
       "id": "pl_cq_jinsha_paradise_walk_cq",
@@ -4625,18 +5246,19 @@
         },
         "official_url": null,
         "sources": [
-          "https://whlyw.cq.gov.cn/hdjl_221/xzzq/202601/t20260106_15295212.html"
+          "https://whlyw.cq.gov.cn/hdjl_221/xzzq/202601/t20260106_15295212.html",
+          "https://www.beibei.gov.cn/bm/qwhlyw/zwgk_58246/zfxxgk_bm/jczfxxgk/lyly/ggfw/gglyjgml/202312/t20231205_12655980.html"
         ],
-        "checked_on": "2026-11-18",
+        "checked_on": "2026-11-27",
         "confidence": "low",
         "notes": "官方目录沿用既有候选记录的核对日，晋级前应重读。",
         "subcategory": "park",
-        "hours_zh": null,
-        "hours_source": null,
+        "hours_zh": "区目录载09:00–17:00，索道等项目时段独立。",
+        "hours_source": "https://www.beibei.gov.cn/bm/qwhlyw/zwgk_58246/zfxxgk_bm/jczfxxgk/lyly/ggfw/gglyjgml/202312/t20231205_12655980.html",
         "ticket": {
           "booking": null,
           "passport_required": null,
-          "price_cny": null,
+          "price_cny": 12,
           "closed_weekdays": null,
           "booking_channel_zh": null,
           "booking_url": null
@@ -4655,17 +5277,20 @@
         "alternatives": []
       },
       "score": {
-        "total": 12,
+        "total": 18,
         "parts": {
           "foreigner": 0,
           "confidence": 4,
-          "sources": 5,
-          "complete": 3,
+          "sources": 10,
+          "complete": 4,
           "amap": 0
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "ticket.booking: Codex could not confirm it from an official page; check by hand",
+        "official_url: Codex could not confirm it from an official page; check by hand"
+      ]
     },
     {
       "id": "pl_cq_jiu_xiaolan_wanzhou",
@@ -4780,6 +5405,7 @@
         "intro_long_en": "If you stay in this part of Yuzhong, use the hotel guide to find Xiaoshizi on your subway route. Marriott's English listing gives the Minzu Road address.",
         "star": null,
         "price_band": "500-1000",
+        "hotel_class": "upscale",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -4809,9 +5435,7 @@
         },
         "external_used": false
       },
-      "flags": [
-        "pl_cq_kaiyuanmingdu: unknown field 'hotel_class' is dropped on import"
-      ]
+      "flags": []
     },
     {
       "id": "pl_cq_kanglaide",
@@ -4855,6 +5479,7 @@
         "intro_long_en": "Choose this Conrad if you are spending time on the Nan'an side. See the hotel's English information for room views and its restaurants on the upper floors.",
         "star": null,
         "price_band": "1000-2000",
+        "hotel_class": "luxury",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -4884,9 +5509,7 @@
         },
         "external_used": false
       },
-      "flags": [
-        "pl_cq_kanglaide: unknown field 'hotel_class' is dropped on import"
-      ]
+      "flags": []
     },
     {
       "id": "pl_cq_kitchen_on8_jfb",
@@ -5001,6 +5624,7 @@
         "intro_long_en": "Choose this address to spend time around the Yangtze–Jialing confluence. IHG's English listing describes the setting at Chaotianmen Square and the room outlooks.",
         "star": null,
         "price_band": ">2000",
+        "hotel_class": "luxury",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -5030,9 +5654,7 @@
         },
         "external_used": false
       },
-      "flags": [
-        "pl_cq_laifushizhouji: unknown field 'hotel_class' is dropped on import"
-      ]
+      "flags": []
     },
     {
       "id": "pl_cq_laoganjia_longxi",
@@ -5110,7 +5732,12 @@
         "tier": "main",
         "name_zh": "乐和乐都",
         "name_en": "Leheledu Theme Park",
-        "aliases_zh": [],
+        "aliases_zh": [
+          "乐和乐都主题公园",
+          "乐和乐都动物主题乐园",
+          "重庆乐和乐都景区",
+          "重庆乐和乐都"
+        ],
         "aliases_en": [],
         "address_zh": "永川区凤龙路999号",
         "address_en": null,
@@ -5122,11 +5749,12 @@
           "english_service": null,
           "evidence": []
         },
-        "official_url": null,
+        "official_url": "https://www.leheledu.com/",
         "sources": [
-          "https://whlyw.cq.gov.cn/hdjl_221/xzzq/202601/t20260106_15295212.html"
+          "https://whlyw.cq.gov.cn/hdjl_221/xzzq/202601/t20260106_15295212.html",
+          "https://www.leheledu.com/"
         ],
-        "checked_on": "2026-11-18",
+        "checked_on": "2026-11-27",
         "confidence": "low",
         "notes": "官方目录沿用既有候选记录的核对日，晋级前应重读。",
         "subcategory": "experience",
@@ -5154,17 +5782,47 @@
         "alternatives": []
       },
       "score": {
-        "total": 12,
+        "total": 18,
         "parts": {
           "foreigner": 0,
           "confidence": 4,
-          "sources": 5,
-          "complete": 3,
+          "sources": 10,
+          "complete": 4,
           "amap": 0
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "hours_zh: Codex could not confirm it from an official page; check by hand",
+        "ticket.price_cny: Codex could not confirm it from an official page; check by hand",
+        "ticket.booking: Codex could not confirm it from an official page; check by hand"
+      ],
+      "alias_evidence": [
+        {
+          "alias": "乐和乐都主题公园",
+          "lang": "zh",
+          "url": "https://www.cqyc.gov.cn/zjyc/ycwl/lyjd/202001/t20200109_4368913.html",
+          "kind": "manual"
+        },
+        {
+          "alias": "乐和乐都动物主题乐园",
+          "lang": "zh",
+          "url": "https://www.leheledu.com/",
+          "kind": "manual"
+        },
+        {
+          "alias": "重庆乐和乐都景区",
+          "lang": "zh",
+          "url": "https://whlyw.cq.gov.cn/hdjl_221/xzzq/202601/t20260106_15295212.html",
+          "kind": "discovery"
+        },
+        {
+          "alias": "重庆乐和乐都",
+          "lang": "zh",
+          "url": "https://whlyw.cq.gov.cn/hdjl_221/xzzq/202601/t20260106_15295212.html",
+          "kind": "discovery"
+        }
+      ]
     },
     {
       "id": "pl_cq_liangjiangxierdun",
@@ -5213,6 +5871,7 @@
         "intro_long_en": "Use this Hilton if you're setting aside time for northern Chongqing. The hotel lists Garden Expo Park and nearby shops in its English location guide.",
         "star": null,
         "price_band": "500-1000",
+        "hotel_class": "upscale",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -5242,9 +5901,7 @@
         },
         "external_used": false
       },
-      "flags": [
-        "pl_cq_liangjiangxierdun: unknown field 'hotel_class' is dropped on import"
-      ]
+      "flags": []
     },
     {
       "id": "pl_cq_lijiabaiyunhu",
@@ -5288,6 +5945,7 @@
         "intro_long_en": "Set aside a slower morning around Baiyun Lake. The hotel is in the Lijia park area and publishes property information in English for planning arrival.",
         "star": null,
         "price_band": "500-1000",
+        "hotel_class": "upscale",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -5317,9 +5975,7 @@
         },
         "external_used": false
       },
-      "flags": [
-        "pl_cq_lijiabaiyunhu: unknown field 'hotel_class' is dropped on import"
-      ]
+      "flags": []
     },
     {
       "id": "pl_cq_lijing",
@@ -5363,6 +6019,7 @@
         "intro_long_en": "If you want to see Chongqing from the north side of the river, stay in Jiangbeizui. The hotel publishes an English local area guide for planning nearby outings.",
         "star": null,
         "price_band": ">2000",
+        "hotel_class": "luxury",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -5392,9 +6049,7 @@
         },
         "external_used": false
       },
-      "flags": [
-        "pl_cq_lijing: unknown field 'hotel_class' is dropped on import"
-      ]
+      "flags": []
     },
     {
       "id": "pl_cq_liziba",
@@ -5407,8 +6062,12 @@
         "tier": "main",
         "name_zh": "李子坝轨道穿楼观景平台",
         "name_en": "Liziba Monorail Viewing Platform",
-        "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_zh": [
+          "李子坝轻轨穿楼观景平台"
+        ],
+        "aliases_en": [
+          "Liziba Monorail Through-Building Viewpoint"
+        ],
         "address_zh": null,
         "address_en": null,
         "district_zh": "渝中区",
@@ -5461,7 +6120,21 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "李子坝轻轨穿楼观景平台",
+          "lang": "zh",
+          "url": "https://www.cq.gov.cn/ywdt/bmts/201808/t20180822_8655009.html",
+          "kind": "manual"
+        },
+        {
+          "alias": "Liziba Monorail Through-Building Viewpoint",
+          "lang": "en",
+          "url": "https://chinapathbook.com/attractions/",
+          "kind": "manual"
+        }
+      ]
     },
     {
       "id": "pl_cq_longmenhao",
@@ -6089,6 +6762,7 @@
         "intro_long_en": "Start with the Jiefangbei neighborhood if this is your first visit to Chongqing. The property has English arrival information and lists English among the spoken languages.",
         "star": null,
         "price_band": "<500",
+        "hotel_class": "economy",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -6118,9 +6792,7 @@
         },
         "external_used": false
       },
-      "flags": [
-        "pl_cq_moxyjiudian: unknown field 'hotel_class' is dropped on import"
-      ]
+      "flags": []
     },
     {
       "id": "pl_cq_nananailimei",
@@ -6169,6 +6841,7 @@
         "intro_long_en": "If you want to explore Nan'an by subway, the hotel lists Nanping on Line 3. English is among the languages shown on its property page.",
         "star": null,
         "price_band": "<500",
+        "hotel_class": "upscale",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -6198,9 +6871,7 @@
         },
         "external_used": false
       },
-      "flags": [
-        "pl_cq_nananailimei: unknown field 'hotel_class' is dropped on import"
-      ]
+      "flags": []
     },
     {
       "id": "pl_cq_nananwanfeng",
@@ -6250,6 +6921,7 @@
         "intro_long_en": "Use Gongmao for local connections from this Fairfield. The hotel sits in Nan'an and offers a gym for time back at the property.",
         "star": null,
         "price_band": "<500",
+        "hotel_class": "midscale",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -6275,79 +6947,6 @@
           "confidence": 12,
           "sources": 10,
           "complete": 9,
-          "amap": 0
-        },
-        "external_used": false
-      },
-      "flags": [
-        "pl_cq_nananwanfeng: unknown field 'hotel_class' is dropped on import"
-      ]
-    },
-    {
-      "id": "pl_cq_nananxilaideng",
-      "source_file": "C8/chongqing-hotel.json",
-      "status": "pending",
-      "draft": {
-        "id": "pl_cq_nananxilaideng",
-        "city": "chongqing",
-        "category": "hotel",
-        "tier": "backup",
-        "name_zh": "重庆喜来登大酒店",
-        "name_en": "Sheraton Chongqing Hotel",
-        "aliases_zh": [],
-        "aliases_en": [],
-        "address_zh": null,
-        "address_en": null,
-        "district_zh": null,
-        "nearest_metro": null,
-        "foreigner_signals": {
-          "english_signage": null,
-          "foreign_cards": null,
-          "english_service": null,
-          "evidence": [
-            "https://www.marriott.com/en-us/hotels/ckgsi-sheraton-chongqing-hotel/overview/"
-          ]
-        },
-        "official_url": "https://www.marriott.com/en-us/hotels/ckgsi-sheraton-chongqing-hotel/overview/",
-        "sources": [
-          "https://www.marriott.com/en-us/hotels/ckgsi-sheraton-chongqing-hotel/overview/",
-          "https://www.marriott.com/en-us/destinations/china/chongqing.mi"
-        ],
-        "checked_on": "2026-11-27",
-        "confidence": "medium",
-        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sat, Dec 26 - Sun, Dec 27。 官网样本为每房每晚人民币 ¥512。当前价以所选日期及房型的报价为准。",
-        "subcategory": "hotel",
-        "intro_short_zh": "在南岸寻找江边住宿的一处候选。",
-        "intro_short_en": "A Sheraton option in Nan'an.",
-        "intro_long_zh": "在南岸寻找江边住宿的一处候选。可在品牌官网查看房型和入住安排。",
-        "intro_long_en": "A Sheraton option in Nan'an. See the hotel's own website for room types and check-in details.",
-        "star": null,
-        "price_band": "500-1000",
-        "accepts_foreigners": true,
-        "foreign_service": {
-          "english_front_desk": null,
-          "foreign_guest_share": null,
-          "foreign_guest_experience": null,
-          "international_brand": "Marriott Bonvoy",
-          "evidence_zh": "重庆喜来登大酒店由国际酒店品牌或集团 Marriott Bonvoy 的官网正式列出并提供预订入口。",
-          "evidence": [
-            "https://www.marriott.com/en-us/hotels/ckgsi-sheraton-chongqing-hotel/overview/"
-          ]
-        }
-      },
-      "external_signals": [],
-      "location": null,
-      "amap": {
-        "status": "not-run",
-        "alternatives": []
-      },
-      "score": {
-        "total": 26,
-        "parts": {
-          "foreigner": 0,
-          "confidence": 12,
-          "sources": 10,
-          "complete": 4,
           "amap": 0
         },
         "external_used": false
@@ -6396,6 +6995,7 @@
         "intro_long_en": "Give the south bank time of its own. The hotel lists English and Chinese and publishes its Yanyu Road address for planning arrival.",
         "star": null,
         "price_band": "500-1000",
+        "hotel_class": "upscale",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -6425,9 +7025,7 @@
         },
         "external_used": false
       },
-      "flags": [
-        "pl_cq_nanbinluwanhao: unknown field 'hotel_class' is dropped on import"
-      ]
+      "flags": []
     },
     {
       "id": "pl_cq_nanshan_yikeshu",
@@ -6440,8 +7038,12 @@
         "tier": "main",
         "name_zh": "南山一棵树观景园",
         "name_en": "Nanshan One Tree Viewpoint",
-        "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_zh": [
+          "一棵树观景园"
+        ],
+        "aliases_en": [
+          "Nanshan One Tree Observation Deck"
+        ],
         "address_zh": null,
         "address_en": null,
         "district_zh": "南岸区",
@@ -6494,7 +7096,21 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "一棵树观景园",
+          "lang": "zh",
+          "url": "https://www.cqna.gov.cn/zjna/ns/hlns/nsjd/202601/t20260129_15363050.html",
+          "kind": "manual"
+        },
+        {
+          "alias": "Nanshan One Tree Observation Deck",
+          "lang": "en",
+          "url": "https://maptrip.ai/chongqing/poi/nanshan-yi-ke-shu",
+          "kind": "manual"
+        }
+      ]
     },
     {
       "id": "pl_cq_nanshan_zhiwuyuan",
@@ -6507,7 +7123,9 @@
         "tier": "main",
         "name_zh": "重庆南山植物园",
         "name_en": "Chongqing Nanshan Botanical Garden",
-        "aliases_zh": [],
+        "aliases_zh": [
+          "南山植物园"
+        ],
         "aliases_en": [],
         "address_zh": "南岸区南山公园路101号",
         "address_en": null,
@@ -6519,16 +7137,18 @@
           "english_service": null,
           "evidence": []
         },
-        "official_url": null,
+        "official_url": "https://cgj.cq.gov.cn/cgyw/zqgy/sssdgyjs/nszwy/",
         "sources": [
-          "https://whlyw.cq.gov.cn/hdjl_221/xzzq/202601/t20260106_15295212.html"
+          "https://whlyw.cq.gov.cn/hdjl_221/xzzq/202601/t20260106_15295212.html",
+          "https://www.cqna.gov.cn/bm/qwhlyw/zwgk_59968/zfxxgkml/jczwgkwlw/ly/ggfw_407286/gglyjgml/202601/t20260130_15368257.html",
+          "https://cgj.cq.gov.cn/cgyw/zqgy/sssdgyjs/nszwy/"
         ],
-        "checked_on": "2026-11-18",
+        "checked_on": "2026-11-27",
         "confidence": "low",
         "notes": "官方目录沿用既有候选记录的核对日，晋级前应重读。",
         "subcategory": "park",
-        "hours_zh": null,
-        "hours_source": null,
+        "hours_zh": "园区09:00–17:30。",
+        "hours_source": "https://www.cqna.gov.cn/bm/qwhlyw/zwgk_59968/zfxxgkml/jczwgkwlw/ly/ggfw_407286/gglyjgml/202601/t20260130_15368257.html",
         "ticket": {
           "booking": null,
           "passport_required": null,
@@ -6551,17 +7171,28 @@
         "alternatives": []
       },
       "score": {
-        "total": 12,
+        "total": 20,
         "parts": {
           "foreigner": 0,
           "confidence": 4,
-          "sources": 5,
-          "complete": 3,
+          "sources": 10,
+          "complete": 6,
           "amap": 0
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "ticket.price_cny: Codex could not confirm it from an official page; check by hand",
+        "ticket.booking: Codex could not confirm it from an official page; check by hand"
+      ],
+      "alias_evidence": [
+        {
+          "alias": "南山植物园",
+          "lang": "zh",
+          "url": "https://cgj.cq.gov.cn/cgyw/zqgy/sssdgyjs/nszwy/",
+          "kind": "manual"
+        }
+      ]
     },
     {
       "id": "pl_cq_napoli_luzumiao",
@@ -6807,6 +7438,7 @@
         "intro_long_en": "Use the IFS tower address and the hotel's metro notes to plan arrival. Niccolo's official check-in guide lists a passport as accepted identification.",
         "star": null,
         "price_band": null,
+        "hotel_class": "luxury",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -6839,7 +7471,7 @@
         "external_used": false
       },
       "flags": [
-        "pl_cq_niyigeluo: unknown field 'hotel_class' is dropped on import"
+        "no price band: it cannot enter the library until the operator's own page gives a rate"
       ]
     },
     {
@@ -7178,7 +7810,9 @@
         "tier": "main",
         "name_zh": "重庆人民大礼堂及人民广场",
         "name_en": "Chongqing People's Auditorium and People's Square",
-        "aliases_zh": [],
+        "aliases_zh": [
+          "重庆市人民大礼堂"
+        ],
         "aliases_en": [],
         "address_zh": "渝中区人民路173号",
         "address_en": null,
@@ -7190,16 +7824,18 @@
           "english_service": null,
           "evidence": []
         },
-        "official_url": null,
+        "official_url": "https://www.cqdlt.cn/",
         "sources": [
-          "https://whlyw.cq.gov.cn/hdjl_221/xzzq/202601/t20260106_15295212.html"
+          "https://whlyw.cq.gov.cn/hdjl_221/xzzq/202601/t20260106_15295212.html",
+          "https://www.cq.gov.cn/zjcq/cycq/jplyxl/dsy/dsjp/202608/t20260826_15982334.html",
+          "https://www.cqyz.gov.cn/bm_229/qwhlyw/zwgk_97157/jczwgk/xxgk/ggfw_122762/ggwljg_122627/202508/t20250819_14915593.html"
         ],
-        "checked_on": "2026-11-18",
+        "checked_on": "2026-11-27",
         "confidence": "low",
         "notes": "官方目录沿用既有候选记录的核对日，晋级前应重读。",
         "subcategory": "landmark",
-        "hours_zh": null,
-        "hours_source": null,
+        "hours_zh": "礼堂参观08:00–18:00，17:30停止入场。",
+        "hours_source": "https://www.cq.gov.cn/zjcq/cycq/jplyxl/dsy/dsjp/202608/t20260826_15982334.html",
         "ticket": {
           "booking": null,
           "passport_required": null,
@@ -7222,17 +7858,28 @@
         "alternatives": []
       },
       "score": {
-        "total": 12,
+        "total": 20,
         "parts": {
           "foreigner": 0,
           "confidence": 4,
-          "sources": 5,
-          "complete": 3,
+          "sources": 10,
+          "complete": 6,
           "amap": 0
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "ticket.price_cny: Codex could not confirm it from an official page; check by hand",
+        "ticket.booking: Codex could not confirm it from an official page; check by hand"
+      ],
+      "alias_evidence": [
+        {
+          "alias": "重庆市人民大礼堂",
+          "lang": "zh",
+          "url": "https://www.cqdlt.cn/",
+          "kind": "manual"
+        }
+      ]
     },
     {
       "id": "pl_cq_robins_grill_cq",
@@ -7401,6 +8048,7 @@
         "intro_long_en": "If you want to see Hongyadong after dusk, stay on Linjiang Road near the site and the Jiefangbei walking streets. The branch confirms it hosts foreign guests and lists a washer and dryer.",
         "star": null,
         "price_band": null,
+        "hotel_class": "economy",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -7431,7 +8079,7 @@
         "external_used": false
       },
       "flags": [
-        "pl_cq_rujia_neo_hongyadong: unknown field 'hotel_class' is dropped on import"
+        "no price band: it cannot enter the library until the operator's own page gives a rate"
       ]
     },
     {
@@ -7452,7 +8100,7 @@
         "district_zh": "南岸区",
         "nearest_metro": {
           "station_zh": "南坪",
-          "station_en": null,
+          "station_en": "Nanping",
           "line": "3号线",
           "exit": "1、2"
         },
@@ -7468,9 +8116,11 @@
         "sources": [
           "https://www.bthhotels.com/hotel/023048",
           "https://www.bthhotels.com/hotel/023048?beginDate=2026-11-25&endDate=2026-11-26",
-          "https://images.bthhotels.com/investmentrelations/reports/A27E7EB0-6C86-43A9-9A79-625C3D0D8FBE.pdf"
+          "https://images.bthhotels.com/investmentrelations/reports/A27E7EB0-6C86-43A9-9A79-625C3D0D8FBE.pdf",
+          "https://www.marriott.com/en-us/hotels/ckgmd-le-meridien-chongqing-nanan/overview/",
+          "https://www.cq.gov.cn/ywdt/bmts/202607/t20260708_15806324.html"
         ],
-        "checked_on": "2026-11-27",
+        "checked_on": "2026-11-28",
         "confidence": "high",
         "notes": "分档依据：首旅酒店集团年报将如家 NEO 3.0 列为经济型产品升级。外宾依据：首旅如家同门店官网标明“接待外宾”。英文店名为编辑用译名。",
         "subcategory": "hotel",
@@ -7480,6 +8130,7 @@
         "intro_long_en": "For a stay on the south side of the Yangtze, the branch is beside Nanping Wanda Plaza. The hotel confirms foreign guest reception and gives two exits for the nearby Line 3 stop. A laundry room is available.",
         "star": null,
         "price_band": null,
+        "hotel_class": "economy",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -7510,7 +8161,7 @@
         "external_used": false
       },
       "flags": [
-        "pl_cq_rujia_neo_nanping: unknown field 'hotel_class' is dropped on import"
+        "no price band: it cannot enter the library until the operator's own page gives a rate"
       ]
     },
     {
@@ -7524,8 +8175,12 @@
         "tier": "main",
         "name_zh": "重庆中国三峡博物馆",
         "name_en": "China Three Gorges Museum",
-        "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_zh": [
+          "三峡博物馆"
+        ],
+        "aliases_en": [
+          "Three Gorges Museum"
+        ],
         "address_zh": "重庆市渝中区人民路236号",
         "address_en": null,
         "district_zh": "渝中区",
@@ -7580,7 +8235,21 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "三峡博物馆",
+          "lang": "zh",
+          "url": "https://www.3gmuseum.cn/",
+          "kind": "manual"
+        },
+        {
+          "alias": "Three Gorges Museum",
+          "lang": "en",
+          "url": "https://www.wikidata.org/wiki/Q10872783",
+          "kind": "manual"
+        }
+      ]
     },
     {
       "id": "pl_cq_shancheng_xiang",
@@ -7593,8 +8262,12 @@
         "tier": "main",
         "name_zh": "山城巷",
         "name_en": "Mountain City Alley",
-        "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_zh": [
+          "山城步道山城巷线"
+        ],
+        "aliases_en": [
+          "Shancheng Lane"
+        ],
         "address_zh": null,
         "address_en": null,
         "district_zh": "渝中区",
@@ -7647,7 +8320,21 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "Shancheng Lane",
+          "lang": "en",
+          "url": "https://chinapathbook.com/attractions/",
+          "kind": "manual"
+        },
+        {
+          "alias": "山城步道山城巷线",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q110107001",
+          "kind": "wikidata"
+        }
+      ]
     },
     {
       "id": "pl_cq_shapingba",
@@ -7727,8 +8414,16 @@
         "tier": "backup",
         "name_zh": "重庆史迪威博物馆",
         "name_en": "Stilwell Museum",
-        "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_zh": [
+          "史迪威博物馆"
+        ],
+        "aliases_en": [
+          "General Joseph Stilwell Museum",
+          "Joseph W. Stilwell Museum",
+          "Joseph Stilwell Museum",
+          "Chongqing Stilwell Museum",
+          "General Joseph W. Stilwell Museum"
+        ],
         "address_zh": "渝中区嘉陵新路63号",
         "address_en": null,
         "district_zh": "渝中区",
@@ -7744,16 +8439,16 @@
           "https://whlyw.cq.gov.cn/hdjl_221/xzzq/202601/t20260115_15320860.html",
           "https://www.cqkz.gov.cn/kz/fzhggwyh_80934/zwgk_72016/zfxxgkml/jczwgk/ggwhfwlyjczwgk/ggfw/ggwljgml/202603/t20260304_15493778.html"
         ],
-        "checked_on": "2026-11-18",
+        "checked_on": "2026-11-27",
         "confidence": "low",
         "notes": "官方目录沿用既有候选记录的核对日，晋级前应重读。",
         "subcategory": "museum",
-        "hours_zh": null,
-        "hours_source": null,
+        "hours_zh": "名录载09:00–17:00，具体闭馆日需查馆方公告。",
+        "hours_source": "https://www.cqkz.gov.cn/kz/fzhggwyh_80934/zwgk_72016/zfxxgkml/jczwgk/ggwhfwlyjczwgk/ggfw/ggwljgml/202603/t20260304_15493778.html",
         "ticket": {
           "booking": null,
           "passport_required": null,
-          "price_cny": null,
+          "price_cny": 0,
           "closed_weekdays": null,
           "booking_channel_zh": null,
           "booking_url": null
@@ -7772,17 +8467,58 @@
         "alternatives": []
       },
       "score": {
-        "total": 17,
+        "total": 18,
         "parts": {
           "foreigner": 0,
           "confidence": 4,
           "sources": 10,
-          "complete": 3,
+          "complete": 4,
           "amap": 0
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "ticket.booking: Codex could not confirm it from an official page; check by hand",
+        "official_url: Codex could not confirm it from an official page; check by hand"
+      ],
+      "alias_evidence": [
+        {
+          "alias": "史迪威博物馆",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q9593846",
+          "kind": "label"
+        },
+        {
+          "alias": "General Joseph Stilwell Museum",
+          "lang": "en",
+          "url": "https://en.wikipedia.org/wiki/General_Joseph_Stilwell_Museum?redirect=no",
+          "kind": "redirect"
+        },
+        {
+          "alias": "Joseph W. Stilwell Museum",
+          "lang": "en",
+          "url": "https://en.wikipedia.org/wiki/Joseph_W._Stilwell_Museum?redirect=no",
+          "kind": "redirect"
+        },
+        {
+          "alias": "Joseph Stilwell Museum",
+          "lang": "en",
+          "url": "https://en.wikipedia.org/wiki/Joseph_Stilwell_Museum?redirect=no",
+          "kind": "redirect"
+        },
+        {
+          "alias": "Chongqing Stilwell Museum",
+          "lang": "en",
+          "url": "https://en.wikipedia.org/wiki/Chongqing_Stilwell_Museum?redirect=no",
+          "kind": "redirect"
+        },
+        {
+          "alias": "General Joseph W. Stilwell Museum",
+          "lang": "en",
+          "url": "https://en.wikipedia.org/wiki/General_Joseph_W._Stilwell_Museum?redirect=no",
+          "kind": "redirect"
+        }
+      ]
     },
     {
       "id": "pl_cq_shibati",
@@ -7795,7 +8531,9 @@
         "tier": "main",
         "name_zh": "十八梯传统风貌区",
         "name_en": "Shibati",
-        "aliases_zh": [],
+        "aliases_zh": [
+          "十八梯"
+        ],
         "aliases_en": [],
         "address_zh": null,
         "address_en": null,
@@ -7849,7 +8587,20 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "hours_zh: Codex could not confirm it from an official page; check by hand",
+        "ticket.price_cny: Codex could not confirm it from an official page; check by hand",
+        "ticket.booking: Codex could not confirm it from an official page; check by hand",
+        "official_url: Codex could not confirm it from an official page; check by hand"
+      ],
+      "alias_evidence": [
+        {
+          "alias": "十八梯",
+          "lang": "zh",
+          "url": "https://zh.wikipedia.org/wiki/十八梯",
+          "kind": "manual"
+        }
+      ]
     },
     {
       "id": "pl_cq_simianshan",
@@ -7862,8 +8613,14 @@
         "tier": "backup",
         "name_zh": "江津四面山",
         "name_en": "Simian Mountain",
-        "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_zh": [
+          "四面山",
+          "四面山风景名胜区",
+          "重庆江津四面山景区"
+        ],
+        "aliases_en": [
+          "Mount Simian"
+        ],
         "address_zh": null,
         "address_en": null,
         "district_zh": "江津区",
@@ -7876,14 +8633,15 @@
         },
         "official_url": null,
         "sources": [
-          "https://whlyw.cq.gov.cn/hdjl_221/xzzq/202601/t20260106_15295212.html"
+          "https://whlyw.cq.gov.cn/hdjl_221/xzzq/202601/t20260106_15295212.html",
+          "https://www.jiangjin.gov.cn/bm/qwhlyw_69018/zwgk_81474/zfxxgkml/jczwgk/ggwhfwlyxxgk/ggfw/ggwljgml/202312/t20231205_12650557.html"
         ],
-        "checked_on": "2026-11-18",
+        "checked_on": "2026-11-27",
         "confidence": "low",
         "notes": "官方目录沿用既有候选记录的核对日，晋级前应重读。",
         "subcategory": "park",
-        "hours_zh": null,
-        "hours_source": null,
+        "hours_zh": "区名录载游玩09:00–19:00；现场取票09:00–12:00、14:00–17:00。",
+        "hours_source": "https://www.jiangjin.gov.cn/bm/qwhlyw_69018/zwgk_81474/zfxxgkml/jczwgk/ggwhfwlyxxgk/ggfw/ggwljgml/202312/t20231205_12650557.html",
         "ticket": {
           "booking": null,
           "passport_required": null,
@@ -7906,17 +8664,47 @@
         "alternatives": []
       },
       "score": {
-        "total": 10,
+        "total": 17,
         "parts": {
           "foreigner": 0,
           "confidence": 4,
-          "sources": 5,
-          "complete": 1,
+          "sources": 10,
+          "complete": 3,
           "amap": 0
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "ticket.price_cny: Codex could not confirm it from an official page; check by hand",
+        "ticket.booking: Codex could not confirm it from an official page; check by hand",
+        "official_url: Codex could not confirm it from an official page; check by hand"
+      ],
+      "alias_evidence": [
+        {
+          "alias": "四面山",
+          "lang": "zh",
+          "url": "https://www.wikidata.org/wiki/Q7517768",
+          "kind": "label"
+        },
+        {
+          "alias": "四面山风景名胜区",
+          "lang": "zh",
+          "url": "https://zh.wikipedia.org/wiki/%E5%9B%9B%E9%9D%A2%E5%B1%B1%E9%A3%8E%E6%99%AF%E5%90%8D%E8%83%9C%E5%8C%BA?redirect=no",
+          "kind": "redirect"
+        },
+        {
+          "alias": "Mount Simian",
+          "lang": "en",
+          "url": "https://en.wikipedia.org/wiki/Mount_Simian?redirect=no",
+          "kind": "redirect"
+        },
+        {
+          "alias": "重庆江津四面山景区",
+          "lang": "zh",
+          "url": "https://whlyw.cq.gov.cn/hdjl_221/xzzq/202601/t20260106_15295212.html",
+          "kind": "discovery"
+        }
+      ]
     },
     {
       "id": "pl_cq_sklp_xinguangli_cq",
@@ -8221,6 +9009,7 @@
         "intro_long_en": "For an itinerary centered on Jiangbeizui, check IHG's directions to Dongshengmen Road. The hotel occupies upper floors with views over the city.",
         "star": null,
         "price_band": "1000-2000",
+        "hotel_class": "luxury",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -8250,9 +9039,7 @@
         },
         "external_used": false
       },
-      "flags": [
-        "pl_cq_tftjiudian: unknown field 'hotel_class' is dropped on import"
-      ]
+      "flags": []
     },
     {
       "id": "pl_cq_the_peak_cq",
@@ -8482,9 +9269,10 @@
         },
         "official_url": null,
         "sources": [
-          "https://whlyw.cq.gov.cn/hdjl_221/xzzq/202601/t20260106_15295212.html"
+          "https://whlyw.cq.gov.cn/hdjl_221/xzzq/202601/t20260106_15295212.html",
+          "https://www.cq.gov.cn/ywdt/bmts/202408/t20240816_13513072.html"
         ],
-        "checked_on": "2026-11-18",
+        "checked_on": "2026-11-27",
         "confidence": "low",
         "notes": "官方目录沿用既有候选记录的核对日，晋级前应重读。",
         "subcategory": "park",
@@ -8493,7 +9281,7 @@
         "ticket": {
           "booking": null,
           "passport_required": null,
-          "price_cny": null,
+          "price_cny": 0,
           "closed_weekdays": null,
           "booking_channel_zh": null,
           "booking_url": null
@@ -8512,17 +9300,21 @@
         "alternatives": []
       },
       "score": {
-        "total": 12,
+        "total": 17,
         "parts": {
           "foreigner": 0,
           "confidence": 4,
-          "sources": 5,
+          "sources": 10,
           "complete": 3,
           "amap": 0
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "hours_zh: Codex could not confirm it from an official page; check by hand",
+        "ticket.booking: Codex could not confirm it from an official page; check by hand",
+        "official_url: Codex could not confirm it from an official page; check by hand"
+      ]
     },
     {
       "id": "pl_cq_times_paradise_walk_cq",
@@ -8912,7 +9704,12 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "hours_zh: Codex could not confirm it from an official page; check by hand",
+        "ticket.price_cny: Codex could not confirm it from an official page; check by hand",
+        "ticket.booking: Codex could not confirm it from an official page; check by hand",
+        "official_url: Codex could not confirm it from an official page; check by hand"
+      ]
     },
     {
       "id": "pl_cq_wulong_kasite",
@@ -8925,8 +9722,12 @@
         "tier": "main",
         "name_zh": "武隆喀斯特旅游区",
         "name_en": "Wulong Karst Scenic Area",
-        "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_zh": [
+          "重庆武隆喀斯特旅游区"
+        ],
+        "aliases_en": [
+          "Wulong Karst Tourism Area"
+        ],
         "address_zh": null,
         "address_en": null,
         "district_zh": "武隆区",
@@ -8980,7 +9781,21 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "Wulong Karst Tourism Area",
+          "lang": "en",
+          "url": "https://www.trip.com/travel-guide/attraction/chongqing/wulong-karst-tourism-area-92173",
+          "kind": "manual"
+        },
+        {
+          "alias": "重庆武隆喀斯特旅游区",
+          "lang": "zh",
+          "url": "https://whlyw.cq.gov.cn/hdjl_221/xzzq/202601/t20260106_15295212.html",
+          "kind": "discovery"
+        }
+      ]
     },
     {
       "id": "pl_cq_wushan_xiaosanxia",
@@ -8993,7 +9808,10 @@
         "tier": "main",
         "name_zh": "巫山小三峡—小小三峡",
         "name_en": "Wushan Lesser Three Gorges and Mini Three Gorges",
-        "aliases_zh": [],
+        "aliases_zh": [
+          "巫山小三峡·小小三峡景区",
+          "重庆巫山小三峡—小小三峡"
+        ],
         "aliases_en": [],
         "address_zh": null,
         "address_en": null,
@@ -9047,7 +9865,26 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "hours_zh: Codex could not confirm it from an official page; check by hand",
+        "ticket.price_cny: Codex could not confirm it from an official page; check by hand",
+        "ticket.booking: Codex could not confirm it from an official page; check by hand",
+        "official_url: Codex could not confirm it from an official page; check by hand"
+      ],
+      "alias_evidence": [
+        {
+          "alias": "巫山小三峡·小小三峡景区",
+          "lang": "zh",
+          "url": "https://dfz.cq.gov.cn/zqlswh/fjms_417821/202311/t20231102_12510453.html",
+          "kind": "manual"
+        },
+        {
+          "alias": "重庆巫山小三峡—小小三峡",
+          "lang": "zh",
+          "url": "https://whlyw.cq.gov.cn/hdjl_221/xzzq/202601/t20260106_15295212.html",
+          "kind": "discovery"
+        }
+      ]
     },
     {
       "id": "pl_cq_wxn",
@@ -9129,8 +9966,12 @@
         "tier": "main",
         "name_zh": "下浩里",
         "name_en": "Xiahaoli",
-        "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_zh": [
+          "下浩里老街区"
+        ],
+        "aliases_en": [
+          "Xiahaoli Old Street"
+        ],
         "address_zh": null,
         "address_en": null,
         "district_zh": "南岸区",
@@ -9183,7 +10024,26 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "hours_zh: Codex could not confirm it from an official page; check by hand",
+        "ticket.price_cny: Codex could not confirm it from an official page; check by hand",
+        "ticket.booking: Codex could not confirm it from an official page; check by hand",
+        "official_url: Codex could not confirm it from an official page; check by hand"
+      ],
+      "alias_evidence": [
+        {
+          "alias": "Xiahaoli Old Street",
+          "lang": "en",
+          "url": "https://app.hellochina.chat/attractions/chongqing-xiahaoli-old-street",
+          "kind": "manual"
+        },
+        {
+          "alias": "下浩里老街区",
+          "lang": "zh",
+          "url": "https://chinatripprimer.com/zh-cn/chongqing/attractions/xiahao-lane",
+          "kind": "manual"
+        }
+      ]
     },
     {
       "id": "pl_cq_xiangbacheng_laifeng",
@@ -9358,6 +10218,7 @@
         "intro_long_en": "Pick Lianglukou for a trip with time in the older city. Hilton's English property guide names Datianwan and the Soong Ching Ling Residence nearby.",
         "star": null,
         "price_band": "<500",
+        "hotel_class": "upscale",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -9387,9 +10248,7 @@
         },
         "external_used": false
       },
-      "flags": [
-        "pl_cq_xierdun: unknown field 'hotel_class' is dropped on import"
-      ]
+      "flags": []
     },
     {
       "id": "pl_cq_xishi_weiyang_tiandi",
@@ -9622,6 +10481,7 @@
         "intro_long_en": "The hotel is on Bayi Road in the pedestrian area. Its English listing gives metro options and nearby places such as Luohan Temple and the Yangtze River Cableway.",
         "star": null,
         "price_band": null,
+        "hotel_class": "economy",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -9652,7 +10512,7 @@
         "external_used": false
       },
       "flags": [
-        "pl_cq_yibisi_jiefangbeibuxingjie: unknown field 'hotel_class' is dropped on import"
+        "no price band: it cannot enter the library until the operator's own page gives a rate"
       ]
     },
     {
@@ -9695,6 +10555,7 @@
         "intro_long_en": "If your stay is built around a flight, arrange the airport shuttle in advance. The property's location page also points to the metro near Bijin Park.",
         "star": null,
         "price_band": null,
+        "hotel_class": "economy",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -9725,7 +10586,7 @@
         "external_used": false
       },
       "flags": [
-        "pl_cq_yibisi_shuanglong: unknown field 'hotel_class' is dropped on import"
+        "no price band: it cannot enter the library until the operator's own page gives a rate"
       ]
     },
     {
@@ -10098,6 +10959,7 @@
         "intro_long_en": "For a few days on the Yuzhong Peninsula, use the hotel's English page to plan arrival. Marriott lists a fitness room on the property.",
         "star": null,
         "price_band": "<500",
+        "hotel_class": "midscale",
         "accepts_foreigners": true,
         "foreign_service": {
           "english_front_desk": null,
@@ -10127,9 +10989,7 @@
         },
         "external_used": false
       },
-      "flags": [
-        "pl_cq_yuzhongfupeng: unknown field 'hotel_class' is dropped on import"
-      ]
+      "flags": []
     },
     {
       "id": "pl_cq_zhang_douhua",
@@ -10337,8 +11197,12 @@
         "tier": "main",
         "name_zh": "渣滓洞旧址",
         "name_en": "Zhazidong Detention Site",
-        "aliases_zh": [],
-        "aliases_en": [],
+        "aliases_zh": [
+          "渣滓洞"
+        ],
+        "aliases_en": [
+          "Zhazidong"
+        ],
         "address_zh": null,
         "address_en": null,
         "district_zh": "沙坪坝区",
@@ -10391,7 +11255,21 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [],
+      "alias_evidence": [
+        {
+          "alias": "Zhazidong",
+          "lang": "en",
+          "url": "https://www.trip.com/travel-guide/attraction/chongqing/zhazidong-80446",
+          "kind": "manual"
+        },
+        {
+          "alias": "渣滓洞",
+          "lang": "zh",
+          "url": "https://www.cq.gov.cn/zjcq/cycq/jplyxl/dsy/hyzj/202409/t20240905_13599184.html",
+          "kind": "manual"
+        }
+      ]
     },
     {
       "id": "pl_cq_zhengji_pengshui",
@@ -10469,7 +11347,9 @@
         "tier": "backup",
         "name_zh": "江津中山古镇",
         "name_en": "Zhongshan Ancient Town (Jiangjin)",
-        "aliases_zh": [],
+        "aliases_zh": [
+          "重庆江津中山古镇"
+        ],
         "aliases_en": [],
         "address_zh": "江津区中山镇三合社区",
         "address_en": null,
@@ -10523,7 +11403,20 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "hours_zh: Codex could not confirm it from an official page; check by hand",
+        "ticket.price_cny: Codex could not confirm it from an official page; check by hand",
+        "ticket.booking: Codex could not confirm it from an official page; check by hand",
+        "official_url: Codex could not confirm it from an official page; check by hand"
+      ],
+      "alias_evidence": [
+        {
+          "alias": "重庆江津中山古镇",
+          "lang": "zh",
+          "url": "https://whlyw.cq.gov.cn/hdjl_221/xzzq/202601/t20260106_15295212.html",
+          "kind": "discovery"
+        }
+      ]
     },
     {
       "id": "pl_cq_zhuyu_sichuan",

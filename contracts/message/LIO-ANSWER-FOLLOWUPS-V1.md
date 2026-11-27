@@ -6,7 +6,7 @@ Additive to `LIO-timeline.2` (`LIO-CONVERSATIONS-V2.md`). A poll that does not d
 
 `GET /v2/lio/timeline?conversation_id=…&before=…&accepts=LIO-answer-followups.1`
 
-- `accepts` is optional and has exactly one accepted value, `LIO-answer-followups.1`. Any other value, an empty value, a repeated `accepts`, or `accepts` on another route (`/v1/lio/timeline`, `/v3/lio/timeline`) returns 400.
+- `accepts` is optional and has exactly one accepted value, `LIO-answer-followups.1`. Any other value, an empty value, a repeated `accepts`, or `accepts` on another route (`/v1/lio/timeline`; and on `/v3/lio/timeline` this value, whose only accepted declaration is `LIO-answer-rich.1`, see `LIO-ANSWER-RICH-V1.md`) returns 400.
 - It is a read-side declaration only. It is not stored with a message and it does not change what the server writes or how it answers.
 
 ## Rows

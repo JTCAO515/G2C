@@ -10,7 +10,7 @@ from cj_agent.lio_intake_flat_schema import DTO,City
 from cj_needs.domain import InvalidInput,decode
 from .lio_sourced_intake import parse_sourced,BookingSourceUnclear
 from .lio_positive_trip import destination_query,known_city_term
-from .lio_planning_grounding import NUMBER,OPEN_PLAN
+from .lio_planning_grounding import NUMBER,NUMBERS,OPEN_PLAN,PLAN_REQUEST
 from .lio_national_intake import ZONE_LITERAL,_clock_zone_marker
 
 CORE=('start_date','duration_days','party_size')
@@ -359,8 +359,128 @@ def _drop_unsourced_hotel_endpoint_aliases(data,turns):
             data['extra_unknown_fields'].remove(key)
 
 
+def _drop_empty_field_sources(value):
+    """A source reference whose quote is empty is no evidence at all (the hong kong run of 2026-11-28 lost a whole plan to
+    one of them: `field_sources:string_too_short`). Drop such references before the schema sees them; a date or party size
+    left with no evidence is then unknown (optional by design), never kept without a source. The count of dropped
+    references is returned. A field that is required for planning (city, duration) keeps its normal checks."""
+    refs=value.get('field_sources')if type(value)is dict else None
+    if type(refs)is not list:return 0
+    kept=[ref for ref in refs if not(type(ref)is dict and type(ref.get('quote'))is str and not ref['quote'].strip())]
+    dropped=len(refs)-len(kept)
+    if not dropped:return 0
+    value['field_sources']=kept
+    sourced={ref.get('field')for ref in kept if type(ref)is dict}
+    unknown=value.get('unknown_fields')
+    for field in('start_date','party_size'):
+        if value.get(field)is not None and field not in sourced:
+            value[field]=None
+            if type(unknown)is list and field not in unknown:unknown.append(field)
+    return dropped
+
+
+# A trip length is restored only from a message with exactly ONE day-count-like span, and only when that span is plainly the
+# length of the trip being planned (red-line review of #2112: a list of exclusions cannot be closed, so this is a whitelist).
+# Anything else (a second count, a range, a half day, a negation, a visa or jet-lag or "next 3 days", an ordinal 「第3天」)
+# is left to the normal refusal.
+_ZH_NUMBER_CHARS='零〇一二两三四五六七八九十百'
+_NUM=r'[0-9]{1,3}|[一二两三四五六七八九十]|one|two|three|four|five|six|seven|eight|nine|ten'
+_LOOSE_SPAN=re.compile(r'(?<![第每])(?:(?P<n>'+_NUM+r')\s*天|(?P<n2>[一二两三四五六七八九十])\s*日|(?P<n3>[0-9]{1,3})\s*日(?=游))|\b(?P<m>'+_NUM+r')(?:\s+|-)days?\b',re.I)
+_ZH_BEFORE=re.compile(r'(?:玩|游|待|逛|住|共|共计|一共|总共|行程|规划|安排|旅行|旅游|计划|排)\s*$')
+_ZH_AFTER=re.compile(r'\s*(?:天|日)\s*(?:(?:的|之)\s*)?(?:行程|旅行|旅游|游|之旅|攻略|计划|路线)|\s*日游|\s*(?:天|日)\s*[0-9一二两三四五六七八九十]\s*(?:夜|晚)')
+_EN_BEFORE=re.compile(r'\b(?:for|spend|spending|stay|staying|plan|planning|visit|visiting)\s+(?:a\s+|an\s+)?$',re.I)
+_EN_AFTER=re.compile(r'(?:\s+|-)days?\s+(?:trip|itinerary|tour|visit|vacation|holiday|getaway|stay|journey)\b',re.I)
+_BAD_BEFORE=re.compile(r'(?:[0-9.．~～\-–—到至或和与、'+_ZH_NUMBER_CHARS+r']|第|每|前|近|上|头|首|末|后|这|不是|不要|不想|不用|别|没有|没|无|过去的?|最近|未来|接下来的?|'
+                       r'\b(?:not|no|never|without|dont|don\'t|in|within|after|over|last|past|first|next|every|each|about|around|under|only)|'
+                       r'\bto|\bor|\band)\s*$',re.I)
+_BAD_AFTER=re.compile(r'\s*(?:[.．][0-9]|半|多|余|来|左右|上下|以?内|之?[后前]|以[后前]|[~～\-–—到至或和与、][0-9一二两三四五六七八九十]|'
+                      r'(?:ago|later|left|remaining|from|before|after|earlier|to|or|and|in advance|in total|a row)\b)',re.I)
+
+
+# Second red-line round: the whitelist above says what a trip length looks like, not whose trip it is. So the message itself must
+# be a plan request (the existing request grammar, or 「去…玩N天」), and the clause that holds the count must not be negated, past,
+# somebody else's, or about something that is not a trip (meeting, visa, quarantine, budget...). Leftovers are refused as before.
+_ZH_REQUEST=re.compile(r'\s*(?:我想|我要|我们想|我们要|想|要)?去[^，,。.！!？?；;]{1,16}?玩\s*(?:'+_NUM+r')\s*天',re.I)
+_CLAUSE_BREAK=re.compile(r'[，,。.！!？?；;:：\n]|\bbut\b|\bthen\b|\band\b|但是?|可是|不过|然后',re.I)
+_CLAUSE_VETO=re.compile(
+    r'不是|不想|不要|不去|不能|不用|不行|不会|不可|不再|别去|别玩|别安排|别规划|没有|没法|没能|无法|未能|勿|取消|算了|上次|去年|前年|以前|从前|曾经|昨天|前天|'
+    r'朋友|同事|家人|亲戚|他们|她们|别人|老板|客户|孩子|爸妈|父母|'
+    r'会议|开会|出差|上班|值班|班|隔离|签证|转机|预算|费用|价格|酒店|住宿|机票|航班|工作|培训|考试|学习|休假|请假|'
+    r"\b(?:not|no|never|neither|nor|without|cancel\w*|forget|last|previous\w*|ago|friend|friends|colleague\w*|boss|client\w*|"
+    r"meeting\w*|work|working|conference|business|quarantine|isolation|visa|layover|budget|cost|price|hotel|flight|training|exam|"
+    r"he|she|they|his|her|their|don'?t|doesn'?t|didn'?t|won'?t|can'?t|cannot|wouldn'?t|shouldn'?t|couldn'?t)\b",re.I)
+
+
+def _clause_of(text,start,end):
+    left=max((m.end()for m in _CLAUSE_BREAK.finditer(text[:start])),default=0)
+    right=next((start+m.start()for m in _CLAUSE_BREAK.finditer(text[start:])if start+m.start()>=end),len(text))
+    return text[left:right]
+
+
+_ZH_REQ_HEAD=r'(?:请|麻烦)?\s*(?:(?:帮|给|为)(?:我们|我)\s*)?(?:规划|安排|设计|做)\s*(?:一下|一个|个|一份|一趟|一次)?\s*'
+_EN_REQ_HEAD=(r'(?:(?:can|could|would) you\s+|please\s+)?(?:help (?:me|us) (?:to )?)?(?:plan|planning|organize|create|build|make)\s+'
+              r'(?:a\s+|an\s+|the\s+|my\s+|our\s+)?')
+
+
+def _request_forms(city):
+    """What may stand between the start of the clause and the count: the request words and the destination of THIS plan, nothing
+    else (fourth review round: a count after anything else in the clause is somebody else's stay, a leg, or another city)."""
+    where=re.escape(city.strip())if type(city)is str and city.strip()else None
+    zh_city='(?:'+where+r'\s*)?(?:的\s*)?'if where else''
+    forms=[re.compile(_ZH_REQ_HEAD+zh_city+r'\Z'),
+           re.compile(r'(?:我想|我要|我们想|我们要|想|要)?去\s*'+where+r'\s*玩\s*\Z')if where else None,
+           re.compile(_EN_REQ_HEAD+(r'(?:(?:trip|visit|itinerary)\s+(?:to|in|for)\s+'+where+r'\s*(?:for\s+)?|'+where+r'\s+(?:for\s+)?)?'if where else'')+r'\Z',re.I)]
+    return [form for form in forms if form is not None]
+
+
+def _duration_quote(text,days,city=None):
+    """The one exact span of `text` that states `days` as the length of the trip, or None. See the rules above."""
+    loose=list(_LOOSE_SPAN.finditer(text))
+    if len(loose)!=1:return None
+    match=loose[0]
+    group=next(name for name in('n','n2','n3','m')if match[name])
+    number=match[group]
+    count=int(number)if number.isdecimal()else NUMBERS.get(number.casefold())
+    if count!=days:return None
+    before,tail=text[:match.start()],text[match.end(group):]
+    if _BAD_BEFORE.search(before[-10:])or _BAD_AFTER.match(text[match.end():match.end()+12]):return None
+    if text.strip().strip('，,。.！!？? ')==match[0].strip():return match[0]       # the whole message is just the answer 「三天」
+    clause=_clause_of(text,match.start(),match.end())
+    if _CLAUSE_VETO.search(clause):return None
+    head=clause[:clause.index(match[0])]
+    if not any(form.match(head)for form in _request_forms(city)):return None
+    # after the count: a trip noun, or (「去成都玩三天」) nothing more, or English "days in <city>"
+    if _ZH_AFTER.match(tail)or _EN_AFTER.match(tail)or re.match(r'\s*$',clause[clause.index(match[0])+len(match[0]):]):return match[0]
+    where=re.escape(city.strip())if type(city)is str and city.strip()else None
+    if where and re.match(r'(?:\s+|-)days?\s+in\s+'+where+r'\b',tail,re.I):return match[0]
+    return None
+
+
+def _restore_duration_source(value,turns):
+    """The model gave a day count but no source for it (the 2026-11-28 Hong Kong run listed only two empty sources and no
+    duration source, though the traveler wrote 「2天」). Restore it from the traveler's own latest message, only when exactly
+    one span states exactly that count; never from Memory, an earlier turn or a guess. Without such a span nothing changes
+    and the normal 'original bounded duration required' check refuses it. Returns 1 when a source was added."""
+    days=value.get('duration_days')if type(value)is dict else None
+    refs=value.get('field_sources')
+    index=len(turns)-1       # the traveler's latest message; the model's own index may count Memory slots
+    if (type(days)is not int or isinstance(days,bool)or type(refs)is not list or index<0
+            or any(type(ref)is dict and ref.get('field')=='duration_days'for ref in refs)):return 0
+    city=value.get('city')
+    quote=_duration_quote(turns[index].text,days,city.get('query')if type(city)is dict else None)
+    if quote is None:return 0
+    refs.append(dict(field='duration_days',source_index=index,quote=quote))
+    return 1
+
+
 def parse_flow(raw,turns,refs,message_id,previous,*,schema=FlowIntake,memory_offset=0,read_only=None):
     value=decode(raw.encode() if type(raw)is str else raw)
+    emptied=_drop_empty_field_sources(value)
+    restored=_restore_duration_source(value,turns)if emptied else 0
+    if emptied:
+        import logging
+        logging.getLogger('cj_usage.audit').info('LIO_INTAKE_EMPTY_SOURCE_DROPPED message_id=%s count=%s duration_restored=%s',
+            message_id,emptied,restored)
     rebound=rebind_sources(value,turns,memory_offset=memory_offset)
     if rebound:
         import logging

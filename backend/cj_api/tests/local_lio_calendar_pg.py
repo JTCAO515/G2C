@@ -65,7 +65,7 @@ def exercise(root,conninfo):
             (sha256(invite.encode()).hexdigest(),datetime.now(timezone.utc)+timedelta(hours=1)))
         demo_accounts.manage(runtime,'insert',SUBJECT,control,operation)
     journal=AuthorizationBudget(root/'original-journal',clock=lambda:datetime(2026,11,9,tzinfo=timezone.utc))
-    wire=[];locale='zh';fixture_days=3;fixture_pace=None;fixture_start=None
+    wire=[];locale='zh';fixture_days=3;fixture_pace=None;fixture_start=None;fixture_empty_party_source=False
     def response(request):
         assert str(request.url)==M4_BASE+'/chat/completions'
         body=json.loads(request.content);wire.append(body);system=body['messages'][0]['content']
@@ -93,6 +93,11 @@ def exercise(root,conninfo):
                 if fixture_pace is not None:
                     value['extra_fields']['pace']=fixture_pace
                     value['field_sources'].append(dict(field='pace',source_index=index,quote=fixture_pace))
+            if fixture_empty_party_source and value['intent']=='plan':
+                # The exact Hong Kong v3 output of 2026-11-28 (run 9f2fa849): day count with NO source for it, and two empty
+                # sources for start_date and party_size (both null and unknown). The plan must still be written.
+                value.update(start_date=None,party_size=None,unknown_fields=['start_date','party_size'],question_fields=['start_date'])
+                value['field_sources']=[dict(field='start_date',source_index=index,quote=''),dict(field='party_size',source_index=index,quote='')]
             value['version']='LIO-planning-intake.8'
             content=json.dumps(value,ensure_ascii=False)
         elif any(profile in system for profile in PROFILES.values()):
@@ -375,6 +380,12 @@ def exercise(root,conninfo):
                 print(json.dumps(dict(mid=mid,cid=result.json()['conversation_id'],run_id=identity[0],sequence=identity[1],core_sha256=identity[2],outer_sha256=identity[3])),flush=True)
                 return result.json()['conversation_id'],raw
             cid,raw=send('calendar-'+locale+'-plan','去成都玩三天' if locale=='zh' else 'Plan three days in Chengdu')
+            fixture_empty_party_source=True
+            empty_cid,_=send('calendar-'+locale+'-empty-source','去成都玩三天' if locale=='zh' else 'Plan three days in Chengdu')
+            fixture_empty_party_source=False
+            empty_plan=read(empty_cid)
+            assert empty_plan['current'] is not None and len(empty_plan['current']['days'])==3,empty_plan
+            print('PASS '+locale+' the logged Hong Kong output (empty start/party sources, no duration source) is planned and the trip is written',flush=True)
             planned=read(cid)
             assert planned['version']=='LIO-trip-history.3' and planned['current'] is not None,planned
             card=planned['current'];assert card['calendar']=={'state':'undated'} and len(card['days'])==3

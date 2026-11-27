@@ -19,6 +19,7 @@ struct DemoBetaRootView: View {
                         tripHistory: trip.messages.lioTripHistory,
                         memoryActions: trip.messages.lioMemoryActions,
                         memoryConsent: trip.messages.lioMemoryConsent,
+                        tripUndo: trip.messages.lioTripUndo,
                         savedMemory: trip.typedMemory.map { AnyView(LioSavedMemoryView(host: $0.host, language: shell.language).id(trip.id)) },
                         recordedMap: { document in
                     AnyView(LioRecordedTripMap(document: document, language: shell.language))
