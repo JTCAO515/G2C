@@ -2684,6 +2684,51 @@ import CryptoKit
         }
     }
 
+    /// #1991: with `G2CAnswerRichEnabled` (Debug: `--lio-answer-rich-preview`, a fixture that sends nothing) the places an
+    /// answer names are tappable words in either bubble. A tap opens a card in place (a popover, not a full screen) with
+    /// the names, the one-line intro and the buttons that can work; "See more" opens the place page.
+    func testPlaceWordsOpenACardInPlaceAndSeeMoreOpensThePlacePage() throws {
+        continueAfterFailure = false
+        for language in ["en", "zh-Hans"] {
+            let en = language == "en"
+            let app = XCUIApplication(bundleIdentifier: "space.go2china.lio.acceptance")
+            app.launchArguments = ["--lio-preview", "-cj.ui.language.v1", language,
+                                   "--lio-answer-layout-preview", "--lio-answer-rich-preview"]
+            app.launch()
+            defer { app.terminate() }
+            XCTAssertTrue(app.buttons["lio.menu"].waitForExistence(timeout: 12))
+            app.buttons["lio.example.0"].tap()
+            let composer = app.descendants(matching: .any).matching(identifier: "lio.composer").firstMatch
+            let starter = composer.value as? String ?? ""
+            composer.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: starter.count)
+                              + (en ? "Tell me about the Palace Museum" : "介绍一下故宫"))
+            app.buttons["lio.send"].tap()
+            let first = app.staticTexts["lio.answer"], second = app.staticTexts["lio.answer.2"]
+            XCTAssertTrue(first.waitForExistence(timeout: 8))
+            XCTAssertTrue(second.waitForExistence(timeout: 12), "the second bubble")
+            let palace = app.links[en ? "The Palace Museum" : "故宫博物院"]
+            XCTAssertTrue(palace.waitForExistence(timeout: 12), app.debugDescription)
+            XCTAssertTrue(app.links[en ? "Jingshan Park" : "景山公园"].exists, "every place of the first bubble")
+            XCTAssertTrue(app.links[en ? "Temple of Heaven" : "天坛公园"].exists, "and the second bubble's")
+            palace.tap()
+            let card = app.otherElements["lio.place.bubble"]
+            XCTAssertTrue(card.waitForExistence(timeout: 6), app.debugDescription)
+            XCTAssertEqual(app.staticTexts["lio.place.bubble.name"].label, en ? "The Palace Museum" : "故宫博物院")
+            XCTAssertEqual(app.staticTexts["lio.place.bubble.name.other"].label, en ? "故宫博物院" : "The Palace Museum")
+            XCTAssertTrue(app.buttons["lio.place.bubble.driver"].exists && app.buttons["lio.place.bubble.navigate"].exists)
+            XCTAssertGreaterThanOrEqual(app.buttons["lio.place.bubble.driver"].frame.height, 44)
+            XCTAssertTrue(app.buttons["lio.menu"].exists || app.tabBars.firstMatch.exists, "the chat is still there behind a card in place")
+            let shot = XCTAttachment(screenshot: app.screenshot())
+            shot.name = "place-bubble-\(language)"; shot.lifetime = .keepAlways; add(shot)
+            let more = app.buttons["lio.place.bubble.more"]
+            XCTAssertEqual(more.label, en ? "See more" : "更多")
+            more.tap()
+            XCTAssertTrue(app.staticTexts["lio.place.name"].waitForExistence(timeout: 8), "the place page")
+            app.buttons["lio.place.bubble.page.close"].tap()
+            XCTAssertTrue(palace.waitForExistence(timeout: 6))
+        }
+    }
+
     /// #1753 (W4-9): with `G2CAnswerFeedbackEnabled` (Debug: `--lio-answer-feedback-preview`, a fixture that sends
     /// nothing) a finished answer offers "Not helpful", then details. Independent of the AI line; without the flag,
     /// nothing changes.

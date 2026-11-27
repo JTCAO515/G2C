@@ -14,6 +14,8 @@ struct LioTimelineTurn: Sendable {
     let layout: LioTimelineWire.AnswerLayout?
     let followups: [LioTimelineWire.Followup]
     let chips: [LioTimelineWire.Chip]
+    /// Places the server named in the answer (LIO-answer-rich.1, #1991), checked against the text and the App's library.
+    let places: [LioPlaceSpan]
 
     var isActive: Bool {
         switch status {
@@ -22,7 +24,8 @@ struct LioTimelineTurn: Sendable {
         }
     }
 
-    init(_ message: LioTimelineWire.Message) {
+    init(_ message: LioTimelineWire.Message, richEnabled: Bool = LioAnswerRichFeature.enabledInBuild,
+         places repository: LioPlaceRepository = .bundled) {
         messageID = message.id
         text = message.question
         answer = message.answer
@@ -31,6 +34,8 @@ struct LioTimelineTurn: Sendable {
         layout = message.layout
         followups = message.followups
         chips = message.chips
+        places = richEnabled
+            ? LioPlaceMentions.resolve(answer: message.answer, entities: message.rich?.entities ?? [], in: repository) : []
         memoryTags = message.memoryTags.filter { LioPublicDisplay.permitsText($0.text) }
         sources = Self.projectSources(message.sources.map { ($0.title, $0.link) }, messageID: message.id)
         status = Self.status(message.state, activity: message.activity, answer: message.answer)
@@ -44,6 +49,7 @@ struct LioTimelineTurn: Sendable {
         layout = nil
         followups = []
         chips = []
+        places = []
         // Native calendar/rich summaries keep their actual type and binding in exploration.trip.
         itinerary = nil
         memoryTags = message.memoryTags.filter { LioPublicDisplay.permitsText($0.text) }
@@ -92,7 +98,7 @@ struct LioTimelinePage: Sendable {
     }
 
     init(_ page: LioTimelineWire.Page) {
-        turns = page.messages.map(LioTimelineTurn.init)
+        turns = page.messages.map { LioTimelineTurn($0) }
         nextBefore = page.nextBefore
         conversationID = page.conversationID
     }
@@ -128,6 +134,7 @@ extension LioService {
     public static func signedConversation(_ client: LioTimelineHTTP, destination: LioTimelineWire.V2Destination,
                                           version: LioTimelineWire.Version = .v2,
                                           answerLayout: Bool = false,
+                                          answerRich: Bool = false,
                                           readFailed: (@MainActor @Sendable (any Error) -> Void)? = nil,
                                           didCreate: @escaping @Sendable (String) async -> Void) -> LioService {
         timeline(send: { original in
@@ -135,7 +142,7 @@ extension LioService {
         }, read: { id, before in
             try await noted(readFailed) {
                 try await client.timeline(conversationID: id, before: before, version: version,
-                                          declaresAnswerLayout: answerLayout)
+                                          declaresAnswerLayout: answerLayout, declaresAnswerRich: answerRich)
             }
         }, destination: destination, scopedVersion: version, recoverFirst: { id in
             try await noted(readFailed, stage: .firstSendLookup) {
