@@ -20,7 +20,7 @@
     "backend/agent/cj_agent/lio_intake_facts_schema.py": "2149e2eecf0fb73aed72b547a8565b293b4989c5256e8428ec5b42c7045eeeb2",
     "backend/agent/cj_agent/lio_intake_flow_schema.py": "9680244ffdab5ea0c814e2263d7344cfc6323b65e5678312e8fb63541b1a1cb2",
     "backend/agent/cj_agent/lio_intake_optional_schema.py": "0e7c7c6ec9c8b0f95c245174efeddb3fc6b190f2b119ec204694df590b44d140",
-    "backend/cj_api/lio_flow_intake.py": "537b33f72d3a52e36c645418bc0a0a23ee912fe3777110aee8051f0244786711",
+    "backend/cj_api/lio_flow_intake.py": "a3b527d0db2e1be9b237fcbeeecc6c6e662bed25dcf879834bb0c5f350a38fb4",
     "backend/cj_api/lio_flat_intake.py": "0198af5aff37ef346c24cade652c5e9d222fe0de547e8de5523c427cb2d94c2a",
     "backend/cj_api/lio_sourced_intake.py": "ef357326f4142fc821e246b44de681ea7897e6e3e7537e20b4554649311b6633",
     "backend/message/cj_message/lio_context.py": "d11abe9eea84c2edb43340637aaac05dadf030bce9431532132a099fbd0eeea6",
@@ -97,7 +97,7 @@
     "example.clarification": "UNRUN"
   },
   "national_clarification_hook": "NOT_CONNECTED_NO_BASELINE_ANCHOR",
-  "system_prompt_sha256": "9528cac107d63a640ed3651f167ee9f4c0462514c3a026ed2ba5bb70ebdc1a58",
+  "system_prompt_sha256": "c17b85a46fc318035eeedaba435e135a4358a9951f8ad7de83a639cc7ec67b4e",
   "model": {
     "endpoint": "https://dashscope.aliyuncs.com/compatible-mode/v1",
     "id": "qwen3.8-flash",

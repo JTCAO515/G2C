@@ -286,6 +286,12 @@ class WishItems(unittest.TestCase):
                 wish('Palace Museum', 'already arranged: Palace Museum'), wish('故宫', '参加公司团建，第一天故宫'), wish('故宫', '第一天下午两点故宫'),
                 wish('故宫', '早上八点半故宫'), wish('Palace Museum', 'Palace Museum at noon'), wish('Palace Museum', "Palace Museum at 9 o'clock"),
                 wish('故宫', '第一天包车去故宫'), wish('Palace Museum', 'Day 1 guided tour of the Palace Museum'), wish('故宫', '第一天中午故宫'),
+                # third review round: an explicit time, date or payment written another way, and sign-ups
+                wish('Palace Museum', 'Day 1 Palace Museum at 9'), wish('Palace Museum', 'Palace Museum nine am'), wish('Palace Museum', 'Palace Museum 9 in the morning'),
+                wish('故宫', '第一天故宫，12/1'), wish('故宫', '十二月一号故宫'), wish('Palace Museum', 'Day 1 (Dec 1) Palace Museum'),
+                wish('故宫', '第一天故宫，已经付款了'), wish('故宫', '交了定金'), wish('Palace Museum', 'already paid'), wish('Palace Museum', 'deposit sent'),
+                wish('故宫', '已经报名了故宫'), wish('Palace Museum', 'signed up for the Palace Museum'), wish('故宫', '第一天故宫上午场'),
+                wish('故宫', '故宫讲解员'), wish('故宫', '故宫名额已经拿到'), wish('故宫', '第一天开会，会议'),
                 wish('故宫', '第一天9:30故宫'), wish('故宫', '第一天上午9点故宫'), wish('故宫', '12月1日故宫'), wish('故宫', '2026-12-01 故宫'), wish('故宫', '第一天故宫', detail_refs=[dict(source_index=0, quote='x')]),
                 wish('故宫', '第一天故宫', kind='appointment'), wish('酒店', '第一天酒店', kind='hotel'), wish('机票', '第一天航班', kind='transport')]
         items = [dict(item) for item in keep]

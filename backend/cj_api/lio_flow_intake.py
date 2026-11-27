@@ -293,6 +293,13 @@ _FIXED_HINT=re.compile(r'订好|订了|买好|买了|订票|订位|订房|预订
                        # #2124: arranged by someone else, a tour, a guide, a chartered car, a team event
                        r'约好|说好|安排好|已安排|已经安排|跟团|参团|团队|团建|团体|导游|领队|包车|接送|'
                        r'reserv|booked|booking|ticket|confirmed|fixed|locked|arranged|tour group|group tour|guided|guide|charter|'
+                       # paid, signed up, a slot, a session, a meeting (red-line review of #2125)
+                       r'付款|付了|已付|交了|定金|订金|押金|paid|deposit|payment|报名|报了名|signed up|登记|名额|\bslot|讲解员|搞定|会议|meeting|'
+                       r'上午场|下午场|晚场|'
+                       # a clock or a date written another way: 「at 9」「nine am」「12/1」「十二月一号」「Dec 1」
+                       r'\bat\s+[0-9]{1,2}\b|\b(?:one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve)\s*(?:am|pm|a\.m\.|p\.m\.)|'
+                       r'[0-9]{1,2}\s+in\s+the\s+(?:morning|afternoon|evening)|[0-9]{1,2}\s*/\s*[0-9]{1,2}\b|'
+                       r'[一二三四五六七八九十]{1,3}\s*月\s*[一二三四五六七八九十]{0,3}\s*[日号]|\b(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s*[0-9]{1,2}\b|'
                        r'[0-9]{1,2}\s*[:：点时]|[0-9]{1,2}\s*(?:am|pm)\b|[0-9]{4}[-/.][0-9]{1,2}[-/.][0-9]{1,2}|[0-9]{1,2}\s*月\s*[0-9]{1,2}\s*[日号]|'
                        # clocks spelled out: 「下午两点」「早上八点半」「十点」, noon, o'clock
                        r'[一二三四五六七八九十两]{1,3}\s*[点时]|\bnoon\b|midnight|o.?clock|中午|正午|午夜',re.I)
