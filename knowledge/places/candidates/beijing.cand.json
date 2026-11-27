@@ -99,16 +99,17 @@
         "official_url": "https://www.marriott.com/en-us/hotels/bjsfo-fairfield-beijing-olympic-sports-center/overview/",
         "sources": [
           "https://www.marriott.com/en-us/hotels/bjsfo-fairfield-beijing-olympic-sports-center/overview/",
-          "https://www.marriott.com/en-us/destinations/china/beijing.mi?pg=2"
+          "https://www.marriott.com/en-us/destinations/china/beijing.mi?pg=2",
+          "https://help.marriott.com/s/article/Article-24483"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
-        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sat, Dec 26 - Sun, Dec 27。 官网样本为每房每晚人民币 ¥480。当前价以所选日期及房型的报价为准。",
+        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sat, Dec 26 - Sun, Dec 27。 官网样本为每房每晚人民币 ¥480。当前价以所选日期及房型的报价为准。 分档依据：万豪集团列为 Select 精选服务品牌，本库按中档处理。",
         "subcategory": "hotel",
-        "intro_short_zh": "可作为奥体中心一带的住宿。",
-        "intro_short_en": "A stay in the Olympic Sports Center area.",
-        "intro_long_zh": "可作为奥体中心一带的住宿。可在品牌官网查看房型和入住安排。",
-        "intro_long_en": "A stay in the Olympic Sports Center area. See the hotel's own website for room types and check-in details.",
+        "intro_short_zh": "奥体中心地铁站附近，适合把北京北部排在同一天。",
+        "intro_short_en": "Base yourself near Olympic Sports Center station for northern Beijing.",
+        "intro_long_zh": "门店在朝阳区安翔路，万豪列出奥体中心地铁站，并有住客可使用的健身房。想把白天出门和回店运动分开安排，可以考虑这里。",
+        "intro_long_en": "Choose this Fairfield for plans around the Olympic Sports Center. The hotel lists the nearby subway stop and has a fitness room with treadmills.",
         "star": null,
         "price_band": "<500",
         "accepts_foreigners": true,
@@ -140,7 +141,9 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "pl_bj_aotiwanfeng: unknown field 'hotel_class' is dropped on import"
+      ]
     },
     {
       "id": "pl_bj_badaling",
@@ -220,7 +223,7 @@
         "id": "pl_bj_badalingyilin",
         "city": "beijing",
         "category": "hotel",
-        "tier": "main",
+        "tier": "backup",
         "name_zh": "北京八达岭希尔顿逸林酒店",
         "name_en": "DoubleTree by Hilton Beijing Badaling",
         "aliases_zh": [],
@@ -240,16 +243,17 @@
         "official_url": "https://www.hilton.com.cn/zh-cn/hotels/bjsbddi-doubletree-by-hilton-beijing-badaling",
         "sources": [
           "https://www.hilton.com.cn/zh-cn/hotels/bjsbddi-doubletree-by-hilton-beijing-badaling",
-          "https://www.hilton.com.cn/zh-cn/locations/china/beijing-beijing"
+          "https://www.hilton.com.cn/zh-cn/locations/china/beijing-beijing",
+          "https://ir.hilton.com/_assets/_de1e637820b6842c68b34801d11a8fd1/hilton/db/3577/34740/pdf/HLT_Investor_Presentation_-_November_2026.pdf"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
-        "notes": "希尔顿城市页显示 2026-11-27 入住、11-28 退房的起价。 官网样本为每房每晚人民币 ¥466。当前价以所选日期及房型的报价为准。",
+        "notes": "希尔顿城市页显示 2026-11-27 入住、11-28 退房的起价。 官网样本为每房每晚人民币 ¥466。当前价以所选日期及房型的报价为准。 分档依据：希尔顿集团将品牌列为 Full Service，本库按高档处理。",
         "subcategory": "hotel",
-        "intro_short_zh": "延庆区住宿，适合把八达岭单列一天。",
-        "intro_short_en": "A Yanqing stay for a day around Badaling.",
-        "intro_long_zh": "延庆区住宿，适合把八达岭单列一天。可在品牌官网查看房型和入住安排。",
-        "intro_long_en": "A Yanqing stay for a day around Badaling. See the hotel's own website for room types and check-in details.",
+        "intro_short_zh": "住在延庆城区，便于安排八达岭长城和野鸭湖。",
+        "intro_short_en": "A Yanqing stop for a Great Wall and wetlands itinerary.",
+        "intro_long_zh": "酒店位于延庆东外大街，去八达岭长城或野鸭湖前可从这里出发。品牌位置页也列出延庆站，适合在郊区多住一晚。",
+        "intro_long_en": "Stay in Yanqing to give the Badaling Great Wall and Yeyahu wetlands separate outings. The location guide also names Yanqing railway station for arrival planning.",
         "star": null,
         "price_band": "<500",
         "accepts_foreigners": true,
@@ -281,7 +285,9 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "pl_bj_badalingyilin: unknown field 'hotel_class' is dropped on import"
+      ]
     },
     {
       "id": "pl_bj_baikuilaohao_jiaodaokou",
@@ -425,7 +431,7 @@
         "id": "pl_bj_baogeli",
         "city": "beijing",
         "category": "hotel",
-        "tier": "main",
+        "tier": "backup",
         "name_zh": "北京宝格丽酒店",
         "name_en": "Bvlgari Hotel Beijing",
         "aliases_zh": [],
@@ -445,16 +451,17 @@
         "official_url": "https://www.bulgarihotels.com/en-US/beijing",
         "sources": [
           "https://www.bulgarihotels.com/en-US/beijing",
-          "https://www.marriott.com/en-us/destinations/china/beijing.mi?pg=2"
+          "https://www.marriott.com/en-us/destinations/china/beijing.mi?pg=2",
+          "https://www.grouppartners.marriott.com/TAGP_docs/Multimedia/PDF/Group_Intermediaries/Group_Partners/b2b-brandbrochure-8.5x11-2021.pdf"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
-        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sat, Dec 26 - Sun, Dec 27。 官网样本为每房每晚人民币 ¥5,400。当前价以所选日期及房型的报价为准。",
+        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sat, Dec 26 - Sun, Dec 27。 官网样本为每房每晚人民币 ¥5,400。当前价以所选日期及房型的报价为准。 分档依据：万豪集团品牌手册将宝格丽列为 Distinctive Luxury。",
         "subcategory": "hotel",
-        "intro_short_zh": "在亮马河一带找住宿可考虑这里。",
-        "intro_short_en": "A hotel option around the Liangma River.",
-        "intro_long_zh": "在亮马河一带找住宿可考虑这里。可在品牌官网查看房型和入住安排。",
-        "intro_long_en": "A hotel option around the Liangma River. See the hotel's own website for room types and check-in details.",
+        "intro_short_zh": "亮马河畔，酒店与启皓艺术馆相邻。",
+        "intro_short_en": "A Liangma River hotel beside the Genesis Art Gallery.",
+        "intro_long_zh": "在亮马河散步和看艺术展，可以安排在同一段行程。宝格丽门店页介绍了相邻的启皓艺术馆和店内泳池。",
+        "intro_long_en": "Pick this riverside address if you plan to spend time along the Liangma River. The hotel sits beside the Genesis Art Gallery and has a 25-meter pool.",
         "star": null,
         "price_band": ">2000",
         "accepts_foreigners": true,
@@ -486,7 +493,9 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "pl_bj_baogeli: unknown field 'hotel_class' is dropped on import"
+      ]
     },
     {
       "id": "pl_bj_baqikaorou_shichahai",
@@ -703,7 +712,8 @@
           "https://english.beijing.gov.cn/livinginbeijing/transportation/beijingsubway/202412/t20241216_3966828.html",
           "https://english.beijing.gov.cn/livinginbeijing/transportation/railway/202412/t20241211_3963021.html",
           "https://xxgk.mot.gov.cn/gz/202211/t20221128_3716160.html",
-          "https://zwfw.jinan.gov.cn/col127369/art/2025/art_127369_4798602.html"
+          "https://zwfw.jinan.gov.cn/col127369/art/2025/art_127369_4798602.html",
+          "https://english.shanghai.gov.cn/en-Individuals-Transportation-PublicTransport/20260825/463ac3099fa344f39182e623f83943f7.html"
         ],
         "checked_on": "2026-11-27",
         "confidence": "high",
@@ -715,13 +725,16 @@
           "地铁接驳：2号线、4号线、13号线（西直门）。"
         ],
         "to_city_en": [
-          "Metro connection: Lines 2, 4 and 13 at Xizhimen."
+          "At Xizhimen, take Beijing Subway Line 2, 4 or 13."
         ],
         "foreigner_tips_zh": [
           "去长城或张家口前看清车票写的是北京北还是清河。",
           "带上购票时使用的护照原件，闸机读不出证件时走人工通道。"
         ],
-        "foreigner_tips_en": null
+        "foreigner_tips_en": [
+          "Heading to the Great Wall or Zhangjiakou? Check whether your ticket says Beijing North or Qinghe.",
+          "Bring the original passport you used to book. If the gate can't read it, use a staffed lane."
+        ]
       },
       "external_signals": [],
       "location": null,
@@ -830,7 +843,9 @@
           "https://english.beijing.gov.cn/livinginbeijing/transportation/beijingsubway/202412/t20241216_3966828.html",
           "https://english.beijing.gov.cn/livinginbeijing/transportation/railway/202412/t20241211_3963021.html",
           "https://xxgk.mot.gov.cn/gz/202211/t20221128_3716160.html",
-          "https://zwfw.jinan.gov.cn/col127369/art/2025/art_127369_4798602.html"
+          "https://zwfw.jinan.gov.cn/col127369/art/2025/art_127369_4798602.html",
+          "https://english.beijing.gov.cn/livinginbeijing/transportation/railway/202412/t20241217_3967615.html",
+          "https://english.shanghai.gov.cn/en-Individuals-Transportation-PublicTransport/20260825/463ac3099fa344f39182e623f83943f7.html"
         ],
         "checked_on": "2026-11-27",
         "confidence": "high",
@@ -842,13 +857,16 @@
           "地铁接驳：3号线。"
         ],
         "to_city_en": [
-          "Metro connection: Line 3."
+          "Take Beijing Subway Line 3."
         ],
         "foreigner_tips_zh": [
           "从地铁换乘时跟随「铁路进站」指引。",
           "带上购票时使用的护照原件，闸机读不出证件时走人工通道。"
         ],
-        "foreigner_tips_en": null
+        "foreigner_tips_en": [
+          "Coming from the subway? Follow the signs for the railway entrance.",
+          "Bring the original passport you used to book. If the gate can't read it, use a staffed lane."
+        ]
       },
       "external_signals": [],
       "location": null,
@@ -892,7 +910,9 @@
           "https://english.beijing.gov.cn/livinginbeijing/transportation/beijingsubway/202412/t20241216_3966828.html",
           "https://english.beijing.gov.cn/livinginbeijing/transportation/railway/202412/t20241211_3963021.html",
           "https://xxgk.mot.gov.cn/gz/202211/t20221128_3716160.html",
-          "https://zwfw.jinan.gov.cn/col127369/art/2025/art_127369_4798602.html"
+          "https://zwfw.jinan.gov.cn/col127369/art/2025/art_127369_4798602.html",
+          "https://english.beijing.gov.cn/latest/news/202605/t20260514_4650790.html",
+          "https://english.shanghai.gov.cn/en-Individuals-Transportation-PublicTransport/20260825/463ac3099fa344f39182e623f83943f7.html"
         ],
         "checked_on": "2026-11-27",
         "confidence": "high",
@@ -904,13 +924,16 @@
           "地铁接驳：10号线、16号线。"
         ],
         "to_city_en": [
-          "Metro connection: Lines 10 and 16."
+          "Take Beijing Subway Line 10 or 16."
         ],
         "foreigner_tips_zh": [
           "高铁和普速候车位置可能不同，进站后按车次查屏幕。",
           "带上购票时使用的护照原件，闸机读不出证件时走人工通道。"
         ],
-        "foreigner_tips_en": null
+        "foreigner_tips_en": [
+          "High-speed and conventional trains may use different waiting areas. Check the screens for your train number once inside.",
+          "Bring the original passport you used to book. If the gate can't read it, use a staffed lane."
+        ]
       },
       "external_signals": [],
       "location": null,
@@ -954,7 +977,8 @@
           "https://english.beijing.gov.cn/livinginbeijing/transportation/beijingsubway/202412/t20241216_3966828.html",
           "https://english.beijing.gov.cn/livinginbeijing/transportation/railway/202412/t20241211_3963021.html",
           "https://xxgk.mot.gov.cn/gz/202211/t20221128_3716160.html",
-          "https://zwfw.jinan.gov.cn/col127369/art/2025/art_127369_4798602.html"
+          "https://zwfw.jinan.gov.cn/col127369/art/2025/art_127369_4798602.html",
+          "https://english.shanghai.gov.cn/en-Individuals-Transportation-PublicTransport/20260825/463ac3099fa344f39182e623f83943f7.html"
         ],
         "checked_on": "2026-11-27",
         "confidence": "high",
@@ -966,13 +990,16 @@
           "地铁接驳：4号线、14号线。"
         ],
         "to_city_en": [
-          "Metro connection: Lines 4 and 14."
+          "Take Beijing Subway Line 4 or 14."
         ],
         "foreigner_tips_zh": [
           "地铁与铁路各有检票环节，早到留出安检时间。",
           "带上购票时使用的护照原件，闸机读不出证件时走人工通道。"
         ],
-        "foreigner_tips_en": null
+        "foreigner_tips_en": [
+          "The subway and railway have separate ticket checks. Arrive early enough for railway security.",
+          "Bring the original passport you used to book. If the gate can't read it, use a staffed lane."
+        ]
       },
       "external_signals": [],
       "location": null,
@@ -1016,7 +1043,9 @@
           "https://english.beijing.gov.cn/livinginbeijing/transportation/railway/202512/t20251231_4381067.html",
           "https://zdzqgw.beijing.gov.cn/zqfw/csfzxzdq/csfzxzjtjb/202604/t20260417_4588943.html",
           "https://xxgk.mot.gov.cn/gz/202211/t20221128_3716160.html",
-          "https://zwfw.jinan.gov.cn/col127369/art/2025/art_127369_4798602.html"
+          "https://zwfw.jinan.gov.cn/col127369/art/2025/art_127369_4798602.html",
+          "https://english.beijing.gov.cn/livinginbeijing/easyliving/202604/t20260429_4622843.html",
+          "https://english.shanghai.gov.cn/en-Individuals-Transportation-PublicTransport/20260825/463ac3099fa344f39182e623f83943f7.html"
         ],
         "checked_on": "2026-11-27",
         "confidence": "high",
@@ -1028,13 +1057,16 @@
           "由换乘通道步行到北运河东站，可搭地铁6号线。"
         ],
         "to_city_en": [
-          "Follow the transfer passage to Beiyunhe East for Metro Line 6."
+          "Follow the transfer passage to Beiyunhe Dong (E) for Subway Line 6."
         ],
         "foreigner_tips_zh": [
           "京唐城际旅客按票面核对「北京通州」站，地铁换乘通道预留步行时间。",
           "带上购票时使用的护照原件，闸机读不出证件时走人工通道。"
         ],
-        "foreigner_tips_en": null
+        "foreigner_tips_en": [
+          "For the Beijing–Tangshan intercity train, check that the ticket says 北京通州. Allow time to walk through the subway transfer passage.",
+          "Bring the original passport you used to book. If the gate can't read it, use a staffed lane."
+        ]
       },
       "external_signals": [],
       "location": null,
@@ -1078,7 +1110,8 @@
           "https://english.beijing.gov.cn/livinginbeijing/transportation/beijingsubway/202412/t20241216_3966828.html",
           "https://english.beijing.gov.cn/livinginbeijing/transportation/railway/202412/t20241211_3963021.html",
           "https://xxgk.mot.gov.cn/gz/202211/t20221128_3716160.html",
-          "https://zwfw.jinan.gov.cn/col127369/art/2025/art_127369_4798602.html"
+          "https://zwfw.jinan.gov.cn/col127369/art/2025/art_127369_4798602.html",
+          "https://english.shanghai.gov.cn/en-Individuals-Transportation-PublicTransport/20260825/463ac3099fa344f39182e623f83943f7.html"
         ],
         "checked_on": "2026-11-27",
         "confidence": "high",
@@ -1090,13 +1123,16 @@
           "地铁接驳：7号线、9号线。"
         ],
         "to_city_en": [
-          "Metro connection: Lines 7 and 9."
+          "Take Beijing Subway Line 7 or 9."
         ],
         "foreigner_tips_zh": [
           "打车时出示「北京西站」，下车后按车次找检票口。",
           "带上购票时使用的护照原件，闸机读不出证件时走人工通道。"
         ],
-        "foreigner_tips_en": null
+        "foreigner_tips_en": [
+          "Show your driver 北京西站. Inside the station, use your train number to find the boarding gate.",
+          "Bring the original passport you used to book. If the gate can't read it, use a staffed lane."
+        ]
       },
       "external_signals": [],
       "location": null,
@@ -1140,7 +1176,8 @@
           "https://english.beijing.gov.cn/livinginbeijing/transportation/beijingsubway/202412/t20241216_3966828.html",
           "https://english.beijing.gov.cn/livinginbeijing/transportation/railway/202412/t20241211_3963021.html",
           "https://xxgk.mot.gov.cn/gz/202211/t20221128_3716160.html",
-          "https://zwfw.jinan.gov.cn/col127369/art/2025/art_127369_4798602.html"
+          "https://zwfw.jinan.gov.cn/col127369/art/2025/art_127369_4798602.html",
+          "https://english.shanghai.gov.cn/en-Individuals-Transportation-PublicTransport/20260825/463ac3099fa344f39182e623f83943f7.html"
         ],
         "checked_on": "2026-11-27",
         "confidence": "high",
@@ -1152,13 +1189,16 @@
           "地铁接驳：2号线。"
         ],
         "to_city_en": [
-          "Metro connection: Line 2."
+          "Take Beijing Subway Line 2."
         ],
         "foreigner_tips_zh": [
           "车票若写「北京」，出行时用「北京站」作定位。",
           "带上购票时使用的护照原件，闸机读不出证件时走人工通道。"
         ],
-        "foreigner_tips_en": null
+        "foreigner_tips_en": [
+          "If the ticket says 北京, look up 北京站 when getting directions.",
+          "Bring the original passport you used to book. If the gate can't read it, use a staffed lane."
+        ]
       },
       "external_signals": [],
       "location": null,
@@ -1261,21 +1301,23 @@
         "name_en": "BRBR Syrian Restaurant",
         "aliases_zh": [],
         "aliases_en": [],
-        "address_zh": null,
+        "address_zh": "东升南路东升园12号楼底商",
         "address_en": null,
-        "district_zh": null,
+        "district_zh": "海淀区",
         "nearest_metro": null,
         "foreigner_signals": {
           "english_signage": null,
           "foreign_cards": null,
           "english_service": null,
           "evidence": [
-            "https://english.beijing.gov.cn/latest/news/202610/t20261008_4892631.html"
+            "https://english.beijing.gov.cn/latest/news/202610/t20261008_4892631.html",
+            "https://www.visitbeijing.com.cn/article/4Cv7w6xe515"
           ]
         },
         "official_url": "https://english.beijing.gov.cn/latest/news/202610/t20261008_4892631.html",
         "sources": [
-          "https://english.beijing.gov.cn/latest/news/202610/t20261008_4892631.html"
+          "https://english.beijing.gov.cn/latest/news/202610/t20261008_4892631.html",
+          "https://www.visitbeijing.com.cn/article/4Cv7w6xe515"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
@@ -1285,7 +1327,7 @@
         "hours_source": null,
         "intro_short_zh": "可以尝切肉卷或鹰嘴豆泥。",
         "intro_short_en": "Try a shawarma or a serving of hummus.",
-        "intro_long_zh": "可以尝切肉卷或鹰嘴豆泥。到访时按中文门店名辨认。",
+        "intro_long_zh": "可以尝切肉卷或鹰嘴豆泥。按中文店名在东升南路东升园12号楼底商定位。",
         "intro_long_en": "Try a shawarma or a serving of hummus. Use the full Chinese name when looking up this location.",
         "cuisine_zh": "叙利亚菜",
         "price_per_person_cny": null,
@@ -1301,12 +1343,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 20,
+        "total": 26,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
-          "sources": 5,
-          "complete": 3,
+          "sources": 10,
+          "complete": 4,
           "amap": 0
         },
         "external_used": false
@@ -1326,31 +1368,33 @@
         "name_en": "CALMA Portuguese Restaurant",
         "aliases_zh": [],
         "aliases_en": [],
-        "address_zh": null,
+        "address_zh": "三里屯片区",
         "address_en": null,
-        "district_zh": null,
+        "district_zh": "朝阳区",
         "nearest_metro": null,
         "foreigner_signals": {
           "english_signage": null,
           "foreign_cards": null,
           "english_service": null,
           "evidence": [
-            "https://english.beijing.gov.cn/latest/news/202610/t20261008_4892631.html"
+            "https://english.beijing.gov.cn/latest/news/202610/t20261008_4892631.html",
+            "https://conselhobeijing.org/events/encontro-de-brasileiros-em-beijing-setembro-2025/"
           ]
         },
         "official_url": "https://english.beijing.gov.cn/latest/news/202610/t20261008_4892631.html",
         "sources": [
-          "https://english.beijing.gov.cn/latest/news/202610/t20261008_4892631.html"
+          "https://english.beijing.gov.cn/latest/news/202610/t20261008_4892631.html",
+          "https://conselhobeijing.org/events/encontro-de-brasileiros-em-beijing-setembro-2025/"
         ],
         "checked_on": "2026-11-27",
-        "confidence": "medium",
-        "notes": "营业依据为当前经营方点位或近期主管部门的具名记录。",
+        "confidence": "low",
+        "notes": "当年官方英文发布可确认品牌营业，具体街址或分店资料待补。 近期官方资料确认身份，具体到店位置待复核。",
         "subcategory": "western",
         "hours_zh": null,
         "hours_source": null,
         "intro_short_zh": "想换口味时，可以点葡式海鲜或烤肉。",
         "intro_short_en": "Try Portuguese seafood or grilled meat for a change of pace.",
-        "intro_long_zh": "想换口味时，可以点葡式海鲜或烤肉。到访时按中文门店名辨认。",
+        "intro_long_zh": "想换口味时，可以点葡式海鲜或烤肉。按中文店名在三里屯片区定位。",
         "intro_long_en": "Try Portuguese seafood or grilled meat for a change of pace. Use the full Chinese name when looking up this location.",
         "cuisine_zh": "葡萄牙菜",
         "price_per_person_cny": null,
@@ -1366,12 +1410,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 20,
+        "total": 18,
         "parts": {
           "foreigner": 0,
-          "confidence": 12,
-          "sources": 5,
-          "complete": 3,
+          "confidence": 4,
+          "sources": 10,
+          "complete": 4,
           "amap": 0
         },
         "external_used": false
@@ -1477,16 +1521,17 @@
         "official_url": "https://www.marriott.com/en-us/hotels/bjsbp-courtyard-beijing-changping/overview/",
         "sources": [
           "https://www.marriott.com/en-us/hotels/bjsbp-courtyard-beijing-changping/overview/",
-          "https://www.marriott.com/en-us/destinations/china/beijing.mi?pg=3"
+          "https://www.marriott.com/en-us/destinations/china/beijing.mi?pg=3",
+          "https://help.marriott.com/s/article/Article-24483"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
-        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sat, Dec 26 - Sun, Dec 27。 官网样本为每房每晚人民币 ¥475。当前价以所选日期及房型的报价为准。",
+        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sat, Dec 26 - Sun, Dec 27。 官网样本为每房每晚人民币 ¥475。当前价以所选日期及房型的报价为准。 分档依据：万豪集团列为 Select 精选服务品牌，本库按中档处理。",
         "subcategory": "hotel",
-        "intro_short_zh": "昌平区的万怡酒店。",
-        "intro_short_en": "A Courtyard hotel in Changping.",
-        "intro_long_zh": "昌平区的万怡酒店。可在品牌官网查看房型和入住安排。",
-        "intro_long_en": "A Courtyard hotel in Changping. See the hotel's own website for room types and check-in details.",
+        "intro_short_zh": "昌平段可结合居庸关长城和万豪的行程介绍。",
+        "intro_short_en": "A Changping option for a separate Great Wall outing.",
+        "intro_long_zh": "适合想留一天去北京北郊的人。万豪体验页介绍居庸关和黄花城长城，可先从这两个方向选一处，再安排住在昌平。",
+        "intro_long_en": "If you want to set aside a day outside central Beijing, the hotel's experience page describes the Juyongguan and Huanghuacheng sections of the Great Wall.",
         "star": null,
         "price_band": "<500",
         "accepts_foreigners": true,
@@ -1518,7 +1563,9 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "pl_bj_changpingwanyi: unknown field 'hotel_class' is dropped on import"
+      ]
     },
     {
       "id": "pl_bj_chaoshangchao_xicheng",
@@ -2346,16 +2393,17 @@
         "official_url": "https://www.marriott.com/en-us/hotels/bjspf-four-points-beijing-fangshan/overview/",
         "sources": [
           "https://www.marriott.com/en-us/hotels/bjspf-four-points-beijing-fangshan/overview/",
-          "https://www.marriott.com/en-us/destinations/china/beijing.mi?pg=3"
+          "https://www.marriott.com/en-us/destinations/china/beijing.mi?pg=3",
+          "https://help.marriott.com/s/article/Article-24483"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
-        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sat, Dec 26 - Sun, Dec 27。 官网样本为每房每晚人民币 ¥366。当前价以所选日期及房型的报价为准。",
+        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sat, Dec 26 - Sun, Dec 27。 官网样本为每房每晚人民币 ¥366。当前价以所选日期及房型的报价为准。 分档依据：万豪集团列为 Select 精选服务品牌，本库按中档处理。",
         "subcategory": "hotel",
-        "intro_short_zh": "在房山区停留时可作为住宿候选。",
-        "intro_short_en": "A hotel option for an overnight stay in Fangshan.",
-        "intro_long_zh": "在房山区停留时可作为住宿候选。可在品牌官网查看房型和入住安排。",
-        "intro_long_en": "A hotel option for an overnight stay in Fangshan. See the hotel's own website for room types and check-in details.",
+        "intro_short_zh": "房山长阳的酒店，可用地铁串接北京西南片区。",
+        "intro_short_en": "A Changyang option in Fangshan with English listed by the hotel.",
+        "intro_long_zh": "门店在房山怡和北路，万豪交通页列出长阳地铁站。适合把北京西南方向景点集中安排在几天内的旅客。",
+        "intro_long_en": "Stay in Changyang if the southwest side of Beijing is the focus of your trip. The hotel's directions list Changyang Metro Station and English among the property languages.",
         "star": null,
         "price_band": "<500",
         "accepts_foreigners": true,
@@ -2387,7 +2435,9 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "pl_bj_fangshanfupeng: unknown field 'hotel_class' is dropped on import"
+      ]
     },
     {
       "id": "pl_bj_fangzhuanchang_beixinqiao",
@@ -2547,16 +2597,17 @@
         "official_url": "https://www.marriott.com/en-us/hotels/bjsbc-renaissance-beijing-capital-hotel/overview/",
         "sources": [
           "https://www.marriott.com/en-us/hotels/bjsbc-renaissance-beijing-capital-hotel/overview/",
-          "https://www.marriott.com/en-us/destinations/china/beijing.mi"
+          "https://www.marriott.com/en-us/destinations/china/beijing.mi",
+          "https://help.marriott.com/s/article/Article-24483"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
-        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sat, Dec 26 - Sun, Dec 27。 官网样本为每房每晚人民币 ¥837。当前价以所选日期及房型的报价为准。",
+        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sat, Dec 26 - Sun, Dec 27。 官网样本为每房每晚人民币 ¥837。当前价以所选日期及房型的报价为准。 分档依据：万豪集团将此品牌列为 Premium。",
         "subcategory": "hotel",
-        "intro_short_zh": "在北京东部安排住宿时可考虑这家万丽。",
-        "intro_short_en": "A Renaissance hotel for a stay in eastern Beijing.",
-        "intro_long_zh": "在北京东部安排住宿时可考虑这家万丽。可在品牌官网查看房型和入住安排。",
-        "intro_long_en": "A Renaissance hotel for a stay in eastern Beijing. See the hotel's own website for room types and check-in details.",
+        "intro_short_zh": "双井可换乘7号线和10号线，适合朝阳地铁游。",
+        "intro_short_en": "Double up on subway options at Shuangjing, on lines 7 and 10.",
+        "intro_long_zh": "酒店在东三环中路，去双井站可乘7号线或10号线。需要用英文和酒店沟通的旅客，可以先查万豪门店列出的服务语言。",
+        "intro_long_en": "Plan independent subway outings from the Shuangjing area. The hotel lists both lines and identifies English as one of the languages spoken on the property.",
         "star": null,
         "price_band": "500-1000",
         "accepts_foreigners": true,
@@ -2588,7 +2639,9 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "pl_bj_fuliwanli: unknown field 'hotel_class' is dropped on import"
+      ]
     },
     {
       "id": "pl_bj_furong_xicheng",
@@ -3039,16 +3092,17 @@
         "official_url": "https://www.marriott.com/en-us/hotels/bjsal-aloft-beijing-haidian/overview/",
         "sources": [
           "https://www.marriott.com/en-us/hotels/bjsal-aloft-beijing-haidian/overview/",
-          "https://www.marriott.com/en-us/destinations/china/beijing.mi?pg=3"
+          "https://www.marriott.com/en-us/destinations/china/beijing.mi?pg=3",
+          "https://help.marriott.com/s/article/Article-24483"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
-        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sat, Dec 26 - Sun, Dec 27。 官网样本为每房每晚人民币 ¥428。当前价以所选日期及房型的报价为准。",
+        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sat, Dec 26 - Sun, Dec 27。 官网样本为每房每晚人民币 ¥428。当前价以所选日期及房型的报价为准。 分档依据：万豪集团列为 Select 精选服务品牌，本库按中档处理。",
         "subcategory": "hotel",
-        "intro_short_zh": "海淀区的雅乐轩酒店。",
-        "intro_short_en": "An Aloft hotel in Haidian.",
-        "intro_long_zh": "海淀区的雅乐轩酒店。可在品牌官网查看房型和入住安排。",
-        "intro_long_en": "An Aloft hotel in Haidian. See the hotel's own website for room types and check-in details.",
+        "intro_short_zh": "兰靛厂站接地铁12号线，酒店列有中英文服务。",
+        "intro_short_en": "An English-listed, Line 12 option in western Beijing.",
+        "intro_long_zh": "雅乐轩的交通页列出兰靛厂站，门店还将中文和英文列为服务语言。把行程重心放在海淀时，可从远大路这一带出发。",
+        "intro_long_en": "The hotel's language list includes English, and its transport page points to Landianchang on Line 12. Pick it for a stay focused on western Beijing.",
         "star": null,
         "price_band": "<500",
         "accepts_foreigners": true,
@@ -3080,7 +3134,9 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "pl_bj_haidianyalexuan: unknown field 'hotel_class' is dropped on import"
+      ]
     },
     {
       "id": "pl_bj_haiyangguan",
@@ -3432,16 +3488,17 @@
         "official_url": "https://www.hilton.com.cn/zh-cn/hotels/bjswawa-waldorf-astoria-beijing",
         "sources": [
           "https://www.hilton.com.cn/zh-cn/hotels/bjswawa-waldorf-astoria-beijing",
-          "https://www.hilton.com.cn/zh-cn/locations/china/beijing-beijing"
+          "https://www.hilton.com.cn/zh-cn/locations/china/beijing-beijing",
+          "https://ir.hilton.com/_assets/_de1e637820b6842c68b34801d11a8fd1/hilton/db/3577/34740/pdf/HLT_Investor_Presentation_-_November_2026.pdf"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
-        "notes": "希尔顿城市页显示 2026-11-27 入住、11-28 退房的起价。 官网样本为每房每晚人民币 ¥2,444。当前价以所选日期及房型的报价为准。",
+        "notes": "希尔顿城市页显示 2026-11-27 入住、11-28 退房的起价。 官网样本为每房每晚人民币 ¥2,444。当前价以所选日期及房型的报价为准。 分档依据：希尔顿集团将品牌列为 Luxury。",
         "subcategory": "hotel",
-        "intro_short_zh": "住在王府井一带，便于安排老城游览。",
-        "intro_short_en": "A Wangfujing stay for exploring Beijing's old city.",
-        "intro_long_zh": "住在王府井一带，便于安排老城游览。可在品牌官网查看房型和入住安排。",
-        "intro_long_en": "A Wangfujing stay for exploring Beijing's old city. See the hotel's own website for room types and check-in details.",
+        "intro_short_zh": "住金鱼胡同，逛王府井后可在室内泳池歇一歇。",
+        "intro_short_en": "A Jinyu Hutong stay near the Forbidden City and pedestrian shops.",
+        "intro_long_zh": "在王府井一侧安排故宫和步行购物，可选金鱼胡同的华尔道夫。酒店有室内泳池，也列出礼宾可协助规划的到访体验。",
+        "intro_long_en": "Plan a day around the Forbidden City and the Wangfujing shops, then come back for a swim. The hotel's concierge can help suggest how to spend time in the area.",
         "star": null,
         "price_band": ">2000",
         "accepts_foreigners": true,
@@ -3473,7 +3530,9 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "pl_bj_huaerdaofu: unknown field 'hotel_class' is dropped on import"
+      ]
     },
     {
       "id": "pl_bj_huajiayiyuan_siheyuan",
@@ -4162,16 +4221,17 @@
         "official_url": "https://www.marriott.com/en-us/hotels/bjsdo-sheraton-grand-beijing-dongcheng-hotel/overview/",
         "sources": [
           "https://www.marriott.com/en-us/hotels/bjsdo-sheraton-grand-beijing-dongcheng-hotel/overview/",
-          "https://www.marriott.com/en-us/destinations/china/beijing.mi?pg=2"
+          "https://www.marriott.com/en-us/destinations/china/beijing.mi?pg=2",
+          "https://help.marriott.com/s/article/Article-24483"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
-        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sat, Dec 26 - Sun, Dec 27。 官网样本为每房每晚人民币 ¥815。当前价以所选日期及房型的报价为准。",
+        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sat, Dec 26 - Sun, Dec 27。 官网样本为每房每晚人民币 ¥815。当前价以所选日期及房型的报价为准。 分档依据：万豪集团将此品牌列为 Premium。",
         "subcategory": "hotel",
-        "intro_short_zh": "在东城北部安排住宿的一家喜来登酒店。",
-        "intro_short_en": "A Sheraton hotel for a stay in northern Dongcheng.",
-        "intro_long_zh": "在东城北部安排住宿的一家喜来登酒店。可在品牌官网查看房型和入住安排。",
-        "intro_long_en": "A Sheraton hotel for a stay in northern Dongcheng. See the hotel's own website for room types and check-in details.",
+        "intro_short_zh": "北三环东路的喜来登，门店列有英语和室内泳池。",
+        "intro_short_en": "English is listed at this north Dongcheng hotel with an indoor pool.",
+        "intro_long_zh": "住在北三环东路，可以把北京北部的行程另排一天。门店交通页列有地铁5、10、12号线，回酒店后也有室内泳池。",
+        "intro_long_en": "For a stay north of the old city, start with Marriott's directions for metro lines 5, 10 and 12. There is also a pool for time back at the hotel.",
         "star": null,
         "price_band": "500-1000",
         "accepts_foreigners": true,
@@ -4203,7 +4263,9 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "pl_bj_jinxiyixilaideng: unknown field 'hotel_class' is dropped on import"
+      ]
     },
     {
       "id": "pl_bj_jmcafe_chaonei",
@@ -5376,8 +5438,8 @@
           "https://english.beijing.gov.cn/latest/news/202610/t20261008_4892631.html"
         ],
         "checked_on": "2026-11-27",
-        "confidence": "medium",
-        "notes": "营业依据为当前经营方点位或近期主管部门的具名记录。",
+        "confidence": "low",
+        "notes": "当年官方英文发布可确认品牌营业，具体街址或分店资料待补。 近期官方资料确认身份，具体到店位置待复核。",
         "subcategory": "western",
         "hours_zh": null,
         "hours_source": null,
@@ -5399,10 +5461,10 @@
         "alternatives": []
       },
       "score": {
-        "total": 20,
+        "total": 12,
         "parts": {
           "foreigner": 0,
-          "confidence": 12,
+          "confidence": 4,
           "sources": 5,
           "complete": 3,
           "amap": 0
@@ -5441,8 +5503,8 @@
           "https://english.beijing.gov.cn/latest/news/202610/t20261008_4892631.html"
         ],
         "checked_on": "2026-11-27",
-        "confidence": "medium",
-        "notes": "营业依据为当前经营方点位或近期主管部门的具名记录。",
+        "confidence": "low",
+        "notes": "当年官方英文发布可确认品牌营业，具体街址或分店资料待补。 近期官方资料确认身份，具体到店位置待复核。",
         "subcategory": "western",
         "hours_zh": null,
         "hours_source": null,
@@ -5464,10 +5526,10 @@
         "alternatives": []
       },
       "score": {
-        "total": 20,
+        "total": 12,
         "parts": {
           "foreigner": 0,
-          "confidence": 12,
+          "confidence": 4,
           "sources": 5,
           "complete": 3,
           "amap": 0
@@ -5527,29 +5589,7 @@
         "visit_minutes": null,
         "best_time_zh": null
       },
-      "external_signals": [
-        {
-          "source": "tripadvisor",
-          "as_of": "2026-11-27",
-          "metric": "rating_out_of_5",
-          "value": 4.8,
-          "url": "https://www.tripadvisor.com/Attraction_Review-g294212-d325811-Reviews-Mutianyu_Great_Wall-Beijing.html"
-        },
-        {
-          "source": "tripadvisor",
-          "as_of": "2026-11-27",
-          "metric": "review_count",
-          "value": 24468,
-          "url": "https://www.tripadvisor.com/Attraction_Review-g294212-d325811-Reviews-Mutianyu_Great_Wall-Beijing.html"
-        },
-        {
-          "source": "tripadvisor",
-          "as_of": "2026-11-27",
-          "metric": "rank_in_city",
-          "value": 1,
-          "url": "https://www.tripadvisor.com/Attraction_Review-g294212-d325811-Reviews-Mutianyu_Great_Wall-Beijing.html"
-        }
-      ],
+      "external_signals": [],
       "location": null,
       "amap": {
         "status": "not-run",
@@ -5783,11 +5823,13 @@
           "foreign_cards": null,
           "english_service": null,
           "evidence": [
+            "https://video.bjchy.gov.cn/vodfiles/992/2015/09/23/cyb/html/2026-09/30/nw.D110000cyb_20260930_10-02.htm?div=-1",
             "https://japanese.beijing.gov.cn/latest/news/202506/t20250613_4113173.html"
           ]
         },
-        "official_url": "https://japanese.beijing.gov.cn/latest/news/202506/t20250613_4113173.html",
+        "official_url": "https://video.bjchy.gov.cn/vodfiles/992/2015/09/23/cyb/html/2026-09/30/nw.D110000cyb_20260930_10-02.htm?div=-1",
         "sources": [
+          "https://video.bjchy.gov.cn/vodfiles/992/2015/09/23/cyb/html/2026-09/30/nw.D110000cyb_20260930_10-02.htm?div=-1",
           "https://japanese.beijing.gov.cn/latest/news/202506/t20250613_4113173.html"
         ],
         "checked_on": "2026-11-27",
@@ -5808,11 +5850,11 @@
         "alternatives": []
       },
       "score": {
-        "total": 21,
+        "total": 26,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
-          "sources": 5,
+          "sources": 10,
           "complete": 4,
           "amap": 0
         },
@@ -5969,7 +6011,8 @@
           "https://www.bcia.com.cn/wljc.html",
           "https://zdzqgw.beijing.gov.cn/zqfw/bjsdgjjc/bjsdgjjcjb/202410/t20241012_3917833.html",
           "https://www.bcia.com.cn/ssjfw.html",
-          "https://webresource.airchina.com.cn/zh-CN/content/c/2026-05-14/29336.shtml"
+          "https://webresource.airchina.com.cn/zh-CN/content/c/2026-05-14/29336.shtml",
+          "https://english.beijing.gov.cn/specials/beijingservice/pek/trafficsix/"
         ],
         "checked_on": "2026-11-27",
         "confidence": "high",
@@ -5995,7 +6038,9 @@
         "foreigner_tips_zh": [
           "把 PEK 和航站楼号一起给司机看。不同航班可能在 T2 或 T3，出发前查航司确认。"
         ],
-        "foreigner_tips_en": null
+        "foreigner_tips_en": [
+          "Show your driver PEK and the terminal number together. Check with your airline whether you need T2 or T3."
+        ]
       },
       "external_signals": [],
       "location": null,
@@ -6038,7 +6083,8 @@
         "sources": [
           "https://english.beijing.gov.cn/travellinginbeijing/transportation/airport/202005/t20200516_1899220.html",
           "https://wechat.bdia.com.cn/cityTerminal",
-          "https://webresource.airchina.com.cn/zh-CN/content/cpjy/kgly/"
+          "https://webresource.airchina.com.cn/zh-CN/content/cpjy/kgly/",
+          "https://english.beijing.gov.cn/specials/beijingservice/pkx/trafficsix/"
         ],
         "checked_on": "2026-11-27",
         "confidence": "high",
@@ -6060,7 +6106,9 @@
         "foreigner_tips_zh": [
           "机票上的 PKX 指大兴机场。订车时同时出示中文机场名和航班号。"
         ],
-        "foreigner_tips_en": null
+        "foreigner_tips_en": [
+          "PKX means Daxing Airport. When booking a ride, show the airport name in Chinese and your flight number."
+        ]
       },
       "external_signals": [],
       "location": null,
@@ -6111,8 +6159,8 @@
           "https://english.beijing.gov.cn/latest/news/202610/t20261008_4892631.html"
         ],
         "checked_on": "2026-11-27",
-        "confidence": "medium",
-        "notes": "营业依据为当前经营方点位或近期主管部门的具名记录。",
+        "confidence": "low",
+        "notes": "当年官方英文发布可确认品牌营业，具体街址或分店资料待补。 近期官方资料确认身份，具体到店位置待复核。",
         "subcategory": "western",
         "hours_zh": null,
         "hours_source": null,
@@ -6134,10 +6182,10 @@
         "alternatives": []
       },
       "score": {
-        "total": 20,
+        "total": 12,
         "parts": {
           "foreigner": 0,
-          "confidence": 12,
+          "confidence": 4,
           "sources": 5,
           "complete": 3,
           "amap": 0
@@ -6242,16 +6290,17 @@
         "official_url": "https://www.mandarinoriental.com.cn/zh-cn/beijing/qianmen",
         "sources": [
           "https://www.mandarinoriental.com.cn/zh-cn/beijing/qianmen",
-          "https://www.mandarinoriental.com.cn/zh-cn/beijing/qianmen/stay"
+          "https://www.mandarinoriental.com.cn/zh-cn/beijing/qianmen/stay",
+          "https://www.mandarin-oriental.org/en/investors.html"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
-        "notes": "品牌官网房型页所示均价样本，页面未列入住日期。 官网样本为每房每晚人民币 ¥13,278.41。当前价以所选日期及房型的报价为准。",
+        "notes": "品牌官网房型页所示均价样本，页面未列入住日期。 官网样本为每房每晚人民币 ¥13,278.41。当前价以所选日期及房型的报价为准。 分档依据：文华东方集团将旗下酒店定位于奢华酒店及度假村。",
         "subcategory": "hotel",
-        "intro_short_zh": "客房分布在前门附近的胡同院落里。",
-        "intro_short_en": "Guest rooms are set in courtyard spaces in the Qianmen hutongs.",
-        "intro_long_zh": "客房分布在前门附近的胡同院落里。可在品牌官网查看房型和入住安排。",
-        "intro_long_en": "Guest rooms are set in courtyard spaces in the Qianmen hutongs. See the hotel's own website for room types and check-in details.",
+        "intro_short_zh": "住进草厂十条的院落客房，从前门胡同开始游览。",
+        "intro_short_en": "Courtyard rooms set within the lanes of Beijing's old Qianmen area.",
+        "intro_long_zh": "酒店散布在草厂胡同的传统院落中。适合想把胡同生活排进多日老城行程的人。到店可按草厂十条1号定位，也可先联系酒店安排双机场的接送。",
+        "intro_long_en": "Choose this property for its courtyard layout in the Qianmen lanes. Ask the hotel before traveling if you want a private transfer from either of Beijing's airports.",
         "star": null,
         "price_band": ">2000",
         "accepts_foreigners": true,
@@ -6283,7 +6332,9 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "pl_bj_qianmenwenhuadongfang: unknown field 'hotel_class' is dropped on import"
+      ]
     },
     {
       "id": "pl_bj_qijiuba",
@@ -6375,7 +6426,8 @@
           "https://english.beijing.gov.cn/livinginbeijing/transportation/beijingsubway/202412/t20241216_3966828.html",
           "https://english.beijing.gov.cn/livinginbeijing/transportation/railway/202412/t20241211_3963021.html",
           "https://xxgk.mot.gov.cn/gz/202211/t20221128_3716160.html",
-          "https://zwfw.jinan.gov.cn/col127369/art/2025/art_127369_4798602.html"
+          "https://zwfw.jinan.gov.cn/col127369/art/2025/art_127369_4798602.html",
+          "https://english.shanghai.gov.cn/en-Individuals-Transportation-PublicTransport/20260825/463ac3099fa344f39182e623f83943f7.html"
         ],
         "checked_on": "2026-11-27",
         "confidence": "high",
@@ -6387,13 +6439,16 @@
           "地铁接驳：13号线、昌平线。"
         ],
         "to_city_en": [
-          "Metro connection: Line 13 and the Changping Line."
+          "Take Beijing Subway Line 13 or the Changping Line."
         ],
         "foreigner_tips_zh": [
           "若车票写「清河」，在地图上选铁路清河站。",
           "带上购票时使用的护照原件，闸机读不出证件时走人工通道。"
         ],
-        "foreigner_tips_en": null
+        "foreigner_tips_en": [
+          "If the ticket says 清河, select Qinghe Railway Station when looking up directions.",
+          "Bring the original passport you used to book. If the gate can't read it, use a staffed lane."
+        ]
       },
       "external_signals": [],
       "location": null,
@@ -6633,16 +6688,17 @@
         "official_url": "https://www.marriott.com/en-us/hotels/bjsxr-the-st-regis-beijing/overview/",
         "sources": [
           "https://www.marriott.com/en-us/hotels/bjsxr-the-st-regis-beijing/overview/",
-          "https://www.marriott.com/en-us/destinations/china/beijing.mi"
+          "https://www.marriott.com/en-us/destinations/china/beijing.mi",
+          "https://help.marriott.com/s/article/Article-24483"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
-        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sat, Dec 26 - Sun, Dec 27。 官网样本为每房每晚人民币 ¥1,283。当前价以所选日期及房型的报价为准。",
+        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sat, Dec 26 - Sun, Dec 27。 官网样本为每房每晚人民币 ¥1,283。当前价以所选日期及房型的报价为准。 分档依据：万豪集团将此品牌列为 Luxury。",
         "subcategory": "hotel",
-        "intro_short_zh": "北京的瑞吉酒店，提供线上房型查询。",
-        "intro_short_en": "The St. Regis property in Beijing offers online room information.",
-        "intro_long_zh": "北京的瑞吉酒店，提供线上房型查询。可在品牌官网查看房型和入住安排。",
-        "intro_long_en": "The St. Regis property in Beijing offers online room information. See the hotel's own website for room types and check-in details.",
+        "intro_short_zh": "建国门外大街的瑞吉，门店列有英文服务。",
+        "intro_short_en": "A Jianguomen address with English listed and transfers on request.",
+        "intro_long_zh": "酒店在建国门外大街21号，万豪列出中英文，还提供可提前联系的机场接送选项。适合希望先和酒店协调抵达安排的旅客。",
+        "intro_long_en": "Start with the hotel's own transport page if you want to arrange a private pickup for either Beijing airport. Marriott also lists English among the hotel's languages.",
         "star": null,
         "price_band": "1000-2000",
         "accepts_foreigners": true,
@@ -6674,7 +6730,9 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "pl_bj_ruiji: unknown field 'hotel_class' is dropped on import"
+      ]
     },
     {
       "id": "pl_bj_sanlitunfupeng",
@@ -6704,16 +6762,17 @@
         "official_url": "https://www.marriott.com/en-us/hotels/bjsps-four-points-beijing-sanlitun-workers-stadium/overview/",
         "sources": [
           "https://www.marriott.com/en-us/hotels/bjsps-four-points-beijing-sanlitun-workers-stadium/overview/",
-          "https://www.marriott.com/en-us/destinations/china/beijing.mi"
+          "https://www.marriott.com/en-us/destinations/china/beijing.mi",
+          "https://help.marriott.com/s/article/Article-24483"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
-        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sat, Dec 26 - Sun, Dec 27。 官网样本为每房每晚人民币 ¥736。当前价以所选日期及房型的报价为准。",
+        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sat, Dec 26 - Sun, Dec 27。 官网样本为每房每晚人民币 ¥736。当前价以所选日期及房型的报价为准。 分档依据：万豪集团列为 Select 精选服务品牌，本库按中档处理。",
         "subcategory": "hotel",
-        "intro_short_zh": "以三里屯和工体周边为游览起点。",
-        "intro_short_en": "A base around Sanlitun and Workers' Stadium.",
-        "intro_long_zh": "以三里屯和工体周边为游览起点。可在品牌官网查看房型和入住安排。",
-        "intro_long_en": "A base around Sanlitun and Workers' Stadium. See the hotel's own website for room types and check-in details.",
+        "intro_short_zh": "工体东路的酒店，白天逛三里屯，晚上可看演出。",
+        "intro_short_en": "A Gongti East Road stay with English listed as a hotel language.",
+        "intro_long_zh": "去工体或逛三里屯，可把这家门店安排在行程中。万豪列明中英文服务语言，交通页给出了东四十条站作为地铁选项。",
+        "intro_long_en": "This Four Points is on the Gongti side of Sanlitun. Marriott lists English among the hotel's languages and names Dongsishitiao as a subway option.",
         "star": null,
         "price_band": "500-1000",
         "accepts_foreigners": true,
@@ -6745,7 +6804,9 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "pl_bj_sanlitunfupeng: unknown field 'hotel_class' is dropped on import"
+      ]
     },
     {
       "id": "pl_bj_sanlitunzhouji",
@@ -6775,16 +6836,17 @@
         "official_url": "https://www.ihg.com/intercontinental/hotels/cn/zh/beijing/peghe/hoteldetail",
         "sources": [
           "https://www.ihg.com/intercontinental/hotels/cn/zh/beijing/peghe/hoteldetail",
-          "https://www.ihg.com/hotels/cn/zh/find-hotels/hotel-search?qDest=Beijing%2C%20China&qPt=CASH&qCiD=31&qCoD=1&qCiMy=112026&qCoMy=002027&qAdlt=1&qChld=0&qRms=1&qRtP=6CBARC&qAAR=6CBARC&srb_u=1&qFS=false&qSrt=sHL&qRdU=km"
+          "https://www.ihg.com/hotels/cn/zh/find-hotels/hotel-search?qDest=Beijing%2C%20China&qPt=CASH&qCiD=31&qCoD=1&qCiMy=112026&qCoMy=002027&qAdlt=1&qChld=0&qRms=1&qRtP=6CBARC&qAAR=6CBARC&srb_u=1&qFS=false&qSrt=sHL&qRdU=km",
+          "https://www.ihgplc.com/en/news-and-media/news-releases/2025/ihg-hotels-and-resorts-conversion-friendly-brands-fuel-growth-opportunities-for-owners"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
-        "notes": "洲际官网查 2026-12-31 至 2027-01-01 的单人跨年夜报价，包含页面列出的客房费用。 官网样本为每房每晚人民币 ¥2,180。当前价以所选日期及房型的报价为准。",
+        "notes": "洲际官网查 2026-12-31 至 2027-01-01 的单人跨年夜报价，包含页面列出的客房费用。 官网样本为每房每晚人民币 ¥2,180。当前价以所选日期及房型的报价为准。 分档依据：洲际酒店集团将该品牌列入 Luxury & Lifestyle。",
         "subcategory": "hotel",
-        "intro_short_zh": "从三里屯一带开始北京市区行程的一处住处。",
-        "intro_short_en": "A hotel in the Sanlitun area.",
-        "intro_long_zh": "从三里屯一带开始北京市区行程的一处住处。可在品牌官网查看房型和入住安排。",
-        "intro_long_en": "A hotel in the Sanlitun area. See the hotel's own website for room types and check-in details.",
+        "intro_short_zh": "三里屯南路的洲际，逛街后可回店游泳。",
+        "intro_short_en": "A Sanlitun base for fashion, a late dinner and time in the pool.",
+        "intro_long_zh": "想把三里屯的服饰店和晚间活动安排在同一片区，可住三里屯南路1号。洲际官网列有室内泳池和店内餐厅。",
+        "intro_long_en": "Make Sanlitun the focus of an afternoon and evening. The hotel's English page gives the exact arrival address and lists an indoor pool and several places to eat.",
         "star": null,
         "price_band": ">2000",
         "accepts_foreigners": true,
@@ -6816,7 +6878,9 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "pl_bj_sanlitunzhouji: unknown field 'hotel_class' is dropped on import"
+      ]
     },
     {
       "id": "pl_bj_sanyuanli_market_bj",
@@ -7042,16 +7106,17 @@
         "official_url": "https://www.marriott.com/en-us/hotels/bjspe-fairfield-beijing-capital-airport/overview/",
         "sources": [
           "https://www.marriott.com/en-us/hotels/bjspe-fairfield-beijing-capital-airport/overview/",
-          "https://www.marriott.com/en-us/destinations/china/beijing.mi?pg=3"
+          "https://www.marriott.com/en-us/destinations/china/beijing.mi?pg=3",
+          "https://help.marriott.com/s/article/Article-24483"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
-        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sat, Dec 26 - Sun, Dec 27。 官网样本为每房每晚人民币 ¥436。当前价以所选日期及房型的报价为准。",
+        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sat, Dec 26 - Sun, Dec 27。 官网样本为每房每晚人民币 ¥436。当前价以所选日期及房型的报价为准。 分档依据：万豪集团列为 Select 精选服务品牌，本库按中档处理。",
         "subcategory": "hotel",
-        "intro_short_zh": "可作为首都机场行程的住宿候选。",
-        "intro_short_en": "A hotel option for a trip through Capital Airport.",
-        "intro_long_zh": "可作为首都机场行程的住宿候选。可在品牌官网查看房型和入住安排。",
-        "intro_long_en": "A hotel option for a trip through Capital Airport. See the hotel's own website for room types and check-in details.",
+        "intro_short_zh": "首都机场T2和T3有免费接驳，适合早晚班航班。",
+        "intro_short_en": "A PEK stopover with a complimentary shuttle for terminals 2 and 3.",
+        "intro_long_zh": "酒店位于顺义，官网列明首都机场两座航站楼的全天接驳，并说明接机需提前联系。适合深夜抵达、早班起飞或在首都机场转机的旅客。",
+        "intro_long_en": "The property's shuttle serves terminals 2 and 3 around the clock. Check the hotel page for pickup points and how to arrange a ride before you land.",
         "star": null,
         "price_band": "<500",
         "accepts_foreigners": true,
@@ -7083,7 +7148,9 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "pl_bj_shoudujichangwanfeng: unknown field 'hotel_class' is dropped on import"
+      ]
     },
     {
       "id": "pl_bj_shoudujichangxierdun",
@@ -7113,16 +7180,17 @@
         "official_url": "https://www.hilton.com.cn/zh-cn/hotels/bjscahi-hilton-beijing-capital-airport",
         "sources": [
           "https://www.hilton.com.cn/zh-cn/hotels/bjscahi-hilton-beijing-capital-airport",
-          "https://www.hilton.com.cn/zh-cn/locations/china/beijing-beijing"
+          "https://www.hilton.com.cn/zh-cn/locations/china/beijing-beijing",
+          "https://ir.hilton.com/_assets/_de1e637820b6842c68b34801d11a8fd1/hilton/db/3577/34740/pdf/HLT_Investor_Presentation_-_November_2026.pdf"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
-        "notes": "希尔顿城市页显示 2026-11-27 入住、11-28 退房的起价。 官网样本为每房每晚人民币 ¥598。当前价以所选日期及房型的报价为准。",
+        "notes": "希尔顿城市页显示 2026-11-27 入住、11-28 退房的起价。 官网样本为每房每晚人民币 ¥598。当前价以所选日期及房型的报价为准。 分档依据：希尔顿集团将品牌列为 Full Service，本库按高档处理。",
         "subcategory": "hotel",
-        "intro_short_zh": "首都机场 T3 周边的过夜候选。",
-        "intro_short_en": "An overnight option near Capital Airport Terminal 3.",
-        "intro_long_zh": "首都机场 T3 周边的过夜候选。可在品牌官网查看房型和入住安排。",
-        "intro_long_en": "An overnight option near Capital Airport Terminal 3. See the hotel's own website for room types and check-in details.",
+        "intro_short_zh": "首都机场3号航站楼旁，可搭全天航站楼接驳。",
+        "intro_short_en": "A Terminal 3 airport hotel with a round-the-clock shuttle.",
+        "intro_long_zh": "适合首都机场转机或赶早班的人。酒店的免费班车覆盖2号、3号航站楼及机场快轨衔接，进城前可先在希尔顿官网核对上车点。",
+        "intro_long_en": "Book around your PEK flight schedule. The hotel offers a 24-hour shuttle serving terminals 2 and 3 and the Airport Express rail connection.",
         "star": null,
         "price_band": "500-1000",
         "accepts_foreigners": true,
@@ -7154,7 +7222,9 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "pl_bj_shoudujichangxierdun: unknown field 'hotel_class' is dropped on import"
+      ]
     },
     {
       "id": "pl_bj_shougang",
@@ -7450,8 +7520,8 @@
           "https://english.beijing.gov.cn/latest/news/202610/t20261008_4892631.html"
         ],
         "checked_on": "2026-11-27",
-        "confidence": "medium",
-        "notes": "营业依据为当前经营方点位或近期主管部门的具名记录。",
+        "confidence": "low",
+        "notes": "当年官方英文发布可确认品牌营业，具体街址或分店资料待补。 近期官方资料确认身份，具体到店位置待复核。",
         "subcategory": "international_brand",
         "hours_zh": null,
         "hours_source": null,
@@ -7473,10 +7543,10 @@
         "alternatives": []
       },
       "score": {
-        "total": 20,
+        "total": 12,
         "parts": {
           "foreigner": 0,
-          "confidence": 12,
+          "confidence": 4,
           "sources": 5,
           "complete": 3,
           "amap": 0
@@ -7969,16 +8039,17 @@
         "official_url": "https://www.hilton.com.cn/zh-cn/hotels/bjsttgi-hilton-garden-inn-beijing-temple-of-heaven-east-gate-station",
         "sources": [
           "https://www.hilton.com.cn/zh-cn/hotels/bjsttgi-hilton-garden-inn-beijing-temple-of-heaven-east-gate-station",
-          "https://www.hilton.com.cn/zh-cn/locations/china/beijing-beijing"
+          "https://www.hilton.com.cn/zh-cn/locations/china/beijing-beijing",
+          "https://ir.hilton.com/_assets/_de1e637820b6842c68b34801d11a8fd1/hilton/db/3577/34740/pdf/HLT_Investor_Presentation_-_November_2026.pdf"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
-        "notes": "希尔顿城市页显示 2026-11-27 入住、11-28 退房的起价。 官网样本为每房每晚人民币 ¥466。当前价以所选日期及房型的报价为准。",
+        "notes": "希尔顿城市页显示 2026-11-27 入住、11-28 退房的起价。 官网样本为每房每晚人民币 ¥466。当前价以所选日期及房型的报价为准。 分档依据：希尔顿集团将品牌列为 Focused Service，本库按中档处理。",
         "subcategory": "hotel",
-        "intro_short_zh": "想从天坛东门一带开始游览，可以考虑这里。",
-        "intro_short_en": "A base near the Temple of Heaven's east gate.",
-        "intro_long_zh": "想从天坛东门一带开始游览，可以考虑这里。可在品牌官网查看房型和入住安排。",
-        "intro_long_en": "A base near the Temple of Heaven's east gate. See the hotel's own website for room types and check-in details.",
+        "intro_short_zh": "把天坛东门和龙潭湖安排在一起的住宿点。",
+        "intro_short_en": "A Dongcheng base for the Temple of Heaven and Longtan Lake.",
+        "intro_long_zh": "酒店位于左安门内大街，品牌地图列出天坛公园与龙潭湖公园。第一次游北京南城，想在景点之间留点散步时间，可以从这里出发。",
+        "intro_long_en": "Stay on the south side of Dongcheng if you plan to spend time around the Temple of Heaven. Longtan Lake is another nearby stop on the hotel's location guide.",
         "star": null,
         "price_band": "<500",
         "accepts_foreigners": true,
@@ -8010,7 +8081,9 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "pl_bj_tiantandongmenxierdun: unknown field 'hotel_class' is dropped on import"
+      ]
     },
     {
       "id": "pl_bj_tianwenguan",
@@ -8375,16 +8448,17 @@
         "official_url": "https://www.hilton.com.cn/zh-cn/hotels/bjstohi-hilton-beijing-tongzhou",
         "sources": [
           "https://www.hilton.com.cn/zh-cn/hotels/bjstohi-hilton-beijing-tongzhou",
-          "https://www.hilton.com.cn/zh-cn/locations/china/beijing-beijing"
+          "https://www.hilton.com.cn/zh-cn/locations/china/beijing-beijing",
+          "https://ir.hilton.com/_assets/_de1e637820b6842c68b34801d11a8fd1/hilton/db/3577/34740/pdf/HLT_Investor_Presentation_-_November_2026.pdf"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
-        "notes": "希尔顿城市页显示 2026-11-27 入住、11-28 退房的起价。 官网样本为每房每晚人民币 ¥618。当前价以所选日期及房型的报价为准。",
+        "notes": "希尔顿城市页显示 2026-11-27 入住、11-28 退房的起价。 官网样本为每房每晚人民币 ¥618。当前价以所选日期及房型的报价为准。 分档依据：希尔顿集团将品牌列为 Full Service，本库按高档处理。",
         "subcategory": "hotel",
-        "intro_short_zh": "可作为游览通州一带的住宿点。",
-        "intro_short_en": "A base for exploring Tongzhou.",
-        "intro_long_zh": "可作为游览通州一带的住宿点。可在品牌官网查看房型和入住安排。",
-        "intro_long_en": "A base for exploring Tongzhou. See the hotel's own website for room types and check-in details.",
+        "intro_short_zh": "通州住一晚，可利用酒店班车去北京环球度假区。",
+        "intro_short_en": "A Tongzhou stay with a daily shuttle to Universal Beijing Resort.",
+        "intro_long_zh": "把环球度假区放在行程中，可查酒店提供的每日往返班车。想在乐园行程外留半天，也可以去官网列出的西海子公园。",
+        "intro_long_en": "Build a Universal day around the hotel's daily round-trip shuttle. Leave time for a different pace nearby at Xihaizi Park in Tongzhou.",
         "star": null,
         "price_band": "500-1000",
         "accepts_foreigners": true,
@@ -8416,7 +8490,9 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "pl_bj_tongzhoubeitouxierdun: unknown field 'hotel_class' is dropped on import"
+      ]
     },
     {
       "id": "pl_bj_wangfujingwanli",
@@ -8446,16 +8522,17 @@
         "official_url": "https://www.marriott.com/en-us/hotels/bjswf-renaissance-beijing-wangfujing-hotel/overview/",
         "sources": [
           "https://www.marriott.com/en-us/hotels/bjswf-renaissance-beijing-wangfujing-hotel/overview/",
-          "https://www.marriott.com/en-us/destinations/china/beijing.mi"
+          "https://www.marriott.com/en-us/destinations/china/beijing.mi",
+          "https://help.marriott.com/s/article/Article-24483"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
-        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sat, Dec 26 - Sun, Dec 27。 官网样本为每房每晚人民币 ¥1,629。当前价以所选日期及房型的报价为准。",
+        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sat, Dec 26 - Sun, Dec 27。 官网样本为每房每晚人民币 ¥1,629。当前价以所选日期及房型的报价为准。 分档依据：万豪集团将此品牌列为 Premium。",
         "subcategory": "hotel",
-        "intro_short_zh": "王府井一带的万丽酒店。",
-        "intro_short_en": "A Renaissance hotel in the Wangfujing area.",
-        "intro_long_zh": "王府井一带的万丽酒店。可在品牌官网查看房型和入住安排。",
-        "intro_long_en": "A Renaissance hotel in the Wangfujing area. See the hotel's own website for room types and check-in details.",
+        "intro_short_zh": "从王府井街北段出门，可走东四或灯市口地铁。",
+        "intro_short_en": "A Wangfujing base with Dongsi and Dengshikou as subway options.",
+        "intro_long_zh": "酒店在王府井大街57号，官网列出东四与灯市口两座地铁站。想白天逛老城、晚间在王府井吃饭，住这里可把两段行程连起来。",
+        "intro_long_en": "Use this hotel for a trip split between the old city and Wangfujing. Marriott lists both nearby stations and includes English among the hotel's languages.",
         "star": null,
         "price_band": "1000-2000",
         "accepts_foreigners": true,
@@ -8487,7 +8564,9 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "pl_bj_wangfujingwanli: unknown field 'hotel_class' is dropped on import"
+      ]
     },
     {
       "id": "pl_bj_wangfujingwenhuadongfang",
@@ -8517,16 +8596,17 @@
         "official_url": "https://www.mandarinoriental.com.cn/zh-cn/beijing/wangfujing",
         "sources": [
           "https://www.mandarinoriental.com.cn/zh-cn/beijing/wangfujing",
-          "https://www.mandarinoriental.com.cn/zh-cn/beijing/wangfujing/stay/mandarin-room"
+          "https://www.mandarinoriental.com.cn/zh-cn/beijing/wangfujing/stay/mandarin-room",
+          "https://www.mandarin-oriental.org/en/investors.html"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
-        "notes": "品牌官网的文华客房均价样本，页面未列入住日期。 官网样本为每房每晚人民币 ¥8,148.01。当前价以所选日期及房型的报价为准。",
+        "notes": "品牌官网的文华客房均价样本，页面未列入住日期。 官网样本为每房每晚人民币 ¥8,148.01。当前价以所选日期及房型的报价为准。 分档依据：文华东方集团将旗下酒店定位于奢华酒店及度假村。",
         "subcategory": "hotel",
-        "intro_short_zh": "王府井一带的文华东方酒店。",
-        "intro_short_en": "Mandarin Oriental in Wangfujing.",
-        "intro_long_zh": "王府井一带的文华东方酒店。可在品牌官网查看房型和入住安排。",
-        "intro_long_en": "Mandarin Oriental in Wangfujing. See the hotel's own website for room types and check-in details.",
+        "intro_short_zh": "位于王府中環楼上，可从酒店露台看故宫一带。",
+        "intro_short_en": "Stay above WF CENTRAL, with Forbidden City views from MO Bar's terrace.",
+        "intro_long_zh": "酒店在王府井大街269号的商场楼上。想把老城观光和晚餐安排在一起，可在店内露台看故宫方向，也可提前请酒店协调机场接送。",
+        "intro_long_en": "Use the Wangfujing address for a trip centered on the imperial city. The hotel can help arrange airport transport in advance, and MO Bar opens onto a terrace facing the palace skyline.",
         "star": null,
         "price_band": ">2000",
         "accepts_foreigners": true,
@@ -8558,7 +8638,9 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "pl_bj_wangfujingwenhuadongfang: unknown field 'hotel_class' is dropped on import"
+      ]
     },
     {
       "id": "pl_bj_wangfujingxierdun",
@@ -9219,6 +9301,371 @@
       "flags": []
     },
     {
+      "id": "pl_bj_yibisi_chaoyangdayuecheng",
+      "source_file": "C8/beijing-hotel.json",
+      "status": "pending",
+      "draft": {
+        "id": "pl_bj_yibisi_chaoyangdayuecheng",
+        "city": "beijing",
+        "category": "hotel",
+        "tier": "main",
+        "name_zh": "宜必思北京朝阳大悦城酒店",
+        "name_en": "ibis Beijing Chaoyang Joy City Hotel",
+        "aliases_zh": [],
+        "aliases_en": [],
+        "address_zh": null,
+        "address_en": null,
+        "district_zh": "朝阳区",
+        "nearest_metro": null,
+        "foreigner_signals": {
+          "english_signage": null,
+          "foreign_cards": null,
+          "english_service": null,
+          "evidence": [
+            "https://all.accor.com/hotel/9725/index.en.shtml"
+          ]
+        },
+        "official_url": "https://all.accor.com/hotel/9725/index.en.shtml",
+        "sources": [
+          "https://all.accor.com/hotel/9725/index.en.shtml",
+          "https://group.accor.com/en/news-stories/midscale-economy-brands-novotel-mercure-ibis"
+        ],
+        "checked_on": "2026-11-27",
+        "confidence": "medium",
+        "notes": "分档依据：雅高集团将宜必思及宜必思尚品归为经济型。 官网英文路名不清，结构化地址留空。",
+        "subcategory": "hotel",
+        "intro_short_zh": "朝阳东部的宜必思，独行或同行可按床型选房。",
+        "intro_short_en": "Double and twin rooms for travelers staying in eastern Chaoyang.",
+        "intro_long_zh": "门店在朝阳东四环和东五环之间，品牌页列有大床和双床房。适合把部分行程安排在朝阳东部、希望通过英文页面核对床型的人。",
+        "intro_long_en": "A practical option when your plans take you east of central Beijing. Accor's English page describes the room configurations, including a twin option.",
+        "star": null,
+        "price_band": null,
+        "accepts_foreigners": true,
+        "foreign_service": {
+          "english_front_desk": null,
+          "foreign_guest_share": null,
+          "foreign_guest_experience": null,
+          "international_brand": "Accor",
+          "evidence_zh": "雅高门店英文页列出门店和预订入口，并注明向所有旅客开放。",
+          "evidence": [
+            "https://all.accor.com/hotel/9725/index.en.shtml"
+          ]
+        }
+      },
+      "external_signals": [],
+      "location": null,
+      "amap": {
+        "status": "not-run",
+        "alternatives": []
+      },
+      "score": {
+        "total": 25,
+        "parts": {
+          "foreigner": 0,
+          "confidence": 12,
+          "sources": 10,
+          "complete": 3,
+          "amap": 0
+        },
+        "external_used": false
+      },
+      "flags": [
+        "pl_bj_yibisi_chaoyangdayuecheng: unknown field 'hotel_class' is dropped on import"
+      ]
+    },
+    {
+      "id": "pl_bj_yibisi_dazhalan",
+      "source_file": "C8/beijing-hotel.json",
+      "status": "pending",
+      "draft": {
+        "id": "pl_bj_yibisi_dazhalan",
+        "city": "beijing",
+        "category": "hotel",
+        "tier": "main",
+        "name_zh": "宜必思北京天安门广场酒店",
+        "name_en": "ibis Beijing Tiananmen Square Hotel",
+        "aliases_zh": [],
+        "aliases_en": [],
+        "address_zh": "大栅栏街25号",
+        "address_en": null,
+        "district_zh": "西城区",
+        "nearest_metro": null,
+        "foreigner_signals": {
+          "english_signage": null,
+          "foreign_cards": null,
+          "english_service": null,
+          "evidence": [
+            "https://all.accor.com/hotel/C1S9/index.en.shtml"
+          ]
+        },
+        "official_url": "https://all.accor.com/hotel/C1S9/index.en.shtml",
+        "sources": [
+          "https://all.accor.com/hotel/C1S9/index.en.shtml",
+          "https://group.accor.com/en/news-stories/midscale-economy-brands-novotel-mercure-ibis"
+        ],
+        "checked_on": "2026-11-27",
+        "confidence": "medium",
+        "notes": "分档依据：雅高集团将宜必思及宜必思尚品归为经济型。 现场英文服务待核。",
+        "subcategory": "hotel",
+        "intro_short_zh": "住在大栅栏街上，从前门开始逛北京老城。",
+        "intro_short_en": "An old-city base on Dashilan Street, just off the Qianmen pedestrian area.",
+        "intro_long_zh": "酒店在大栅栏街25号。第一次走前门、中轴线和天安门一带，可以从这里出发。雅高有门店英文页，前台语言列表只查到普通话。",
+        "intro_long_en": "Start around Qianmen and Dashilan, with Tiananmen Square on the same outing. Accor has an English property page and lists Mandarin as the language spoken at the hotel.",
+        "star": null,
+        "price_band": null,
+        "accepts_foreigners": true,
+        "foreign_service": {
+          "english_front_desk": null,
+          "foreign_guest_share": null,
+          "foreign_guest_experience": null,
+          "international_brand": "Accor",
+          "evidence_zh": "雅高门店英文页有公开预订入口，明确面向所有旅客；门店列出的使用语言为普通话。",
+          "evidence": [
+            "https://all.accor.com/hotel/C1S9/index.en.shtml"
+          ]
+        }
+      },
+      "external_signals": [],
+      "location": null,
+      "amap": {
+        "status": "not-run",
+        "alternatives": []
+      },
+      "score": {
+        "total": 26,
+        "parts": {
+          "foreigner": 0,
+          "confidence": 12,
+          "sources": 10,
+          "complete": 4,
+          "amap": 0
+        },
+        "external_used": false
+      },
+      "flags": [
+        "pl_bj_yibisi_dazhalan: unknown field 'hotel_class' is dropped on import"
+      ]
+    },
+    {
+      "id": "pl_bj_yibisi_dongdaqiao",
+      "source_file": "C8/beijing-hotel.json",
+      "status": "pending",
+      "draft": {
+        "id": "pl_bj_yibisi_dongdaqiao",
+        "city": "beijing",
+        "category": "hotel",
+        "tier": "main",
+        "name_zh": "宜必思北京东大桥酒店",
+        "name_en": "ibis Beijing Dongdaqiao",
+        "aliases_zh": [],
+        "aliases_en": [],
+        "address_zh": null,
+        "address_en": null,
+        "district_zh": "朝阳区",
+        "nearest_metro": null,
+        "foreigner_signals": {
+          "english_signage": null,
+          "foreign_cards": null,
+          "english_service": null,
+          "evidence": [
+            "https://all.accor.com/hotel/8009/index.en.shtml"
+          ]
+        },
+        "official_url": "https://all.accor.com/hotel/8009/index.en.shtml",
+        "sources": [
+          "https://all.accor.com/hotel/8009/index.en.shtml",
+          "https://group.accor.com/en/news-stories/midscale-economy-brands-novotel-mercure-ibis"
+        ],
+        "checked_on": "2026-11-27",
+        "confidence": "medium",
+        "notes": "分档依据：雅高集团将宜必思及宜必思尚品归为经济型。 前台英语未核实。",
+        "subcategory": "hotel",
+        "intro_short_zh": "东大桥附近的简洁客房，晚到可找24小时前台。",
+        "intro_short_en": "A Dongdaqiao hotel with a 24-hour reception for later arrivals.",
+        "intro_long_zh": "想把朝阳的购物和晚餐排在同一天，可以考虑东大桥这家门店。品牌页列明提供早餐和24小时前台，英文页面可提前查看到店信息。",
+        "intro_long_en": "Consider this eastern Beijing base if your itinerary leans toward Chaoyang's shops and restaurants. The property page lists breakfast and a reception desk open around the clock.",
+        "star": null,
+        "price_band": null,
+        "accepts_foreigners": true,
+        "foreign_service": {
+          "english_front_desk": null,
+          "foreign_guest_share": null,
+          "foreign_guest_experience": null,
+          "international_brand": "Accor",
+          "evidence_zh": "雅高门店英文页列出门店与预订入口，官网有英文到店信息。",
+          "evidence": [
+            "https://all.accor.com/hotel/8009/index.en.shtml"
+          ]
+        }
+      },
+      "external_signals": [],
+      "location": null,
+      "amap": {
+        "status": "not-run",
+        "alternatives": []
+      },
+      "score": {
+        "total": 25,
+        "parts": {
+          "foreigner": 0,
+          "confidence": 12,
+          "sources": 10,
+          "complete": 3,
+          "amap": 0
+        },
+        "external_used": false
+      },
+      "flags": [
+        "pl_bj_yibisi_dongdaqiao: unknown field 'hotel_class' is dropped on import"
+      ]
+    },
+    {
+      "id": "pl_bj_yibisi_guloudajie",
+      "source_file": "C8/beijing-hotel.json",
+      "status": "pending",
+      "draft": {
+        "id": "pl_bj_yibisi_guloudajie",
+        "city": "beijing",
+        "category": "hotel",
+        "tier": "main",
+        "name_zh": "宜必思北京鼓楼大街地铁站酒店",
+        "name_en": "ibis Beijing Guloudajie Metro Station Hotel",
+        "aliases_zh": [],
+        "aliases_en": [],
+        "address_zh": null,
+        "address_en": null,
+        "district_zh": "东城区",
+        "nearest_metro": null,
+        "foreigner_signals": {
+          "english_signage": null,
+          "foreign_cards": null,
+          "english_service": null,
+          "evidence": [
+            "https://all.accor.com/hotel/B6C4/index.en.shtml"
+          ]
+        },
+        "official_url": "https://all.accor.com/hotel/B6C4/index.en.shtml",
+        "sources": [
+          "https://all.accor.com/hotel/B6C4/index.en.shtml",
+          "https://group.accor.com/en/news-stories/midscale-economy-brands-novotel-mercure-ibis"
+        ],
+        "checked_on": "2026-11-27",
+        "confidence": "medium",
+        "notes": "分档依据：雅高集团将宜必思及宜必思尚品归为经济型。 官网门牌英文转写不完整。结构化地址留空。",
+        "subcategory": "hotel",
+        "intro_short_zh": "鼓楼大街可换乘2号线和8号线，方便走访后海。",
+        "intro_short_en": "Stay beside the Line 2 and Line 8 interchange at Guloudajie.",
+        "intro_long_zh": "门店在钟鼓楼以北，雅高列出鼓楼大街站。计划去后海或南锣鼓巷时，可从这一带出发，门店英文页列有到店信息。",
+        "intro_long_en": "Use Guloudajie for subway trips and save a separate outing for Houhai and the lanes around the Bell and Drum Towers. Find arrival details on Accor's English listing.",
+        "star": null,
+        "price_band": null,
+        "accepts_foreigners": true,
+        "foreign_service": {
+          "english_front_desk": null,
+          "foreign_guest_share": null,
+          "foreign_guest_experience": null,
+          "international_brand": "Accor",
+          "evidence_zh": "雅高门店英文页列出门店与预订入口，门店列出的使用语言为普通话。",
+          "evidence": [
+            "https://all.accor.com/hotel/B6C4/index.en.shtml"
+          ]
+        }
+      },
+      "external_signals": [],
+      "location": null,
+      "amap": {
+        "status": "not-run",
+        "alternatives": []
+      },
+      "score": {
+        "total": 25,
+        "parts": {
+          "foreigner": 0,
+          "confidence": 12,
+          "sources": 10,
+          "complete": 3,
+          "amap": 0
+        },
+        "external_used": false
+      },
+      "flags": [
+        "pl_bj_yibisi_guloudajie: unknown field 'hotel_class' is dropped on import"
+      ]
+    },
+    {
+      "id": "pl_bj_yibisi_tuanjiehu",
+      "source_file": "C8/beijing-hotel.json",
+      "status": "pending",
+      "draft": {
+        "id": "pl_bj_yibisi_tuanjiehu",
+        "city": "beijing",
+        "category": "hotel",
+        "tier": "main",
+        "name_zh": "宜必思北京三里屯团结湖酒店",
+        "name_en": "ibis Beijing Sanlitun Tuanjie Lake Hotel",
+        "aliases_zh": [],
+        "aliases_en": [],
+        "address_zh": "团结湖路17号楼",
+        "address_en": null,
+        "district_zh": "朝阳区",
+        "nearest_metro": null,
+        "foreigner_signals": {
+          "english_signage": null,
+          "foreign_cards": null,
+          "english_service": null,
+          "evidence": [
+            "https://all.accor.com/hotel/B253/index.en.shtml"
+          ]
+        },
+        "official_url": "https://all.accor.com/hotel/B253/index.en.shtml",
+        "sources": [
+          "https://all.accor.com/hotel/B253/index.en.shtml",
+          "https://group.accor.com/en/news-stories/midscale-economy-brands-novotel-mercure-ibis"
+        ],
+        "checked_on": "2026-11-27",
+        "confidence": "medium",
+        "notes": "分档依据：雅高集团将宜必思及宜必思尚品归为经济型。 前台英语未核实。",
+        "subcategory": "hotel",
+        "intro_short_zh": "团结湖路17号楼，可先在雅高英文页核对房型。",
+        "intro_short_en": "A simple stay on Tuanjiehu Road on the eastern side of Beijing.",
+        "intro_long_zh": "酒店门店页提供含双床在内的多种房型。适合在朝阳活动多、希望在出发前用英文核对房型的游客。",
+        "intro_long_en": "If you're spending much of the trip in eastern Beijing, check the property's double and twin room listings on Accor before choosing a room.",
+        "star": null,
+        "price_band": null,
+        "accepts_foreigners": true,
+        "foreign_service": {
+          "english_front_desk": null,
+          "foreign_guest_share": null,
+          "foreign_guest_experience": null,
+          "international_brand": "Accor",
+          "evidence_zh": "雅高门店英文页列出门店与预订入口，门店列出的使用语言为普通话。",
+          "evidence": [
+            "https://all.accor.com/hotel/B253/index.en.shtml"
+          ]
+        }
+      },
+      "external_signals": [],
+      "location": null,
+      "amap": {
+        "status": "not-run",
+        "alternatives": []
+      },
+      "score": {
+        "total": 26,
+        "parts": {
+          "foreigner": 0,
+          "confidence": 12,
+          "sources": 10,
+          "complete": 4,
+          "amap": 0
+        },
+        "external_used": false
+      },
+      "flags": [
+        "pl_bj_yibisi_tuanjiehu: unknown field 'hotel_class' is dropped on import"
+      ]
+    },
+    {
       "id": "pl_bj_yiheyuan",
       "source_file": "C1/beijing.json",
       "status": "pending",
@@ -9499,7 +9946,7 @@
         "id": "pl_bj_yuecaiwanhao",
         "city": "beijing",
         "category": "hotel",
-        "tier": "main",
+        "tier": "backup",
         "name_zh": "北京粤财JW万豪酒店",
         "name_en": "JW Marriott Hotel Beijing Central",
         "aliases_zh": [],
@@ -9519,16 +9966,17 @@
         "official_url": "https://www.marriott.com/en-us/hotels/bjsjc-jw-marriott-hotel-beijing-central/overview/",
         "sources": [
           "https://www.marriott.com/en-us/hotels/bjsjc-jw-marriott-hotel-beijing-central/overview/",
-          "https://www.marriott.com/en-us/destinations/china/beijing.mi"
+          "https://www.marriott.com/en-us/destinations/china/beijing.mi",
+          "https://help.marriott.com/s/article/Article-24483"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
-        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sat, Dec 26 - Sun, Dec 27。 官网样本为每房每晚人民币 ¥1,093。当前价以所选日期及房型的报价为准。",
+        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sat, Dec 26 - Sun, Dec 27。 官网样本为每房每晚人民币 ¥1,093。当前价以所选日期及房型的报价为准。 分档依据：万豪集团将此品牌列为 Luxury。",
         "subcategory": "hotel",
-        "intro_short_zh": "可作为探访北京老城南侧的住处。",
-        "intro_short_en": "A hotel for exploring the southern part of Beijing's old city.",
-        "intro_long_zh": "可作为探访北京老城南侧的住处。可在品牌官网查看房型和入住安排。",
-        "intro_long_en": "A hotel for exploring the southern part of Beijing's old city. See the hotel's own website for room types and check-in details.",
+        "intro_short_zh": "宣武门和菜市口都有地铁，适合安排北京西城老城游。",
+        "intro_short_en": "A Xicheng base with more than one convenient subway route.",
+        "intro_long_zh": "酒店在宣武门外大街。万豪列出宣武门2号线和4号线、菜市口4号线和7号线，并有中英文服务信息。可把前门和老城西侧放在同一段行程。",
+        "intro_long_en": "Plan your arrival around Xuanwumen or Caishikou depending on your line. Marriott lists English at the property and gives Beijing South as one of the rail stations serving the area.",
         "star": null,
         "price_band": "1000-2000",
         "accepts_foreigners": true,
@@ -9560,7 +10008,9 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "pl_bj_yuecaiwanhao: unknown field 'hotel_class' is dropped on import"
+      ]
     },
     {
       "id": "pl_bj_yuhuatai_xicheng",

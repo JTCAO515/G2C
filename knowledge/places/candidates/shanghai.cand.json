@@ -31,16 +31,17 @@
         "official_url": "https://www.marriott.com/en-us/hotels/shaeb-the-shanghai-edition/overview/",
         "sources": [
           "https://www.marriott.com/en-us/hotels/shaeb-the-shanghai-edition/overview/",
-          "https://www.marriott.com/en-us/destinations/china/shanghai.mi"
+          "https://www.marriott.com/en-us/destinations/china/shanghai.mi",
+          "https://help.marriott.com/s/article/Article-24483"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
-        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sat, Dec 26 - Sun, Dec 27。 官网样本为每房每晚人民币 ¥4,605。当前价以所选日期及房型的报价为准。",
+        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sat, Dec 26 - Sun, Dec 27。 官网样本为每房每晚人民币 ¥4,605。当前价以所选日期及房型的报价为准。 分档依据：万豪集团将此品牌列为 Luxury。",
         "subcategory": "hotel",
-        "intro_short_zh": "在南京东路一带住一晚的候选。",
-        "intro_short_en": "An option for a stay around East Nanjing Road.",
-        "intro_long_zh": "在南京东路一带住一晚的候选。可在品牌官网查看房型和入住安排。",
-        "intro_long_en": "An option for a stay around East Nanjing Road. See the hotel's own website for room types and check-in details.",
+        "intro_short_zh": "南京东路地铁站附近，适合安排外滩傍晚散步。",
+        "intro_short_en": "A hotel near East Nanjing Road station for the pedestrian street and Bund.",
+        "intro_long_zh": "酒店交通页把南京东路地铁站和步行街东侧的观光巴士一起列出。适合希望逛完步行街，再去看外滩夜景的旅客。",
+        "intro_long_en": "Use East Nanjing Road station for lines 2 and 10. Marriott also lists English at the hotel and identifies where the sightseeing bus stops nearby.",
         "star": null,
         "price_band": ">2000",
         "accepts_foreigners": true,
@@ -72,7 +73,9 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "pl_sh_aidixun: unknown field 'hotel_class' is dropped on import"
+      ]
     },
     {
       "id": "pl_sh_baogeli",
@@ -102,16 +105,17 @@
         "official_url": "https://www.bulgarihotels.com/en-US/shanghai",
         "sources": [
           "https://www.bulgarihotels.com/en-US/shanghai",
-          "https://www.marriott.com/en-us/destinations/china/shanghai.mi"
+          "https://www.marriott.com/en-us/destinations/china/shanghai.mi",
+          "https://www.grouppartners.marriott.com/TAGP_docs/Multimedia/PDF/Group_Intermediaries/Group_Partners/b2b-brandbrochure-8.5x11-2021.pdf"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
-        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sat, Dec 26 - Sun, Dec 27。 官网样本为每房每晚人民币 ¥7,600。当前价以所选日期及房型的报价为准。",
+        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sat, Dec 26 - Sun, Dec 27。 官网样本为每房每晚人民币 ¥7,600。当前价以所选日期及房型的报价为准。 分档依据：万豪集团品牌手册将宝格丽列为 Distinctive Luxury。",
         "subcategory": "hotel",
-        "intro_short_zh": "上海的宝格丽酒店。",
-        "intro_short_en": "The Bvlgari property in Shanghai.",
-        "intro_long_zh": "上海的宝格丽酒店。可在品牌官网查看房型和入住安排。",
-        "intro_long_en": "The Bvlgari property in Shanghai. See the hotel's own website for room types and check-in details.",
+        "intro_short_zh": "苏州河边的宝格丽，适合喜欢河岸和城市旧建筑的游客。",
+        "intro_short_en": "A Suzhou Creek waterfront stay within a district of parks and art spaces.",
+        "intro_long_zh": "酒店位于苏河湾片区。官网介绍沿河的公园、零售与艺术空间，适合想留出一段时间走河岸、看看上海城市更新的旅客。",
+        "intro_long_en": "Give Suzhou Creek its own outing. The hotel is part of a riverfront redevelopment with parks, shops and art spaces to explore around your stay.",
         "star": null,
         "price_band": ">2000",
         "accepts_foreigners": true,
@@ -143,7 +147,9 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "pl_sh_baogeli: unknown field 'hotel_class' is dropped on import"
+      ]
     },
     {
       "id": "pl_sh_bei_waitan",
@@ -307,16 +313,17 @@
         "official_url": "https://www.ritzcarlton.com/en/hotels/sharz-the-portman-ritz-carlton-shanghai/overview/",
         "sources": [
           "https://www.ritzcarlton.com/en/hotels/sharz-the-portman-ritz-carlton-shanghai/overview/",
-          "https://www.marriott.com/en-us/destinations/china/shanghai.mi"
+          "https://www.marriott.com/en-us/destinations/china/shanghai.mi",
+          "https://help.marriott.com/s/article/Article-24483"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
-        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sat, Dec 26 - Sun, Dec 27。 官网样本为每房每晚人民币 ¥1,530。当前价以所选日期及房型的报价为准。",
+        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sat, Dec 26 - Sun, Dec 27。 官网样本为每房每晚人民币 ¥1,530。当前价以所选日期及房型的报价为准。 分档依据：万豪集团将此品牌列为 Luxury。",
         "subcategory": "hotel",
-        "intro_short_zh": "在静安区游览时可考虑这家丽思卡尔顿。",
-        "intro_short_en": "A Ritz-Carlton hotel in Jing'an.",
-        "intro_long_zh": "在静安区游览时可考虑这家丽思卡尔顿。可在品牌官网查看房型和入住安排。",
-        "intro_long_en": "A Ritz-Carlton hotel in Jing'an. See the hotel's own website for room types and check-in details.",
+        "intro_short_zh": "静安寺站是此店官网给出的地铁选择。",
+        "intro_short_en": "A Jing'an Temple area hotel with English listed on its property page.",
+        "intro_long_zh": "上海商城一带游览时，可将静安寺地铁站作为到店参照。品牌页明确列出英语服务语言，也有室内、室外泳池供查看。",
+        "intro_long_en": "For a trip centered on Jing'an, check the hotel's directions from Jing'an Temple station. Its property page also lists both indoor and outdoor pools.",
         "star": null,
         "price_band": "1000-2000",
         "accepts_foreigners": true,
@@ -348,7 +355,9 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "pl_sh_botemanlisi: unknown field 'hotel_class' is dropped on import"
+      ]
     },
     {
       "id": "pl_sh_changfengwanyi",
@@ -358,7 +367,7 @@
         "id": "pl_sh_changfengwanyi",
         "city": "shanghai",
         "category": "hotel",
-        "tier": "main",
+        "tier": "backup",
         "name_zh": "上海苏宁环球万怡酒店",
         "name_en": "Courtyard by Marriott Shanghai Changfeng Park",
         "aliases_zh": [],
@@ -378,16 +387,17 @@
         "official_url": "https://www.marriott.com/en-us/hotels/shafp-courtyard-shanghai-changfeng-park/overview/",
         "sources": [
           "https://www.marriott.com/en-us/hotels/shafp-courtyard-shanghai-changfeng-park/overview/",
-          "https://www.marriott.com/en-us/destinations/china/shanghai.mi?pg=3"
+          "https://www.marriott.com/en-us/destinations/china/shanghai.mi?pg=3",
+          "https://help.marriott.com/s/article/Article-24483"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
-        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sat, Dec 26 - Sun, Dec 27。 官网样本为每房每晚人民币 ¥479。当前价以所选日期及房型的报价为准。",
+        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sat, Dec 26 - Sun, Dec 27。 官网样本为每房每晚人民币 ¥479。当前价以所选日期及房型的报价为准。 分档依据：万豪集团列为 Select 精选服务品牌，本库按中档处理。",
         "subcategory": "hotel",
-        "intro_short_zh": "长风公园一带的万怡酒店。",
-        "intro_short_en": "A Courtyard hotel in the Changfeng Park area.",
-        "intro_long_zh": "长风公园一带的万怡酒店。可在品牌官网查看房型和入住安排。",
-        "intro_long_en": "A Courtyard hotel in the Changfeng Park area. See the hotel's own website for room types and check-in details.",
+        "intro_short_zh": "丹巴路的万怡，可规划从威宁路乘地铁。",
+        "intro_short_en": "A western Putuo option with Weining Road on Line 2 listed for access.",
+        "intro_long_zh": "门店在普陀区丹巴路99号。品牌交通页提供2号线威宁路站的参考，适合把上海西部单独排进行程。",
+        "intro_long_en": "Consider this Courtyard if your itinerary is concentrated in western Shanghai. Its directions identify Weining Road on Metro Line 2.",
         "star": null,
         "price_band": "<500",
         "accepts_foreigners": true,
@@ -419,7 +429,9 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "pl_sh_changfengwanyi: unknown field 'hotel_class' is dropped on import"
+      ]
     },
     {
       "id": "pl_sh_chenghuangmiao",
@@ -1178,16 +1190,17 @@
         "official_url": "https://www.hilton.com.cn/zh-cn/hotels/shaspdi-doubletree-by-hilton-hotel-shanghai--pudong",
         "sources": [
           "https://www.hilton.com.cn/zh-cn/hotels/shaspdi-doubletree-by-hilton-hotel-shanghai--pudong",
-          "https://www.hilton.com.cn/zh-cn/locations/china/shanghai-shanghai"
+          "https://www.hilton.com.cn/zh-cn/locations/china/shanghai-shanghai",
+          "https://ir.hilton.com/_assets/_de1e637820b6842c68b34801d11a8fd1/hilton/db/3577/34740/pdf/HLT_Investor_Presentation_-_November_2026.pdf"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
-        "notes": "希尔顿城市页显示 2026-11-27 入住、11-28 退房的起价。 官网样本为每房每晚人民币 ¥594。当前价以所选日期及房型的报价为准。",
+        "notes": "希尔顿城市页显示 2026-11-27 入住、11-28 退房的起价。 官网样本为每房每晚人民币 ¥594。当前价以所选日期及房型的报价为准。 分档依据：希尔顿集团将品牌列为 Full Service，本库按高档处理。",
         "subcategory": "hotel",
-        "intro_short_zh": "浦东的希尔顿逸林酒店。",
-        "intro_short_en": "A DoubleTree hotel in Pudong.",
-        "intro_long_zh": "浦东的希尔顿逸林酒店。可在品牌官网查看房型和入住安排。",
-        "intro_long_en": "A DoubleTree hotel in Pudong. See the hotel's own website for room types and check-in details.",
+        "intro_short_zh": "杨高南路酒店，可经蓝村路站游浦东。",
+        "intro_short_en": "A Pudong hotel with Lancun Road station listed nearby.",
+        "intro_long_zh": "适合白天在浦东游览、想把酒店放在地铁沿线的人。希尔顿位置页列出蓝村路站与世纪公园，也介绍酒店泳池。",
+        "intro_long_en": "Stay on the east bank for a trip focused on Pudong. The location guide points to Lancun Road subway station and lists Century Park as an outing.",
         "star": null,
         "price_band": "500-1000",
         "accepts_foreigners": true,
@@ -1219,7 +1232,9 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "pl_sh_dongjinjiangyilin: unknown field 'hotel_class' is dropped on import"
+      ]
     },
     {
       "id": "pl_sh_dongtaixiang_chongqing",
@@ -2482,16 +2497,17 @@
         "official_url": "https://www.hilton.com.cn/zh-cn/hotels/shaaphi-hilton-shanghai-hongqiao-international-airport",
         "sources": [
           "https://www.hilton.com.cn/zh-cn/hotels/shaaphi-hilton-shanghai-hongqiao-international-airport",
-          "https://www.hilton.com.cn/zh-cn/locations/china/shanghai-shanghai"
+          "https://www.hilton.com.cn/zh-cn/locations/china/shanghai-shanghai",
+          "https://ir.hilton.com/_assets/_de1e637820b6842c68b34801d11a8fd1/hilton/db/3577/34740/pdf/HLT_Investor_Presentation_-_November_2026.pdf"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
-        "notes": "希尔顿城市页显示 2026-11-27 入住、11-28 退房的起价。 官网样本为每房每晚人民币 ¥612。当前价以所选日期及房型的报价为准。",
+        "notes": "希尔顿城市页显示 2026-11-27 入住、11-28 退房的起价。 官网样本为每房每晚人民币 ¥612。当前价以所选日期及房型的报价为准。 分档依据：希尔顿集团将品牌列为 Full Service，本库按高档处理。",
         "subcategory": "hotel",
-        "intro_short_zh": "适合安排虹桥机场前后的短住。",
-        "intro_short_en": "An airport hotel for an overnight stay around a Hongqiao flight.",
-        "intro_long_zh": "适合安排虹桥机场前后的短住。可在品牌官网查看房型和入住安排。",
-        "intro_long_en": "An airport hotel for an overnight stay around a Hongqiao flight. See the hotel's own website for room types and check-in details.",
+        "intro_short_zh": "连接虹桥机场1号航站楼，适合早班航班。",
+        "intro_short_en": "Connected to Hongqiao Airport Terminal 1 for a flight-focused stay.",
+        "intro_long_zh": "如果上海行程前后安排了虹桥机场的航班，可先看这家接入1号航站楼的酒店。留出半天游览时，官网还把上海动物园列在附近地点。",
+        "intro_long_en": "Choose this Hilton if Terminal 1 is the focus of your arrival or departure. Shanghai Zoo is one of the nearby outings suggested by the hotel's location page.",
         "star": null,
         "price_band": "500-1000",
         "accepts_foreigners": true,
@@ -2523,7 +2539,9 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "pl_sh_hongqiaojichangxierdun: unknown field 'hotel_class' is dropped on import"
+      ]
     },
     {
       "id": "pl_sh_hongqiaowanfeng",
@@ -2553,16 +2571,17 @@
         "official_url": "https://www.marriott.com/en-us/hotels/shahf-fairfield-shanghai-hongqiao/overview/",
         "sources": [
           "https://www.marriott.com/en-us/hotels/shahf-fairfield-shanghai-hongqiao/overview/",
-          "https://www.marriott.com/en-us/destinations/china/shanghai.mi?pg=4"
+          "https://www.marriott.com/en-us/destinations/china/shanghai.mi?pg=4",
+          "https://help.marriott.com/s/article/Article-24483"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
-        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sat, Dec 26 - Sun, Dec 27。 官网样本为每房每晚人民币 ¥429。当前价以所选日期及房型的报价为准。",
+        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sat, Dec 26 - Sun, Dec 27。 官网样本为每房每晚人民币 ¥429。当前价以所选日期及房型的报价为准。 分档依据：万豪集团列为 Select 精选服务品牌，本库按中档处理。",
         "subcategory": "hotel",
-        "intro_short_zh": "去虹桥一带时可考虑这家万枫。",
-        "intro_short_en": "A Fairfield option for a stay in the Hongqiao area.",
-        "intro_long_zh": "去虹桥一带时可考虑这家万枫。可在品牌官网查看房型和入住安排。",
-        "intro_long_en": "A Fairfield option for a stay in the Hongqiao area. See the hotel's own website for room types and check-in details.",
+        "intro_short_zh": "闵行青杉路的万枫，去地铁可看10号线紫藤路。",
+        "intro_short_en": "A Minhang stay with Line 10 at Ziteng Road listed for access.",
+        "intro_long_zh": "酒店位于闵行青杉路369号，品牌交通页列紫藤路地铁站，酒店语言列表中有英文。适合打算在闵行和上海西部活动几天的人。",
+        "intro_long_en": "Staying in western Shanghai? Marriott's arrival information names Ziteng Road on Line 10. The property also lists English among its spoken languages.",
         "star": null,
         "price_band": "<500",
         "accepts_foreigners": true,
@@ -2594,7 +2613,9 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "pl_sh_hongqiaowanfeng: unknown field 'hotel_class' is dropped on import"
+      ]
     },
     {
       "id": "pl_sh_hongqiaozhan",
@@ -2618,7 +2639,8 @@
         "sources": [
           "https://english.shanghai.gov.cn/en-Transportation/20250126/484b92f86eeb49d7b26086d25010d782.html",
           "https://xxgk.mot.gov.cn/gz/202211/t20221128_3716160.html",
-          "https://zwfw.jinan.gov.cn/col127369/art/2025/art_127369_4798602.html"
+          "https://zwfw.jinan.gov.cn/col127369/art/2025/art_127369_4798602.html",
+          "https://english.shanghai.gov.cn/en-Individuals-Transportation-PublicTransport/20260825/463ac3099fa344f39182e623f83943f7.html"
         ],
         "checked_on": "2026-11-27",
         "confidence": "high",
@@ -2636,7 +2658,10 @@
           "从虹桥机场前往时跟随「虹桥火车站」导向。",
           "带上购票时使用的护照原件，闸机读不出证件时走人工通道。"
         ],
-        "foreigner_tips_en": null
+        "foreigner_tips_en": [
+          "From Hongqiao Airport, look for signs to Hongqiao Railway Station.",
+          "Bring the original passport you used to book. If the gate can't read it, use a staffed lane."
+        ]
       },
       "external_signals": [],
       "location": null,
@@ -2887,7 +2912,7 @@
         "confidence": "medium",
         "notes": "营业依据为当前经营方点位或近期主管部门的具名记录。",
         "subcategory": "local_cuisine",
-        "hours_zh": "07:00–20:00",
+        "hours_zh": "07:30–20:30",
         "hours_source": "https://english.shanghai.gov.cn/en-GlobalTasteinShanghai2026-LocalFlavors/20260316/00b0c6d1698d406c8d532a6e169e1a1e.html",
         "intro_short_zh": "黄河路逛吃时可尝汤包，开口后慢慢喝汤。",
         "intro_short_en": "Try soup dumplings at this Huanghe Road branch.",
@@ -3118,7 +3143,7 @@
         "id": "pl_sh_jinganruiji",
         "city": "shanghai",
         "category": "hotel",
-        "tier": "main",
+        "tier": "backup",
         "name_zh": "上海静安瑞吉酒店",
         "name_en": "The St. Regis Shanghai Jingan",
         "aliases_zh": [],
@@ -3138,16 +3163,17 @@
         "official_url": "https://www.marriott.com/en-us/hotels/shaxr-the-st-regis-shanghai-jingan/overview/",
         "sources": [
           "https://www.marriott.com/en-us/hotels/shaxr-the-st-regis-shanghai-jingan/overview/",
-          "https://www.marriott.com/en-us/destinations/china/shanghai.mi"
+          "https://www.marriott.com/en-us/destinations/china/shanghai.mi",
+          "https://help.marriott.com/s/article/Article-24483"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
-        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sat, Dec 26 - Sun, Dec 27。 官网样本为每房每晚人民币 ¥2,202。当前价以所选日期及房型的报价为准。",
+        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sat, Dec 26 - Sun, Dec 27。 官网样本为每房每晚人民币 ¥2,202。当前价以所选日期及房型的报价为准。 分档依据：万豪集团将此品牌列为 Luxury。",
         "subcategory": "hotel",
-        "intro_short_zh": "静安区的瑞吉酒店。",
-        "intro_short_en": "The St. Regis hotel in Jing'an.",
-        "intro_long_zh": "静安区的瑞吉酒店。可在品牌官网查看房型和入住安排。",
-        "intro_long_en": "The St. Regis hotel in Jing'an. See the hotel's own website for room types and check-in details.",
+        "intro_short_zh": "北京西路的瑞吉，官网列出南京西路地铁站。",
+        "intro_short_en": "A West Beijing Road address with West Nanjing Road station nearby.",
+        "intro_long_zh": "在静安逛南京西路一带时，可考虑这家门店。万豪位置说明给出南京西路站，并列有可向酒店咨询的机场接送选项。",
+        "intro_long_en": "Stay on the Jing'an side of central Shanghai. Check the hotel's arrival page for West Nanjing Road station or inquire about private airport transport.",
         "star": null,
         "price_band": ">2000",
         "accepts_foreigners": true,
@@ -3179,7 +3205,9 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "pl_sh_jinganruiji: unknown field 'hotel_class' is dropped on import"
+      ]
     },
     {
       "id": "pl_sh_jingansi",
@@ -3276,16 +3304,17 @@
         "official_url": "https://www.marriott.com/en-us/hotels/shafi-fairfield-shanghai-jingan/overview/",
         "sources": [
           "https://www.marriott.com/en-us/hotels/shafi-fairfield-shanghai-jingan/overview/",
-          "https://www.marriott.com/en-us/destinations/china/shanghai.mi?pg=2"
+          "https://www.marriott.com/en-us/destinations/china/shanghai.mi?pg=2",
+          "https://help.marriott.com/s/article/Article-24483"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
-        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sat, Dec 26 - Sun, Dec 27。 官网样本为每房每晚人民币 ¥453。当前价以所选日期及房型的报价为准。",
+        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sat, Dec 26 - Sun, Dec 27。 官网样本为每房每晚人民币 ¥453。当前价以所选日期及房型的报价为准。 分档依据：万豪集团列为 Select 精选服务品牌，本库按中档处理。",
         "subcategory": "hotel",
-        "intro_short_zh": "静安区的万枫酒店。",
-        "intro_short_en": "A Fairfield hotel in Jing'an.",
-        "intro_long_zh": "静安区的万枫酒店。可在品牌官网查看房型和入住安排。",
-        "intro_long_en": "A Fairfield hotel in Jing'an. See the hotel's own website for room types and check-in details.",
+        "intro_short_zh": "住大宁一带，地铁1号线延长路站可用。",
+        "intro_short_en": "Near Daning and Yanchang Road station, north of central Shanghai.",
+        "intro_long_zh": "共和新路上的万枫适合想多走静安北部的旅客。官网列出延长路站和附近的闸北公园，酒店服务语言包括英语。",
+        "intro_long_en": "Use Line 1 for travel from the Daning area, and leave time for a stroll in Zhabei Park. Marriott lists English among the languages spoken at the hotel.",
         "star": null,
         "price_band": "<500",
         "accepts_foreigners": true,
@@ -3317,7 +3346,9 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "pl_sh_jinganwanfeng: unknown field 'hotel_class' is dropped on import"
+      ]
     },
     {
       "id": "pl_sh_kanglaide",
@@ -3464,7 +3495,7 @@
         "city": "shanghai",
         "category": "shopping",
         "tier": "main",
-        "name_zh": "岚华里森系空间",
+        "name_zh": "岚华里·森系生活",
         "name_en": "Lanhuali Market",
         "aliases_zh": [],
         "aliases_en": [],
@@ -3477,16 +3508,18 @@
           "foreign_cards": null,
           "english_service": null,
           "evidence": [
+            "https://mzj.sh.gov.cn/lnb-xw/20260717/3d19f43f3c134e589f065fbfdfece2ae.html",
             "https://www.shanghai.gov.cn/nw4411/20260618/798c4755f3404656b1a898e356a43047.html"
           ]
         },
-        "official_url": "https://www.shanghai.gov.cn/nw4411/20260618/798c4755f3404656b1a898e356a43047.html",
+        "official_url": "https://mzj.sh.gov.cn/lnb-xw/20260717/3d19f43f3c134e589f065fbfdfece2ae.html",
         "sources": [
+          "https://mzj.sh.gov.cn/lnb-xw/20260717/3d19f43f3c134e589f065fbfdfece2ae.html",
           "https://www.shanghai.gov.cn/nw4411/20260618/798c4755f3404656b1a898e356a43047.html"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
-        "notes": "旧岚灵花鸟市场已关闭，点位指向大华的新址。复查各店时段。 营业依据为当前经营方点位或近期主管部门的具名记录。",
+        "notes": "区报2026年7月报道新址正式营业。各店时段待复查。 营业依据为当前经营方点位或近期主管部门的具名记录。",
         "subcategory": "market",
         "hours_zh": null,
         "hours_source": null,
@@ -3502,11 +3535,11 @@
         "alternatives": []
       },
       "score": {
-        "total": 21,
+        "total": 26,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
-          "sources": 5,
+          "sources": 10,
           "complete": 4,
           "amap": 0
         },
@@ -4701,16 +4734,17 @@
         "official_url": "https://www.marriott.com/en-us/hotels/shajw-jw-marriott-hotel-shanghai-at-tomorrow-square/overview/",
         "sources": [
           "https://www.marriott.com/en-us/hotels/shajw-jw-marriott-hotel-shanghai-at-tomorrow-square/overview/",
-          "https://www.marriott.com/en-us/destinations/china/shanghai.mi"
+          "https://www.marriott.com/en-us/destinations/china/shanghai.mi",
+          "https://help.marriott.com/s/article/Article-24483"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
-        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sat, Dec 26 - Sun, Dec 27。 官网样本为每房每晚人民币 ¥1,765。当前价以所选日期及房型的报价为准。",
+        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sat, Dec 26 - Sun, Dec 27。 官网样本为每房每晚人民币 ¥1,765。当前价以所选日期及房型的报价为准。 分档依据：万豪集团将此品牌列为 Luxury。",
         "subcategory": "hotel",
-        "intro_short_zh": "在人民广场一带开始市中心行程。",
-        "intro_short_en": "A base near People's Square for exploring central Shanghai.",
-        "intro_long_zh": "在人民广场一带开始市中心行程。可在品牌官网查看房型和入住安排。",
-        "intro_long_en": "A base near People's Square for exploring central Shanghai. See the hotel's own website for room types and check-in details.",
+        "intro_short_zh": "从人民广场出发，可在南京西路回酒店歇脚。",
+        "intro_short_en": "A People's Square stay on West Nanjing Road with an indoor pool.",
+        "intro_long_zh": "明天广场的门店在南京西路399号。想从人民广场多线换乘或留时间看中心城区的街道，可以用这里作出发点。",
+        "intro_long_en": "Build a central Shanghai trip around People's Square. The hotel lists lines 1, 2 and 8 and has an indoor pool for a slower afternoon.",
         "star": null,
         "price_band": "1000-2000",
         "accepts_foreigners": true,
@@ -4742,7 +4776,9 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "pl_sh_mingtianwanhao: unknown field 'hotel_class' is dropped on import"
+      ]
     },
     {
       "id": "pl_sh_moganshan_chuangyi",
@@ -4957,7 +4993,7 @@
         "name_en": "Pan Guoxian Erguang Wonton",
         "aliases_zh": [],
         "aliases_en": [],
-        "address_zh": null,
+        "address_zh": "黄家阙路109号",
         "address_en": null,
         "district_zh": "黄浦区",
         "nearest_metro": null,
@@ -4983,7 +5019,7 @@
         "hours_source": null,
         "intro_short_zh": "除了菜肉馄饨，可用小吃搭配成便饭。",
         "intro_short_en": "Try pork and greens wontons for a casual meal.",
-        "intro_long_zh": "除了菜肉馄饨，可用小吃搭配成便饭。按中文店名在黄浦区定位。",
+        "intro_long_zh": "除了菜肉馄饨，可用小吃搭配成便饭。按中文店名在黄家阙路109号定位。",
         "intro_long_en": "Try pork and greens wontons for a casual meal. Use the full Chinese name when looking up this location.",
         "cuisine_zh": "上海馄饨",
         "price_per_person_cny": null,
@@ -4999,12 +5035,12 @@
         "alternatives": []
       },
       "score": {
-        "total": 25,
+        "total": 26,
         "parts": {
           "foreigner": 0,
           "confidence": 12,
           "sources": 10,
-          "complete": 3,
+          "complete": 4,
           "amap": 0
         },
         "external_used": false
@@ -5287,7 +5323,7 @@
         "id": "pl_sh_pudonglisi",
         "city": "shanghai",
         "category": "hotel",
-        "tier": "backup",
+        "tier": "main",
         "name_zh": "上海浦东丽思卡尔顿酒店",
         "name_en": "The Ritz-Carlton Shanghai, Pudong",
         "aliases_zh": [],
@@ -5307,16 +5343,17 @@
         "official_url": "https://www.ritzcarlton.com/en/hotels/shasz-the-ritz-carlton-shanghai-pudong/overview/",
         "sources": [
           "https://www.ritzcarlton.com/en/hotels/shasz-the-ritz-carlton-shanghai-pudong/overview/",
-          "https://www.marriott.com/en-us/destinations/china/shanghai.mi"
+          "https://www.marriott.com/en-us/destinations/china/shanghai.mi",
+          "https://help.marriott.com/s/article/Article-24483"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
-        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sat, Dec 26 - Sun, Dec 27。 官网样本为每房每晚人民币 ¥3,513。当前价以所选日期及房型的报价为准。",
+        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sat, Dec 26 - Sun, Dec 27。 官网样本为每房每晚人民币 ¥3,513。当前价以所选日期及房型的报价为准。 分档依据：万豪集团将此品牌列为 Luxury。",
         "subcategory": "hotel",
-        "intro_short_zh": "可作为陆家嘴一带的住宿选择。",
-        "intro_short_en": "A Ritz-Carlton hotel in the Lujiazui area.",
-        "intro_long_zh": "可作为陆家嘴一带的住宿选择。可在品牌官网查看房型和入住安排。",
-        "intro_long_en": "A Ritz-Carlton hotel in the Lujiazui area. See the hotel's own website for room types and check-in details.",
+        "intro_short_zh": "陆家嘴站附近，酒店列出英语、韩语等服务语言。",
+        "intro_short_en": "A Lujiazui choice with several guest languages listed by the hotel.",
+        "intro_long_zh": "计划在浦东看城市天际线、逛陆家嘴时，可以从这里出发。官网列出陆家嘴地铁站和多种服务语言，包括英文、意大利语、俄语与韩语。",
+        "intro_long_en": "Check the hotel's own language list if your group needs support in English, Italian, Russian or Korean. The property lists Lujiazui as its subway stop.",
         "star": null,
         "price_band": ">2000",
         "accepts_foreigners": true,
@@ -5348,7 +5385,9 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "pl_sh_pudonglisi: unknown field 'hotel_class' is dropped on import"
+      ]
     },
     {
       "id": "pl_sh_pudonglujiazuimaoqi",
@@ -5358,7 +5397,7 @@
         "id": "pl_sh_pudonglujiazuimaoqi",
         "city": "shanghai",
         "category": "hotel",
-        "tier": "main",
+        "tier": "backup",
         "name_zh": "上海鲁能JW万豪侯爵酒店",
         "name_en": "JW Marriott Marquis Hotel Shanghai Pudong",
         "aliases_zh": [],
@@ -5378,16 +5417,17 @@
         "official_url": "https://www.marriott.com/en-us/hotels/shamj-jw-marriott-marquis-hotel-shanghai-pudong/overview/",
         "sources": [
           "https://www.marriott.com/en-us/hotels/shamj-jw-marriott-marquis-hotel-shanghai-pudong/overview/",
-          "https://www.marriott.com/en-us/destinations/china/shanghai.mi?pg=2"
+          "https://www.marriott.com/en-us/destinations/china/shanghai.mi?pg=2",
+          "https://help.marriott.com/s/article/Article-24483"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
-        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sat, Dec 26 - Sun, Dec 27。 官网样本为每房每晚人民币 ¥1,710。当前价以所选日期及房型的报价为准。",
+        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sat, Dec 26 - Sun, Dec 27。 官网样本为每房每晚人民币 ¥1,710。当前价以所选日期及房型的报价为准。 分档依据：万豪集团将此品牌列为 Luxury。",
         "subcategory": "hotel",
-        "intro_short_zh": "浦东滨江的一家万豪酒店。",
-        "intro_short_en": "A Marriott hotel on the Pudong riverfront.",
-        "intro_long_zh": "浦东滨江的一家万豪酒店。可在品牌官网查看房型和入住安排。",
-        "intro_long_en": "A Marriott hotel on the Pudong riverfront. See the hotel's own website for room types and check-in details.",
+        "intro_short_zh": "浦明路的浦东酒店，住客可使用室内泳池。",
+        "intro_short_en": "An east-bank stay on Puming Road with an indoor pool.",
+        "intro_long_zh": "酒店位于浦东浦明路988号。白天安排浦东行程、回店想留一点游泳时间，可以考虑这里。品牌页列有英文与中文服务。",
+        "intro_long_en": "Plan an east-bank Shanghai stay from Puming Road. The hotel lists a swimming pool, and Marriott identifies English and Chinese as property languages.",
         "star": null,
         "price_band": "1000-2000",
         "accepts_foreigners": true,
@@ -5419,7 +5459,9 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "pl_sh_pudonglujiazuimaoqi: unknown field 'hotel_class' is dropped on import"
+      ]
     },
     {
       "id": "pl_sh_pudongmaoyewanfeng",
@@ -5429,7 +5471,7 @@
         "id": "pl_sh_pudongmaoyewanfeng",
         "city": "shanghai",
         "category": "hotel",
-        "tier": "backup",
+        "tier": "main",
         "name_zh": "上海浦东茂业万豪万枫酒店",
         "name_en": "Fairfield by Marriott Shanghai Pudong South",
         "aliases_zh": [],
@@ -5449,16 +5491,17 @@
         "official_url": "https://www.marriott.com/en-us/hotels/shapi-fairfield-shanghai-pudong-south/overview/",
         "sources": [
           "https://www.marriott.com/en-us/hotels/shapi-fairfield-shanghai-pudong-south/overview/",
-          "https://www.marriott.com/en-us/destinations/china/shanghai.mi?pg=3"
+          "https://www.marriott.com/en-us/destinations/china/shanghai.mi?pg=3",
+          "https://help.marriott.com/s/article/Article-24483"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
-        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sat, Dec 26 - Sun, Dec 27。 官网样本为每房每晚人民币 ¥350。当前价以所选日期及房型的报价为准。",
+        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sat, Dec 26 - Sun, Dec 27。 官网样本为每房每晚人民币 ¥350。当前价以所选日期及房型的报价为准。 分档依据：万豪集团列为 Select 精选服务品牌，本库按中档处理。",
         "subcategory": "hotel",
-        "intro_short_zh": "浦东南部的万枫酒店。",
-        "intro_short_en": "A Fairfield property in southern Pudong.",
-        "intro_long_zh": "浦东南部的万枫酒店。可在品牌官网查看房型和入住安排。",
-        "intro_long_en": "A Fairfield property in southern Pudong. See the hotel's own website for room types and check-in details.",
+        "intro_short_zh": "北蔡的万枫，官网列出13号线和18号线可选。",
+        "intro_short_en": "A Beicai base with two different metro approaches in Pudong.",
+        "intro_long_zh": "酒店在沪南路938号。万豪交通页列出13号线北蔡站和18号线北中路站，适合把浦东分几天慢慢逛。",
+        "intro_long_en": "In Beicai, you can plan around Line 13 or Line 18 depending on where you're headed. The operator's transport page names both stops.",
         "star": null,
         "price_band": "<500",
         "accepts_foreigners": true,
@@ -5490,7 +5533,9 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "pl_sh_pudongmaoyewanfeng: unknown field 'hotel_class' is dropped on import"
+      ]
     },
     {
       "id": "pl_sh_putuomoxy",
@@ -5520,16 +5565,17 @@
         "official_url": "https://www.marriott.com/en-us/hotels/shaxx-moxy-shanghai-putuo/overview/",
         "sources": [
           "https://www.marriott.com/en-us/hotels/shaxx-moxy-shanghai-putuo/overview/",
-          "https://www.marriott.com/en-us/destinations/china/shanghai.mi?pg=2"
+          "https://www.marriott.com/en-us/destinations/china/shanghai.mi?pg=2",
+          "https://help.marriott.com/s/article/Article-24483"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
-        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sat, Dec 26 - Sun, Dec 27。 官网样本为每房每晚人民币 ¥545。当前价以所选日期及房型的报价为准。",
+        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sat, Dec 26 - Sun, Dec 27。 官网样本为每房每晚人民币 ¥545。当前价以所选日期及房型的报价为准。 分档依据：万豪集团将 Moxy 定位为平价的 Select 酒店品牌，本库按经济型处理。",
         "subcategory": "hotel",
-        "intro_short_zh": "普陀区的 Moxy 酒店。",
-        "intro_short_en": "A Moxy hotel in Putuo.",
-        "intro_long_zh": "普陀区的 Moxy 酒店。可在品牌官网查看房型和入住安排。",
-        "intro_long_en": "A Moxy hotel in Putuo. See the hotel's own website for room types and check-in details.",
+        "intro_short_zh": "澳门路上的普陀门店，去上海站可先查酒店交通页。",
+        "intro_short_en": "A Putuo hotel on Aomen Road, with English on the language list.",
+        "intro_long_zh": "位置在普陀区澳门路409号。需要用英文沟通或从上海站抵达的旅客，可先查万豪的服务语言和铁路到店信息。",
+        "intro_long_en": "If you're arriving by train, the hotel's site lists Shanghai Railway Station among the transport options. English is included in the property's language information.",
         "star": null,
         "price_band": "500-1000",
         "accepts_foreigners": true,
@@ -5561,7 +5607,9 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "pl_sh_putuomoxy: unknown field 'hotel_class' is dropped on import"
+      ]
     },
     {
       "id": "pl_sh_puxiwanyi",
@@ -5591,16 +5639,17 @@
         "official_url": "https://www.marriott.com/en-us/hotels/shapx-courtyard-shanghai-central/overview/",
         "sources": [
           "https://www.marriott.com/en-us/hotels/shapx-courtyard-shanghai-central/overview/",
-          "https://www.marriott.com/en-us/destinations/china/shanghai.mi"
+          "https://www.marriott.com/en-us/destinations/china/shanghai.mi",
+          "https://help.marriott.com/s/article/Article-24483"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
-        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sat, Dec 26 - Sun, Dec 27。 官网样本为每房每晚人民币 ¥808。当前价以所选日期及房型的报价为准。",
+        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sat, Dec 26 - Sun, Dec 27。 官网样本为每房每晚人民币 ¥808。当前价以所选日期及房型的报价为准。 分档依据：万豪集团列为 Select 精选服务品牌，本库按中档处理。",
         "subcategory": "hotel",
-        "intro_short_zh": "市中心的万怡酒店。",
-        "intro_short_en": "A Courtyard hotel in central Shanghai.",
-        "intro_long_zh": "市中心的万怡酒店。可在品牌官网查看房型和入住安排。",
-        "intro_long_en": "A Courtyard hotel in central Shanghai. See the hotel's own website for room types and check-in details.",
+        "intro_short_zh": "靠上海站及汉中路换乘，适合火车到上海的游客。",
+        "intro_short_en": "A rail-friendly base between Shanghai Railway Station and Hanzhong Road.",
+        "intro_long_zh": "门店在恒丰路，酒店交通页给出上海火车站和汉中路1、12、13号线。住客也可使用酒店室内泳池。",
+        "intro_long_en": "If your train comes into Shanghai Railway Station, look at this Courtyard before choosing somewhere to stay. Hanzhong Road gives you three metro lines for the rest of the trip.",
         "star": null,
         "price_band": "500-1000",
         "accepts_foreigners": true,
@@ -5632,7 +5681,9 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "pl_sh_puxiwanyi: unknown field 'hotel_class' is dropped on import"
+      ]
     },
     {
       "id": "pl_sh_pvg",
@@ -5657,7 +5708,8 @@
           "https://www.shairport.com/gdjt/index.html",
           "https://english.shanghai.gov.cn/en-Individuals-Transportation-PublicTransport/20260813/7366238930024ac8b22e5adf82217bd8.html",
           "https://www.shairport.com/syt/index.html",
-          "https://english.shanghai.gov.cn/en-Transportation/20250326/8540e79353de48a5b62e7b5e91488ffa.html"
+          "https://english.shanghai.gov.cn/en-Transportation/20250326/8540e79353de48a5b62e7b5e91488ffa.html",
+          "https://english.shanghai.gov.cn/en-Transportation/20241231/f66f14bbd4b549ab88e6f3aec375790c.html"
         ],
         "checked_on": "2026-11-27",
         "confidence": "high",
@@ -5679,13 +5731,15 @@
           "去虹桥机场 T2 可走市域机场线。"
         ],
         "to_city_en": [
-          "Metro Line 2 runs to People's Square, and the maglev connects to Longyang Road.",
-          "For Hongqiao Airport T2, take the Airport Link Line."
+          "Take Metro Line 2 to People's Square, or the maglev to Longyang Road.",
+          "For Hongqiao Airport Terminal 2, take the Airport Link Line."
         ],
         "foreigner_tips_zh": [
           "跨机场转机时核对 PVG 与 SHA，另留前往航站楼和重新安检的时间。"
         ],
-        "foreigner_tips_en": null
+        "foreigner_tips_en": [
+          "For a transfer between airports, check the PVG and SHA codes on your tickets and leave time to reach the next terminal and clear security again."
+        ]
       },
       "external_signals": [],
       "location": null,
@@ -5987,7 +6041,8 @@
           "https://www.shairport.com/gdjt/index.html",
           "https://english.shanghai.gov.cn/en-Individuals-Transportation-PublicTransport/20260813/7366238930024ac8b22e5adf82217bd8.html",
           "https://www.shairport.com/syt/index.html",
-          "https://english.shanghai.gov.cn/en-Transportation/20250326/8540e79353de48a5b62e7b5e91488ffa.html"
+          "https://english.shanghai.gov.cn/en-Transportation/20250326/8540e79353de48a5b62e7b5e91488ffa.html",
+          "https://english.shanghai.gov.cn/en-Transportation/20241231/f66f14bbd4b549ab88e6f3aec375790c.html"
         ],
         "checked_on": "2026-11-27",
         "confidence": "high",
@@ -6009,13 +6064,15 @@
           "T2 的市域机场线可坐到浦东机场。"
         ],
         "to_city_en": [
-          "Use Metro Line 10 at T1, or Line 2 or 10 at T2.",
-          "The Airport Link Line from T2 runs to Pudong Airport."
+          "At Terminal 1, take Metro Line 10. At Terminal 2, take Line 2 or 10.",
+          "From Terminal 2, the Airport Link Line runs to Pudong International Airport."
         ],
         "foreigner_tips_zh": [
           "虹桥火车站和虹桥机场是同一枢纽内的不同目的地，打车时说清机场和航站楼。"
         ],
-        "foreigner_tips_en": null
+        "foreigner_tips_en": [
+          "Hongqiao's railway station and airport are separate stops in the same hub. Tell your driver which airport terminal you need."
+        ]
       },
       "external_signals": [],
       "location": null,
@@ -6324,7 +6381,8 @@
         "sources": [
           "https://english.shanghai.gov.cn/en-Transportation/20250126/484b92f86eeb49d7b26086d25010d782.html",
           "https://xxgk.mot.gov.cn/gz/202211/t20221128_3716160.html",
-          "https://zwfw.jinan.gov.cn/col127369/art/2025/art_127369_4798602.html"
+          "https://zwfw.jinan.gov.cn/col127369/art/2025/art_127369_4798602.html",
+          "https://english.shanghai.gov.cn/en-Individuals-Transportation-PublicTransport/20260825/463ac3099fa344f39182e623f83943f7.html"
         ],
         "checked_on": "2026-11-27",
         "confidence": "high",
@@ -6342,7 +6400,10 @@
           "给司机看票面中文站名，别只说 Shanghai station。",
           "带上购票时使用的护照原件，闸机读不出证件时走人工通道。"
         ],
-        "foreigner_tips_en": null
+        "foreigner_tips_en": [
+          "Show your driver the Chinese station name on your ticket. Saying “Shanghai station” alone can be confusing.",
+          "Bring the original passport you used to book. If the gate can't read it, use a staffed lane."
+        ]
       },
       "external_signals": [],
       "location": null,
@@ -6385,7 +6446,8 @@
         "sources": [
           "https://english.shanghai.gov.cn/en-Transportation/20250126/484b92f86eeb49d7b26086d25010d782.html",
           "https://xxgk.mot.gov.cn/gz/202211/t20221128_3716160.html",
-          "https://zwfw.jinan.gov.cn/col127369/art/2025/art_127369_4798602.html"
+          "https://zwfw.jinan.gov.cn/col127369/art/2025/art_127369_4798602.html",
+          "https://english.shanghai.gov.cn/en-Individuals-Transportation-PublicTransport/20260825/463ac3099fa344f39182e623f83943f7.html"
         ],
         "checked_on": "2026-11-27",
         "confidence": "high",
@@ -6403,7 +6465,10 @@
           "如需在上海换站，先核对下一段车票是否写上海西站。",
           "带上购票时使用的护照原件，闸机读不出证件时走人工通道。"
         ],
-        "foreigner_tips_en": null
+        "foreigner_tips_en": [
+          "Changing stations in Shanghai? Check whether your next ticket says Shanghai West Railway Station.",
+          "Bring the original passport you used to book. If the gate can't read it, use a staffed lane."
+        ]
       },
       "external_signals": [],
       "location": null,
@@ -6446,7 +6511,8 @@
         "sources": [
           "https://english.shanghai.gov.cn/en-Transportation/20250126/484b92f86eeb49d7b26086d25010d782.html",
           "https://xxgk.mot.gov.cn/gz/202211/t20221128_3716160.html",
-          "https://zwfw.jinan.gov.cn/col127369/art/2025/art_127369_4798602.html"
+          "https://zwfw.jinan.gov.cn/col127369/art/2025/art_127369_4798602.html",
+          "https://english.shanghai.gov.cn/en-Individuals-Transportation-PublicTransport/20260825/463ac3099fa344f39182e623f83943f7.html"
         ],
         "checked_on": "2026-11-27",
         "confidence": "high",
@@ -6464,7 +6530,10 @@
           "票面「上海」一般对应上海站，请以实际订单为准。",
           "带上购票时使用的护照原件，闸机读不出证件时走人工通道。"
         ],
-        "foreigner_tips_en": null
+        "foreigner_tips_en": [
+          "A ticket marked 上海 usually means Shanghai Railway Station. Confirm against your booking.",
+          "Bring the original passport you used to book. If the gate can't read it, use a staffed lane."
+        ]
       },
       "external_signals": [],
       "location": null,
@@ -7158,7 +7227,8 @@
         "sources": [
           "https://english.shanghai.gov.cn/en-Transportation/20250126/484b92f86eeb49d7b26086d25010d782.html",
           "https://xxgk.mot.gov.cn/gz/202211/t20221128_3716160.html",
-          "https://zwfw.jinan.gov.cn/col127369/art/2025/art_127369_4798602.html"
+          "https://zwfw.jinan.gov.cn/col127369/art/2025/art_127369_4798602.html",
+          "https://english.shanghai.gov.cn/en-Individuals-Transportation-PublicTransport/20260825/463ac3099fa344f39182e623f83943f7.html"
         ],
         "checked_on": "2026-11-27",
         "confidence": "high",
@@ -7176,7 +7246,10 @@
           "在地图上选「上海松江站」，预留从市中心前往松江区的时间。",
           "带上购票时使用的护照原件，闸机读不出证件时走人工通道。"
         ],
-        "foreigner_tips_en": null
+        "foreigner_tips_en": [
+          "Select 上海松江站 when getting directions and leave enough time for the trip from central Shanghai.",
+          "Bring the original passport you used to book. If the gate can't read it, use a staffed lane."
+        ]
       },
       "external_signals": [],
       "location": null,
@@ -7889,29 +7962,7 @@
         "visit_minutes": null,
         "best_time_zh": null
       },
-      "external_signals": [
-        {
-          "source": "tripadvisor",
-          "as_of": "2026-11-27",
-          "metric": "rating_out_of_5",
-          "value": 4.6,
-          "url": "https://www.tripadvisor.com/Attraction_Review-g308272-d311595-Reviews-The_Bund_Wai_Tan-Shanghai.html"
-        },
-        {
-          "source": "tripadvisor",
-          "as_of": "2026-11-27",
-          "metric": "review_count",
-          "value": 19639,
-          "url": "https://www.tripadvisor.com/Attraction_Review-g308272-d311595-Reviews-The_Bund_Wai_Tan-Shanghai.html"
-        },
-        {
-          "source": "tripadvisor",
-          "as_of": "2026-11-27",
-          "metric": "rank_in_city",
-          "value": 1,
-          "url": "https://www.tripadvisor.com/Attraction_Review-g308272-d311595-Reviews-The_Bund_Wai_Tan-Shanghai.html"
-        }
-      ],
+      "external_signals": [],
       "location": null,
       "amap": {
         "status": "not-run",
@@ -7958,16 +8009,17 @@
         "official_url": "https://www.hilton.com.cn/zh-cn/hotels/shawawa-waldorf-astoria-shanghai-on-the-bund",
         "sources": [
           "https://www.hilton.com.cn/zh-cn/hotels/shawawa-waldorf-astoria-shanghai-on-the-bund",
-          "https://www.hilton.com.cn/zh-cn/locations/china/shanghai-shanghai"
+          "https://www.hilton.com.cn/zh-cn/locations/china/shanghai-shanghai",
+          "https://ir.hilton.com/_assets/_de1e637820b6842c68b34801d11a8fd1/hilton/db/3577/34740/pdf/HLT_Investor_Presentation_-_November_2026.pdf"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
-        "notes": "希尔顿城市页显示 2026-11-27 入住、11-28 退房的起价。 官网样本为每房每晚人民币 ¥2,477。当前价以所选日期及房型的报价为准。",
+        "notes": "希尔顿城市页显示 2026-11-27 入住、11-28 退房的起价。 官网样本为每房每晚人民币 ¥2,477。当前价以所选日期及房型的报价为准。 分档依据：希尔顿集团将品牌列为 Luxury。",
         "subcategory": "hotel",
-        "intro_short_zh": "住在外滩边，出门即可安排滨江散步。",
-        "intro_short_en": "A Bund hotel for riverside walks.",
-        "intro_long_zh": "住在外滩边，出门即可安排滨江散步。可在品牌官网查看房型和入住安排。",
-        "intro_long_en": "A Bund hotel for riverside walks. See the hotel's own website for room types and check-in details.",
+        "intro_short_zh": "外滩历史建筑里的酒店，可接着走黄浦江岸。",
+        "intro_short_en": "Stay beside the Bund in a property linked to the historic Shanghai Club.",
+        "intro_long_zh": "酒店在中山东一路2号，保留原上海总会建筑的历史特色。把外滩、黄浦江岸放在同一天，可在走累后回店休息。",
+        "intro_long_en": "From the old Shanghai Club address, step out for the Bund waterfront. The hotel also has a library lounge and personal concierge service.",
         "star": null,
         "price_band": ">2000",
         "accepts_foreigners": true,
@@ -7999,7 +8051,9 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "pl_sh_waitanhuaerdaofu: unknown field 'hotel_class' is dropped on import"
+      ]
     },
     {
       "id": "pl_sh_waitanweisiting",
@@ -8029,16 +8083,17 @@
         "official_url": "https://www.marriott.com/en-us/hotels/shawi-the-westin-bund-center-shanghai/overview/",
         "sources": [
           "https://www.marriott.com/en-us/hotels/shawi-the-westin-bund-center-shanghai/overview/",
-          "https://www.marriott.com/en-us/destinations/china/shanghai.mi"
+          "https://www.marriott.com/en-us/destinations/china/shanghai.mi",
+          "https://help.marriott.com/s/article/Article-24483"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
-        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sat, Dec 26 - Sun, Dec 27。 官网样本为每房每晚人民币 ¥1,663。当前价以所选日期及房型的报价为准。",
+        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sat, Dec 26 - Sun, Dec 27。 官网样本为每房每晚人民币 ¥1,663。当前价以所选日期及房型的报价为准。 分档依据：万豪集团将此品牌列为 Premium。",
         "subcategory": "hotel",
-        "intro_short_zh": "从外滩一带步行游览的住宿候选。",
-        "intro_short_en": "A hotel for exploring the Bund area on foot.",
-        "intro_long_zh": "从外滩一带步行游览的住宿候选。可在品牌官网查看房型和入住安排。",
-        "intro_long_en": "A hotel for exploring the Bund area on foot. See the hotel's own website for room types and check-in details.",
+        "intro_short_zh": "河南中路的威斯汀，适合留一天步行逛外滩。",
+        "intro_short_en": "A Huangpu address for pairing the Bund with central Shanghai outings.",
+        "intro_long_zh": "酒店在河南中路88号，品牌指南将外滩作为附近游览方向，交通说明列出地铁2、10号线。适合白天游黄浦、晚间再看沿江灯景。",
+        "intro_long_en": "Pick this central address if you want time on the Bund as well as subway access to other parts of Shanghai. The hotel's guide lists Metro lines 2 and 10.",
         "star": null,
         "price_band": "1000-2000",
         "accepts_foreigners": true,
@@ -8070,7 +8125,9 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "pl_sh_waitanweisiting: unknown field 'hotel_class' is dropped on import"
+      ]
     },
     {
       "id": "pl_sh_wanshouzhai_shanyin",
@@ -8754,16 +8811,17 @@
         "official_url": "https://www.marriott.com/en-us/hotels/shasx-courtyard-shanghai-xujiahui/overview/",
         "sources": [
           "https://www.marriott.com/en-us/hotels/shasx-courtyard-shanghai-xujiahui/overview/",
-          "https://www.marriott.com/en-us/destinations/china/shanghai.mi?pg=2"
+          "https://www.marriott.com/en-us/destinations/china/shanghai.mi?pg=2",
+          "https://help.marriott.com/s/article/Article-24483"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
-        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sat, Dec 26 - Sun, Dec 27。 官网样本为每房每晚人民币 ¥551。当前价以所选日期及房型的报价为准。",
+        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sat, Dec 26 - Sun, Dec 27。 官网样本为每房每晚人民币 ¥551。当前价以所选日期及房型的报价为准。 分档依据：万豪集团列为 Select 精选服务品牌，本库按中档处理。",
         "subcategory": "hotel",
-        "intro_short_zh": "徐家汇一带的万怡酒店。",
-        "intro_short_en": "A Courtyard hotel in the Xujiahui area.",
-        "intro_long_zh": "徐家汇一带的万怡酒店。可在品牌官网查看房型和入住安排。",
-        "intro_long_en": "A Courtyard hotel in the Xujiahui area. See the hotel's own website for room types and check-in details.",
+        "intro_short_zh": "虹桥路100号，徐家汇和宜山路各有地铁可选。",
+        "intro_short_en": "A Hongqiao Road address with metro options at Xujiahui and Yishan Road.",
+        "intro_long_zh": "门店在徐汇虹桥路100号，官网列出徐家汇站和宜山路站。想用地铁逛徐汇并需要中文或英文沟通，可以考虑这家万怡。",
+        "intro_long_en": "Use the station that works best for the day's route. Marriott lists Xujiahui and Yishan Road in its directions, and English among the hotel languages.",
         "star": null,
         "price_band": "500-1000",
         "accepts_foreigners": true,
@@ -8795,7 +8853,9 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "pl_sh_xizangdashawanyi: unknown field 'hotel_class' is dropped on import"
+      ]
     },
     {
       "id": "pl_sh_xuhuimoxy",
@@ -8825,16 +8885,17 @@
         "official_url": "https://www.marriott.com/en-us/hotels/shaos-moxy-shanghai-xuhui/overview/",
         "sources": [
           "https://www.marriott.com/en-us/hotels/shaos-moxy-shanghai-xuhui/overview/",
-          "https://www.marriott.com/en-us/destinations/china/shanghai.mi?pg=3"
+          "https://www.marriott.com/en-us/destinations/china/shanghai.mi?pg=3",
+          "https://help.marriott.com/s/article/Article-24483"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
-        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sat, Dec 26 - Sun, Dec 27。 官网样本为每房每晚人民币 ¥365。当前价以所选日期及房型的报价为准。",
+        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sat, Dec 26 - Sun, Dec 27。 官网样本为每房每晚人民币 ¥365。当前价以所选日期及房型的报价为准。 分档依据：万豪集团将 Moxy 定位为平价的 Select 酒店品牌，本库按经济型处理。",
         "subcategory": "hotel",
-        "intro_short_zh": "在徐汇区找住宿的一家 Moxy 酒店。",
-        "intro_short_en": "A Moxy hotel in Xuhui.",
-        "intro_long_zh": "在徐汇区找住宿的一家 Moxy 酒店。可在品牌官网查看房型和入住安排。",
-        "intro_long_en": "A Moxy hotel in Xuhui. See the hotel's own website for room types and check-in details.",
+        "intro_short_zh": "漕宝路一带的徐汇客房，酒店列出中英文服务。",
+        "intro_short_en": "A Tianlin base for southern Xuhui, with English listed by the hotel.",
+        "intro_long_zh": "上海徐汇Moxy位于田林东路。官网列出漕宝路地铁站和上海南站方向的交通选择，适合把徐汇南部排进上海行程的人。",
+        "intro_long_en": "Use the hotel's directions for Caobao Road when planning subway trips. Marriott also lists English among the languages spoken at this Tianlin property.",
         "star": null,
         "price_band": "<500",
         "accepts_foreigners": true,
@@ -8866,7 +8927,9 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "pl_sh_xuhuimoxy: unknown field 'hotel_class' is dropped on import"
+      ]
     },
     {
       "id": "pl_sh_xuhuiwanfeng",
@@ -8896,16 +8959,17 @@
         "official_url": "https://www.marriott.com/en-us/hotels/shaxf-fairfield-shanghai-xuhui-center/overview/",
         "sources": [
           "https://www.marriott.com/en-us/hotels/shaxf-fairfield-shanghai-xuhui-center/overview/",
-          "https://www.marriott.com/en-us/destinations/china/shanghai.mi?pg=2"
+          "https://www.marriott.com/en-us/destinations/china/shanghai.mi?pg=2",
+          "https://help.marriott.com/s/article/Article-24483"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
-        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sat, Dec 26 - Sun, Dec 27。 官网样本为每房每晚人民币 ¥788。当前价以所选日期及房型的报价为准。",
+        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sat, Dec 26 - Sun, Dec 27。 官网样本为每房每晚人民币 ¥788。当前价以所选日期及房型的报价为准。 分档依据：万豪集团列为 Select 精选服务品牌，本库按中档处理。",
         "subcategory": "hotel",
-        "intro_short_zh": "想从徐家汇开始逛，可以考虑这家万枫。",
-        "intro_short_en": "A Fairfield option for exploring Xujiahui.",
-        "intro_long_zh": "想从徐家汇开始逛，可以考虑这家万枫。可在品牌官网查看房型和入住安排。",
-        "intro_long_en": "A Fairfield option for exploring Xujiahui. See the hotel's own website for room types and check-in details.",
+        "intro_short_zh": "肇嘉浜路门店，可往徐家汇逛商场和街区。",
+        "intro_short_en": "A Zhaojiabang Road hotel for the Xujiahui area.",
+        "intro_long_zh": "酒店在肇嘉浜路831号。把徐家汇购物或散步安排在同一天时，可从这家万枫出发。酒店列出肇嘉浜路站和英语服务。",
+        "intro_long_en": "Make Xujiahui part of your trip from this Fairfield on Zhaojiabang Road. English is listed by the hotel, and the transport page names Zhaojiabang Road station.",
         "star": null,
         "price_band": "500-1000",
         "accepts_foreigners": true,
@@ -8937,7 +9001,9 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "pl_sh_xuhuiwanfeng: unknown field 'hotel_class' is dropped on import"
+      ]
     },
     {
       "id": "pl_sh_xujiahuiyuan",
@@ -9212,6 +9278,225 @@
         "external_used": false
       },
       "flags": []
+    },
+    {
+      "id": "pl_sh_yibisi_hongqiaozhan",
+      "source_file": "C8/shanghai-hotel.json",
+      "status": "pending",
+      "draft": {
+        "id": "pl_sh_yibisi_hongqiaozhan",
+        "city": "shanghai",
+        "category": "hotel",
+        "tier": "main",
+        "name_zh": "宜必思上海虹桥火车站酒店",
+        "name_en": "ibis Shanghai Hongqiao Railway Station",
+        "aliases_zh": [],
+        "aliases_en": [],
+        "address_zh": "沪星路289弄1号",
+        "address_en": null,
+        "district_zh": "闵行区",
+        "nearest_metro": null,
+        "foreigner_signals": {
+          "english_signage": null,
+          "foreign_cards": null,
+          "english_service": null,
+          "evidence": [
+            "https://all.accor.com/hotel/B566/index.en.shtml"
+          ]
+        },
+        "official_url": "https://all.accor.com/hotel/B566/index.en.shtml",
+        "sources": [
+          "https://all.accor.com/hotel/B566/index.en.shtml",
+          "https://group.accor.com/en/news-stories/midscale-economy-brands-novotel-mercure-ibis"
+        ],
+        "checked_on": "2026-11-27",
+        "confidence": "medium",
+        "notes": "分档依据：雅高集团将宜必思及宜必思尚品归为经济型。",
+        "subcategory": "hotel",
+        "intro_short_zh": "住在七宝，可把老街游安排在虹桥坐车之前。",
+        "intro_short_en": "A Qibao base for an old-town visit around a Hongqiao rail trip.",
+        "intro_long_zh": "门店在闵行沪星路，雅高给出去虹桥站、虹桥机场及七宝古镇的到店信息。若要赶车，按七宝片区估算接驳行程。",
+        "intro_long_en": "The property is in Qibao. Allow time for the onward trip to Hongqiao Railway Station, or make use of the old town nearby if you have an afternoon to spare.",
+        "star": null,
+        "price_band": null,
+        "accepts_foreigners": true,
+        "foreign_service": {
+          "english_front_desk": null,
+          "foreign_guest_share": null,
+          "foreign_guest_experience": null,
+          "international_brand": "Accor",
+          "evidence_zh": "雅高公开英文门店页与直接预订入口，列有七宝片区和虹桥交通说明。",
+          "evidence": [
+            "https://all.accor.com/hotel/B566/index.en.shtml"
+          ]
+        }
+      },
+      "external_signals": [],
+      "location": null,
+      "amap": {
+        "status": "not-run",
+        "alternatives": []
+      },
+      "score": {
+        "total": 26,
+        "parts": {
+          "foreigner": 0,
+          "confidence": 12,
+          "sources": 10,
+          "complete": 4,
+          "amap": 0
+        },
+        "external_used": false
+      },
+      "flags": [
+        "pl_sh_yibisi_hongqiaozhan: unknown field 'hotel_class' is dropped on import"
+      ]
+    },
+    {
+      "id": "pl_sh_yibisishangpin_qingputiyu",
+      "source_file": "C8/shanghai-hotel.json",
+      "status": "pending",
+      "draft": {
+        "id": "pl_sh_yibisishangpin_qingputiyu",
+        "city": "shanghai",
+        "category": "hotel",
+        "tier": "main",
+        "name_zh": "宜必思尚品上海青浦体育中心酒店",
+        "name_en": "ibis Styles Shanghai Qingpu Sports Center Hotel",
+        "aliases_zh": [],
+        "aliases_en": [],
+        "address_zh": "沙埭浜路35号",
+        "address_en": null,
+        "district_zh": "青浦区",
+        "nearest_metro": null,
+        "foreigner_signals": {
+          "english_signage": null,
+          "foreign_cards": null,
+          "english_service": null,
+          "evidence": [
+            "https://all.accor.com/hotel/B568/index.en.shtml"
+          ]
+        },
+        "official_url": "https://all.accor.com/hotel/B568/index.en.shtml",
+        "sources": [
+          "https://all.accor.com/hotel/B568/index.en.shtml",
+          "https://group.accor.com/en/news-stories/midscale-economy-brands-novotel-mercure-ibis"
+        ],
+        "checked_on": "2026-11-27",
+        "confidence": "medium",
+        "notes": "分档依据：雅高集团将宜必思及宜必思尚品归为经济型。",
+        "subcategory": "hotel",
+        "intro_short_zh": "青浦体育场旁，可按雅高官网查17号线接法。",
+        "intro_short_en": "Stay by Qingpu Stadium, with Line 17 listed for reaching Hongqiao.",
+        "intro_long_zh": "在青浦有行程时，可住沙埭浜路的门店。雅高英文页列出双床、早餐及通往虹桥方向的地铁17号线信息。",
+        "intro_long_en": "This hotel is in Qingpu, beside the district stadium. Check the twin rooms if traveling with a companion, and use the Line 17 information to plan onward transit.",
+        "star": null,
+        "price_band": null,
+        "accepts_foreigners": true,
+        "foreign_service": {
+          "english_front_desk": null,
+          "foreign_guest_share": null,
+          "foreign_guest_experience": null,
+          "international_brand": "Accor",
+          "evidence_zh": "雅高公开英文门店页与直接预订入口。",
+          "evidence": [
+            "https://all.accor.com/hotel/B568/index.en.shtml"
+          ]
+        }
+      },
+      "external_signals": [],
+      "location": null,
+      "amap": {
+        "status": "not-run",
+        "alternatives": []
+      },
+      "score": {
+        "total": 26,
+        "parts": {
+          "foreigner": 0,
+          "confidence": 12,
+          "sources": 10,
+          "complete": 4,
+          "amap": 0
+        },
+        "external_used": false
+      },
+      "flags": [
+        "pl_sh_yibisishangpin_qingputiyu: unknown field 'hotel_class' is dropped on import"
+      ]
+    },
+    {
+      "id": "pl_sh_yibisishangpin_zhangjiang",
+      "source_file": "C8/shanghai-hotel.json",
+      "status": "pending",
+      "draft": {
+        "id": "pl_sh_yibisishangpin_zhangjiang",
+        "city": "shanghai",
+        "category": "hotel",
+        "tier": "main",
+        "name_zh": "宜必思尚品上海张江酒店",
+        "name_en": "ibis Styles Shanghai Zhangjiang Hotel",
+        "aliases_zh": [],
+        "aliases_en": [],
+        "address_zh": "张江路1206号",
+        "address_en": null,
+        "district_zh": "浦东新区",
+        "nearest_metro": null,
+        "foreigner_signals": {
+          "english_signage": null,
+          "foreign_cards": null,
+          "english_service": null,
+          "evidence": [
+            "https://all.accor.com/hotel/B3F1/index.en.shtml"
+          ]
+        },
+        "official_url": "https://all.accor.com/hotel/B3F1/index.en.shtml",
+        "sources": [
+          "https://all.accor.com/hotel/B3F1/index.en.shtml",
+          "https://group.accor.com/en/news-stories/midscale-economy-brands-novotel-mercure-ibis"
+        ],
+        "checked_on": "2026-11-27",
+        "confidence": "medium",
+        "notes": "分档依据：雅高集团将宜必思及宜必思尚品归为经济型。",
+        "subcategory": "hotel",
+        "intro_short_zh": "浦东张江路的经济型酒店，可经广兰路换地铁。",
+        "intro_short_en": "A Zhangjiang hotel for travelers spending most of their trip in Pudong.",
+        "intro_long_zh": "门店在张江路1206号。雅高把地铁2号线广兰路站列作交通参照，去站点仍需规划接驳。英文页可先核对大床或双床房。",
+        "intro_long_en": "Look up Guanglan Road on Line 2 when mapping trips from Zhangjiang. The English property page has double and twin room listings.",
+        "star": null,
+        "price_band": null,
+        "accepts_foreigners": true,
+        "foreign_service": {
+          "english_front_desk": null,
+          "foreign_guest_share": null,
+          "foreign_guest_experience": null,
+          "international_brand": "Accor",
+          "evidence_zh": "雅高公开英文门店页与直接预订入口。",
+          "evidence": [
+            "https://all.accor.com/hotel/B3F1/index.en.shtml"
+          ]
+        }
+      },
+      "external_signals": [],
+      "location": null,
+      "amap": {
+        "status": "not-run",
+        "alternatives": []
+      },
+      "score": {
+        "total": 26,
+        "parts": {
+          "foreigner": 0,
+          "confidence": 12,
+          "sources": 10,
+          "complete": 4,
+          "amap": 0
+        },
+        "external_used": false
+      },
+      "flags": [
+        "pl_sh_yibisishangpin_zhangjiang: unknown field 'hotel_class' is dropped on import"
+      ]
     },
     {
       "id": "pl_sh_yixinzhai_yangpu",
@@ -9649,16 +9934,17 @@
         "official_url": "https://www.marriott.com/en-us/hotels/shasy-renaissance-shanghai-yu-garden-hotel/overview/",
         "sources": [
           "https://www.marriott.com/en-us/hotels/shasy-renaissance-shanghai-yu-garden-hotel/overview/",
-          "https://www.marriott.com/en-us/destinations/china/shanghai.mi"
+          "https://www.marriott.com/en-us/destinations/china/shanghai.mi",
+          "https://help.marriott.com/s/article/Article-24483"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
-        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sat, Dec 26 - Sun, Dec 27。 官网样本为每房每晚人民币 ¥1,140。当前价以所选日期及房型的报价为准。",
+        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sat, Dec 26 - Sun, Dec 27。 官网样本为每房每晚人民币 ¥1,140。当前价以所选日期及房型的报价为准。 分档依据：万豪集团将此品牌列为 Premium。",
         "subcategory": "hotel",
-        "intro_short_zh": "可作为豫园和老城厢周边的住宿点。",
-        "intro_short_en": "A stay near Yu Garden and Shanghai's old city.",
-        "intro_long_zh": "可作为豫园和老城厢周边的住宿点。可在品牌官网查看房型和入住安排。",
-        "intro_long_en": "A stay near Yu Garden and Shanghai's old city. See the hotel's own website for room types and check-in details.",
+        "intro_short_zh": "从豫园站到上海老城厢，行程可以少换一次车。",
+        "intro_short_en": "A Yu Garden stay with Line 10 and an indoor pool.",
+        "intro_long_zh": "酒店在河南南路159号，交通页给出豫园站。适合把豫园、老城厢排在同一段行程的人，店内也有室内泳池。",
+        "intro_long_en": "Spend a morning around the old city and head back via Yuyuan Garden station. Marriott lists English at the hotel and an indoor pool for guests.",
         "star": null,
         "price_band": "1000-2000",
         "accepts_foreigners": true,
@@ -9690,7 +9976,9 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "pl_sh_yuyuanwanli: unknown field 'hotel_class' is dropped on import"
+      ]
     },
     {
       "id": "pl_sh_zhenlaodafang_nanjing_shop",
@@ -9893,7 +10181,7 @@
         "id": "pl_sh_zhongshangongyuanwanli",
         "city": "shanghai",
         "category": "hotel",
-        "tier": "backup",
+        "tier": "main",
         "name_zh": "上海龙之梦万丽酒店",
         "name_en": "Renaissance Shanghai Zhongshan Park Hotel",
         "aliases_zh": [],
@@ -9913,16 +10201,17 @@
         "official_url": "https://www.marriott.com/en-us/hotels/shabz-renaissance-shanghai-zhongshan-park-hotel/overview/",
         "sources": [
           "https://www.marriott.com/en-us/hotels/shabz-renaissance-shanghai-zhongshan-park-hotel/overview/",
-          "https://www.marriott.com/en-us/destinations/china/shanghai.mi?pg=2"
+          "https://www.marriott.com/en-us/destinations/china/shanghai.mi?pg=2",
+          "https://help.marriott.com/s/article/Article-24483"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
-        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sat, Dec 26 - Sun, Dec 27。 官网样本为每房每晚人民币 ¥713。当前价以所选日期及房型的报价为准。",
+        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sat, Dec 26 - Sun, Dec 27。 官网样本为每房每晚人民币 ¥713。当前价以所选日期及房型的报价为准。 分档依据：万豪集团将此品牌列为 Premium。",
         "subcategory": "hotel",
-        "intro_short_zh": "可作为中山公园一带的住宿点。",
-        "intro_short_en": "A hotel option in the Zhongshan Park area.",
-        "intro_long_zh": "可作为中山公园一带的住宿点。可在品牌官网查看房型和入住安排。",
-        "intro_long_en": "A hotel option in the Zhongshan Park area. See the hotel's own website for room types and check-in details.",
+        "intro_short_zh": "在中山公园站上方，2、3、4号线都可利用。",
+        "intro_short_en": "Stay above Zhongshan Park station for direct access to three metro lines.",
+        "intro_long_zh": "酒店在长宁路1018号，品牌页确认位于中山公园站上方。几天行程要在长宁和中心城区之间往返时，可以从这里出发。",
+        "intro_long_en": "Pack a flexible itinerary around lines 2, 3 and 4 without changing your hotel. The Renaissance sits above Zhongshan Park station.",
         "star": null,
         "price_band": "500-1000",
         "accepts_foreigners": true,
@@ -9954,7 +10243,9 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "pl_sh_zhongshangongyuanwanli: unknown field 'hotel_class' is dropped on import"
+      ]
     },
     {
       "id": "pl_sh_zhujiajiao",

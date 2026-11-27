@@ -702,7 +702,8 @@
           "https://www.cdairport.com/traffic3.aspx?t=35",
           "https://admin.canedu.org.cn/upload/file/20241009/1728437548915149.pdf",
           "https://xxgk.mot.gov.cn/gz/202211/t20221128_3716160.html",
-          "https://zwfw.jinan.gov.cn/col127369/art/2025/art_127369_4798602.html"
+          "https://zwfw.jinan.gov.cn/col127369/art/2025/art_127369_4798602.html",
+          "https://english.shanghai.gov.cn/en-Individuals-Transportation-PublicTransport/20260825/463ac3099fa344f39182e623f83943f7.html"
         ],
         "checked_on": "2026-11-27",
         "confidence": "high",
@@ -720,7 +721,10 @@
           "地铁导向常写「成都东客站」，铁路车票写「成都东」。",
           "带上购票时使用的护照原件，闸机读不出证件时走人工通道。"
         ],
-        "foreigner_tips_en": null
+        "foreigner_tips_en": [
+          "Subway signs say 成都东客站. Railway tickets use 成都东 for the same rail hub.",
+          "Bring the original passport you used to book. If the gate can't read it, use a staffed lane."
+        ]
       },
       "external_signals": [],
       "location": null,
@@ -764,7 +768,8 @@
           "https://www.cdairport.com/traffic3.aspx?t=35",
           "https://cdcz.chengdu.gov.cn/cdsczj/c116719/2025-03/18/d94a11576b1747efbf502f478e1eeb86/files/4716c4a326ce41a2abb408b4f0eae73b.pdf",
           "https://xxgk.mot.gov.cn/gz/202211/t20221128_3716160.html",
-          "https://zwfw.jinan.gov.cn/col127369/art/2025/art_127369_4798602.html"
+          "https://zwfw.jinan.gov.cn/col127369/art/2025/art_127369_4798602.html",
+          "https://english.shanghai.gov.cn/en-Individuals-Transportation-PublicTransport/20260825/463ac3099fa344f39182e623f83943f7.html"
         ],
         "checked_on": "2026-11-27",
         "confidence": "high",
@@ -776,13 +781,16 @@
           "在地铁火车南站可换乘，包括18号线。"
         ],
         "to_city_en": [
-          "Transfer at South Railway Station for the metro, including Line 18."
+          "Follow the signs to South Railway Station for the metro, including Line 18."
         ],
         "foreigner_tips_zh": [
           "去机场前核对下一程是地铁还是国铁，站内按各自导向走。",
           "带上购票时使用的护照原件，闸机读不出证件时走人工通道。"
         ],
-        "foreigner_tips_en": null
+        "foreigner_tips_en": [
+          "Before heading to the airport, check if your next leg is on the metro or a mainline train. Follow the signs for that service.",
+          "Bring the original passport you used to book. If the gate can't read it, use a staffed lane."
+        ]
       },
       "external_signals": [],
       "location": null,
@@ -826,7 +834,8 @@
           "https://www.12306.cn/mormhweb/zxdt_news/202609/t20260913_46323.html",
           "https://www.chinacdc.cn/tzgg/202408/P020240801369689829015.pdf",
           "https://xxgk.mot.gov.cn/gz/202211/t20221128_3716160.html",
-          "https://zwfw.jinan.gov.cn/col127369/art/2025/art_127369_4798602.html"
+          "https://zwfw.jinan.gov.cn/col127369/art/2025/art_127369_4798602.html",
+          "https://english.shanghai.gov.cn/en-Individuals-Transportation-PublicTransport/20260825/463ac3099fa344f39182e623f83943f7.html"
         ],
         "checked_on": "2026-11-27",
         "confidence": "high",
@@ -844,7 +853,10 @@
           "乘坐普速列车前核对票面中的西站及日期。",
           "带上购票时使用的护照原件，闸机读不出证件时走人工通道。"
         ],
-        "foreigner_tips_en": null
+        "foreigner_tips_en": [
+          "For a conventional train, check that your ticket says Chengdu West and confirm the travel date.",
+          "Bring the original passport you used to book. If the gate can't read it, use a staffed lane."
+        ]
       },
       "external_signals": [],
       "location": null,
@@ -887,7 +899,8 @@
         "sources": [
           "https://www.chengdu.gov.cn/gkml/uploadfiles/1607625235320909825/156242597416586444824.pdf",
           "https://xxgk.mot.gov.cn/gz/202211/t20221128_3716160.html",
-          "https://zwfw.jinan.gov.cn/col127369/art/2025/art_127369_4798602.html"
+          "https://zwfw.jinan.gov.cn/col127369/art/2025/art_127369_4798602.html",
+          "https://english.shanghai.gov.cn/en-Individuals-Transportation-PublicTransport/20260825/463ac3099fa344f39182e623f83943f7.html"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
@@ -901,7 +914,10 @@
           "成都站俗称火车北站，涉及扩能改造。订票和导航时使用12306票面给出的实际出发站。",
           "带上购票时使用的护照原件，闸机读不出证件时走人工通道。"
         ],
-        "foreigner_tips_en": null
+        "foreigner_tips_en": [
+          "Chengdu Railway Station, also called North Railway Station, is being rebuilt. Confirm your actual departure station on 12306 before planning the trip.",
+          "Bring the original passport you used to book. If the gate can't read it, use a staffed lane."
+        ]
       },
       "external_signals": [],
       "location": null,
@@ -1286,7 +1302,9 @@
           "https://www.cdairport.com/traffic3.aspx?t=36",
           "https://www.cdairport.com/news_detail.aspx?cid=2507&page=1&t=60",
           "https://www.cdairport.com/traffic3.aspx?t=35",
-          "https://www.cdairport.com/index.aspx/terminal.aspx"
+          "https://www.cdairport.com/index.aspx/terminal.aspx",
+          "https://www.cdairport.com/en/traffic3.aspx?t=168",
+          "https://www.icao.int/sites/default/files/APAC/Meetings/2024/2024%20ATMAS%20TF-5/ATMAS%20TF-5/2-General%20Information/Attachment-D-Meeting-Bulletin240409_v4.pdf"
         ],
         "checked_on": "2026-11-27",
         "confidence": "high",
@@ -1307,12 +1325,14 @@
           "地铁10号线可向太平园方向进城。19号线在双流机场2航站楼东站接驳。"
         ],
         "to_city_en": [
-          "Metro Line 10 heads toward Taipingyuan. Line 19 serves East of Terminal 2."
+          "Metro Line 10 runs toward Taipingyuan. For Line 19, follow signs to East of Terminal 2 of Shuangliu International Airport."
         ],
         "foreigner_tips_zh": [
           "CTU 是双流机场。需要换机场时，在地图里输入另一座机场全名。"
         ],
-        "foreigner_tips_en": null
+        "foreigner_tips_en": [
+          "CTU means Shuangliu Airport. If switching airports, enter the full name of your next airport when getting directions."
+        ]
       },
       "external_signals": [],
       "location": null,
@@ -1721,29 +1741,7 @@
         "visit_minutes": null,
         "best_time_zh": null
       },
-      "external_signals": [
-        {
-          "source": "tripadvisor",
-          "as_of": "2026-11-27",
-          "metric": "rating_out_of_5",
-          "value": 4.6,
-          "url": "https://www.tripadvisor.com/Attraction_Review-g297463-d457089-Reviews-Chengdu_Research_Base_of_Giant_Panda_Breeding-Chengdu_Sichuan.html"
-        },
-        {
-          "source": "tripadvisor",
-          "as_of": "2026-11-27",
-          "metric": "review_count",
-          "value": 6703,
-          "url": "https://www.tripadvisor.com/Attraction_Review-g297463-d457089-Reviews-Chengdu_Research_Base_of_Giant_Panda_Breeding-Chengdu_Sichuan.html"
-        },
-        {
-          "source": "tripadvisor",
-          "as_of": "2026-11-27",
-          "metric": "rank_in_city",
-          "value": 2,
-          "url": "https://www.tripadvisor.com/Attraction_Review-g297463-d457089-Reviews-Chengdu_Research_Base_of_Giant_Panda_Breeding-Chengdu_Sichuan.html"
-        }
-      ],
+      "external_signals": [],
       "location": null,
       "amap": {
         "status": "not-run",
@@ -4431,7 +4429,9 @@
           "https://www.12306.cn/mormhweb/zxdt_news/202611/t20261110_46610.html",
           "https://jtj.wuhan.gov.cn/jtzx/zwdt/202611/t20261112_2878461.shtml",
           "https://xxgk.mot.gov.cn/gz/202211/t20221128_3716160.html",
-          "https://zwfw.jinan.gov.cn/col127369/art/2025/art_127369_4798602.html"
+          "https://zwfw.jinan.gov.cn/col127369/art/2025/art_127369_4798602.html",
+          "https://hzfw.12306.cn/mormhweb/zxdt_news/202611/t20261110_46610.html",
+          "https://english.shanghai.gov.cn/en-Individuals-Transportation-PublicTransport/20260825/463ac3099fa344f39182e623f83943f7.html"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
@@ -4445,7 +4445,10 @@
           "购票时查「成都龙泉驿」。出行前按票面中文全名导航。",
           "带上购票时使用的护照原件，闸机读不出证件时走人工通道。"
         ],
-        "foreigner_tips_en": null
+        "foreigner_tips_en": [
+          "Look for 成都龙泉驿 when booking. Use the full station name from your ticket when getting directions.",
+          "Bring the original passport you used to book. If the gate can't read it, use a staffed lane."
+        ]
       },
       "external_signals": [],
       "location": null,
@@ -5762,7 +5765,9 @@
           "https://www.cdairport.com/traffic3.aspx?t=35",
           "https://www.cdairport.com/traffic3.aspx?t=36",
           "https://xxgk.mot.gov.cn/gz/202211/t20221128_3716160.html",
-          "https://zwfw.jinan.gov.cn/col127369/art/2025/art_127369_4798602.html"
+          "https://zwfw.jinan.gov.cn/col127369/art/2025/art_127369_4798602.html",
+          "https://www.cdairport.com/en/traffic3.aspx?t=167",
+          "https://english.shanghai.gov.cn/en-Individuals-Transportation-PublicTransport/20260825/463ac3099fa344f39182e623f83943f7.html"
         ],
         "checked_on": "2026-11-27",
         "confidence": "high",
@@ -5774,13 +5779,16 @@
           "双流机场综合交通内可换乘机场地铁。"
         ],
         "to_city_en": [
-          "Transfer to the metro within the Shuangliu Airport transport complex."
+          "Use the transport center at Shuangliu Airport to transfer to the metro."
         ],
         "foreigner_tips_zh": [
           "国铁双流机场站与地铁航站楼站使用不同入口，请看门头的铁路或地铁标识。",
           "带上购票时使用的护照原件，闸机读不出证件时走人工通道。"
         ],
-        "foreigner_tips_en": null
+        "foreigner_tips_en": [
+          "Mainline trains and the terminal metro use separate entrances. Check which service is shown above the entrance.",
+          "Bring the original passport you used to book. If the gate can't read it, use a staffed lane."
+        ]
       },
       "external_signals": [],
       "location": null,
@@ -6319,12 +6327,14 @@
           "可乘地铁18号线进城。地铁19号线可接驳双流机场。"
         ],
         "to_city_en": [
-          "Take Metro Line 18 toward the city or Line 19 for Shuangliu Airport."
+          "Take Metro Line 18 toward central Chengdu. For Shuangliu International Airport, use Line 19."
         ],
         "foreigner_tips_zh": [
           "TFU 是天府机场。在成都转机时核对两张机票的机场代码，跨机场应预留交通时间。"
         ],
-        "foreigner_tips_en": null
+        "foreigner_tips_en": [
+          "TFU means Tianfu Airport. Compare the airport codes on your tickets and allow extra travel time if they differ."
+        ]
       },
       "external_signals": [],
       "location": null,
@@ -6708,7 +6718,8 @@
           "https://www.cdairport.com/traffic3.aspx?t=36",
           "https://www.cdairport.com/news_detail.aspx?cid=2507&page=1&t=60",
           "https://xxgk.mot.gov.cn/gz/202211/t20221128_3716160.html",
-          "https://zwfw.jinan.gov.cn/col127369/art/2025/art_127369_4798602.html"
+          "https://zwfw.jinan.gov.cn/col127369/art/2025/art_127369_4798602.html",
+          "https://english.shanghai.gov.cn/en-Individuals-Transportation-PublicTransport/20260825/463ac3099fa344f39182e623f83943f7.html"
         ],
         "checked_on": "2026-11-27",
         "confidence": "high",
@@ -6720,13 +6731,16 @@
           "可从机场综合交通中心换乘地铁18号线或19号线。"
         ],
         "to_city_en": [
-          "Transfer to Metro Line 18 or 19 at the airport ground transport center."
+          "Use the airport's ground transport center to reach Metro Line 18 or 19."
         ],
         "foreigner_tips_zh": [
           "有国铁车票时按「天府机场站」和高铁导向找进站口。",
           "带上购票时使用的护照原件，闸机读不出证件时走人工通道。"
         ],
-        "foreigner_tips_en": null
+        "foreigner_tips_en": [
+          "With a mainline train ticket, look for 天府机场站 and follow the signs for high-speed rail.",
+          "Bring the original passport you used to book. If the gate can't read it, use a staffed lane."
+        ]
       },
       "external_signals": [],
       "location": null,

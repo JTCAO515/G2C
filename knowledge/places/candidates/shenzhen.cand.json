@@ -1696,7 +1696,10 @@
           "https://jtys.sz.gov.cn/ydmh/jtcx/dtcx_180970/dtxl/content/post_12601090.html",
           "https://www.sz.gov.cn/zfgb/2024/1348/content/post_11673966.html",
           "https://xxgk.mot.gov.cn/gz/202211/t20221128_3716160.html",
-          "https://zwfw.jinan.gov.cn/col127369/art/2025/art_127369_4798602.html"
+          "https://zwfw.jinan.gov.cn/col127369/art/2025/art_127369_4798602.html",
+          "https://english.shanghai.gov.cn/en-Individuals-Transportation-PublicTransport/20260825/463ac3099fa344f39182e623f83943f7.html",
+          "https://www.sz.gov.cn/en_szgov/life/transport/metro/content/post_12870342.html",
+          "https://www.sz.gov.cn/en_szgov/life/transport/trains/content/post_11538776.html"
         ],
         "checked_on": "2026-11-27",
         "confidence": "high",
@@ -1708,13 +1711,16 @@
           "地铁接驳：2号线、3号线、11号线。"
         ],
         "to_city_en": [
-          "Metro connection: lines 2, 3 and 11."
+          "Take Shenzhen Metro Line 2, 3 or 11."
         ],
         "foreigner_tips_zh": [
           "去香港西九龙时，确认票面进站点是国铁福田站。",
           "带上购票时使用的护照原件，闸机读不出证件时走人工通道。"
         ],
-        "foreigner_tips_en": null
+        "foreigner_tips_en": [
+          "For Hong Kong West Kowloon, confirm your train departs from Futian Railway Station.",
+          "Bring the original passport you used to book. If the gate can't read it, use a staffed lane."
+        ]
       },
       "external_signals": [],
       "location": null,
@@ -2103,7 +2109,10 @@
           "https://jtys.sz.gov.cn/ydmh/jtcx/dtcx_180970/dtxl/content/post_12601090.html",
           "https://www.sz.gov.cn/zfgb/2024/1348/content/post_11673966.html",
           "https://xxgk.mot.gov.cn/gz/202211/t20221128_3716160.html",
-          "https://zwfw.jinan.gov.cn/col127369/art/2025/art_127369_4798602.html"
+          "https://zwfw.jinan.gov.cn/col127369/art/2025/art_127369_4798602.html",
+          "https://english.shanghai.gov.cn/en-Individuals-Transportation-PublicTransport/20260825/463ac3099fa344f39182e623f83943f7.html",
+          "https://www.sz.gov.cn/en_szgov/life/transport/metro/content/post_12870342.html",
+          "https://www.sz.gov.cn/en_szgov/life/transport/trains/content/post_11538776.html"
         ],
         "checked_on": "2026-11-27",
         "confidence": "high",
@@ -2115,13 +2124,16 @@
           "地铁接驳：13号线光明城站。"
         ],
         "to_city_en": [
-          "Metro connection: Line 13 at Guangmingcheng."
+          "Take Shenzhen Metro Line 13 from Guangmingcheng Station."
         ],
         "foreigner_tips_zh": [
           "从地铁站跟随铁路进站导向，核对票面「光明城」。",
           "带上购票时使用的护照原件，闸机读不出证件时走人工通道。"
         ],
-        "foreigner_tips_en": null
+        "foreigner_tips_en": [
+          "From the metro, follow signs to the railway entrance and check that your ticket says 光明城.",
+          "Bring the original passport you used to book. If the gate can't read it, use a staffed lane."
+        ]
       },
       "external_signals": [],
       "location": null,
@@ -4652,29 +4664,7 @@
         "visit_minutes": null,
         "best_time_zh": null
       },
-      "external_signals": [
-        {
-          "source": "tripadvisor",
-          "as_of": "2026-11-27",
-          "metric": "rating_out_of_5",
-          "value": 4.4,
-          "url": "https://www.tripadvisor.com.sg/Attraction_Review-g297415-d2051282-Reviews-Shenzhen_Lianhuashan_Park-Shenzhen_Guangdong.html"
-        },
-        {
-          "source": "tripadvisor",
-          "as_of": "2026-11-27",
-          "metric": "review_count",
-          "value": 499,
-          "url": "https://www.tripadvisor.com.sg/Attraction_Review-g297415-d2051282-Reviews-Shenzhen_Lianhuashan_Park-Shenzhen_Guangdong.html"
-        },
-        {
-          "source": "tripadvisor",
-          "as_of": "2026-11-27",
-          "metric": "rank_in_city",
-          "value": 1,
-          "url": "https://www.tripadvisor.com.sg/Attraction_Review-g297415-d2051282-Reviews-Shenzhen_Lianhuashan_Park-Shenzhen_Guangdong.html"
-        }
-      ],
+      "external_signals": [],
       "location": null,
       "amap": {
         "status": "not-run",
@@ -6067,7 +6057,10 @@
           "https://jtys.sz.gov.cn/ydmh/jtcx/dtcx_180970/dtxl/content/post_12601090.html",
           "https://www.sz.gov.cn/zfgb/2024/1348/content/post_11673966.html",
           "https://xxgk.mot.gov.cn/gz/202211/t20221128_3716160.html",
-          "https://zwfw.jinan.gov.cn/col127369/art/2025/art_127369_4798602.html"
+          "https://zwfw.jinan.gov.cn/col127369/art/2025/art_127369_4798602.html",
+          "https://english.shanghai.gov.cn/en-Individuals-Transportation-PublicTransport/20260825/463ac3099fa344f39182e623f83943f7.html",
+          "https://www.sz.gov.cn/en_szgov/life/transport/metro/content/post_12870342.html",
+          "https://www.sz.gov.cn/en_szgov/life/transport/trains/content/post_11538776.html"
         ],
         "checked_on": "2026-11-27",
         "confidence": "high",
@@ -6079,13 +6072,16 @@
           "地铁接驳：10号线平湖站。"
         ],
         "to_city_en": [
-          "Metro connection: Line 10 at Pinghu."
+          "Take Shenzhen Metro Line 10 from Pinghu Station."
         ],
         "foreigner_tips_zh": [
           "乘广深方向列车前核对是否停靠平湖。",
           "带上购票时使用的护照原件，闸机读不出证件时走人工通道。"
         ],
-        "foreigner_tips_en": null
+        "foreigner_tips_en": [
+          "Check that your train on the Guangzhou–Shenzhen route stops at Pinghu.",
+          "Bring the original passport you used to book. If the gate can't read it, use a staffed lane."
+        ]
       },
       "external_signals": [],
       "location": null,
@@ -7382,7 +7378,10 @@
           "https://jtys.sz.gov.cn/ydmh/jtcx/dtcx_180970/dtxl/content/post_12601090.html",
           "https://www.sz.gov.cn/zfgb/2024/1348/content/post_11673966.html",
           "https://xxgk.mot.gov.cn/gz/202211/t20221128_3716160.html",
-          "https://zwfw.jinan.gov.cn/col127369/art/2025/art_127369_4798602.html"
+          "https://zwfw.jinan.gov.cn/col127369/art/2025/art_127369_4798602.html",
+          "https://english.shanghai.gov.cn/en-Individuals-Transportation-PublicTransport/20260825/463ac3099fa344f39182e623f83943f7.html",
+          "https://www.sz.gov.cn/en_szgov/life/transport/metro/content/post_12870342.html",
+          "https://www.sz.gov.cn/en_szgov/life/transport/trains/content/post_11538776.html"
         ],
         "checked_on": "2026-11-27",
         "confidence": "high",
@@ -7394,13 +7393,16 @@
           "地铁接驳：4号线、5号线、6号线。"
         ],
         "to_city_en": [
-          "Metro connection: lines 4, 5 and 6."
+          "Take Shenzhen Metro Line 4, 5 or 6."
         ],
         "foreigner_tips_zh": [
           "换乘高铁时核对票面是深圳北还是福田。",
           "带上购票时使用的护照原件，闸机读不出证件时走人工通道。"
         ],
-        "foreigner_tips_en": null
+        "foreigner_tips_en": [
+          "Check your high-speed train ticket to see whether your transfer is at Shenzhen North or Futian.",
+          "Bring the original passport you used to book. If the gate can't read it, use a staffed lane."
+        ]
       },
       "external_signals": [],
       "location": null,
@@ -7517,7 +7519,10 @@
           "https://jtys.sz.gov.cn/ydmh/jtcx/dtcx_180970/dtxl/content/post_12601090.html",
           "https://www.sz.gov.cn/zfgb/2024/1348/content/post_11673966.html",
           "https://xxgk.mot.gov.cn/gz/202211/t20221128_3716160.html",
-          "https://zwfw.jinan.gov.cn/col127369/art/2025/art_127369_4798602.html"
+          "https://zwfw.jinan.gov.cn/col127369/art/2025/art_127369_4798602.html",
+          "https://english.shanghai.gov.cn/en-Individuals-Transportation-PublicTransport/20260825/463ac3099fa344f39182e623f83943f7.html",
+          "https://www.sz.gov.cn/en_szgov/life/transport/metro/content/post_12870342.html",
+          "https://www.sz.gov.cn/en_szgov/life/transport/trains/content/post_11538776.html"
         ],
         "checked_on": "2026-11-27",
         "confidence": "high",
@@ -7529,13 +7534,16 @@
           "地铁接驳：3号线、5号线，均在布吉站换乘。"
         ],
         "to_city_en": [
-          "Metro connection: lines 3 and 5 at Buji."
+          "At Buji, take Shenzhen Metro Line 3 or 5."
         ],
         "foreigner_tips_zh": [
           "地铁抵达布吉后，按导向步行到深圳东站。",
           "带上购票时使用的护照原件，闸机读不出证件时走人工通道。"
         ],
-        "foreigner_tips_en": null
+        "foreigner_tips_en": [
+          "Get off the metro at Buji and follow the signs on foot to Shenzhen East Railway Station.",
+          "Bring the original passport you used to book. If the gate can't read it, use a staffed lane."
+        ]
       },
       "external_signals": [],
       "location": null,
@@ -7581,7 +7589,10 @@
           "https://jtys.sz.gov.cn/ydmh/jtcx/dtcx_180970/dtxl/content/post_12601090.html",
           "https://www.sz.gov.cn/zfgb/2024/1348/content/post_11673966.html",
           "https://xxgk.mot.gov.cn/gz/202211/t20221128_3716160.html",
-          "https://zwfw.jinan.gov.cn/col127369/art/2025/art_127369_4798602.html"
+          "https://zwfw.jinan.gov.cn/col127369/art/2025/art_127369_4798602.html",
+          "https://english.shanghai.gov.cn/en-Individuals-Transportation-PublicTransport/20260825/463ac3099fa344f39182e623f83943f7.html",
+          "https://www.sz.gov.cn/en_szgov/life/transport/metro/content/post_12870342.html",
+          "https://www.sz.gov.cn/en_szgov/life/transport/trains/content/post_11538776.html"
         ],
         "checked_on": "2026-11-27",
         "confidence": "high",
@@ -7593,13 +7604,16 @@
           "地铁接驳：16号线坪山站。"
         ],
         "to_city_en": [
-          "Metro connection: Line 16 at Pingshan."
+          "Take Shenzhen Metro Line 16 from Pingshan Station."
         ],
         "foreigner_tips_zh": [
           "从中心城区前往坪山应预留地铁换乘时间。",
           "带上购票时使用的护照原件，闸机读不出证件时走人工通道。"
         ],
-        "foreigner_tips_en": null
+        "foreigner_tips_en": [
+          "Leave time for metro transfers if coming to Pingshan from central Shenzhen.",
+          "Bring the original passport you used to book. If the gate can't read it, use a staffed lane."
+        ]
       },
       "external_signals": [],
       "location": null,
@@ -7783,7 +7797,10 @@
           "https://jtys.sz.gov.cn/ydmh/jtcx/dtcx_180970/dtxl/content/post_12601090.html",
           "https://www.sz.gov.cn/zfgb/2024/1348/content/post_11673966.html",
           "https://xxgk.mot.gov.cn/gz/202211/t20221128_3716160.html",
-          "https://zwfw.jinan.gov.cn/col127369/art/2025/art_127369_4798602.html"
+          "https://zwfw.jinan.gov.cn/col127369/art/2025/art_127369_4798602.html",
+          "https://english.shanghai.gov.cn/en-Individuals-Transportation-PublicTransport/20260825/463ac3099fa344f39182e623f83943f7.html",
+          "https://www.sz.gov.cn/en_szgov/life/transport/metro/content/post_12870342.html",
+          "https://www.sz.gov.cn/en_szgov/life/transport/trains/content/post_11538776.html"
         ],
         "checked_on": "2026-11-27",
         "confidence": "high",
@@ -7795,13 +7812,16 @@
           "地铁接驳：1号线罗湖站。"
         ],
         "to_city_en": [
-          "Metro connection: Line 1 at Luohu."
+          "Take Shenzhen Metro Line 1 from nearby Luohu."
         ],
         "foreigner_tips_zh": [
           "票面「深圳」对应罗湖的深圳站。",
           "带上购票时使用的护照原件，闸机读不出证件时走人工通道。"
         ],
-        "foreigner_tips_en": null
+        "foreigner_tips_en": [
+          "A ticket marked 深圳 refers to Shenzhen Railway Station in Luohu.",
+          "Bring the original passport you used to book. If the gate can't read it, use a staffed lane."
+        ]
       },
       "external_signals": [],
       "location": null,
@@ -8232,7 +8252,8 @@
         "sources": [
           "https://www.sz.gov.cn/en_szgov/news/infocus/SZCitywalk/Explore/Plan/content/post_11908152.html",
           "https://www.sz.gov.cn/en_szgov/life/transport/metro/content/post_12583635.html",
-          "https://www.sz.gov.cn/xxgk/sydwxxgk/jt/jc/"
+          "https://www.sz.gov.cn/xxgk/sydwxxgk/jt/jc/",
+          "https://www.sz.gov.cn/en_szgov/life/transport/metro/content/post_12870342.html"
         ],
         "checked_on": "2026-11-27",
         "confidence": "high",
@@ -8253,12 +8274,14 @@
           "从地面交通中心坐地铁11号线，可到福田。"
         ],
         "to_city_en": [
-          "Take Metro Line 11 from the ground transport center to Futian."
+          "Take Metro Line 11 from the Ground Transportation Center to Futian."
         ],
         "foreigner_tips_zh": [
           "去 T3 坐11号线，在「机场」站下车。看清地铁站名，福永方向另有「机场北」站。"
         ],
-        "foreigner_tips_en": null
+        "foreigner_tips_en": [
+          "For T3, take Line 11 to Airport (机场). Airport North (机场北), toward Fuyong, is a separate stop."
+        ]
       },
       "external_signals": [],
       "location": null,

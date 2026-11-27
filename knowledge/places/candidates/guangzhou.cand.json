@@ -155,16 +155,17 @@
         "official_url": "https://www.marriott.com/en-us/hotels/canbu-four-points-guangzhou-baie-tan/overview/",
         "sources": [
           "https://www.marriott.com/en-us/hotels/canbu-four-points-guangzhou-baie-tan/overview/",
-          "https://www.marriott.com/en-us/destinations/china/guangzhou.mi"
+          "https://www.marriott.com/en-us/destinations/china/guangzhou.mi",
+          "https://help.marriott.com/s/article/Article-24483"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
-        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sun, Dec 27 - Mon, Dec 28。 官网样本为每房每晚人民币 ¥520。当前价以所选日期及房型的报价为准。",
+        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sun, Dec 27 - Mon, Dec 28。 官网样本为每房每晚人民币 ¥520。当前价以所选日期及房型的报价为准。 分档依据：万豪集团列为 Select 精选服务品牌，本库按中档处理。",
         "subcategory": "hotel",
-        "intro_short_zh": "可作为白鹅潭一带的住宿点。",
-        "intro_short_en": "A hotel for exploring the Bai'etan area.",
-        "intro_long_zh": "可作为白鹅潭一带的住宿点。可在品牌官网查看房型和入住安排。",
-        "intro_long_en": "A hotel for exploring the Bai'etan area. See the hotel's own website for room types and check-in details.",
+        "intro_short_zh": "荔湾芳村的福朋，花地湾可乘地铁1号线。",
+        "intro_short_en": "A Fangcun option with Huadiwan station listed on Metro Line 1.",
+        "intro_long_zh": "酒店在东漖北路，适合把广州西侧的行程集中安排。万豪的交通页列出花地湾站，可按当天的目的地规划西关方向的换乘。",
+        "intro_long_en": "Stay on the Fangcun side of Liwan when your plans center on west Guangzhou. The hotel's arrival guide names Huadiwan on Line 1.",
         "star": null,
         "price_band": "500-1000",
         "accepts_foreigners": true,
@@ -196,7 +197,9 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "pl_gz_baietanfupeng: unknown field 'hotel_class' is dropped on import"
+      ]
     },
     {
       "id": "pl_gz_baiyunshan",
@@ -294,16 +297,17 @@
         "official_url": "https://www.marriott.com/en-us/hotels/canbm-guangzhou-marriott-hotel-baiyun/overview/",
         "sources": [
           "https://www.marriott.com/en-us/hotels/canbm-guangzhou-marriott-hotel-baiyun/overview/",
-          "https://www.marriott.com/en-us/destinations/china/guangzhou.mi"
+          "https://www.marriott.com/en-us/destinations/china/guangzhou.mi",
+          "https://help.marriott.com/s/article/Article-24483"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
-        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sun, Dec 27 - Mon, Dec 28。 官网样本为每房每晚人民币 ¥713。当前价以所选日期及房型的报价为准。",
+        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sun, Dec 27 - Mon, Dec 28。 官网样本为每房每晚人民币 ¥713。当前价以所选日期及房型的报价为准。 分档依据：万豪集团将此品牌列为 Premium。",
         "subcategory": "hotel",
-        "intro_short_zh": "白云区的万豪酒店。",
-        "intro_short_en": "A Marriott hotel in Baiyun District.",
-        "intro_long_zh": "白云区的万豪酒店。可在品牌官网查看房型和入住安排。",
-        "intro_long_en": "A Marriott hotel in Baiyun District. See the hotel's own website for room types and check-in details.",
+        "intro_short_zh": "在白云文化广场安排地铁出行，酒店支持英文沟通。",
+        "intro_short_en": "A Baiyun Culture Square stop with English listed by the hotel.",
+        "intro_long_zh": "门店在白云云城中二路，交通页列出白云文化广场站和广州白云站。适合从广州北侧继续游览或乘火车的人。",
+        "intro_long_en": "For plans around northern Guangzhou, start with the hotel's directions to Baiyun Culture Square. Marriott also lists English among the hotel's languages.",
         "star": null,
         "price_band": "500-1000",
         "accepts_foreigners": true,
@@ -335,7 +339,9 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "pl_gz_baiyunwanhao: unknown field 'hotel_class' is dropped on import"
+      ]
     },
     {
       "id": "pl_gz_baiyunyuan",
@@ -365,16 +371,17 @@
         "official_url": "https://www.marriott.com/en-us/hotels/canbe-element-guangzhou-baiyun/overview/",
         "sources": [
           "https://www.marriott.com/en-us/hotels/canbe-element-guangzhou-baiyun/overview/",
-          "https://www.marriott.com/en-us/destinations/china/guangzhou.mi"
+          "https://www.marriott.com/en-us/destinations/china/guangzhou.mi",
+          "https://help.marriott.com/s/article/Article-24483"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
-        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sun, Dec 27 - Mon, Dec 28。 官网样本为每房每晚人民币 ¥494。当前价以所选日期及房型的报价为准。",
+        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sun, Dec 27 - Mon, Dec 28。 官网样本为每房每晚人民币 ¥494。当前价以所选日期及房型的报价为准。 分档依据：万豪集团列为 Select 精选服务品牌，本库按中档处理。",
         "subcategory": "hotel",
-        "intro_short_zh": "白云区的源宿酒店。",
-        "intro_short_en": "An Element hotel in Baiyun.",
-        "intro_long_zh": "白云区的源宿酒店。可在品牌官网查看房型和入住安排。",
-        "intro_long_en": "An Element hotel in Baiyun. See the hotel's own website for room types and check-in details.",
+        "intro_short_zh": "白云文化广场站可作到店参照，官网也列白云站。",
+        "intro_short_en": "A Baiyun base with metro and railway options listed by Marriott.",
+        "intro_long_zh": "酒店在云城中二路12号，品牌交通页列出白云文化广场地铁站和广州白云站。在广州北部有行程时，可先查好地铁与火车衔接。",
+        "intro_long_en": "Use the hotel's direction page if arriving through Guangzhou Baiyun Railway Station. Baiyun Culture Square is listed for local metro travel.",
         "star": null,
         "price_band": "<500",
         "accepts_foreigners": true,
@@ -406,7 +413,9 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "pl_gz_baiyunyuan: unknown field 'hotel_class' is dropped on import"
+      ]
     },
     {
       "id": "pl_gz_bandidos_huaxun",
@@ -894,7 +903,8 @@
           "https://kgw.gz.gov.cn/xwzx/kgxw/content/post_11029825.html",
           "https://www.baiyunairport.com/byairport-web/flight/airlines?urlKey=airlines",
           "https://kgw.gz.gov.cn/zzzq/kgxw/content/post_8420723.html",
-          "https://webresource.airchina.com.cn/zh-CN/content/c/2026-04-30/29181.shtml"
+          "https://webresource.airchina.com.cn/zh-CN/content/c/2026-04-30/29181.shtml",
+          "https://www.eguangzhou.gov.cn/gzlatest/content/post_40700.html"
         ],
         "checked_on": "2026-11-27",
         "confidence": "high",
@@ -916,13 +926,15 @@
           "T3 可乘城际铁路，或先坐接驳公交到高增换地铁。"
         ],
         "to_city_en": [
-          "From T2, take Metro Line 3 at Airport North.",
-          "From T3, take the intercity train or a shuttle to Gaozeng for the metro."
+          "From Terminal 2, take Metro Line 3 at Airport North.",
+          "From Terminal 3, take intercity rail or catch a shuttle bus to Gaozeng Metro Station."
         ],
         "foreigner_tips_zh": [
           "T2 和 T3 的进城方式不同。出发前按航司通知确认航站楼，坐城际时核对「白云机场东」站名。"
         ],
-        "foreigner_tips_en": null
+        "foreigner_tips_en": [
+          "T2 and T3 have different routes into town. Confirm your terminal with the airline. For intercity rail at T3, look for 白云机场东."
+        ]
       },
       "external_signals": [],
       "location": null,
@@ -1578,16 +1590,17 @@
         "official_url": "https://www.marriott.com/en-us/hotels/canul-aloft-guangzhou-university-park/overview/",
         "sources": [
           "https://www.marriott.com/en-us/hotels/canul-aloft-guangzhou-university-park/overview/",
-          "https://www.marriott.com/en-us/destinations/china/guangzhou.mi?pg=2"
+          "https://www.marriott.com/en-us/destinations/china/guangzhou.mi?pg=2",
+          "https://help.marriott.com/s/article/Article-24483"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
-        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sat, Dec 26 - Sun, Dec 27。 官网样本为每房每晚人民币 ¥366。当前价以所选日期及房型的报价为准。",
+        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sat, Dec 26 - Sun, Dec 27。 官网样本为每房每晚人民币 ¥366。当前价以所选日期及房型的报价为准。 分档依据：万豪集团列为 Select 精选服务品牌，本库按中档处理。",
         "subcategory": "hotel",
-        "intro_short_zh": "在广州大学城一带停留可考虑这里。",
-        "intro_short_en": "An Aloft hotel in Guangzhou's University Town.",
-        "intro_long_zh": "在广州大学城一带停留可考虑这里。可在品牌官网查看房型和入住安排。",
-        "intro_long_en": "An Aloft hotel in Guangzhou's University Town. See the hotel's own website for room types and check-in details.",
+        "intro_short_zh": "小谷围岛上的住宿，可经大学城南站出行。",
+        "intro_short_en": "An island stay near Higher Education Mega Center South station.",
+        "intro_long_zh": "想把小谷围岛和大学城排进广州行程，可从立德街66号的雅乐轩出发。门店交通页给出大学城南站，服务语言列有英语。",
+        "intro_long_en": "Choose Xiaoguwei Island when you want time in the university district. The hotel's page identifies the south metro station and lists English among the spoken languages.",
         "star": null,
         "price_band": "<500",
         "accepts_foreigners": true,
@@ -1619,7 +1632,9 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "pl_gz_daxuechengyuelexuan: unknown field 'hotel_class' is dropped on import"
+      ]
     },
     {
       "id": "pl_gz_dayang_wenming",
@@ -2738,29 +2753,7 @@
         "visit_minutes": null,
         "best_time_zh": null
       },
-      "external_signals": [
-        {
-          "source": "tripadvisor",
-          "as_of": "2026-11-27",
-          "metric": "rating_out_of_5",
-          "value": 4.4,
-          "url": "https://www.tripadvisor.com/Attraction_Review-g298555-d2008063-Reviews-Canton_Tower-Guangzhou_Guangdong.html"
-        },
-        {
-          "source": "tripadvisor",
-          "as_of": "2026-11-27",
-          "metric": "review_count",
-          "value": 3558,
-          "url": "https://www.tripadvisor.com/Attraction_Review-g298555-d2008063-Reviews-Canton_Tower-Guangzhou_Guangdong.html"
-        },
-        {
-          "source": "tripadvisor",
-          "as_of": "2026-11-27",
-          "metric": "rank_in_city",
-          "value": 4,
-          "url": "https://www.tripadvisor.com/Attraction_Review-g298555-d2008063-Reviews-Canton_Tower-Guangzhou_Guangdong.html"
-        }
-      ],
+      "external_signals": [],
       "location": null,
       "amap": {
         "status": "not-run",
@@ -2869,7 +2862,8 @@
           "https://jtj.gz.gov.cn/xwdt/gzdt/content/post_10050166.html",
           "https://gaj.gz.gov.cn/gaxw/tpxw/content/post_9636314.html",
           "https://xxgk.mot.gov.cn/gz/202211/t20221128_3716160.html",
-          "https://zwfw.jinan.gov.cn/col127369/art/2025/art_127369_4798602.html"
+          "https://zwfw.jinan.gov.cn/col127369/art/2025/art_127369_4798602.html",
+          "https://english.shanghai.gov.cn/en-Individuals-Transportation-PublicTransport/20260825/463ac3099fa344f39182e623f83943f7.html"
         ],
         "checked_on": "2026-11-27",
         "confidence": "high",
@@ -2887,7 +2881,10 @@
           "「广州白云站」是铁路站。叫车时用铁路站中文全名。",
           "带上购票时使用的护照原件，闸机读不出证件时走人工通道。"
         ],
-        "foreigner_tips_en": null
+        "foreigner_tips_en": [
+          "For a ride to the railway station, use the full Chinese name 广州白云站.",
+          "Bring the original passport you used to book. If the gate can't read it, use a staffed lane."
+        ]
       },
       "external_signals": [],
       "location": null,
@@ -2931,7 +2928,9 @@
           "https://jtj.gz.gov.cn/gkmlpt/content/8/8494/post_8494489.html",
           "https://kgw.gz.gov.cn/zzzq/kgxw/content/post_8420723.html",
           "https://xxgk.mot.gov.cn/gz/202211/t20221128_3716160.html",
-          "https://zwfw.jinan.gov.cn/col127369/art/2025/art_127369_4798602.html"
+          "https://zwfw.jinan.gov.cn/col127369/art/2025/art_127369_4798602.html",
+          "https://www.gz.gov.cn/attachment/7/7792/7792275/10198934.pdf",
+          "https://english.shanghai.gov.cn/en-Individuals-Transportation-PublicTransport/20260825/463ac3099fa344f39182e623f83943f7.html"
         ],
         "checked_on": "2026-11-27",
         "confidence": "high",
@@ -2949,7 +2948,10 @@
           "转乘机场交通前，先确认航空航站楼和对应城际车站。",
           "带上购票时使用的护照原件，闸机读不出证件时走人工通道。"
         ],
-        "foreigner_tips_en": null
+        "foreigner_tips_en": [
+          "If you are continuing to the airport, check your flight terminal and the intercity station that serves it.",
+          "Bring the original passport you used to book. If the gate can't read it, use a staffed lane."
+        ]
       },
       "external_signals": [],
       "location": null,
@@ -3064,7 +3066,9 @@
           "https://jtj.gz.gov.cn/xwdt/gzdt/content/post_10050166.html",
           "https://ghzyj.gz.gov.cn/hdjlpt/yjzj/api/attachments/view/e24d4cc3fc4baebb78af3f46637db0f2",
           "https://xxgk.mot.gov.cn/gz/202211/t20221128_3716160.html",
-          "https://zwfw.jinan.gov.cn/col127369/art/2025/art_127369_4798602.html"
+          "https://zwfw.jinan.gov.cn/col127369/art/2025/art_127369_4798602.html",
+          "https://www.gz.gov.cn/attachment/7/7792/7792275/10198934.pdf",
+          "https://english.shanghai.gov.cn/en-Individuals-Transportation-PublicTransport/20260825/463ac3099fa344f39182e623f83943f7.html"
         ],
         "checked_on": "2026-11-27",
         "confidence": "high",
@@ -3082,7 +3086,10 @@
           "转去香港时先确认车票上的始发站和检票口。",
           "带上购票时使用的护照原件，闸机读不出证件时走人工通道。"
         ],
-        "foreigner_tips_en": null
+        "foreigner_tips_en": [
+          "Heading to Hong Kong? Double-check the departure station and boarding gate on your ticket.",
+          "Bring the original passport you used to book. If the gate can't read it, use a staffed lane."
+        ]
       },
       "external_signals": [],
       "location": null,
@@ -3191,7 +3198,9 @@
           "https://wglj.gz.gov.cn/xxgk/qt/rdjyzxta/zxta/content/post_9813546.html",
           "https://ghzyj.gz.gov.cn/hdjlpt/yjzj/api/attachments/view/e24d4cc3fc4baebb78af3f46637db0f2",
           "https://xxgk.mot.gov.cn/gz/202211/t20221128_3716160.html",
-          "https://zwfw.jinan.gov.cn/col127369/art/2025/art_127369_4798602.html"
+          "https://zwfw.jinan.gov.cn/col127369/art/2025/art_127369_4798602.html",
+          "https://www.gz.gov.cn/attachment/7/7792/7792275/10198934.pdf",
+          "https://english.shanghai.gov.cn/en-Individuals-Transportation-PublicTransport/20260825/463ac3099fa344f39182e623f83943f7.html"
         ],
         "checked_on": "2026-11-27",
         "confidence": "high",
@@ -3209,7 +3218,10 @@
           "去广州南站前看清票面，广州站与广州南站相距较远。",
           "带上购票时使用的护照原件，闸机读不出证件时走人工通道。"
         ],
-        "foreigner_tips_en": null
+        "foreigner_tips_en": [
+          "Check the station on your ticket before leaving. Guangzhou South is some distance from Guangzhou Railway Station.",
+          "Bring the original passport you used to book. If the gate can't read it, use a staffed lane."
+        ]
       },
       "external_signals": [],
       "location": null,
@@ -3253,7 +3265,9 @@
           "https://wglj.gz.gov.cn/xxgk/qt/rdjyzxta/zxta/content/post_9813546.html",
           "https://jyj.gz.gov.cn/gzsjyj/jxjy/201905/249b911482ef45f1a78914407b4b90ed/files/84ccae1dc8504684b153ecc78579bc90.pdf",
           "https://xxgk.mot.gov.cn/gz/202211/t20221128_3716160.html",
-          "https://zwfw.jinan.gov.cn/col127369/art/2025/art_127369_4798602.html"
+          "https://zwfw.jinan.gov.cn/col127369/art/2025/art_127369_4798602.html",
+          "https://www.gz.gov.cn/attachment/7/7792/7792275/10198934.pdf",
+          "https://english.shanghai.gov.cn/en-Individuals-Transportation-PublicTransport/20260825/463ac3099fa344f39182e623f83943f7.html"
         ],
         "checked_on": "2026-11-27",
         "confidence": "high",
@@ -3271,7 +3285,10 @@
           "给司机看中文「广州站」及车次。",
           "带上购票时使用的护照原件，闸机读不出证件时走人工通道。"
         ],
-        "foreigner_tips_en": null
+        "foreigner_tips_en": [
+          "Show your driver 广州站 and your train number.",
+          "Bring the original passport you used to book. If the gate can't read it, use a staffed lane."
+        ]
       },
       "external_signals": [],
       "location": null,
@@ -3320,16 +3337,17 @@
         "official_url": "https://www.rosewoodhotels.com/en/guangzhou",
         "sources": [
           "https://www.rosewoodhotels.com/en/guangzhou",
-          "https://reservations.rosewoodhotels.com/?adult=1&arrive=2026-11-27&chain=5159&child=0&currency=CNY&depart=2026-11-28&hotel=9000&level=hotel&locale=zh-CN&productcurrency=CNY&rooms=1"
+          "https://reservations.rosewoodhotels.com/?adult=1&arrive=2026-11-27&chain=5159&child=0&currency=CNY&depart=2026-11-28&hotel=9000&level=hotel&locale=zh-CN&productcurrency=CNY&rooms=1",
+          "https://www.rosewoodhotelgroup.com/en-us/"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
-        "notes": "官网显示 2026-11-27 至 11-28 单人入住豪华大床房弹性价，含服务费，税另计。 官网样本为每房每晚人民币 ¥3,388。当前价以所选日期及房型的报价为准。",
+        "notes": "官网显示 2026-11-27 至 11-28 单人入住豪华大床房弹性价，含服务费，税另计。 官网样本为每房每晚人民币 ¥3,388。当前价以所选日期及房型的报价为准。 分档依据：瑰丽集团官网将 Rosewood 定位为超高端奢华系列。",
         "subcategory": "hotel",
-        "intro_short_zh": "位于珠江东路的一处住宿，可安排珠江新城游览。",
-        "intro_short_en": "A hotel on Zhujiang East Road for exploring Zhujiang New Town.",
-        "intro_long_zh": "位于珠江东路的一处住宿，可安排珠江新城游览。可在品牌官网查看房型和入住安排。",
-        "intro_long_en": "A hotel on Zhujiang East Road for exploring Zhujiang New Town. See the hotel's own website for room types and check-in details.",
+        "intro_short_zh": "珠江东路6号，可选看珠江方向的房型。",
+        "intro_short_en": "A high-floor Zhujiang East Road stay with Pearl River room options.",
+        "intro_long_zh": "酒店位于珠江新城。想把广东省博物馆、图书馆和周边商场安排在一天，可先看地址图规划动线。部分客房有珠江景观。",
+        "intro_long_en": "Plan a day around the cultural venues and shops of Zhujiang New Town. The hotel publishes its location and describes river-facing room options in English.",
         "star": null,
         "price_band": ">2000",
         "accepts_foreigners": true,
@@ -3361,7 +3379,9 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "pl_gz_guili: unknown field 'hotel_class' is dropped on import"
+      ]
     },
     {
       "id": "pl_gz_gztkh_shops",
@@ -3586,16 +3606,17 @@
         "official_url": "https://www.ihg.com/hotelindigo/hotels/cn/zh/guangzhou/caneh/hoteldetail",
         "sources": [
           "https://www.ihg.com/hotelindigo/hotels/cn/zh/guangzhou/caneh/hoteldetail",
-          "https://www.ihg.com/hotels/cn/zh/find-hotels/hotel-search?qDest=Guangzhou%2C%20Guangdong%2C%20China&qPt=CASH&qCiD=31&qCoD=1&qCiMy=112026&qCoMy=002027&qAdlt=1&qChld=0&qRms=1&qRtP=6CBARC&qAAR=6CBARC&srb_u=1&qFS=false&qSrt=sHL&qRdU=km"
+          "https://www.ihg.com/hotels/cn/zh/find-hotels/hotel-search?qDest=Guangzhou%2C%20Guangdong%2C%20China&qPt=CASH&qCiD=31&qCoD=1&qCiMy=112026&qCoMy=002027&qAdlt=1&qChld=0&qRms=1&qRtP=6CBARC&qAAR=6CBARC&srb_u=1&qFS=false&qSrt=sHL&qRdU=km",
+          "https://www.ihgplc.com/en/news-and-media/news-releases/2025/ihg-hotels-and-resorts-conversion-friendly-brands-fuel-growth-opportunities-for-owners"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
-        "notes": "洲际官网查 2026-12-31 至 2027-01-01 的单人跨年夜报价，包含页面列出的客房费用。 官网样本为每房每晚人民币 ¥2,311。当前价以所选日期及房型的报价为准。",
+        "notes": "洲际官网查 2026-12-31 至 2027-01-01 的单人跨年夜报价，包含页面列出的客房费用。 官网样本为每房每晚人民币 ¥2,311。当前价以所选日期及房型的报价为准。 分档依据：洲际酒店集团将英迪格列入 Luxury & Lifestyle，按其生活方式定位取高档。",
         "subcategory": "hotel",
-        "intro_short_zh": "海心沙一带的滨江酒店。",
-        "intro_short_en": "A riverfront hotel in the Haixinsha area.",
-        "intro_long_zh": "海心沙一带的滨江酒店。可在品牌官网查看房型和入住安排。",
-        "intro_long_en": "A riverfront hotel in the Haixinsha area. See the hotel's own website for room types and check-in details.",
+        "intro_short_zh": "从海心沙APM站到店，去珠江边散步方便。",
+        "intro_short_en": "An island stay for the Pearl River waterfront and Haixinsha APM station.",
+        "intro_long_zh": "酒店位于海心沙东侧。想把广东省博物馆、广州大剧院和江边散步排在一起，可先看洲际官网的附近景点，再按海心沙APM站规划抵达。",
+        "intro_long_en": "Use the Haixinsha APM stop for the island. IHG points to nearby outings at the Guangdong Museum and Guangzhou Opera House, leaving the riverfront for a quieter part of the day.",
         "star": null,
         "price_band": ">2000",
         "accepts_foreigners": true,
@@ -3627,7 +3648,9 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "pl_gz_haixinshaindigo: unknown field 'hotel_class' is dropped on import"
+      ]
     },
     {
       "id": "pl_gz_haizhu_shidi",
@@ -4763,16 +4786,17 @@
         "official_url": "https://www.hilton.com.cn/zh-cn/hotels/canxwci-conrad-guangzhou",
         "sources": [
           "https://www.hilton.com.cn/zh-cn/hotels/canxwci-conrad-guangzhou",
-          "https://www.hilton.com.cn/zh-cn/locations/china/guangdong-guangzhou"
+          "https://www.hilton.com.cn/zh-cn/locations/china/guangdong-guangzhou",
+          "https://ir.hilton.com/_assets/_de1e637820b6842c68b34801d11a8fd1/hilton/db/3577/34740/pdf/HLT_Investor_Presentation_-_November_2026.pdf"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
-        "notes": "希尔顿城市页显示 2026-11-27 入住、11-28 退房的起价。 官网样本为每房每晚人民币 ¥1,499。当前价以所选日期及房型的报价为准。",
+        "notes": "希尔顿城市页显示 2026-11-27 入住、11-28 退房的起价。 官网样本为每房每晚人民币 ¥1,499。当前价以所选日期及房型的报价为准。 分档依据：希尔顿集团将品牌列为 Luxury。",
         "subcategory": "hotel",
-        "intro_short_zh": "可作为珠江新城一带的住宿候选。",
-        "intro_short_en": "A base in Zhujiang New Town.",
-        "intro_long_zh": "可作为珠江新城一带的住宿候选。可在品牌官网查看房型和入住安排。",
-        "intro_long_en": "A base in Zhujiang New Town. See the hotel's own website for room types and check-in details.",
+        "intro_short_zh": "珠江新城兴民路的康莱德，部分房型看江或广州塔。",
+        "intro_short_en": "A Zhujiang New Town stay with river-view and Canton Tower room options.",
+        "intro_long_zh": "酒店位于兴民路222号。适合希望找高层景观房、把珠江新城的活动排在一起的人。预订时可按希尔顿英文页区分江景、塔景和城景房型。",
+        "intro_long_en": "Compare the room outlooks before booking. Hilton describes several views, so you can choose a room suited to a trip centered on Guangzhou's riverfront skyline.",
         "star": null,
         "price_band": "1000-2000",
         "accepts_foreigners": true,
@@ -4804,7 +4828,9 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "pl_gz_kanglaide: unknown field 'hotel_class' is dropped on import"
+      ]
     },
     {
       "id": "pl_gz_konggangxierdunhuayuan",
@@ -4834,16 +4860,17 @@
         "official_url": "https://www.hilton.com.cn/zh-cn/hotels/canapgi-hilton-garden-inn-guangzhou-airport-aerotropolis",
         "sources": [
           "https://www.hilton.com.cn/zh-cn/hotels/canapgi-hilton-garden-inn-guangzhou-airport-aerotropolis",
-          "https://www.hilton.com.cn/zh-cn/locations/china/guangdong-guangzhou"
+          "https://www.hilton.com.cn/zh-cn/locations/china/guangdong-guangzhou",
+          "https://ir.hilton.com/_assets/_de1e637820b6842c68b34801d11a8fd1/hilton/db/3577/34740/pdf/HLT_Investor_Presentation_-_November_2026.pdf"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
-        "notes": "希尔顿城市页显示 2026-11-27 入住、11-28 退房的起价。 官网样本为每房每晚人民币 ¥309。当前价以所选日期及房型的报价为准。",
+        "notes": "希尔顿城市页显示 2026-11-27 入住、11-28 退房的起价。 官网样本为每房每晚人民币 ¥309。当前价以所选日期及房型的报价为准。 分档依据：希尔顿集团将品牌列为 Focused Service，本库按中档处理。",
         "subcategory": "hotel",
-        "intro_short_zh": "广州白云机场行程前后的一处住宿候选。",
-        "intro_short_en": "A hotel option for a stay around a Baiyun Airport flight.",
-        "intro_long_zh": "广州白云机场行程前后的一处住宿候选。可在品牌官网查看房型和入住安排。",
-        "intro_long_en": "A hotel option for a stay around a Baiyun Airport flight. See the hotel's own website for room types and check-in details.",
+        "intro_short_zh": "坐飞机早到晚走，可先查白云机场接驳。",
+        "intro_short_en": "A Huadu airport-area hotel that lists an airport shuttle.",
+        "intro_long_zh": "酒店在花都空港大道，希尔顿门店页列出机场接驳。适合早班、晚班或转机行程，出发前可用英文页面查看交通并向酒店确认。",
+        "intro_long_en": "Keep the focus on your flight schedule at this Huadu property. Check shuttle arrangements with the hotel before heading to or from Guangzhou Baiyun International Airport.",
         "star": null,
         "price_band": "<500",
         "accepts_foreigners": true,
@@ -4875,7 +4902,9 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "pl_gz_konggangxierdunhuayuan: unknown field 'hotel_class' is dropped on import"
+      ]
     },
     {
       "id": "pl_gz_lanpu",
@@ -5360,16 +5389,17 @@
         "official_url": "https://www.ritzcarlton.com/en/hotels/canrz-the-ritz-carlton-guangzhou/overview/",
         "sources": [
           "https://www.ritzcarlton.com/en/hotels/canrz-the-ritz-carlton-guangzhou/overview/",
-          "https://www.marriott.com/en-us/destinations/china/guangzhou.mi"
+          "https://www.marriott.com/en-us/destinations/china/guangzhou.mi",
+          "https://help.marriott.com/s/article/Article-24483"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
-        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sun, Dec 27 - Mon, Dec 28。 官网样本为每房每晚人民币 ¥1,710。当前价以所选日期及房型的报价为准。",
+        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sun, Dec 27 - Mon, Dec 28。 官网样本为每房每晚人民币 ¥1,710。当前价以所选日期及房型的报价为准。 分档依据：万豪集团将此品牌列为 Luxury。",
         "subcategory": "hotel",
-        "intro_short_zh": "酒店位于珠江新城一带。",
-        "intro_short_en": "A Ritz-Carlton hotel in Zhujiang New Town.",
-        "intro_long_zh": "酒店位于珠江新城一带。可在品牌官网查看房型和入住安排。",
-        "intro_long_en": "A Ritz-Carlton hotel in Zhujiang New Town. See the hotel's own website for room types and check-in details.",
+        "intro_short_zh": "可经广州大剧院APM站到店，酒店列出英文服务。",
+        "intro_short_en": "A Zhujiang New Town hotel with English listed and two metro options.",
+        "intro_long_zh": "若行程重点是珠江新城，可选广州大剧院APM站或珠江新城地铁站到店。万豪门店页列英文和普通话，另有室外泳池。",
+        "intro_long_en": "Plan an evening near the Opera House using the APM, or arrive via Zhujiang New Town on lines 3 and 5. English is among the hotel's listed languages.",
         "star": null,
         "price_band": "1000-2000",
         "accepts_foreigners": true,
@@ -5401,7 +5431,9 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "pl_gz_lisi: unknown field 'hotel_class' is dropped on import"
+      ]
     },
     {
       "id": "pl_gz_liurongsi",
@@ -6680,16 +6712,17 @@
         "official_url": "https://www.marriott.com/en-us/hotels/cansp-sheraton-guangzhou-panyu/overview/",
         "sources": [
           "https://www.marriott.com/en-us/hotels/cansp-sheraton-guangzhou-panyu/overview/",
-          "https://www.marriott.com/en-us/destinations/china/guangzhou.mi?pg=2"
+          "https://www.marriott.com/en-us/destinations/china/guangzhou.mi?pg=2",
+          "https://help.marriott.com/s/article/Article-24483"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
-        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sat, Dec 26 - Sun, Dec 27。 官网样本为每房每晚人民币 ¥950。当前价以所选日期及房型的报价为准。",
+        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sat, Dec 26 - Sun, Dec 27。 官网样本为每房每晚人民币 ¥950。当前价以所选日期及房型的报价为准。 分档依据：万豪集团将此品牌列为 Premium。",
         "subcategory": "hotel",
-        "intro_short_zh": "番禺区的喜来登酒店。",
-        "intro_short_en": "A Sheraton hotel in Panyu.",
-        "intro_long_zh": "番禺区的喜来登酒店。可在品牌官网查看房型和入住安排。",
-        "intro_long_en": "A Sheraton hotel in Panyu. See the hotel's own website for room types and check-in details.",
+        "intro_short_zh": "南村万博站可搭7号线和18号线，方便游番禺。",
+        "intro_short_en": "A Panyu option with two metro lines at Nancun Wanbo.",
+        "intro_long_zh": "酒店在番禺万惠一路，官网列出南村万博站和广州南站。适合从广州南站抵达、准备在番禺活动几天的人。",
+        "intro_long_en": "Give southern Guangzhou a separate stop on your trip. The hotel directions list Nancun Wanbo on lines 7 and 18 and Guangzhou South Railway Station.",
         "star": null,
         "price_band": "500-1000",
         "accepts_foreigners": true,
@@ -6721,7 +6754,9 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "pl_gz_panyuxilaideng: unknown field 'hotel_class' is dropped on import"
+      ]
     },
     {
       "id": "pl_gz_parc_central_gz",
@@ -6927,7 +6962,7 @@
         "id": "pl_gz_pazhouwanyi",
         "city": "guangzhou",
         "category": "hotel",
-        "tier": "main",
+        "tier": "backup",
         "name_zh": "广交会万怡酒店",
         "name_en": "Courtyard by Marriott Guangzhou Pazhou",
         "aliases_zh": [],
@@ -6947,16 +6982,17 @@
         "official_url": "https://www.marriott.com/en-us/hotels/canyp-courtyard-guangzhou-pazhou/overview/",
         "sources": [
           "https://www.marriott.com/en-us/hotels/canyp-courtyard-guangzhou-pazhou/overview/",
-          "https://www.marriott.com/en-us/destinations/china/guangzhou.mi"
+          "https://www.marriott.com/en-us/destinations/china/guangzhou.mi",
+          "https://help.marriott.com/s/article/Article-24483"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
-        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sun, Dec 27 - Mon, Dec 28。 官网样本为每房每晚人民币 ¥713。当前价以所选日期及房型的报价为准。",
+        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sun, Dec 27 - Mon, Dec 28。 官网样本为每房每晚人民币 ¥713。当前价以所选日期及房型的报价为准。 分档依据：万豪集团列为 Select 精选服务品牌，本库按中档处理。",
         "subcategory": "hotel",
-        "intro_short_zh": "琶洲的万怡酒店。",
-        "intro_short_en": "A Courtyard hotel in Pazhou.",
-        "intro_long_zh": "琶洲的万怡酒店。可在品牌官网查看房型和入住安排。",
-        "intro_long_en": "A Courtyard hotel in Pazhou. See the hotel's own website for room types and check-in details.",
+        "intro_short_zh": "从琶洲站到店，可把海珠东部安排在同一天。",
+        "intro_short_en": "A Pazhou base for a trip focused on eastern Haizhu.",
+        "intro_long_zh": "门店在海珠区凤浦中路，万豪交通页列出琶洲地铁站。酒店有泳池和餐厅，适合连住。",
+        "intro_long_en": "Choose this option if you're staying on the Pazhou side of Guangzhou. The property publishes the nearest subway stop and lists a pool and on-site dining.",
         "star": null,
         "price_band": "500-1000",
         "accepts_foreigners": true,
@@ -6988,7 +7024,9 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "pl_gz_pazhouwanyi: unknown field 'hotel_class' is dropped on import"
+      ]
     },
     {
       "id": "pl_gz_piazzaitalia_huacheng",
@@ -7608,16 +7646,17 @@
         "official_url": "https://www.fourseasons.com/zh/guangzhou/offers/room_rate/",
         "sources": [
           "https://www.fourseasons.com/zh/guangzhou/offers/room_rate/",
-          "https://reservations.fourseasons.com/zh/choose-your-room?ratePlanCode=RACBAR&hotelCode=CAN532&checkIn=2026-11-27&checkOut=2026-11-28&adults=2&children=0"
+          "https://reservations.fourseasons.com/zh/choose-your-room?ratePlanCode=RACBAR&hotelCode=CAN532&checkIn=2026-11-27&checkOut=2026-11-28&adults=2&children=0",
+          "https://www.fourseasons.com/about_four_seasons/"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
-        "notes": "四季官网显示 2026-11-27 至 11-28 双人入住的客房报价，另有税费和服务费。 官网样本为每房每晚人民币 ¥3,450。当前价以所选日期及房型的报价为准。",
+        "notes": "四季官网显示 2026-11-27 至 11-28 双人入住的客房报价，另有税费和服务费。 官网样本为每房每晚人民币 ¥3,450。当前价以所选日期及房型的报价为准。 分档依据：四季集团将自身定位为奢华酒店品牌。",
         "subcategory": "hotel",
-        "intro_short_zh": "酒店位于珠江新城，可把周边滨江游览排在同一天。",
-        "intro_short_en": "A Zhujiang New Town hotel for exploring the nearby waterfront.",
-        "intro_long_zh": "酒店位于珠江新城，可把周边滨江游览排在同一天。可在品牌官网查看房型和入住安排。",
-        "intro_long_en": "A Zhujiang New Town hotel for exploring the nearby waterfront. See the hotel's own website for room types and check-in details.",
+        "intro_short_zh": "国际金融中心高层的酒店，可从珠江新城站地下到达。",
+        "intro_short_en": "Stay high in Guangzhou IFC, connected underground to Zhujiang New Town station.",
+        "intro_long_zh": "酒店位于广州国际金融中心高层。四季英文路线页说明珠江新城地铁站与楼宇的地下连接，可在大雨或高温时按这一路线进入。",
+        "intro_long_en": "Use the underground access from Zhujiang New Town station for a weatherproof arrival. The hotel's map also places the opera house and riverfront within the same sightseeing area.",
         "star": null,
         "price_band": ">2000",
         "accepts_foreigners": true,
@@ -7649,7 +7688,9 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "pl_gz_siji: unknown field 'hotel_class' is dropped on import"
+      ]
     },
     {
       "id": "pl_gz_taigucang",
@@ -8141,16 +8182,17 @@
         "official_url": "https://www.marriott.com/en-us/hotels/canfi-fairfield-guangzhou-tianhe-park/overview/",
         "sources": [
           "https://www.marriott.com/en-us/hotels/canfi-fairfield-guangzhou-tianhe-park/overview/",
-          "https://www.marriott.com/en-us/destinations/china/guangzhou.mi"
+          "https://www.marriott.com/en-us/destinations/china/guangzhou.mi",
+          "https://help.marriott.com/s/article/Article-24483"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
-        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sun, Dec 27 - Mon, Dec 28。 官网样本为每房每晚人民币 ¥497。当前价以所选日期及房型的报价为准。",
+        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sun, Dec 27 - Mon, Dec 28。 官网样本为每房每晚人民币 ¥497。当前价以所选日期及房型的报价为准。 分档依据：万豪集团列为 Select 精选服务品牌，本库按中档处理。",
         "subcategory": "hotel",
-        "intro_short_zh": "在天河公园一带安排住宿。",
-        "intro_short_en": "A Fairfield hotel near Tianhe Park.",
-        "intro_long_zh": "在天河公园一带安排住宿。可在品牌官网查看房型和入住安排。",
-        "intro_long_en": "A Fairfield hotel near Tianhe Park. See the hotel's own website for room types and check-in details.",
+        "intro_short_zh": "天河公园片区的万枫，回店可使用全天健身房。",
+        "intro_short_en": "A Tianhe Park area stay with a gym that stays open around the clock.",
+        "intro_long_zh": "门店在中山大道西277号。适合把天河公园附近排成一段行程、需要回店后运动的旅客。万豪有门店英文资料。",
+        "intro_long_en": "The hotel is on West Zhongshan Avenue. Marriott lists a 24-hour gym and publishes the arrival address and hotel information in English.",
         "star": null,
         "price_band": "<500",
         "accepts_foreigners": true,
@@ -8182,7 +8224,9 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "pl_gz_tianhegongyuanwanfeng: unknown field 'hotel_class' is dropped on import"
+      ]
     },
     {
       "id": "pl_gz_tianhewanhao",
@@ -8212,16 +8256,17 @@
         "official_url": "https://www.marriott.com/en-us/hotels/canti-guangzhou-marriott-hotel-tianhe/overview/",
         "sources": [
           "https://www.marriott.com/en-us/hotels/canti-guangzhou-marriott-hotel-tianhe/overview/",
-          "https://www.marriott.com/en-us/destinations/china/guangzhou.mi"
+          "https://www.marriott.com/en-us/destinations/china/guangzhou.mi",
+          "https://help.marriott.com/s/article/Article-24483"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
-        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sun, Dec 27 - Mon, Dec 28。 官网样本为每房每晚人民币 ¥1,615。当前价以所选日期及房型的报价为准。",
+        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sun, Dec 27 - Mon, Dec 28。 官网样本为每房每晚人民币 ¥1,615。当前价以所选日期及房型的报价为准。 分档依据：万豪集团将此品牌列为 Premium。",
         "subcategory": "hotel",
-        "intro_short_zh": "正佳广场旁的万豪酒店。",
-        "intro_short_en": "A Marriott hotel by Grandview Mall.",
-        "intro_long_zh": "正佳广场旁的万豪酒店。可在品牌官网查看房型和入住安排。",
-        "intro_long_en": "A Marriott hotel by Grandview Mall. See the hotel's own website for room types and check-in details.",
+        "intro_short_zh": "天河路228号，体育中心站可接地铁1号线。",
+        "intro_short_en": "A shopping-focused Tianhe stay with Line 1 directions on the hotel page.",
+        "intro_long_zh": "住在天河路商场附近，适合在购物途中回酒店歇脚。万豪交通页列明体育中心站D3口，并提供广州东站交通说明。",
+        "intro_long_en": "Use the property's directions from Tianhe Sports Center station if shopping along Tianhe Road is on your itinerary. The arrival page also lists connections from Guangzhou East.",
         "star": null,
         "price_band": "1000-2000",
         "accepts_foreigners": true,
@@ -8253,7 +8298,9 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "pl_gz_tianhewanhao: unknown field 'hotel_class' is dropped on import"
+      ]
     },
     {
       "id": "pl_gz_tianheweisiting",
@@ -8263,7 +8310,7 @@
         "id": "pl_gz_tianheweisiting",
         "city": "guangzhou",
         "category": "hotel",
-        "tier": "main",
+        "tier": "backup",
         "name_zh": "广州海航威斯汀酒店",
         "name_en": "The Westin Guangzhou",
         "aliases_zh": [],
@@ -8283,16 +8330,17 @@
         "official_url": "https://www.marriott.com/en-us/hotels/cangw-the-westin-guangzhou/overview/",
         "sources": [
           "https://www.marriott.com/en-us/hotels/cangw-the-westin-guangzhou/overview/",
-          "https://www.marriott.com/en-us/destinations/china/guangzhou.mi"
+          "https://www.marriott.com/en-us/destinations/china/guangzhou.mi",
+          "https://help.marriott.com/s/article/Article-24483"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
-        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sun, Dec 27 - Mon, Dec 28。 官网样本为每房每晚人民币 ¥1,045。当前价以所选日期及房型的报价为准。",
+        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sun, Dec 27 - Mon, Dec 28。 官网样本为每房每晚人民币 ¥1,045。当前价以所选日期及房型的报价为准。 分档依据：万豪集团将此品牌列为 Premium。",
         "subcategory": "hotel",
-        "intro_short_zh": "天河区的威斯汀酒店。",
-        "intro_short_en": "A Westin hotel in Tianhe.",
-        "intro_long_zh": "天河区的威斯汀酒店。可在品牌官网查看房型和入住安排。",
-        "intro_long_en": "A Westin hotel in Tianhe. See the hotel's own website for room types and check-in details.",
+        "intro_short_zh": "天河的威斯汀设有多语礼宾，市区走累可回店游泳。",
+        "intro_short_en": "Multilingual concierge service and indoor and outdoor pools in Tianhe.",
+        "intro_long_zh": "想请酒店用英文帮助规划市区吃饭或行程，可看万豪门店列明的多语礼宾服务。酒店另有室内、室外泳池。",
+        "intro_long_en": "The property lists an around-the-clock multilingual concierge. Consider it when you want local restaurant suggestions and some time at either of the pools.",
         "star": null,
         "price_band": "1000-2000",
         "accepts_foreigners": true,
@@ -8324,7 +8372,9 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "pl_gz_tianheweisiting: unknown field 'hotel_class' is dropped on import"
+      ]
     },
     {
       "id": "pl_gz_tianhexierdun",
@@ -8354,16 +8404,17 @@
         "official_url": "https://www.hilton.com.cn/zh-cn/hotels/cangthi-hilton-guangzhou-tianhe",
         "sources": [
           "https://www.hilton.com.cn/zh-cn/hotels/cangthi-hilton-guangzhou-tianhe",
-          "https://www.hilton.com.cn/zh-cn/locations/china/guangdong-guangzhou"
+          "https://www.hilton.com.cn/zh-cn/locations/china/guangdong-guangzhou",
+          "https://ir.hilton.com/_assets/_de1e637820b6842c68b34801d11a8fd1/hilton/db/3577/34740/pdf/HLT_Investor_Presentation_-_November_2026.pdf"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
-        "notes": "希尔顿城市页显示 2026-11-27 入住、11-28 退房的起价。 官网样本为每房每晚人民币 ¥755。当前价以所选日期及房型的报价为准。",
+        "notes": "希尔顿城市页显示 2026-11-27 入住、11-28 退房的起价。 官网样本为每房每晚人民币 ¥755。当前价以所选日期及房型的报价为准。 分档依据：希尔顿集团将品牌列为 Full Service，本库按高档处理。",
         "subcategory": "hotel",
-        "intro_short_zh": "天河区的希尔顿酒店。",
-        "intro_short_en": "A Hilton hotel in Tianhe.",
-        "intro_long_zh": "天河区的希尔顿酒店。可在品牌官网查看房型和入住安排。",
-        "intro_long_en": "A Hilton hotel in Tianhe. See the hotel's own website for room types and check-in details.",
+        "intro_short_zh": "从广州东站抵达，可先核对酒店免费接驳。",
+        "intro_short_en": "A Tianhe hotel with a free shuttle to Guangzhou East Railway Station.",
+        "intro_long_zh": "酒店在林和西横路。若乘车到广州东站，希尔顿英文页列有免费接驳。也可把广州东站附近的地铁1号线与3号线作为城市游览的出发点。",
+        "intro_long_en": "This option is useful when arriving via Guangzhou East Railway Station. Look up the hotel's shuttle or plan onward trips with Metro lines 1 and 3.",
         "star": null,
         "price_band": "500-1000",
         "accepts_foreigners": true,
@@ -8395,7 +8446,9 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "pl_gz_tianhexierdun: unknown field 'hotel_class' is dropped on import"
+      ]
     },
     {
       "id": "pl_gz_tianhezhongyunxierdun",
@@ -8405,7 +8458,7 @@
         "id": "pl_gz_tianhezhongyunxierdun",
         "city": "guangzhou",
         "category": "hotel",
-        "tier": "main",
+        "tier": "backup",
         "name_zh": "广州天河中云希尔顿花园酒店",
         "name_en": "Hilton Garden Inn Guangzhou Tianhe",
         "aliases_zh": [],
@@ -8425,16 +8478,17 @@
         "official_url": "https://www.hilton.com.cn/zh-cn/hotels/cangzgi-hilton-garden-inn-guangzhou-tianhe",
         "sources": [
           "https://www.hilton.com.cn/zh-cn/hotels/cangzgi-hilton-garden-inn-guangzhou-tianhe",
-          "https://www.hilton.com.cn/zh-cn/locations/china/guangdong-guangzhou"
+          "https://www.hilton.com.cn/zh-cn/locations/china/guangdong-guangzhou",
+          "https://ir.hilton.com/_assets/_de1e637820b6842c68b34801d11a8fd1/hilton/db/3577/34740/pdf/HLT_Investor_Presentation_-_November_2026.pdf"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
-        "notes": "希尔顿城市页显示 2026-11-27 入住、11-28 退房的起价。 官网样本为每房每晚人民币 ¥495。当前价以所选日期及房型的报价为准。",
+        "notes": "希尔顿城市页显示 2026-11-27 入住、11-28 退房的起价。 官网样本为每房每晚人民币 ¥495。当前价以所选日期及房型的报价为准。 分档依据：希尔顿集团将品牌列为 Focused Service，本库按中档处理。",
         "subcategory": "hotel",
-        "intro_short_zh": "天河区的希尔顿花园酒店。",
-        "intro_short_en": "A Hilton Garden Inn in Tianhe.",
-        "intro_long_zh": "天河区的希尔顿花园酒店。可在品牌官网查看房型和入住安排。",
-        "intro_long_en": "A Hilton Garden Inn in Tianhe. See the hotel's own website for room types and check-in details.",
+        "intro_short_zh": "天河北部的希尔顿花园，可结合动物园行程。",
+        "intro_short_en": "A north Tianhe option for a trip that includes Guangzhou Zoo.",
+        "intro_long_zh": "酒店在广州大道北，希尔顿列广州动物园和广州东站为附近到访方向。适合把市区北侧活动与从东站出发的行程放在一起。",
+        "intro_long_en": "If your plans are on the north side of Tianhe, use the English location page to check routes to Guangzhou Zoo and the eastern rail station.",
         "star": null,
         "price_band": "<500",
         "accepts_foreigners": true,
@@ -8466,7 +8520,9 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "pl_gz_tianhezhongyunxierdun: unknown field 'hotel_class' is dropped on import"
+      ]
     },
     {
       "id": "pl_gz_wagas_kshiyi",
@@ -8561,16 +8617,17 @@
         "official_url": "https://www.mandarinoriental.com/zh-cn/guangzhou/tianhe",
         "sources": [
           "https://www.mandarinoriental.com/zh-cn/guangzhou/tianhe",
-          "https://www.mandarinoriental.com/zh-cn/guangzhou/tianhe/stay/mandarin-room"
+          "https://www.mandarinoriental.com/zh-cn/guangzhou/tianhe/stay/mandarin-room",
+          "https://www.mandarin-oriental.org/en/investors.html"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
-        "notes": "品牌官网的文华客房均价样本，页面未列入住日期。 官网样本为每房每晚人民币 ¥3,206.5。当前价以所选日期及房型的报价为准。",
+        "notes": "品牌官网的文华客房均价样本，页面未列入住日期。 官网样本为每房每晚人民币 ¥3,206.5。当前价以所选日期及房型的报价为准。 分档依据：文华东方集团将旗下酒店定位于奢华酒店及度假村。",
         "subcategory": "hotel",
-        "intro_short_zh": "在天河路步行购物时可考虑这家酒店。",
-        "intro_short_en": "A Tianhe Road stay for exploring nearby shops on foot.",
-        "intro_long_zh": "在天河路步行购物时可考虑这家酒店。可在品牌官网查看房型和入住安排。",
-        "intro_long_en": "A Tianhe Road stay for exploring nearby shops on foot. See the hotel's own website for room types and check-in details.",
+        "intro_short_zh": "天河路389号，可把城市购物放在酒店附近。",
+        "intro_short_en": "A Tianhe Road stay for travelers who want time in the shopping district.",
+        "intro_long_zh": "酒店在天河路389号。适合希望把日程集中安排在天河、需要用英文查看酒店信息的游客。门店资料给出具体到店地址。",
+        "intro_long_en": "Set aside a day for Tianhe's shops and restaurants. The hotel's bilingual site makes it possible to check the address and room choices before arriving.",
         "star": null,
         "price_band": ">2000",
         "accepts_foreigners": true,
@@ -8602,7 +8659,9 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "pl_gz_wenhuadongfang: unknown field 'hotel_class' is dropped on import"
+      ]
     },
     {
       "id": "pl_gz_wjiudian",
@@ -8828,7 +8887,9 @@
           "https://jtj.gz.gov.cn/xwdt/gzdt/content/post_10050166.html",
           "https://jtj.gz.gov.cn/gkmlpt/content/10/10947/post_10947514.html",
           "https://xxgk.mot.gov.cn/gz/202211/t20221128_3716160.html",
-          "https://zwfw.jinan.gov.cn/col127369/art/2025/art_127369_4798602.html"
+          "https://zwfw.jinan.gov.cn/col127369/art/2025/art_127369_4798602.html",
+          "https://en.by.gov.cn/2026-07/24/c_1199948.htm",
+          "https://english.shanghai.gov.cn/en-Individuals-Transportation-PublicTransport/20260825/463ac3099fa344f39182e623f83943f7.html"
         ],
         "checked_on": "2026-11-27",
         "confidence": "high",
@@ -8840,13 +8901,16 @@
           "附近可换乘穗深城际新塘南站。"
         ],
         "to_city_en": [
-          "Transfer nearby to Suishen Intercity services at Xintang South."
+          "The Guangzhou–Shenzhen Intercity Railway is a short transfer away at Xintang South."
         ],
         "foreigner_tips_zh": [
           "国铁新塘和城际新塘南的票面不同，换乘时分别核对站名和运营方。",
           "带上购票时使用的护照原件，闸机读不出证件时走人工通道。"
         ],
-        "foreigner_tips_en": null
+        "foreigner_tips_en": [
+          "When transferring between Xintang and Xintang South, check the station name and rail operator on each ticket.",
+          "Bring the original passport you used to book. If the gate can't read it, use a staffed lane."
+        ]
       },
       "external_signals": [],
       "location": null,
@@ -8998,6 +9062,152 @@
         "external_used": false
       },
       "flags": []
+    },
+    {
+      "id": "pl_gz_yibisi_pazhou",
+      "source_file": "C8/guangzhou-hotel.json",
+      "status": "pending",
+      "draft": {
+        "id": "pl_gz_yibisi_pazhou",
+        "city": "guangzhou",
+        "category": "hotel",
+        "tier": "main",
+        "name_zh": "宜必思广州琶洲国际会展中心酒店",
+        "name_en": "ibis Guangzhou International Exhibition Center Hotel",
+        "aliases_zh": [],
+        "aliases_en": [],
+        "address_zh": "新滘中路新海街9号",
+        "address_en": null,
+        "district_zh": "海珠区",
+        "nearest_metro": null,
+        "foreigner_signals": {
+          "english_signage": null,
+          "foreign_cards": null,
+          "english_service": null,
+          "evidence": [
+            "https://all.accor.com/hotel/B3E5/index.en.shtml"
+          ]
+        },
+        "official_url": "https://all.accor.com/hotel/B3E5/index.en.shtml",
+        "sources": [
+          "https://all.accor.com/hotel/B3E5/index.en.shtml",
+          "https://group.accor.com/en/news-stories/midscale-economy-brands-novotel-mercure-ibis"
+        ],
+        "checked_on": "2026-11-27",
+        "confidence": "medium",
+        "notes": "分档依据：雅高集团将宜必思及宜必思尚品归为经济型。",
+        "subcategory": "hotel",
+        "intro_short_zh": "海珠新海街的经济型酒店，配有自助洗衣。",
+        "intro_short_en": "A Haizhu stay with self-service laundry for a multi-day trip.",
+        "intro_long_zh": "酒店在海珠区新滘中路附近，门店页列出自助洗衣房、健身房与早餐。适合在广州南侧住几天、想把日常琐事在店内解决的旅客。",
+        "intro_long_en": "For a longer Haizhu stay, the property lists laundry machines, a gym and breakfast. The English Accor page gives the Xinhai Street address.",
+        "star": null,
+        "price_band": null,
+        "accepts_foreigners": true,
+        "foreign_service": {
+          "english_front_desk": null,
+          "foreign_guest_share": null,
+          "foreign_guest_experience": null,
+          "international_brand": "Accor",
+          "evidence_zh": "雅高有该门店的英文预订入口，门店介绍明确面向所有旅客。",
+          "evidence": [
+            "https://all.accor.com/hotel/B3E5/index.en.shtml"
+          ]
+        }
+      },
+      "external_signals": [],
+      "location": null,
+      "amap": {
+        "status": "not-run",
+        "alternatives": []
+      },
+      "score": {
+        "total": 26,
+        "parts": {
+          "foreigner": 0,
+          "confidence": 12,
+          "sources": 10,
+          "complete": 4,
+          "amap": 0
+        },
+        "external_used": false
+      },
+      "flags": [
+        "pl_gz_yibisi_pazhou: unknown field 'hotel_class' is dropped on import"
+      ]
+    },
+    {
+      "id": "pl_gz_yibisi_yuexiugongyuan",
+      "source_file": "C8/guangzhou-hotel.json",
+      "status": "pending",
+      "draft": {
+        "id": "pl_gz_yibisi_yuexiugongyuan",
+        "city": "guangzhou",
+        "category": "hotel",
+        "tier": "main",
+        "name_zh": "宜必思广州越秀公园地铁站酒店",
+        "name_en": "ibis Guangzhou Yuexiu Park Metro Station Hotel",
+        "aliases_zh": [],
+        "aliases_en": [],
+        "address_zh": "流花路117号",
+        "address_en": null,
+        "district_zh": "越秀区",
+        "nearest_metro": null,
+        "foreigner_signals": {
+          "english_signage": null,
+          "foreign_cards": null,
+          "english_service": null,
+          "evidence": [
+            "https://all.accor.com/hotel/B0Z6/index.en.shtml"
+          ]
+        },
+        "official_url": "https://all.accor.com/hotel/B0Z6/index.en.shtml",
+        "sources": [
+          "https://all.accor.com/hotel/B0Z6/index.en.shtml",
+          "https://group.accor.com/en/news-stories/midscale-economy-brands-novotel-mercure-ibis"
+        ],
+        "checked_on": "2026-11-27",
+        "confidence": "medium",
+        "notes": "分档依据：雅高集团将宜必思及宜必思尚品归为经济型。",
+        "subcategory": "hotel",
+        "intro_short_zh": "流花路的简洁客房，适合安排越秀公园和流花湖。",
+        "intro_short_en": "A Liuhua Road option for Yuexiu Park and the old city.",
+        "intro_long_zh": "住在流花路117号，适合把越秀公园和流花湖放在同一天走访。雅高英文页面提供定位、房型和预订入口。",
+        "intro_long_en": "If you're staying on the old-city side of Guangzhou, use Accor's English listing for room options and the arrival address. Liuhua Lake Park is another outing nearby.",
+        "star": null,
+        "price_band": null,
+        "accepts_foreigners": true,
+        "foreign_service": {
+          "english_front_desk": null,
+          "foreign_guest_share": null,
+          "foreign_guest_experience": null,
+          "international_brand": "Accor",
+          "evidence_zh": "雅高有该门店的英文预订入口及到店信息，门店介绍明确面向所有旅客。",
+          "evidence": [
+            "https://all.accor.com/hotel/B0Z6/index.en.shtml"
+          ]
+        }
+      },
+      "external_signals": [],
+      "location": null,
+      "amap": {
+        "status": "not-run",
+        "alternatives": []
+      },
+      "score": {
+        "total": 26,
+        "parts": {
+          "foreigner": 0,
+          "confidence": 12,
+          "sources": 10,
+          "complete": 4,
+          "amap": 0
+        },
+        "external_used": false
+      },
+      "flags": [
+        "pl_gz_yibisi_yuexiugongyuan: unknown field 'hotel_class' is dropped on import"
+      ]
     },
     {
       "id": "pl_gz_yingji_tongfu",
@@ -9286,16 +9496,17 @@
         "official_url": "https://www.marriott.com/en-us/hotels/cansi-sheraton-guangzhou-hotel/overview/",
         "sources": [
           "https://www.marriott.com/en-us/hotels/cansi-sheraton-guangzhou-hotel/overview/",
-          "https://www.marriott.com/en-us/destinations/china/guangzhou.mi"
+          "https://www.marriott.com/en-us/destinations/china/guangzhou.mi",
+          "https://help.marriott.com/s/article/Article-24483"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
-        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sun, Dec 27 - Mon, Dec 28。 官网样本为每房每晚人民币 ¥1,710。当前价以所选日期及房型的报价为准。",
+        "notes": "万豪目的地页所列 2026-12 的最低常规房价，页面入住和退房日为 Sun, Dec 27 - Mon, Dec 28。 官网样本为每房每晚人民币 ¥1,710。当前价以所选日期及房型的报价为准。 分档依据：万豪集团将此品牌列为 Premium。",
         "subcategory": "hotel",
-        "intro_short_zh": "天河路一带的喜来登酒店。",
-        "intro_short_en": "A Sheraton hotel in the Tianhe Road area.",
-        "intro_long_zh": "天河路一带的喜来登酒店。可在品牌官网查看房型和入住安排。",
-        "intro_long_en": "A Sheraton hotel in the Tianhe Road area. See the hotel's own website for room types and check-in details.",
+        "intro_short_zh": "天河路上的喜来登，就近用体育西路站逛街。",
+        "intro_short_en": "Tiyu Xilu and Tianhe shopping are close to this Sheraton.",
+        "intro_long_zh": "酒店在天河路208号，适合想集中逛天河商场的人。万豪交通页列出体育西路和体育中心站，也列有中英文服务语言。",
+        "intro_long_en": "Plan a shopping day around Tianhe Road, using either of the two metro stops listed by the property. The hotel identifies English as one of its spoken languages.",
         "star": null,
         "price_band": "1000-2000",
         "accepts_foreigners": true,
@@ -9327,7 +9538,9 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "pl_gz_yuehaixilaideng: unknown field 'hotel_class' is dropped on import"
+      ]
     },
     {
       "id": "pl_gz_yueju_bowuguan",
@@ -10069,7 +10282,7 @@
         "id": "pl_gz_zhuomeiya",
         "city": "guangzhou",
         "category": "hotel",
-        "tier": "main",
+        "tier": "backup",
         "name_zh": "广州卓美亚酒店",
         "name_en": "Jumeirah Guangzhou",
         "aliases_zh": [],
@@ -10089,16 +10302,17 @@
         "official_url": "https://www.jumeirah.com/en/stay/guangzhou/jumeirah-guangzhou",
         "sources": [
           "https://www.jumeirah.com/en/stay/guangzhou/jumeirah-guangzhou",
-          "https://www.jumeirah.com/en/booking/hotel-booking?bookingWithPoints=false&connected=false&currency=CNY&from=2026-11-27&hotelItemId=A559FAAA-6164-4D17-B8F5-A914032FEEEB&rooms%5B0%5D%5Badults%5D=2&rooms%5B0%5D%5Bage%5D=&rooms%5B0%5D%5Bchildrens%5D=0&rooms%5B0%5D%5Binfants%5D=0&step=rooms-rates&to=2026-11-28"
+          "https://www.jumeirah.com/en/booking/hotel-booking?bookingWithPoints=false&connected=false&currency=CNY&from=2026-11-27&hotelItemId=A559FAAA-6164-4D17-B8F5-A914032FEEEB&rooms%5B0%5D%5Badults%5D=2&rooms%5B0%5D%5Bage%5D=&rooms%5B0%5D%5Bchildrens%5D=0&rooms%5B0%5D%5Binfants%5D=0&step=rooms-rates&to=2026-11-28",
+          "https://www.jumeirah.com/en/jumeirah-group/about-jumeirah?id=4363"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
-        "notes": "官网显示 2026-11-27 至 11-28 双人入住的客房报价，税费另计。 官网样本为每房每晚人民币 ¥2,210。当前价以所选日期及房型的报价为准。",
+        "notes": "官网显示 2026-11-27 至 11-28 双人入住的客房报价，税费另计。 官网样本为每房每晚人民币 ¥2,210。当前价以所选日期及房型的报价为准。 分档依据：卓美亚集团将自身定位于奢华酒店。",
         "subcategory": "hotel",
-        "intro_short_zh": "珠江东路的卓美亚酒店。",
-        "intro_short_en": "A Jumeirah hotel on Zhujiang East Road.",
-        "intro_long_zh": "珠江东路的卓美亚酒店。可在品牌官网查看房型和入住安排。",
-        "intro_long_en": "A Jumeirah hotel on Zhujiang East Road. See the hotel's own website for room types and check-in details.",
+        "intro_short_zh": "珠江东路的客房，可按门店说明挑广州塔景套房。",
+        "intro_short_en": "A Zhujiang East Road hotel with Canton Tower views from select suites.",
+        "intro_long_zh": "酒店在珠江东路12号。适合想把高层看城景安排进广州行程的人。品牌的英文页区分了城景客房与有广州塔全景的套房。",
+        "intro_long_en": "If the skyline is part of why you're staying in Zhujiang New Town, compare the room categories. The hotel's English page identifies suites that face Canton Tower.",
         "star": null,
         "price_band": ">2000",
         "accepts_foreigners": true,
@@ -10130,7 +10344,9 @@
         },
         "external_used": false
       },
-      "flags": []
+      "flags": [
+        "pl_gz_zhuomeiya: unknown field 'hotel_class' is dropped on import"
+      ]
     }
   ]
 }

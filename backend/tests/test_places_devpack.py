@@ -115,6 +115,22 @@ def test_the_pack_is_not_shipped_with_the_server_or_the_app():
     assert not list((ROOT / 'ios').rglob(pack_name))
 
 
+def test_xcode_project_and_backend_code_do_not_reference_the_development_pack():
+    project = (ROOT / 'ios/CJProbeApp.xcodeproj/project.pbxproj').read_text(encoding='utf-8')
+    assert 'places-dev' not in project and 'LioPlacesDev' not in project.replace('LioPlacesDevPack.swift', '')
+    for path in (ROOT / 'backend').rglob('*.py'):
+        relative = path.relative_to(ROOT).as_posix()
+        if '/tests/' in relative or path.name in ('places_dev.py', 'test_places_devpack.py'):
+            continue
+        assert 'places_dev' not in path.read_text(encoding='utf-8'), f'{relative} must not use the development place reader'
+
+
+def test_candidates_carry_no_third_party_scores():
+    for path in devpack.CANDIDATES.glob('*.cand.json'):
+        for cand in json.loads(path.read_text(encoding='utf-8'))['candidates']:
+            assert cand['external_signals'] == [], f'{cand["id"]}: external signals must stay in the inbox until the terms are settled'
+
+
 def test_no_deploy_file_enables_the_development_reader():
     for folder in ('deploy', '.github', 'tooling'):
         for path in (ROOT / folder).rglob('*'):

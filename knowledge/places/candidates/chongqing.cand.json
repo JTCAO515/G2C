@@ -1233,7 +1233,8 @@
           "https://jtj.cq.gov.cn/sy_240/bmdt/202101/t20210120_8788761.html",
           "https://wap.cq.gov.cn/ywdt/bmts/202602/t20260212_15439223.html",
           "https://xxgk.mot.gov.cn/gz/202211/t20221128_3716160.html",
-          "https://zwfw.jinan.gov.cn/col127369/art/2025/art_127369_4798602.html"
+          "https://zwfw.jinan.gov.cn/col127369/art/2025/art_127369_4798602.html",
+          "https://english.shanghai.gov.cn/en-Individuals-Transportation-PublicTransport/20260825/463ac3099fa344f39182e623f83943f7.html"
         ],
         "checked_on": "2026-11-27",
         "confidence": "high",
@@ -1245,13 +1246,16 @@
           "可由南北广场换乘轨道交通，环线可通重庆西站。"
         ],
         "to_city_en": [
-          "Use the metro connections at the north and south squares. The Loop Line serves Chongqing West."
+          "The north and south squares both have rail transit connections. The Loop Line goes to Chongqing West Railway Station."
         ],
         "foreigner_tips_zh": [
           "看清车票或导航提示的南广场、北广场，预留步行时间。",
           "带上购票时使用的护照原件，闸机读不出证件时走人工通道。"
         ],
-        "foreigner_tips_en": null
+        "foreigner_tips_en": [
+          "Check whether your ticket or directions point to North Square or South Square, and allow time to walk.",
+          "Bring the original passport you used to book. If the gate can't read it, use a staffed lane."
+        ]
       },
       "external_signals": [],
       "location": null,
@@ -1295,7 +1299,9 @@
           "https://jtysw.cq.gov.cn/sy_240/jdtp/202506/t20250627_14753977.html",
           "https://wap.cq.gov.cn/ywdt/bmts/202602/t20260212_15439223.html",
           "https://xxgk.mot.gov.cn/gz/202211/t20221128_3716160.html",
-          "https://zwfw.jinan.gov.cn/col127369/art/2025/art_127369_4798602.html"
+          "https://zwfw.jinan.gov.cn/col127369/art/2025/art_127369_4798602.html",
+          "https://english.cq.gov.cn/specials/getaround/railway/202608/t20260810_15911663.html",
+          "https://english.shanghai.gov.cn/en-Individuals-Transportation-PublicTransport/20260825/463ac3099fa344f39182e623f83943f7.html"
         ],
         "checked_on": "2026-11-27",
         "confidence": "high",
@@ -1307,13 +1313,16 @@
           "轨道交通6号线已接驳重庆东站。"
         ],
         "to_city_en": [
-          "Metro Line 6 serves Chongqing East Railway Station."
+          "Take Chongqing Rail Transit Line 6."
         ],
         "foreigner_tips_zh": [
           "把票面「重庆东」给司机看，提前走到相应铁路进站口。",
           "带上购票时使用的护照原件，闸机读不出证件时走人工通道。"
         ],
-        "foreigner_tips_en": null
+        "foreigner_tips_en": [
+          "Show your driver 重庆东 on your ticket and leave time to reach the railway entrance.",
+          "Bring the original passport you used to book. If the gate can't read it, use a staffed lane."
+        ]
       },
       "external_signals": [],
       "location": null,
@@ -1358,7 +1367,8 @@
           "https://jtj.cq.gov.cn/sy_240/bmdt/202101/t20210120_8788761.html",
           "https://zfcxjw.cq.gov.cn/zjzj/tszj/gdjt/202211/t20221128_11340147.html",
           "https://xxgk.mot.gov.cn/gz/202211/t20221128_3716160.html",
-          "https://zwfw.jinan.gov.cn/col127369/art/2025/art_127369_4798602.html"
+          "https://zwfw.jinan.gov.cn/col127369/art/2025/art_127369_4798602.html",
+          "https://english.shanghai.gov.cn/en-Individuals-Transportation-PublicTransport/20260825/463ac3099fa344f39182e623f83943f7.html"
         ],
         "checked_on": "2026-11-27",
         "confidence": "high",
@@ -1370,13 +1380,16 @@
           "轨道交通环线可进城，亦可通重庆北站。"
         ],
         "to_city_en": [
-          "The Metro Loop Line serves central districts and Chongqing North."
+          "Take the Loop Line into the city or to Chongqing North Railway Station."
         ],
         "foreigner_tips_zh": [
           "跨站换车前核对票面「重庆西」和「重庆北」，预留进站时间。",
           "带上购票时使用的护照原件，闸机读不出证件时走人工通道。"
         ],
-        "foreigner_tips_en": null
+        "foreigner_tips_en": [
+          "For a transfer across town, double-check whether your ticket says 重庆西 or 重庆北 and leave time to enter the next station.",
+          "Bring the original passport you used to book. If the gate can't read it, use a staffed lane."
+        ]
       },
       "external_signals": [],
       "location": null,
@@ -1420,7 +1433,9 @@
           "https://jtj.cq.gov.cn/sy_240/bmdt/202505/t20250526_14656238.html",
           "https://wap.cq.gov.cn/ywdt/bmts/202607/t20260724_15853010.html",
           "https://xxgk.mot.gov.cn/gz/202211/t20221128_3716160.html",
-          "https://zwfw.jinan.gov.cn/col127369/art/2025/art_127369_4798602.html"
+          "https://zwfw.jinan.gov.cn/col127369/art/2025/art_127369_4798602.html",
+          "https://www.cq.gov.cn/ywdt/jrcq/202501/t20250103_14043421_app.html",
+          "https://english.shanghai.gov.cn/en-Individuals-Transportation-PublicTransport/20260825/463ac3099fa344f39182e623f83943f7.html"
         ],
         "checked_on": "2026-11-27",
         "confidence": "high",
@@ -1434,7 +1449,10 @@
           "菜园坝重庆站停办铁路客运改造中。请以12306显示的实际车站为准。",
           "带上购票时使用的护照原件，闸机读不出证件时走人工通道。"
         ],
-        "foreigner_tips_en": null
+        "foreigner_tips_en": [
+          "Passenger trains are suspended at Chongqing Railway Station in Caiyuanba during redevelopment. Check 12306 for your actual departure station.",
+          "Bring the original passport you used to book. If the gate can't read it, use a staffed lane."
+        ]
       },
       "external_signals": [],
       "location": null,
@@ -1544,7 +1562,9 @@
         "sources": [
           "https://www.cq.gov.cn/ywdt/jrcq/202512/t20251223_15262778.html",
           "https://cq.gov.cn/ywdt/bmts/202605/t20260513_15675130.html",
-          "https://www.cq.gov.cn/ywdt/bmts/202607/t20260721_15837437.html"
+          "https://www.cq.gov.cn/ywdt/bmts/202607/t20260721_15837437.html",
+          "https://www.cqa.cn/jtzn/25/",
+          "https://www.cqa.cn/ykzn/29/"
         ],
         "checked_on": "2026-11-27",
         "confidence": "high",
@@ -1569,12 +1589,14 @@
           "轨道交通10号线连接两处航站区，亦可向中心城区方向乘坐。"
         ],
         "to_city_en": [
-          "Metro Line 10 links the terminal areas and runs toward central Chongqing."
+          "Take Chongqing Rail Transit Line 10 between the terminal areas or toward central Chongqing."
         ],
         "foreigner_tips_zh": [
           "重庆江北机场的 T2、T3 分开。上车前把航站楼号和航班号给司机看。"
         ],
-        "foreigner_tips_en": null
+        "foreigner_tips_en": [
+          "T2 and T3 are in different parts of Chongqing Jiangbei Airport. Show your driver the terminal and flight number before leaving."
+        ]
       },
       "external_signals": [],
       "location": null,
@@ -2780,29 +2802,7 @@
         "visit_minutes": null,
         "best_time_zh": null
       },
-      "external_signals": [
-        {
-          "source": "tripadvisor",
-          "as_of": "2026-11-27",
-          "metric": "rating_out_of_5",
-          "value": 4.1,
-          "url": "https://www.tripadvisor.cn/Attraction_Review-g294213-d1814790-Reviews-Hongya_Cave-Chongqing.html"
-        },
-        {
-          "source": "tripadvisor",
-          "as_of": "2026-11-27",
-          "metric": "review_count",
-          "value": 855,
-          "url": "https://www.tripadvisor.cn/Attraction_Review-g294213-d1814790-Reviews-Hongya_Cave-Chongqing.html"
-        },
-        {
-          "source": "tripadvisor",
-          "as_of": "2026-11-27",
-          "metric": "rank_in_city",
-          "value": 1,
-          "url": "https://www.tripadvisor.cn/Attraction_Review-g294213-d1814790-Reviews-Hongya_Cave-Chongqing.html"
-        }
-      ],
+      "external_signals": [],
       "location": null,
       "amap": {
         "status": "not-run",
@@ -6306,7 +6306,8 @@
           "https://zfcxjw.cq.gov.cn/zjzj/tszj/gdjt/202211/t20221128_11340147.html",
           "https://wap.cq.gov.cn/ywdt/bmts/202602/t20260212_15439223.html",
           "https://xxgk.mot.gov.cn/gz/202211/t20221128_3716160.html",
-          "https://zwfw.jinan.gov.cn/col127369/art/2025/art_127369_4798602.html"
+          "https://zwfw.jinan.gov.cn/col127369/art/2025/art_127369_4798602.html",
+          "https://english.shanghai.gov.cn/en-Individuals-Transportation-PublicTransport/20260825/463ac3099fa344f39182e623f83943f7.html"
         ],
         "checked_on": "2026-11-27",
         "confidence": "high",
@@ -6318,13 +6319,16 @@
           "可从地下换乘厅转轨道交通，环线途经沙坪坝。"
         ],
         "to_city_en": [
-          "Follow the underground concourse to the metro, including the Loop Line."
+          "Follow the underground concourse to Chongqing Rail Transit, including the Loop Line."
         ],
         "foreigner_tips_zh": [
           "铁路、地铁与购物场所入口相邻，按「铁路进站」导向找检票区域。",
           "带上购票时使用的护照原件，闸机读不出证件时走人工通道。"
         ],
-        "foreigner_tips_en": null
+        "foreigner_tips_en": [
+          "Follow the railway entrance signs to the ticket gates. The subway and shops have separate entrances nearby.",
+          "Bring the original passport you used to book. If the gate can't read it, use a staffed lane."
+        ]
       },
       "external_signals": [],
       "location": null,
@@ -7038,7 +7042,10 @@
           "https://www.wz.gov.cn/zt_266/wzqsydwdjglgg/ndbg/2025nd/202606/t20260623_15770206.html",
           "https://www.cq.gov.cn/zwgk/zfxxgkzl/fdzdgknr/zdxm/dtxx/202607/t20260702_15794707.html",
           "https://xxgk.mot.gov.cn/gz/202211/t20221128_3716160.html",
-          "https://zwfw.jinan.gov.cn/col127369/art/2025/art_127369_4798602.html"
+          "https://zwfw.jinan.gov.cn/col127369/art/2025/art_127369_4798602.html",
+          "https://admin.cq.gov.cn/zwgk/zfxxgkzl/fdzdgknr/zdxm/dtxx/202607/t20260702_15794707.html",
+          "https://www.wz.gov.cn/zwxx_266/jdtp/202604/t20260416_15614258.html",
+          "https://english.shanghai.gov.cn/en-Individuals-Transportation-PublicTransport/20260825/463ac3099fa344f39182e623f83943f7.html"
         ],
         "checked_on": "2026-11-27",
         "confidence": "high",
@@ -7050,13 +7057,16 @@
           "万州公交65路连接高铁北站与百安坝，也可乘出租车接驳。"
         ],
         "to_city_en": [
-          "Bus 65 connects the high-speed station with Baianba. Taxis also serve the station."
+          "Bus 65 connects Wanzhou North Railway Station with Baianba. Taxis are another option."
         ],
         "foreigner_tips_zh": [
           "把「万州北」和车次一起给司机看，关注扩建期间的进站导向。",
           "带上购票时使用的护照原件，闸机读不出证件时走人工通道。"
         ],
-        "foreigner_tips_en": null
+        "foreigner_tips_en": [
+          "Show your driver 万州北 and your train number. Follow the posted entrance route while the station is being expanded.",
+          "Bring the original passport you used to book. If the gate can't read it, use a staffed lane."
+        ]
       },
       "external_signals": [],
       "location": null,
@@ -7099,7 +7109,8 @@
         "sources": [
           "https://www.wz.gov.cn/zwxx_266/jdtp/202602/t20260203_15374523.html",
           "https://xxgk.mot.gov.cn/gz/202211/t20221128_3716160.html",
-          "https://zwfw.jinan.gov.cn/col127369/art/2025/art_127369_4798602.html"
+          "https://zwfw.jinan.gov.cn/col127369/art/2025/art_127369_4798602.html",
+          "https://english.shanghai.gov.cn/en-Individuals-Transportation-PublicTransport/20260825/463ac3099fa344f39182e623f83943f7.html"
         ],
         "checked_on": "2026-11-27",
         "confidence": "medium",
@@ -7113,7 +7124,10 @@
           "万州站和万州北站是不同车站。票面写「万州」时，按中文站名定位。",
           "带上购票时使用的护照原件，闸机读不出证件时走人工通道。"
         ],
-        "foreigner_tips_en": null
+        "foreigner_tips_en": [
+          "Wanzhou and Wanzhou North are different stations. Use 万州 for directions if that is what your ticket says.",
+          "Bring the original passport you used to book. If the gate can't read it, use a staffed lane."
+        ]
       },
       "external_signals": [],
       "location": null,
@@ -7424,7 +7438,8 @@
           "https://www.caac.gov.cn/PHONE/GYMH/MHGK/GNYSJC/XNDQ/CQ/",
           "https://www.wz.gov.cn/zwxx_266/jdtp/202602/t20260203_15374523.html",
           "https://www.wz.gov.cn/zt_266/wzqsydwdjglgg/ndbg/2025nd/202606/t20260623_15770206.html",
-          "https://www.caac.gov.cn/PHONE/XXGK_17/XXGK/ZFGW/201601/P020160122452786310808.pdf"
+          "https://www.caac.gov.cn/PHONE/XXGK_17/XXGK/ZFGW/201601/P020160122452786310808.pdf",
+          "https://www.wz.gov.cn/bmjz_89642/bm/jtj/zwgk_94768/zfxxgkml/ggqsydwxx/fjc/202601/t20260104_15287761.html"
         ],
         "checked_on": "2026-11-27",
         "confidence": "high",
@@ -7441,12 +7456,14 @@
           "机场有出租车候客区，可乘车进入万州城区。"
         ],
         "to_city_en": [
-          "Taxis from the airport serve urban Wanzhou."
+          "Use the airport taxi pickup area for a ride into Wanzhou."
         ],
         "foreigner_tips_zh": [
           "WXN 对应万州。若旅程要去重庆中心城区，请单独安排万州至主城的路段。"
         ],
-        "foreigner_tips_en": null
+        "foreigner_tips_en": [
+          "WXN means Wanzhou. If you're headed to central Chongqing, plan the onward trip from Wanzhou separately."
+        ]
       },
       "external_signals": [],
       "location": null,
