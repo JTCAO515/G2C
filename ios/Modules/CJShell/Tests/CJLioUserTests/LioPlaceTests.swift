@@ -81,6 +81,31 @@ struct LioPlaceTests {
         #expect(LioPlaceRepository(places: places).places.count == 2)
     }
 
+    @Test func theAmapIdAndTheHotelFilterFieldsDecodeFromEveryShape() throws {
+        // library entry / dev pack: the id sits in `location`; the hotel fields are top level
+        let hotel = try #require(Self.decode(#"""
+        [{"id": "pl_bj_h", "name_zh": "酒店", "category": "hotel", "star": 5, "price_band": ">2000", "accepts_foreigners": true,
+          "location": {"gcj02": {"lat": 39.9, "lng": 116.4}, "amap_id": " B0H1 ", "method": "amap-poi-search"}}]
+        """#).first)
+        #expect(hotel.amapID == "B0H1" && hotel.star == 5 && hotel.priceBand == .over2000 && hotel.acceptsForeigners == true)
+        // slim copy: the id is top level; a non-hotel carries nulls
+        let slim = try #require(Self.decode(#"""
+        [{"id": "pl_sh_a", "name_zh": "景", "category": "attraction", "lat": 31.2, "lng": 121.4, "amap_id": "B0S1",
+          "price_band": null, "star": null, "accepts_foreigners": null}]
+        """#).first)
+        #expect(slim.amapID == "B0S1" && slim.star == nil && slim.priceBand == nil && slim.acceptsForeigners == nil)
+        // no id anywhere, and values outside the library's own ranges are left out
+        func place(_ extra: String) -> LioPlace? { Self.decode(#"[{"id": "x", "name_zh": "地", \#(extra)}]"#).first }
+        #expect(place(#""location": {"gcj02": {"lat": 30, "lng": 120}, "amap_id": null}"#)?.amapID == nil)
+        #expect(place(#""amap_id": "  ""#)?.amapID == nil)
+        #expect(place(#""star": 0"#)?.star == nil && place(#""star": 6"#)?.star == nil && place(#""star": 3"#)?.star == 3)
+        #expect(place(#""price_band": "cheap""#)?.priceBand == nil)
+        for (raw, band) in [("<500", LioPlace.PriceBand.under500), ("500-1000", .from500), ("1000-2000", .from1000)] {
+            #expect(place(#""price_band": "\#(raw)""#)?.priceBand == band)
+        }
+        #expect(place(#""accepts_foreigners": "yes""#)?.acceptsForeigners == nil)
+    }
+
     @Test func coordinatesAndLinksAreChecked() {
         func place(_ extra: String) -> LioPlace? {
             Self.decode(#"[{"id": "x", "name_zh": "地", \#(extra)}]"#).first

@@ -18,7 +18,7 @@
 
 生成物（不要手改）：
 - 服务端副本 `backend/fact/cj_fact/places_<城市>.v1.json`，与源文件**逐字节一致**，读取入口 `cj_fact.places`（`load_city`、`by_id`、`by_category`、`match_name`）。
-- App 精简版 `ios/Modules/CJShell/Sources/CJLioUser/Resources/LioPlaces.v1.json`：只有 id、城市、类别、`kind`、等级、排名、中英名、别名、GCJ-02 坐标、amap_id、一句话简介、缩略图文件名。App 在问服务端之前就能显示的就这些。
+- App 精简版 `ios/Modules/CJShell/Sources/CJLioUser/Resources/LioPlaces.v1.json`：只有 id、城市、类别、`kind`、等级、排名、中英名、别名、GCJ-02 坐标、amap_id、酒店的 `price_band` / `star` / `accepts_foreigners`（其他类别为 null，「住」按它们筛选并与高德结果取交集）、一句话简介、缩略图文件名。App 在问服务端之前就能显示的就这些。
 - CI：`backend/tests/test_places_pipeline.py` 与 `backend/fact/tests/test_places_copy.py`。数据改了却没重新生成，`python` job 失败。App 副本也在 Python job 里比对（只改 `knowledge/` 的 PR 不跑 Swift job）。
 - 一个城市文件被删除时，它的副本也算过期，`--write` 会一并删掉。
 
