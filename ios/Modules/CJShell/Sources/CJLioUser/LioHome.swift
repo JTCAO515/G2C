@@ -261,9 +261,12 @@ public struct LioHome<MenuContent: View>: View {
     /// #1999: shown as buttons, asked about first, or not shown (withdrawn). Always `.show` with the flag off.
     private var memoryGate: LioMemoryCandidateGate { consent.memoryCandidateGate(featureOn: memoryConsentOn) }
 
-    /// The turn that gets the one-time question: the newest answer that has a suggestion waiting.
+    /// The turn that gets the one-time question: the newest answer that has a suggestion waiting, or that the server
+    /// marked `memory.prompt = consent` (a preference was said and the account has never chosen).
     private var memoryAskTurnID: Data? {
-        conversation.turns.last(where: { turn in turn.memoryTags.contains { !handledTags.contains($0) } })?.id
+        conversation.turns.last(where: { turn in
+            turn.memoryPrompt || turn.memoryTags.contains { !handledTags.contains($0) }
+        })?.id
     }
 
     /// At most two suggestions under an answer (LIO-answer-rich.1); the cap only applies with the flag on.

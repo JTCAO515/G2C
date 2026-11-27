@@ -343,6 +343,19 @@ struct LioMemoryConsentTests {
         #expect(LioMemoryConsentSync.newRequestID() != LioMemoryConsentSync.newRequestID())
     }
 
+    // MARK: the server's prompt marker
+
+    @Test func theMarkerOnlyReachesATurnWhenRichIsOn() {
+        let marked = LioTimelineWire.Message(id: "m1", question: "我喜欢慢节奏", answer: "好的。", state: .completed, activity: nil,
+                                             sources: [], trip: nil, memoryTags: [],
+                                             rich: .init(entities: [], memoryPrompt: true))
+        #expect(LioTimelineTurn(marked, richEnabled: true).memoryPrompt)
+        #expect(!LioTimelineTurn(marked, richEnabled: false).memoryPrompt, "rich off: never read")
+        let plain = LioTimelineWire.Message(id: "m2", question: "Q", answer: "A", state: .completed, activity: nil,
+                                            sources: [], trip: nil, memoryTags: [])
+        #expect(!LioTimelineTurn(plain, richEnabled: true).memoryPrompt)
+    }
+
     // MARK: wording
 
     @Test func theParagraphBehindTheDetailsButtonIsTheApprovedText() throws {

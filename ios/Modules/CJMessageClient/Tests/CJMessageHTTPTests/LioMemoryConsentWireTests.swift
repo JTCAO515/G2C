@@ -100,3 +100,54 @@ private actor ConsentExit: ClientTransport {
         return (HTTPResponse(status: .ok), HTTPBody("{}"))
     }
 }
+
+/// #1999: `rich.memory.prompt` (LIO-answer-rich.1): "this answer holds a preference and the account has never chosen".
+@MainActor
+struct LioMemoryPromptWireTests {
+    private let conversation = "lio-dialogue-0123456789abcdef0123456789abcdef"
+
+    private func decoded(_ rich: String, status: String = "completed", answer: String = "我喜欢慢节奏。") throws -> LioTimelineWire.Message {
+        let body = """
+            {"version":"LIO-timeline.2","conversation_id":"\(conversation)","messages":[{"message_id":"m1","text":"Q","answer":"\(answer)","status":"\(status)","sources":[],"rich":\(rich)}],"next_before":null}
+            """
+        return try #require(try LioTimelineWire.decodePage(Data(body.utf8), for: conversation, version: .v2).messages.first)
+    }
+
+    @Test func thePromptAloneIsEnoughForRichAndNothingElseIsMadeUp() throws {
+        let message = try decoded(#"{"version":"LIO-answer-rich.1","memory":{"prompt":"consent"}}"#)
+        #expect(message.rich == .init(entities: [], memoryPrompt: true))
+        #expect(message.memoryTags.isEmpty, "the prompt prepares no suggestion")
+    }
+
+    @Test func thePromptAndPlacesLiveSideBySideAndAnOverlongPlaceListDoesNotTakeThePromptWithIt() throws {
+        let place = #"{"type":"place","start":2,"end":4,"place_id":"pl_bj_gugong"}"#
+        let both = try decoded(#"{"version":"LIO-answer-rich.1","entities":[\#(place)],"memory":{"prompt":"consent"}}"#)
+        #expect(both.rich?.entities.count == 1 && both.rich?.memoryPrompt == true)
+        let many = Array(repeating: place, count: 21).joined(separator: ",")
+        let over = try decoded(#"{"version":"LIO-answer-rich.1","entities":[\#(many)],"memory":{"prompt":"consent"}}"#)
+        #expect(over.rich == .init(entities: [], memoryPrompt: true))
+    }
+
+    @Test(arguments: [
+        #"{"version":"LIO-answer-rich.1","memory":{"prompt":"other"}}"#,
+        #"{"version":"LIO-answer-rich.1","memory":{"prompt":"Consent"}}"#,
+        #"{"version":"LIO-answer-rich.1","memory":{"prompt":null}}"#,
+        #"{"version":"LIO-answer-rich.1","memory":{"prompt":7}}"#,
+        #"{"version":"LIO-answer-rich.1","memory":{}}"#,
+        #"{"version":"LIO-answer-rich.1","memory":"consent"}"#,
+        #"{"version":"LIO-answer-rich.1","memory":[]}"#,
+        #"{"version":"LIO-answer-rich.2","memory":{"prompt":"consent"}}"#,
+        #"{"memory":{"prompt":"consent"}}"#,
+    ]) func anythingButTheExactPromptReadsAsNoPromptAndNeverFailsThePage(value: String) throws {
+        let message = try decoded(value)
+        #expect(message.rich?.memoryPrompt != true)
+        #expect(message.answer == "我喜欢慢节奏。")
+    }
+
+    @Test func thePromptOnlyRidesOnACompletedRowWithAnAnswer() throws {
+        let body = #"{"version":"LIO-answer-rich.1","memory":{"prompt":"consent"}}"#
+        #expect(try decoded(body, status: "answering").rich == nil)
+        #expect(try decoded(body, status: "sending").rich == nil)
+        #expect(try decoded(body, answer: "").rich == nil)
+    }
+}

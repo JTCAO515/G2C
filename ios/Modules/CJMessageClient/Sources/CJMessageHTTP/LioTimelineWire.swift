@@ -303,8 +303,15 @@ public enum LioTimelineWire {
         /// Places named in the answer, in order of position. Only the shape is checked here (the range's size, the id's
         /// form); whether a range fits the answer text is checked where the text is (`LioPlaceMentions`).
         public let entities: [Entity]
+        /// `memory.prompt == "consent"` (#1999): the account has never chosen whether Lio may remember preferences and this
+        /// answer holds a preference, so the App may ask once. It is not consent; the choice is written with
+        /// `PUT /v1/lio/memory/consent`.
+        public let memoryPrompt: Bool
 
-        public init(entities: [Entity] = []) { self.entities = entities }
+        public init(entities: [Entity] = [], memoryPrompt: Bool = false) {
+            self.entities = entities
+            self.memoryPrompt = memoryPrompt
+        }
     }
 
     /// One place in the answer text: the half-open range `[start, end)` counted in Unicode scalar values over the
@@ -398,13 +405,16 @@ public enum LioTimelineWire {
     /// An entity that fails its rule is dropped on its own; a list over its limit is dropped whole; another version
     /// of `rich` is ignored; nothing left means no `rich`.
     private static func validRich(_ wire: Snapshot.Row.RichWire?) -> Rich? {
-        guard let wire, wire.version == answerRichVersion, let items = wire.entities, items.count <= maximumEntities else { return nil }
+        guard let wire, wire.version == answerRichVersion else { return nil }
+        // Each part stands alone: a list over its limit is dropped whole and does not take the other parts with it.
+        let items = (wire.entities?.count ?? 0) <= maximumEntities ? (wire.entities ?? []) : []
         let entities = items.compactMap { item -> Entity? in
             guard let item = item.value, item.type == "place", item.start >= 0, item.end <= maximumEntityEnd,
                   (2...32).contains(item.end - item.start), validPlaceID(item.placeID) else { return nil }
             return Entity(start: item.start, end: item.end, placeID: item.placeID)
         }
-        return entities.isEmpty ? nil : Rich(entities: entities)
+        let prompt = wire.memory?.prompt == "consent"
+        return entities.isEmpty && !prompt ? nil : Rich(entities: entities, memoryPrompt: prompt)
     }
 
     /// `^pl_[a-z]{2}_[a-z0-9]+(_[a-z0-9]+)*$`, at most 64 characters.
@@ -520,6 +530,9 @@ public enum LioTimelineWire {
             struct RichWire: Decodable {
                 let version: String
                 let entities: [LossyEntity]?
+                /// `memory.prompt` only (#1999); the rest of `memory` is for M-3.
+                let memory: MemoryWire?
+                struct MemoryWire: Decodable { let prompt: String? }
                 struct EntityWire: Decodable {
                     let type: String
                     let start: Int
@@ -535,8 +548,9 @@ public enum LioTimelineWire {
                     let c = try decoder.container(keyedBy: CodingKeys.self)
                     version = try c.decode(String.self, forKey: .version)
                     entities = (try? c.decodeIfPresent([LossyEntity].self, forKey: .entities)) ?? nil
+                    memory = (try? c.decodeIfPresent(MemoryWire.self, forKey: .memory)) ?? nil
                 }
-                enum CodingKeys: String, CodingKey { case version, entities }
+                enum CodingKeys: String, CodingKey { case version, entities, memory }
             }
             struct Followups: Decodable {
                 let version: String
