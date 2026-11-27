@@ -111,6 +111,10 @@ def _merged_aliases(own, extra):
     return out
 
 
+RECHECK_FIELDS = frozenset({'hours_zh', 'hours_source', 'official_url', 'ticket.booking', 'ticket.price_cny', 'ticket.passport_required',
+                            'ticket.closed_weekdays', 'ticket.booking_channel_zh', 'ticket.booking_url'})
+
+
 def _apply_recheck(entry, row):
     """`entry` with one field-level recheck row applied (a new value, its source, the day it was read)."""
     field = row['field']
@@ -159,10 +163,22 @@ def apply_followups(entries, inbox, notes):
         entry = copy.deepcopy(entry)
         if ident in aliases:
             for lang in ('zh', 'en'):
-                entry[f'aliases_{lang}'] = _merged_aliases(entry.get(f'aliases_{lang}'), aliases[ident].get(f'aliases_{lang}'))
+                key = f'aliases_{lang}'
+                entry[key] = list(entry.get(key) or [])
+                for alias in _merged_aliases([], aliases[ident].get(key))[:]:        # one at a time: a bad spelling is dropped alone
+                    if _fold(alias) in {_fold(a) for a in entry[key] if type(a) is str}:
+                        continue
+                    trial = {**entry, key: [*entry[key], alias]}
+                    if not placelib.check_draft(trial, source)[0]:
+                        entry[key].append(alias)
+                    else:
+                        notes.append(f'{ident}: alias {alias!r} not added (it does not pass the draft rules)')
             if aliases[ident].get('evidence'):
                 evidence[ident] = aliases[ident]['evidence']
         for row in rechecks.get(ident, []):
+            if row['field'] not in RECHECK_FIELDS:
+                notes.append(f"{ident}: recheck of {row['field']!r} skipped (only hours, the official page and the ticket's own fields are rechecked)")
+                continue
             current = entry.get('ticket', {}).get(row['field'].split('.', 1)[1]) if row['field'].startswith('ticket.') and type(entry.get('ticket')) is dict \
                 else (entry.get(row['field']) if not row['field'].startswith('ticket.') else None)
             if row['new'] is None:
@@ -202,10 +218,11 @@ def load_library_ids(library_dir):
     return ids
 
 
-def process(inbox, today, fetch=None, use_external=False, library_dir=placelib.PLACES_DIR, existing=None, keep_signals=False):
+def process(inbox, today, fetch=None, use_external=False, library_dir=placelib.PLACES_DIR, existing=None, keep_signals=False, protected=frozenset()):
     """Return ({city: [candidate]}, [rejected], [notes]). `fetch` None means no Amap lookups."""
     existing = existing or {}
     entries, rejected = read_inbox(inbox)
+    unreadable_files = {problem['file'] for problem in rejected if problem.get('id') is None}
     in_library, seen, by_city, notes = load_library_ids(library_dir), {}, {}, []
     entries, followup_flags, alias_evidence = apply_followups(entries, inbox, notes)
     names = {}
@@ -247,16 +264,21 @@ def process(inbox, today, fetch=None, use_external=False, library_dir=placelib.P
             'score': scoring.score(draft, info['status'], signals, use_external), 'flags': flags,
             **({'alias_evidence': alias_evidence[ident]} if ident in alias_evidence else {}),
         })
-    for city, items in by_city.items():
+    for city in sorted(set(by_city) | {old['draft']['city'] for old in existing.values()}):
+        items = by_city.setdefault(city, [])
         kept = {item['id'] for item in items}
         for ident, old in sorted(existing.items()):
             if old['draft']['city'] != city or ident in kept:
                 continue
-            if old['status'] == 'pending':  # Codex took it out of its files: it is no longer up for review
-                notes.append(f'{ident}: no longer in the inbox, dropped from review')
-            else:                           # a decision already made stays on record
+            unreadable = old.get('source_file') in unreadable_files or not (Path(inbox) / str(old.get('source_file'))).is_file()
+            decided = old['status'] != 'pending' or old.get('review_note') or ident in protected   # an edit or a typed answer is a decision too
+            if decided or unreadable:     # a decision stays on record; a file we could not read says nothing about its entries
                 items.append(old)
+            else:                         # Codex took it out of its files: it is no longer up for review
+                notes.append(f'{ident}: no longer in the inbox, dropped from review')
         items.sort(key=lambda c: c['id'])
+        if not items:
+            del by_city[city]
     return by_city, rejected, notes
 
 
@@ -431,9 +453,10 @@ def main(argv=None):
             return 2
         fetch = amap.make_fetch(key, cache_dir=args.cache or Path(args.inbox) / '.amap-cache')
     existing = load_existing(args.out)
+    typed = {ident for city in placelib.CITIES for ident in read_filled(Path(args.review) / f'{city}.review.csv')}
     try:
         by_city, rejected, notes = process(args.inbox, args.today, fetch, args.use_external_signals, existing=existing,
-                                            keep_signals=args.keep_external_signals)
+                                            keep_signals=args.keep_external_signals, protected=typed)
     except amap.AmapError as error:
         print(f'FAIL: {error}', file=sys.stderr)
         return 1

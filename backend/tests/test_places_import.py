@@ -204,6 +204,37 @@ def test_a_pending_entry_codex_took_out_is_dropped_and_a_decided_one_stays(tmp_p
     assert any('pl_bj_tiantan' in note and 'dropped' in note for note in notes)
 
 
+def test_a_pending_entry_with_an_edit_or_a_typed_answer_or_an_unreadable_file_is_not_dropped(tmp_path):
+    box = inbox(tmp_path, C1__beijing=[C1, second(), second(id='pl_bj_c', name_zh='丙', name_en='C', aliases_zh=[], aliases_en=[]),
+                                         second(id='pl_bj_d', name_zh='丁', name_en='D', aliases_zh=[], aliases_en=[])])
+    out, review = tmp_path / 'out', tmp_path / 'review'
+    first, rejected, notes = importer.process(box, TODAY, library_dir=tmp_path / 'none')
+    importer.write_outputs(first, rejected, notes, TODAY, out, review, 25)
+    doc = json.loads((out / 'beijing.cand.json').read_text(encoding='utf-8'))
+    next(c for c in doc['candidates'] if c['id'] == 'pl_bj_tiantan')['review_note'] = 'fix the hours'          # apply_review's `edit`
+    (out / 'beijing.cand.json').write_text(importer.dumps(doc), encoding='utf-8')
+    existing = importer.load_existing(out)
+    nothing_left = inbox(tmp_path, C1__beijing=[second(id='pl_bj_e', name_zh='戊', name_en='E', aliases_zh=[], aliases_en=[])])
+    again, _, notes = importer.process(nothing_left, TODAY, library_dir=tmp_path / 'none', existing=existing, protected={'pl_bj_c'})
+    assert {c['id'] for c in again['beijing']} == {'pl_bj_tiantan', 'pl_bj_c', 'pl_bj_e'}          # gugong and d were plain pending: gone
+    assert {n.split(':')[0] for n in notes} == {'pl_bj_gugong', 'pl_bj_d'}
+    (tmp_path / 'inbox' / 'C1' / 'beijing.json').write_text('not json', encoding='utf-8')            # the file cannot be read: nothing is dropped
+    unreadable, rejected, notes = importer.process(tmp_path / 'inbox', TODAY, library_dir=tmp_path / 'none', existing=existing)
+    assert {c['id'] for c in unreadable['beijing']} == {'pl_bj_gugong', 'pl_bj_tiantan', 'pl_bj_c', 'pl_bj_d'} and rejected and not notes
+
+
+def test_one_bad_alias_or_one_unlisted_field_does_not_cost_the_entry(tmp_path):
+    box = inbox(tmp_path, C1__beijing=[C1])
+    _side(tmp_path, 'aliases.json', [{'id': 'pl_bj_gugong', 'aliases_zh': ['好别名', 'tab\tbad'], 'aliases_en': ['Good Alias']}])
+    _side(tmp_path, 'recheck.json', [{'id': 'pl_bj_gugong', 'field': 'category', 'old': 'attraction', 'new': 'food', 'source': 'https://www.dpm.org.cn/', 'checked_on': '2026-11-28'}])
+    by_city, rejected, notes = importer.process(box, TODAY, library_dir=tmp_path / 'none')
+    gugong = by_city['beijing'][0]
+    assert not rejected and '好别名' in gugong['draft']['aliases_zh'] and 'Good Alias' in gugong['draft']['aliases_en']
+    assert not any('tab' in a for a in gugong['draft']['aliases_zh'])
+    assert gugong['draft']['category'] == 'attraction'
+    assert any('not added' in n for n in notes) and any("recheck of 'category' skipped" in n for n in notes)
+
+
 def _side(tmp_path, name, rows):
     path = tmp_path / 'inbox' / 'C1' / name
     path.parent.mkdir(parents=True, exist_ok=True)
