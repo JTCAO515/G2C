@@ -148,7 +148,8 @@ class RuntimeWorkerBindings:
         from .local_lio_memory import lio_candidates
         configuration=self.runtime.memory_configuration_for_scope(session['binding'].scope)
         if configuration is None:return None
-        candidates=lio_candidates(self.database,session['boundary'],self.runtime.demo_subjects,configuration.collection)
+        candidates=lio_candidates(self.database,session['boundary'],self.runtime.demo_subjects,configuration.collection,
+            scope=session['binding'].scope)
         return configuration.collection,candidates,LioMemoryCards(candidates.collection,candidates.current)
 
     def _state_reader(self,session):

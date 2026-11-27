@@ -1,3 +1,4 @@
+import CJMessageHTTP
 import Foundation
 import Observation
 
@@ -93,6 +94,14 @@ final class LioRouter {
     var toolsPath: [LioRoute] = []
     /// False when this build hides the Tools tab; then no route opens.
     let toolsShown: Bool
+    /// #2010: "My memory" was asked for (from a trip canvas's label); Me opens it, takes the request and clears it.
+    var memoryRequest: MemoryRequest?
+
+    struct MemoryRequest: Equatable, Identifiable {
+        let id = UUID()
+        /// The memory item to show; nil opens the list.
+        let itemID: String?
+    }
 
     init(tab: LioTab = .initial(), toolsShown: Bool) {
         self.tab = toolsShown || tab != .tools ? tab : .chat
@@ -106,6 +115,13 @@ final class LioRouter {
         toolsPath = [route]
         tab = .tools
         return true
+    }
+
+    /// Shows "My memory" in the Me tab, at one item when it is still saved (#2010). An id that is not a memory item's
+    /// form opens the list. The page that opens decides whether the item is still there; the list is the fallback.
+    func openMemory(itemID: String? = nil) {
+        memoryRequest = MemoryRequest(itemID: itemID.flatMap { LioTimelineWire.validMemoryItemID($0) ? $0 : nil })
+        tab = .me
     }
 
     /// Opens a `go2china://tool/…` link. False for any other link or a tool that is not registered.

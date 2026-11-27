@@ -4,6 +4,7 @@ import os
 from types import SimpleNamespace
 from unittest import mock
 
+import psycopg
 import pytest
 
 from cj_memory import titles as t
@@ -26,12 +27,15 @@ def run(items, selected=None):
 
 
 class FakeRepo:
-    """Just enough of the memory transaction: items by id, source rows by (source id, version)."""
-    def __init__(self, items, sources=None, fail=None):
+    """Just enough of the memory transaction: items by id, source rows by (source id, version), and a transaction that,
+    like PostgreSQL, refuses every query after a database error until it is rolled back to a savepoint."""
+    def __init__(self, items, sources=None, fail=None, db_fail=None):
         self.items = {i.command.item_id: i for i in items}
         self.sources = sources if sources is not None else {(i.command.source_id, 1): (i.command.raw, True, True) for i in items}
         self.fail = fail
+        self.db_fail = db_fail
         self.opened = 0
+        self.statements = []
 
     def transaction(self):
         repo = self
@@ -39,19 +43,32 @@ class FakeRepo:
 
         class Tx:
             scope = 'scope-a'
+            aborted = False
             cur = SimpleNamespace()
 
             def __enter__(self_):
-                self_.cur = SimpleNamespace(execute=lambda sql, params: setattr(self_, 'key', (params[1], params[2])),
-                                            fetchone=lambda: repo.sources.get(self_.key))
+                def execute(sql, params=()):
+                    repo.statements.append(sql.split()[0] + (' ' + sql.split()[1] if sql.startswith(('ROLLBACK', 'RELEASE')) else ''))
+                    if sql.startswith('ROLLBACK TO'):
+                        self_.aborted = False
+                    elif self_.aborted:
+                        raise psycopg.errors.InFailedSqlTransaction('current transaction is aborted')
+                    elif params:
+                        self_.key = (params[1], params[2])
+                self_.cur = SimpleNamespace(execute=execute, fetchone=lambda: repo.sources.get(self_.key))
                 return self_
 
             def __exit__(self_, *exc):
                 return False
 
             def detail(self_, item_id):
+                if self_.aborted:
+                    raise psycopg.errors.InFailedSqlTransaction('current transaction is aborted')
                 if repo.fail == item_id:
                     raise Unavailable('boom')
+                if repo.db_fail == item_id:
+                    self_.aborted = True
+                    raise psycopg.errors.UndefinedTable('relation missing')
                 return repo.items.get(item_id)
         return Tx()
 
@@ -146,3 +163,11 @@ def test_at_most_three_ids_are_read_and_odd_ids_are_ignored():
 def test_a_failure_on_one_item_leaves_only_that_item_out():
     repo = FakeRepo(ITEMS, fail='mem-2')
     assert set(t.memory_titles(repo, ['mem-1', 'mem-2'])) == {'mem-1'}
+
+
+def test_a_database_error_on_one_item_leaves_the_others_readable():
+    repo = FakeRepo(ITEMS, db_fail='mem-2')
+    found = t.memory_titles(repo, ['mem-1', 'mem-2', 'mem-3'])
+    assert set(found) == {'mem-1', 'mem-3'}                      # mem-2 is out; the later ones are not poisoned
+    assert repo.statements.count('SAVEPOINT') == 3 and 'ROLLBACK TO' in repo.statements
+    assert repo.statements.count('RELEASE SAVEPOINT') == 2       # the two that succeeded are released

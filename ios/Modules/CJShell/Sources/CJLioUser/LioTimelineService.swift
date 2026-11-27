@@ -22,6 +22,8 @@ struct LioTimelineTurn: Sendable {
     let cards: [LioTimelineWire.Card]
     /// #2001: which remembered preferences the answer was based on (nil unless rich and the note are both on).
     let memoryNote: LioMemoryUsedNote?
+    /// #2010: the saved memories the server says this plan was based on. Passive data: nothing shows it by itself.
+    let memoryUsed: LioTimelineWire.MemoryUsed?
     /// #1994: what the automatic save of this answer did (nil unless rich and the autosave switch are both on).
     let tripReceipt: LioTimelineWire.TripReceipt?
 
@@ -49,6 +51,7 @@ struct LioTimelineTurn: Sendable {
         memoryPrompt = richEnabled && message.rich?.memoryPrompt == true
         cards = richEnabled ? message.rich?.cards ?? [] : []
         memoryNote = richEnabled && memoryNoteEnabled ? LioMemoryUsedNote(message.rich?.memoryUsed) : nil
+        memoryUsed = richEnabled ? Self.displayable(message.rich?.memoryUsed) : nil
         tripReceipt = LioAutosaveNoticeFeature.active(notice: autosaveNoticeEnabled, rich: richEnabled) ? message.rich?.tripReceipt : nil
         memoryTags = message.memoryTags.filter { LioPublicDisplay.permitsText($0.text) }
         sources = Self.projectSources(message.sources.map { ($0.title, $0.link) }, messageID: message.id)
@@ -67,12 +70,21 @@ struct LioTimelineTurn: Sendable {
         memoryPrompt = false
         cards = []
         memoryNote = nil
+        memoryUsed = nil
         tripReceipt = nil
         // Native calendar/rich summaries keep their actual type and binding in exploration.trip.
         itinerary = nil
         memoryTags = message.memoryTags.filter { LioPublicDisplay.permitsText($0.text) }
         sources = Self.projectSources(message.sources.map { ($0.title, $0.link) }, messageID: message.id)
         status = Self.status(message.state, activity: message.activity, answer: message.answer)
+    }
+
+    /// A title the App may show, as with the memory tags: one that fails the public-display check is dropped alone.
+    private static func displayable(_ used: LioTimelineWire.MemoryUsed?) -> LioTimelineWire.MemoryUsed? {
+        guard let used else { return nil }
+        let shown = used.items.filter { LioPublicDisplay.permitsText($0.title) }
+        guard !shown.isEmpty else { return nil }
+        return LioTimelineWire.MemoryUsed(items: shown, total: max(used.total, shown.count))
     }
 
     private static func projectSources(_ values: [(String, URL?)], messageID: String) -> [LioSource] {
@@ -109,7 +121,7 @@ struct LioTimelinePage: Sendable {
     let conversationID: String?
     static let empty = Self(turns: [], nextBefore: nil, conversationID: nil)
 
-    private init(turns: [LioTimelineTurn], nextBefore: String?, conversationID: String?) {
+    init(turns: [LioTimelineTurn], nextBefore: String?, conversationID: String?) {
         self.conversationID = conversationID
         self.turns = turns
         self.nextBefore = nextBefore

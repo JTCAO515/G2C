@@ -167,6 +167,43 @@ def test_flight_number_status_maps_documented_fields_and_skips_bad_rows(tmp_path
             assert client.post(FLIGHTS, json=bad, headers=HEADERS).status_code == 400
 
 
+# The field names and JSON types of one live getFlightStatus row (HK diagnostic call, 2026-11-28; values
+# here are synthetic). The live reply is structuredContent {"kind": "collection", "items": [row]}.
+LIVE_STATUS_ROW = {
+    'AvgDelay': '10', 'BaggageID': '12', 'BoardGate': 'B2', 'BoardState': '', 'CheckDoor': 'H01-8',
+    'CheckinTable': 'H01', 'FlightArr': '北京', 'FlightArrAirport': '首都机场', 'FlightArrTerminal': 'T3',
+    'FlightArrcode': 'PEK', 'FlightArrtimeDate': '', 'FlightArrtimeEstDate': '2026-11-28 10:20:00',
+    'FlightArrtimePlanDate': '2026-11-28 10:15:00', 'FlightCompany': '中国国际航空', 'FlightDep': '上海',
+    'FlightDepAirport': '虹桥机场', 'FlightDepTerminal': 'T2', 'FlightDepcode': 'SHA', 'FlightDeptimeDate': '',
+    'FlightDeptimeEstDate': '2026-11-28 08:05:00', 'FlightDeptimePlanDate': '2026-11-28 08:00:00',
+    'FlightNo': 'CA1501', 'FlightState': '计划', 'FlightStatusCode': 0, 'FlightYear': '95%',
+    'aircraftNumber': 'B1234', 'aircraftType': '空客', 'airlinesCode': 'CA', 'arrLat': 40.08, 'arrLon': 116.58,
+    'cancelRate': '', 'depLat': 31.19, 'depLon': 121.33, 'distance': 1178, 'dst_timezone': 28800, 'fcategory': 0,
+    'flightDesc': '', 'flightPic': '', 'food': '有餐食', 'generic': 'A330',
+    'linkUrl': 'https://example.invalid/' + 'x' * 229,
+    'minPriceInfoList': [{'EPrice': 900, 'FPrice': 3000, 'minPrice': 800, 'detailList': [
+        {'arr': 'PEK', 'arrCityName': '北京', 'date': '2026-11-28', 'dep': 'SHA', 'depCityName': '上海', 'fnum': 'CA1501'}]}],
+    'miniAirplaneModels': 'A330-300', 'ontimeRate': '95%', 'org_timezone': 28800, 'reachExit': 'A1口',
+    'routeTime': '2小时15分', 'shareFlight': '', 'size': '宽体', 'stopAndForceLanding': [], 'uuid': '', 'wifi': '无',
+}
+
+
+def test_live_flight_status_row_maps_its_pascal_case_fields(tmp_path):
+    """FLIGHTS.1 against the real getFlightStatus shape: the first HK call answered 502 because none of the
+    PascalCase fields matched an alias (#2026, 2026-11-28). Blank supplier values stay absent."""
+    reply = {'structuredContent': {'kind': 'collection', 'items': [LIVE_STATUS_ROW]}}
+    provider = VariFlight(KEY, client=fixture_transport(_flight_mcp(reply)))
+    with route_client(tmp_path, register_flights, provider) as client:
+        response = client.post(FLIGHTS, json=dict(FLIGHT_BODY, flight_number='CA1501'), headers=HEADERS)
+        assert response.status_code == 200, response.text
+        assert response.json()['items'] == [{
+            'flight_number': 'CA1501', 'departure': 'SHA', 'arrival': 'PEK', 'status': '计划',
+            'planned_departure': '2026-11-28 08:00:00', 'planned_arrival': '2026-11-28 10:15:00',
+            'departure_terminal': 'T2', 'arrival_terminal': 'T3', 'gate': 'B2', 'check_in_counter': 'H01',
+            'baggage_carousel': '12', 'airline_name_zh': '中国国际航空',
+            'departure_airport_name_zh': '虹桥机场', 'arrival_airport_name_zh': '首都机场'}]
+
+
 def test_flight_number_status_with_no_usable_rows_is_supplier_unavailable(tmp_path):
     provider = VariFlight(KEY, client=fixture_transport(_flight_mcp(
         {'structuredContent': {'flights': [{'flightNo': 'bad number'}]}})))

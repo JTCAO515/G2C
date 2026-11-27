@@ -156,6 +156,40 @@ class Effect(unittest.TestCase):
         self.assertEqual([r['place_id'] for r in rows], ['pl_bj_tiantan'])      # the station is dropped on read
 
 
+class ApprovedIds(unittest.TestCase):
+    """`approved_ids` keeps a complete read, and keeps an incomplete one only briefly (#2074)."""
+
+    def setUp(self):
+        ent.forget_approved_ids()
+        self.addCleanup(ent.forget_approved_ids)
+
+    def test_a_temporary_read_failure_is_not_kept_for_the_life_of_the_process(self):
+        from cj_fact import places
+        from cj_fact.policy import FactFailure
+        calls = []
+
+        def load(city, path=None):
+            calls.append(city)
+            if not unreadable:
+                return DOC
+            raise FactFailure('places_missing')
+
+        unreadable = True
+        with mock.patch.object(places, 'load_city', load), mock.patch.object(ent.time, 'monotonic', side_effect=lambda: clock[0]):
+            clock = [100.0]
+            self.assertEqual(ent.approved_ids(), frozenset())
+            first = len(calls)
+            self.assertEqual(ent.approved_ids(), frozenset())                       # within the retry window: not read again
+            self.assertEqual(len(calls), first)
+            unreadable = False
+            clock[0] += ent.RETRY_SECONDS + 1
+            self.assertEqual(ent.approved_ids(), APPROVED)                          # the library is back: seen again
+            second = len(calls)
+            clock[0] += 10 ** 6
+            self.assertEqual(ent.approved_ids(), APPROVED)                          # a complete read stays for the process
+            self.assertEqual(len(calls), second)
+
+
 class Switches(unittest.TestCase):
     def setUp(self):
         patcher = mock.patch.dict(os.environ)
