@@ -56,7 +56,7 @@ THIRD_PARTY_HOSTS = (
     'zhihu.com', 'wikipedia.org', 'baike.baidu.com', 'baike.com', 'google.', 'booking.com', 'agoda.com',
     'expedia.', 'klook.com', 'getyourguide.', 'viator.com', 'lonelyplanet.com', 'fliggy.com', 'qunar.com',
     'qyer.com', 'douban.com', 'yelp.com', 'facebook.com', 'instagram.com', 'youtube.com', 'reddit.com',
-    'tiktok.com', 'douyin.com', 'sohu.com', 'sina.com', 'toutiao.com', 'amap.com',
+    'tiktok.com', 'douyin.com', 'xhslink.com', 'sohu.com', 'sina.com', 'toutiao.com', 'amap.com',
 )
 
 # Fields common to every category (draft shape). `external_signals` is draft-only.
@@ -149,7 +149,7 @@ def url(value, where, nullable=False, official=True):
     _require(parts.scheme == 'https' and bool(parts.hostname) and port is None and not parts.username
              and not parts.password and not parts.fragment and ' ' not in value, f'{where}: a plain https URL')
     if official:
-        host = '.' + parts.hostname.lower()
+        host = '.' + parts.hostname.lower().rstrip('.')  # a trailing dot is the same host
         for bad in THIRD_PARTY_HOSTS:
             hit = ('.' + bad) in host if bad.endswith('.') else host.endswith('.' + bad)
             _require(not hit, f'{where}: {parts.hostname} is a third-party site, not an official source')

@@ -115,6 +115,9 @@ def test_draft_with_unknown_field_is_kept_with_a_warning():
     lambda e: e.update(sources=['http://www.dpm.org.cn/']),
     lambda e: e.update(sources=['https://www.tripadvisor.com/Attraction_Review-1']),
     lambda e: e.update(hours_source='https://www.mafengwo.cn/poi/1.html'),
+    lambda e: e.update(sources=['https://www.ctrip.com./x']),          # trailing dot is the same host
+    lambda e: e.update(sources=['https://WWW.DIANPING.COM./shop/1']),
+    lambda e: e.update(sources=['https://xhslink.com/abc']),
     lambda e: e.update(checked_on='2026-02-30'),
     lambda e: e.update(confidence='certain'),
     lambda e: e.update(intro_short_zh='长' * 41),
@@ -316,3 +319,10 @@ def test_committed_library_and_copies_are_in_step():
     assert generate.stale() == [], 'run python3 -B knowledge/places/validate.py --write'
     assert generate.LAYOUT.app_path == ROOT / 'ios/Modules/CJShell/Sources/CJLioUser/Resources/LioPlaces.v1.json'
     assert [d['city'] for d in docs] == [c for c in placelib.CITIES if (placelib.PLACES_DIR / f'{c}.v1.json').is_file()]
+
+
+def test_the_app_package_declares_the_copy_once_it_exists():
+    """SwiftPM lists resources one by one: a generated App copy that Package.swift does not name is never bundled."""
+    if generate.LAYOUT.app_path.is_file():
+        package = (ROOT / 'ios/Modules/CJShell/Package.swift').read_text(encoding='utf-8')
+        assert 'Resources/LioPlaces.v1.json' in package, 'add .process("Resources/LioPlaces.v1.json") to the CJLioUser target'
