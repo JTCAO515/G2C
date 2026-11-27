@@ -1,0 +1,1172 @@
+{
+ "version": "g2c-transport-hubs.1",
+ "status": "draft",
+ "places": [
+  {
+   "id": "pl_bj_beijingbei",
+   "city": "beijing",
+   "hub_type": "rail",
+   "name_zh": "北京北站",
+   "name_en": "Beijing North Railway Station",
+   "code": null,
+   "terminals": null,
+   "to_city_zh": [
+    "地铁接驳：2号线、4号线、13号线（西直门）。"
+   ],
+   "to_city_en": [
+    "Metro connection: Lines 2, 4 and 13 at Xizhimen."
+   ],
+   "foreigner_tips_zh": [
+    "去长城或张家口前看清车票写的是北京北还是清河。",
+    "带上购票时使用的护照，闸机读不出证件时走人工通道。"
+   ],
+   "official_url": "https://english.beijing.gov.cn/livinginbeijing/transportation/beijingsubway/202412/t20241216_3966828.html",
+   "checked_on": "2026-11-27",
+   "confidence": "high"
+  },
+  {
+   "id": "pl_bj_beijingchaoyang",
+   "city": "beijing",
+   "hub_type": "rail",
+   "name_zh": "北京朝阳站",
+   "name_en": "Beijing Chaoyang Railway Station",
+   "code": null,
+   "terminals": null,
+   "to_city_zh": [
+    "地铁接驳：3号线。"
+   ],
+   "to_city_en": [
+    "Metro connection: Line 3."
+   ],
+   "foreigner_tips_zh": [
+    "从地铁换乘时跟随「铁路进站」指引。",
+    "带上购票时使用的护照，闸机读不出证件时走人工通道。"
+   ],
+   "official_url": "https://english.beijing.gov.cn/livinginbeijing/transportation/beijingsubway/202412/t20241216_3966828.html",
+   "checked_on": "2026-11-27",
+   "confidence": "high"
+  },
+  {
+   "id": "pl_bj_beijingfengtai",
+   "city": "beijing",
+   "hub_type": "rail",
+   "name_zh": "北京丰台站",
+   "name_en": "Beijing Fengtai Railway Station",
+   "code": null,
+   "terminals": null,
+   "to_city_zh": [
+    "地铁接驳：10号线、16号线。"
+   ],
+   "to_city_en": [
+    "Metro connection: Lines 10 and 16."
+   ],
+   "foreigner_tips_zh": [
+    "高铁和普速候车位置可能不同，进站后按车次查屏幕。",
+    "带上购票时使用的护照，闸机读不出证件时走人工通道。"
+   ],
+   "official_url": "https://english.beijing.gov.cn/livinginbeijing/transportation/beijingsubway/202412/t20241216_3966828.html",
+   "checked_on": "2026-11-27",
+   "confidence": "high"
+  },
+  {
+   "id": "pl_bj_beijingnan",
+   "city": "beijing",
+   "hub_type": "rail",
+   "name_zh": "北京南站",
+   "name_en": "Beijing South Railway Station",
+   "code": null,
+   "terminals": null,
+   "to_city_zh": [
+    "地铁接驳：4号线、14号线。"
+   ],
+   "to_city_en": [
+    "Metro connection: Lines 4 and 14."
+   ],
+   "foreigner_tips_zh": [
+    "地铁与铁路各有检票环节，早到留出安检时间。",
+    "带上购票时使用的护照，闸机读不出证件时走人工通道。"
+   ],
+   "official_url": "https://english.beijing.gov.cn/livinginbeijing/transportation/beijingsubway/202412/t20241216_3966828.html",
+   "checked_on": "2026-11-27",
+   "confidence": "high"
+  },
+  {
+   "id": "pl_bj_beijingtongzhou",
+   "city": "beijing",
+   "hub_type": "rail",
+   "name_zh": "北京通州站",
+   "name_en": "Beijing Tongzhou Railway Station",
+   "code": null,
+   "terminals": null,
+   "to_city_zh": [
+    "由换乘通道步行到北运河东站，可搭地铁6号线。"
+   ],
+   "to_city_en": [
+    "Follow the transfer passage to Beiyunhe East for Metro Line 6."
+   ],
+   "foreigner_tips_zh": [
+    "京唐城际旅客按票面核对「北京通州」站，地铁换乘通道预留步行时间。",
+    "带上购票时使用的护照，闸机读不出证件时走人工通道。"
+   ],
+   "official_url": "https://english.beijing.gov.cn/livinginbeijing/transportation/railway/202512/t20251231_4381067.html",
+   "checked_on": "2026-11-27",
+   "confidence": "high"
+  },
+  {
+   "id": "pl_bj_beijingxi",
+   "city": "beijing",
+   "hub_type": "rail",
+   "name_zh": "北京西站",
+   "name_en": "Beijing West Railway Station",
+   "code": null,
+   "terminals": null,
+   "to_city_zh": [
+    "地铁接驳：7号线、9号线。"
+   ],
+   "to_city_en": [
+    "Metro connection: Lines 7 and 9."
+   ],
+   "foreigner_tips_zh": [
+    "打车时出示「北京西站」，下车后按车次找检票口。",
+    "带上购票时使用的护照，闸机读不出证件时走人工通道。"
+   ],
+   "official_url": "https://english.beijing.gov.cn/livinginbeijing/transportation/beijingsubway/202412/t20241216_3966828.html",
+   "checked_on": "2026-11-27",
+   "confidence": "high"
+  },
+  {
+   "id": "pl_bj_beijingzhan",
+   "city": "beijing",
+   "hub_type": "rail",
+   "name_zh": "北京站",
+   "name_en": "Beijing Railway Station",
+   "code": null,
+   "terminals": null,
+   "to_city_zh": [
+    "地铁接驳：2号线。"
+   ],
+   "to_city_en": [
+    "Metro connection: Line 2."
+   ],
+   "foreigner_tips_zh": [
+    "车票若写「北京」，出行时用「北京站」作定位。",
+    "带上购票时使用的护照，闸机读不出证件时走人工通道。"
+   ],
+   "official_url": "https://english.beijing.gov.cn/livinginbeijing/transportation/beijingsubway/202412/t20241216_3966828.html",
+   "checked_on": "2026-11-27",
+   "confidence": "high"
+  },
+  {
+   "id": "pl_bj_pek",
+   "city": "beijing",
+   "hub_type": "airport",
+   "name_zh": "北京首都国际机场",
+   "name_en": "Beijing Capital International Airport",
+   "code": "PEK",
+   "terminals": [
+    {
+     "name": "T2",
+     "note_zh": "部分国内和国际航班在此办理，以航司通知为准。"
+    },
+    {
+     "name": "T3",
+     "note_zh": "设有 T3C、T3D、T3E，国际候机区包括 T3E。"
+    }
+   ],
+   "to_city_zh": [
+    "首都机场线连接 T2、T3 与三元桥、东直门及北新桥。"
+   ],
+   "to_city_en": [
+    "The Capital Airport Express links T2 and T3 with Sanyuanqiao, Dongzhimen and Beixinqiao."
+   ],
+   "foreigner_tips_zh": [
+    "把 PEK 和航站楼号一起给司机看。不同航班可能在 T2 或 T3，出发前查航司确认。"
+   ],
+   "official_url": "https://www.bcia.com.cn/wljc.html",
+   "checked_on": "2026-11-27",
+   "confidence": "high"
+  },
+  {
+   "id": "pl_bj_pkx",
+   "city": "beijing",
+   "hub_type": "airport",
+   "name_zh": "北京大兴国际机场",
+   "name_en": "Beijing Daxing International Airport",
+   "code": "PKX",
+   "terminals": [
+    {
+     "name": "主航站楼",
+     "note_zh": "国内和国际出发都在同一座航站楼，按航班找值机区。"
+    }
+   ],
+   "to_city_zh": [
+    "大兴机场线可到草桥。"
+   ],
+   "to_city_en": [
+    "Take the Daxing Airport Express to Caoqiao."
+   ],
+   "foreigner_tips_zh": [
+    "机票上的 PKX 指大兴机场。订车时同时出示中文机场名和航班号。"
+   ],
+   "official_url": "https://english.beijing.gov.cn/travellinginbeijing/transportation/airport/202005/t20200516_1899220.html",
+   "checked_on": "2026-11-27",
+   "confidence": "high"
+  },
+  {
+   "id": "pl_bj_qinghe",
+   "city": "beijing",
+   "hub_type": "rail",
+   "name_zh": "清河站",
+   "name_en": "Qinghe Railway Station",
+   "code": null,
+   "terminals": null,
+   "to_city_zh": [
+    "地铁接驳：13号线、昌平线。"
+   ],
+   "to_city_en": [
+    "Metro connection: Line 13 and the Changping Line."
+   ],
+   "foreigner_tips_zh": [
+    "若车票写「清河」，在地图上选铁路清河站。",
+    "带上购票时使用的护照，闸机读不出证件时走人工通道。"
+   ],
+   "official_url": "https://english.beijing.gov.cn/livinginbeijing/transportation/beijingsubway/202412/t20241216_3966828.html",
+   "checked_on": "2026-11-27",
+   "confidence": "high"
+  },
+  {
+   "id": "pl_cd_chengdudong",
+   "city": "chengdu",
+   "hub_type": "rail",
+   "name_zh": "成都东站",
+   "name_en": "Chengdu East Railway Station",
+   "code": null,
+   "terminals": null,
+   "to_city_zh": [
+    "可在成都东客站搭地铁2号线。"
+   ],
+   "to_city_en": [
+    "Take Metro Line 2 at Chengdu East Railway Station."
+   ],
+   "foreigner_tips_zh": [
+    "地铁导向常写「成都东客站」，铁路车票写「成都东」。",
+    "带上购票时使用的护照，闸机读不出证件时走人工通道。"
+   ],
+   "official_url": "https://www.cdairport.com/traffic3.aspx?t=35",
+   "checked_on": "2026-11-27",
+   "confidence": "high"
+  },
+  {
+   "id": "pl_cd_chengdunan",
+   "city": "chengdu",
+   "hub_type": "rail",
+   "name_zh": "成都南站",
+   "name_en": "Chengdu South Railway Station",
+   "code": null,
+   "terminals": null,
+   "to_city_zh": [
+    "在地铁火车南站可换乘，包括18号线。"
+   ],
+   "to_city_en": [
+    "Transfer at South Railway Station for the metro, including Line 18."
+   ],
+   "foreigner_tips_zh": [
+    "去机场前核对下一程是地铁还是国铁，站内按各自导向走。",
+    "带上购票时使用的护照，闸机读不出证件时走人工通道。"
+   ],
+   "official_url": "https://www.cdairport.com/traffic3.aspx?t=35",
+   "checked_on": "2026-11-27",
+   "confidence": "high"
+  },
+  {
+   "id": "pl_cd_chengduxi",
+   "city": "chengdu",
+   "hub_type": "rail",
+   "name_zh": "成都西站",
+   "name_en": "Chengdu West Railway Station",
+   "code": null,
+   "terminals": null,
+   "to_city_zh": [
+    "可换乘地铁9号线。"
+   ],
+   "to_city_en": [
+    "Transfer to Metro Line 9."
+   ],
+   "foreigner_tips_zh": [
+    "乘坐普速列车前核对票面中的西站及日期。",
+    "带上购票时使用的护照，闸机读不出证件时走人工通道。"
+   ],
+   "official_url": "https://www.12306.cn/mormhweb/zxdt_news/202609/t20260913_46323.html",
+   "checked_on": "2026-11-27",
+   "confidence": "high"
+  },
+  {
+   "id": "pl_cd_chengduzhan",
+   "city": "chengdu",
+   "hub_type": "rail",
+   "name_zh": "成都站",
+   "name_en": "Chengdu Railway Station",
+   "code": null,
+   "terminals": null,
+   "to_city_zh": null,
+   "to_city_en": null,
+   "foreigner_tips_zh": [
+    "成都站俗称火车北站，涉及扩能改造。订票和导航时使用12306票面给出的实际出发站。",
+    "带上购票时使用的护照，闸机读不出证件时走人工通道。"
+   ],
+   "official_url": "https://www.chengdu.gov.cn/gkml/uploadfiles/1607625235320909825/156242597416586444824.pdf",
+   "checked_on": "2026-11-27",
+   "confidence": "medium"
+  },
+  {
+   "id": "pl_cd_ctu",
+   "city": "chengdu",
+   "hub_type": "airport",
+   "name_zh": "成都双流国际机场",
+   "name_en": "Chengdu Shuangliu International Airport",
+   "code": "CTU",
+   "terminals": [
+    {
+     "name": "T1",
+     "note_zh": "出发前查航班页的值机航站楼。"
+    },
+    {
+     "name": "T2",
+     "note_zh": "可在 T2 附近乘地铁，按线路看清地铁站名。"
+    }
+   ],
+   "to_city_zh": [
+    "地铁10号线可向太平园方向进城。19号线在双流机场2航站楼东站接驳。"
+   ],
+   "to_city_en": [
+    "Metro Line 10 heads toward Taipingyuan. Line 19 serves East of Terminal 2."
+   ],
+   "foreigner_tips_zh": [
+    "CTU 是双流机场。需要换机场时，在地图里输入另一座机场全名。"
+   ],
+   "official_url": "https://www.cdairport.com/traffic3.aspx?t=36",
+   "checked_on": "2026-11-27",
+   "confidence": "high"
+  },
+  {
+   "id": "pl_cd_longquanyi",
+   "city": "chengdu",
+   "hub_type": "rail",
+   "name_zh": "成都龙泉驿站",
+   "name_en": "Chengdu Longquanyi Railway Station",
+   "code": null,
+   "terminals": null,
+   "to_city_zh": null,
+   "to_city_en": null,
+   "foreigner_tips_zh": [
+    "购票时查「成都龙泉驿」。出行前按票面中文全名导航。",
+    "带上购票时使用的护照，闸机读不出证件时走人工通道。"
+   ],
+   "official_url": "https://www.12306.cn/mormhweb/zxdt_news/202611/t20261110_46610.html",
+   "checked_on": "2026-11-27",
+   "confidence": "medium"
+  },
+  {
+   "id": "pl_cd_shuangliujichangzhan",
+   "city": "chengdu",
+   "hub_type": "rail",
+   "name_zh": "双流机场站",
+   "name_en": "Shuangliu Airport Railway Station",
+   "code": null,
+   "terminals": null,
+   "to_city_zh": [
+    "双流机场综合交通内可换乘机场地铁。"
+   ],
+   "to_city_en": [
+    "Transfer to the metro within the Shuangliu Airport transport complex."
+   ],
+   "foreigner_tips_zh": [
+    "国铁双流机场站与地铁航站楼站使用不同入口，请看门头的铁路或地铁标识。",
+    "带上购票时使用的护照，闸机读不出证件时走人工通道。"
+   ],
+   "official_url": "https://www.cdairport.com/traffic3.aspx?t=35",
+   "checked_on": "2026-11-27",
+   "confidence": "high"
+  },
+  {
+   "id": "pl_cd_tfu",
+   "city": "chengdu",
+   "hub_type": "airport",
+   "name_zh": "成都天府国际机场",
+   "name_en": "Chengdu Tianfu International Airport",
+   "code": "TFU",
+   "terminals": [
+    {
+     "name": "T1",
+     "note_zh": "设有国际航班值机区。"
+    },
+    {
+     "name": "T2",
+     "note_zh": "设有国内航班值机区。"
+    }
+   ],
+   "to_city_zh": [
+    "可乘地铁18号线进城。地铁19号线可接驳双流机场。"
+   ],
+   "to_city_en": [
+    "Take Metro Line 18 toward the city or Line 19 for Shuangliu Airport."
+   ],
+   "foreigner_tips_zh": [
+    "TFU 是天府机场。在成都转机时核对两张机票的机场代码，跨机场应预留交通时间。"
+   ],
+   "official_url": "https://www.cdairport.com/news_detail.aspx?cid=2507&page=1&t=60",
+   "checked_on": "2026-11-27",
+   "confidence": "high"
+  },
+  {
+   "id": "pl_cd_tianfujichangzhan",
+   "city": "chengdu",
+   "hub_type": "rail",
+   "name_zh": "天府机场站",
+   "name_en": "Tianfu Airport Railway Station",
+   "code": null,
+   "terminals": null,
+   "to_city_zh": [
+    "可从机场综合交通中心换乘地铁18号线或19号线。"
+   ],
+   "to_city_en": [
+    "Transfer to Metro Line 18 or 19 at the airport ground transport center."
+   ],
+   "foreigner_tips_zh": [
+    "有国铁车票时按「天府机场站」和高铁导向找进站口。",
+    "带上购票时使用的护照，闸机读不出证件时走人工通道。"
+   ],
+   "official_url": "https://www.sctyzx.gov.cn/scyw/202312/54301809.html",
+   "checked_on": "2026-11-27",
+   "confidence": "high"
+  },
+  {
+   "id": "pl_cq_chongqingbei",
+   "city": "chongqing",
+   "hub_type": "rail",
+   "name_zh": "重庆北站",
+   "name_en": "Chongqing North Railway Station",
+   "code": null,
+   "terminals": null,
+   "to_city_zh": [
+    "可由南北广场换乘轨道交通，环线可通重庆西站。"
+   ],
+   "to_city_en": [
+    "Use the metro connections at the north and south squares. The Loop Line serves Chongqing West."
+   ],
+   "foreigner_tips_zh": [
+    "看清车票或导航提示的南广场、北广场，预留步行时间。",
+    "带上购票时使用的护照，闸机读不出证件时走人工通道。"
+   ],
+   "official_url": "https://jtj.cq.gov.cn/sy_240/bmdt/202101/t20210120_8788761.html",
+   "checked_on": "2026-11-27",
+   "confidence": "high"
+  },
+  {
+   "id": "pl_cq_chongqingdong",
+   "city": "chongqing",
+   "hub_type": "rail",
+   "name_zh": "重庆东站",
+   "name_en": "Chongqing East Railway Station",
+   "code": null,
+   "terminals": null,
+   "to_city_zh": [
+    "轨道交通6号线已接驳重庆东站。"
+   ],
+   "to_city_en": [
+    "Metro Line 6 serves Chongqing East Railway Station."
+   ],
+   "foreigner_tips_zh": [
+    "把票面「重庆东」给司机看，提前走到相应铁路进站口。",
+    "带上购票时使用的护照，闸机读不出证件时走人工通道。"
+   ],
+   "official_url": "https://jtysw.cq.gov.cn/sy_240/jdtp/202506/t20250627_14753977.html",
+   "checked_on": "2026-11-27",
+   "confidence": "high"
+  },
+  {
+   "id": "pl_cq_chongqingxi",
+   "city": "chongqing",
+   "hub_type": "rail",
+   "name_zh": "重庆西站",
+   "name_en": "Chongqing West Railway Station",
+   "code": null,
+   "terminals": null,
+   "to_city_zh": [
+    "轨道交通环线可进城，亦可通重庆北站。"
+   ],
+   "to_city_en": [
+    "The Metro Loop Line serves central districts and Chongqing North."
+   ],
+   "foreigner_tips_zh": [
+    "跨站换车前核对票面「重庆西」和「重庆北」，预留进站时间。",
+    "带上购票时使用的护照，闸机读不出证件时走人工通道。"
+   ],
+   "official_url": "https://www.cq.gov.cn/zwgk/zfxxgkml/zdlyxxgk/jt/jtzx/202607/t20260701_15791713.html",
+   "checked_on": "2026-11-27",
+   "confidence": "high"
+  },
+  {
+   "id": "pl_cq_chongqingzhan",
+   "city": "chongqing",
+   "hub_type": "rail",
+   "name_zh": "重庆站",
+   "name_en": "Chongqing Railway Station",
+   "code": null,
+   "terminals": null,
+   "to_city_zh": null,
+   "to_city_en": null,
+   "foreigner_tips_zh": [
+    "菜园坝重庆站停办铁路客运改造中。请以12306显示的实际车站为准。",
+    "带上购票时使用的护照，闸机读不出证件时走人工通道。"
+   ],
+   "official_url": "https://jtj.cq.gov.cn/sy_240/bmdt/202505/t20250526_14656238.html",
+   "checked_on": "2026-11-27",
+   "confidence": "high"
+  },
+  {
+   "id": "pl_cq_ckg",
+   "city": "chongqing",
+   "hub_type": "airport",
+   "name_zh": "重庆江北国际机场",
+   "name_en": "Chongqing Jiangbei International Airport",
+   "code": "CKG",
+   "terminals": [
+    {
+     "name": "T2",
+     "note_zh": "部分航司在此运营，按航班确认。"
+    },
+    {
+     "name": "T3A",
+     "note_zh": "T3 的主要办理区域之一，按航司查值机位置。"
+    },
+    {
+     "name": "T3B",
+     "note_zh": "按航班登机口及机场指引前往，部分航司提供现场中转服务。"
+    }
+   ],
+   "to_city_zh": [
+    "轨道交通10号线连接两处航站区，亦可向中心城区方向乘坐。"
+   ],
+   "to_city_en": [
+    "Metro Line 10 links the terminal areas and runs toward central Chongqing."
+   ],
+   "foreigner_tips_zh": [
+    "重庆江北机场的 T2、T3 分开。上车前把航站楼号和航班号给司机看。"
+   ],
+   "official_url": "https://www.cq.gov.cn/ywdt/jrcq/202512/t20251223_15262778.html",
+   "checked_on": "2026-11-27",
+   "confidence": "high"
+  },
+  {
+   "id": "pl_cq_shapingba",
+   "city": "chongqing",
+   "hub_type": "rail",
+   "name_zh": "沙坪坝站",
+   "name_en": "Shapingba Railway Station",
+   "code": null,
+   "terminals": null,
+   "to_city_zh": [
+    "可从地下换乘厅转轨道交通，环线途经沙坪坝。"
+   ],
+   "to_city_en": [
+    "Follow the underground concourse to the metro, including the Loop Line."
+   ],
+   "foreigner_tips_zh": [
+    "铁路、地铁与购物场所入口相邻，按「铁路进站」导向找检票区域。",
+    "带上购票时使用的护照，闸机读不出证件时走人工通道。"
+   ],
+   "official_url": "https://www.cq.gov.cn/zwgk/zfxxgkml/zdlyxxgk/jt/jtzx/202501/t20250113_14133075.html",
+   "checked_on": "2026-11-27",
+   "confidence": "high"
+  },
+  {
+   "id": "pl_cq_wanzhoubei",
+   "city": "chongqing",
+   "hub_type": "rail",
+   "name_zh": "万州北站",
+   "name_en": "Wanzhou North Railway Station",
+   "code": null,
+   "terminals": null,
+   "to_city_zh": [
+    "万州公交65路连接高铁北站与百安坝，也可乘出租车接驳。"
+   ],
+   "to_city_en": [
+    "Bus 65 connects the high-speed station with Baianba. Taxis also serve the station."
+   ],
+   "foreigner_tips_zh": [
+    "把「万州北」和车次一起给司机看，关注扩建期间的进站导向。",
+    "带上购票时使用的护照，闸机读不出证件时走人工通道。"
+   ],
+   "official_url": "https://www.wz.gov.cn/zwxx_266/jdtp/202601/t20260127_15356567.html",
+   "checked_on": "2026-11-27",
+   "confidence": "high"
+  },
+  {
+   "id": "pl_cq_wanzhouzhan",
+   "city": "chongqing",
+   "hub_type": "rail",
+   "name_zh": "万州站",
+   "name_en": "Wanzhou Railway Station",
+   "code": null,
+   "terminals": null,
+   "to_city_zh": null,
+   "to_city_en": null,
+   "foreigner_tips_zh": [
+    "万州站和万州北站是不同车站。票面写「万州」时，按中文站名定位。",
+    "带上购票时使用的护照，闸机读不出证件时走人工通道。"
+   ],
+   "official_url": "https://www.wz.gov.cn/zwxx_266/jdtp/202602/t20260203_15374523.html",
+   "checked_on": "2026-11-27",
+   "confidence": "medium"
+  },
+  {
+   "id": "pl_cq_wxn",
+   "city": "chongqing",
+   "hub_type": "airport",
+   "name_zh": "万州五桥机场",
+   "name_en": "Wanzhou Wuqiao Airport",
+   "code": "WXN",
+   "terminals": [
+    {
+     "name": "T2",
+     "note_zh": "地方政府近期出行信息列有 T2，按票面确认值机地点。"
+    }
+   ],
+   "to_city_zh": [
+    "机场有出租车候客区，可乘车进入万州城区。"
+   ],
+   "to_city_en": [
+    "Taxis from the airport serve urban Wanzhou."
+   ],
+   "foreigner_tips_zh": [
+    "WXN 对应万州。若旅程要去重庆中心城区，请单独安排万州至主城的路段。"
+   ],
+   "official_url": "https://www.caac.gov.cn/PHONE/GYMH/MHGK/GNYSJC/XNDQ/CQ/",
+   "checked_on": "2026-11-27",
+   "confidence": "high"
+  },
+  {
+   "id": "pl_gz_can",
+   "city": "guangzhou",
+   "hub_type": "airport",
+   "name_zh": "广州白云国际机场",
+   "name_en": "Guangzhou Baiyun International Airport",
+   "code": "CAN",
+   "terminals": [
+    {
+     "name": "T2",
+     "note_zh": "地铁机场北站连接该航站楼。"
+    },
+    {
+     "name": "T3",
+     "note_zh": "综合交通中心连接城际白云机场东站，可换乘高增接驳公交。"
+    }
+   ],
+   "to_city_zh": [
+    "T2 可从机场北站乘地铁3号线。",
+    "T3 可乘城际铁路，或先坐接驳公交到高增换地铁。"
+   ],
+   "to_city_en": [
+    "From T2, take Metro Line 3 at Airport North.",
+    "From T3, take the intercity train or a shuttle to Gaozeng for the metro."
+   ],
+   "foreigner_tips_zh": [
+    "T2 和 T3 的进城方式不同。出发前按航司通知确认航站楼，坐城际时核对「白云机场东」站名。"
+   ],
+   "official_url": "https://www.baiyunairport.com/guide/terminals?urlKey=terminals_en",
+   "checked_on": "2026-11-27",
+   "confidence": "high"
+  },
+  {
+   "id": "pl_gz_guangzhoubaiyun",
+   "city": "guangzhou",
+   "hub_type": "rail",
+   "name_zh": "广州白云站",
+   "name_en": "Guangzhou Baiyun Railway Station",
+   "code": null,
+   "terminals": null,
+   "to_city_zh": [
+    "可经石槎路、棠颂路乘车接驳。"
+   ],
+   "to_city_en": [
+    "Road access is available via Shicha Road and Tangsong Road."
+   ],
+   "foreigner_tips_zh": [
+    "「广州白云站」是铁路站。叫车时用铁路站中文全名。",
+    "带上购票时使用的护照，闸机读不出证件时走人工通道。"
+   ],
+   "official_url": "https://jtj.gz.gov.cn/xwdt/gzdt/content/post_10050166.html",
+   "checked_on": "2026-11-27",
+   "confidence": "high"
+  },
+  {
+   "id": "pl_gz_guangzhoubei",
+   "city": "guangzhou",
+   "hub_type": "rail",
+   "name_zh": "广州北站",
+   "name_en": "Guangzhou North Railway Station",
+   "code": null,
+   "terminals": null,
+   "to_city_zh": [
+    "可在花都换乘地铁或城际列车。"
+   ],
+   "to_city_en": [
+    "Transfer to the metro or intercity rail in Huadu."
+   ],
+   "foreigner_tips_zh": [
+    "转乘机场交通前，先确认航空航站楼和对应城际车站。",
+    "带上购票时使用的护照，闸机读不出证件时走人工通道。"
+   ],
+   "official_url": "https://jtj.gz.gov.cn/gkmlpt/content/8/8494/post_8494489.html",
+   "checked_on": "2026-11-27",
+   "confidence": "high"
+  },
+  {
+   "id": "pl_gz_guangzhoudong",
+   "city": "guangzhou",
+   "hub_type": "rail",
+   "name_zh": "广州东站",
+   "name_en": "Guangzhou East Railway Station",
+   "code": null,
+   "terminals": null,
+   "to_city_zh": [
+    "地铁1号线可到广州东站。"
+   ],
+   "to_city_en": [
+    "Metro Line 1 serves Guangzhou East Railway Station."
+   ],
+   "foreigner_tips_zh": [
+    "转去香港时先确认车票上的始发站和检票口。",
+    "带上购票时使用的护照，闸机读不出证件时走人工通道。"
+   ],
+   "official_url": "https://jtj.gz.gov.cn/xwdt/gzdt/content/post_10050166.html",
+   "checked_on": "2026-11-27",
+   "confidence": "high"
+  },
+  {
+   "id": "pl_gz_guangzhounan",
+   "city": "guangzhou",
+   "hub_type": "rail",
+   "name_zh": "广州南站",
+   "name_en": "Guangzhou South Railway Station",
+   "code": null,
+   "terminals": null,
+   "to_city_zh": [
+    "地铁2号线可进中心城区。"
+   ],
+   "to_city_en": [
+    "Take Metro Line 2 into central Guangzhou."
+   ],
+   "foreigner_tips_zh": [
+    "去广州南站前看清票面，广州站与广州南站相距较远。",
+    "带上购票时使用的护照，闸机读不出证件时走人工通道。"
+   ],
+   "official_url": "https://wglj.gz.gov.cn/xxgk/qt/rdjyzxta/zxta/content/post_9813546.html",
+   "checked_on": "2026-11-27",
+   "confidence": "high"
+  },
+  {
+   "id": "pl_gz_guangzhouzhan",
+   "city": "guangzhou",
+   "hub_type": "rail",
+   "name_zh": "广州站",
+   "name_en": "Guangzhou Railway Station",
+   "code": null,
+   "terminals": null,
+   "to_city_zh": [
+    "地铁2号线可在广州火车站换乘。"
+   ],
+   "to_city_en": [
+    "Metro Line 2 serves Guangzhou Railway Station."
+   ],
+   "foreigner_tips_zh": [
+    "给司机看中文「广州站」及车次。",
+    "带上购票时使用的护照，闸机读不出证件时走人工通道。"
+   ],
+   "official_url": "https://wglj.gz.gov.cn/xxgk/qt/rdjyzxta/zxta/content/post_9813546.html",
+   "checked_on": "2026-11-27",
+   "confidence": "high"
+  },
+  {
+   "id": "pl_gz_xintang",
+   "city": "guangzhou",
+   "hub_type": "rail",
+   "name_zh": "新塘站",
+   "name_en": "Xintang Railway Station",
+   "code": null,
+   "terminals": null,
+   "to_city_zh": [
+    "附近可换乘穗深城际新塘南站。"
+   ],
+   "to_city_en": [
+    "Transfer nearby to Suishen Intercity services at Xintang South."
+   ],
+   "foreigner_tips_zh": [
+    "国铁新塘和城际新塘南的票面不同，换乘时分别核对站名和运营方。",
+    "带上购票时使用的护照，闸机读不出证件时走人工通道。"
+   ],
+   "official_url": "https://jtj.gz.gov.cn/xwdt/gzdt/content/post_10050166.html",
+   "checked_on": "2026-11-27",
+   "confidence": "high"
+  },
+  {
+   "id": "pl_sh_hongqiaozhan",
+   "city": "shanghai",
+   "hub_type": "rail",
+   "name_zh": "上海虹桥站",
+   "name_en": "Shanghai Hongqiao Railway Station",
+   "code": null,
+   "terminals": null,
+   "to_city_zh": [
+    "可乘地铁2号线、10号线、17号线。"
+   ],
+   "to_city_en": [
+    "Served by Metro lines 2, 10 and 17."
+   ],
+   "foreigner_tips_zh": [
+    "从虹桥机场前往时跟随「虹桥火车站」导向。",
+    "带上购票时使用的护照，闸机读不出证件时走人工通道。"
+   ],
+   "official_url": "https://english.shanghai.gov.cn/en-Transportation/20250126/484b92f86eeb49d7b26086d25010d782.html",
+   "checked_on": "2026-11-27",
+   "confidence": "high"
+  },
+  {
+   "id": "pl_sh_pvg",
+   "city": "shanghai",
+   "hub_type": "airport",
+   "name_zh": "上海浦东国际机场",
+   "name_en": "Shanghai Pudong International Airport",
+   "code": "PVG",
+   "terminals": [
+    {
+     "name": "T1",
+     "note_zh": "地铁和机场联络线都可接驳。"
+    },
+    {
+     "name": "T2",
+     "note_zh": "地铁和机场联络线都可接驳。"
+    }
+   ],
+   "to_city_zh": [
+    "地铁2号线可到人民广场，磁浮线接驳龙阳路。",
+    "去虹桥机场 T2 可走市域机场线。"
+   ],
+   "to_city_en": [
+    "Metro Line 2 runs to People's Square, and the maglev connects to Longyang Road.",
+    "For Hongqiao Airport T2, take the Airport Link Line."
+   ],
+   "foreigner_tips_zh": [
+    "跨机场转机时核对 PVG 与 SHA，另留前往航站楼和重新安检的时间。"
+   ],
+   "official_url": "https://www.shairport.com/gdjt/index.html",
+   "checked_on": "2026-11-27",
+   "confidence": "high"
+  },
+  {
+   "id": "pl_sh_sha",
+   "city": "shanghai",
+   "hub_type": "airport",
+   "name_zh": "上海虹桥国际机场",
+   "name_en": "Shanghai Hongqiao International Airport",
+   "code": "SHA",
+   "terminals": [
+    {
+     "name": "T1",
+     "note_zh": "地铁10号线接驳。"
+    },
+    {
+     "name": "T2",
+     "note_zh": "地铁和市域机场线接驳，可步行换乘虹桥火车站。"
+    }
+   ],
+   "to_city_zh": [
+    "T1 可乘地铁10号线。T2 可乘2号线或10号线。",
+    "T2 的市域机场线可坐到浦东机场。"
+   ],
+   "to_city_en": [
+    "Use Metro Line 10 at T1, or Line 2 or 10 at T2.",
+    "The Airport Link Line from T2 runs to Pudong Airport."
+   ],
+   "foreigner_tips_zh": [
+    "虹桥火车站和虹桥机场是同一枢纽内的不同目的地，打车时说清机场和航站楼。"
+   ],
+   "official_url": "https://www.shairport.com/gdjt/index.html",
+   "checked_on": "2026-11-27",
+   "confidence": "high"
+  },
+  {
+   "id": "pl_sh_shanghainan",
+   "city": "shanghai",
+   "hub_type": "rail",
+   "name_zh": "上海南站",
+   "name_en": "Shanghai South Railway Station",
+   "code": null,
+   "terminals": null,
+   "to_city_zh": [
+    "可乘地铁1号线、3号线、15号线。"
+   ],
+   "to_city_en": [
+    "Served by Metro lines 1, 3 and 15."
+   ],
+   "foreigner_tips_zh": [
+    "给司机看票面中文站名，别只说 Shanghai station。",
+    "带上购票时使用的护照，闸机读不出证件时走人工通道。"
+   ],
+   "official_url": "https://english.shanghai.gov.cn/en-Transportation/20250126/484b92f86eeb49d7b26086d25010d782.html",
+   "checked_on": "2026-11-27",
+   "confidence": "high"
+  },
+  {
+   "id": "pl_sh_shanghaixi",
+   "city": "shanghai",
+   "hub_type": "rail",
+   "name_zh": "上海西站",
+   "name_en": "Shanghai West Railway Station",
+   "code": null,
+   "terminals": null,
+   "to_city_zh": [
+    "可乘地铁11号线、15号线。"
+   ],
+   "to_city_en": [
+    "Served by Metro lines 11 and 15."
+   ],
+   "foreigner_tips_zh": [
+    "如需在上海换站，先核对下一段车票是否写上海西站。",
+    "带上购票时使用的护照，闸机读不出证件时走人工通道。"
+   ],
+   "official_url": "https://english.shanghai.gov.cn/en-Transportation/20250126/484b92f86eeb49d7b26086d25010d782.html",
+   "checked_on": "2026-11-27",
+   "confidence": "high"
+  },
+  {
+   "id": "pl_sh_shanghaizhan",
+   "city": "shanghai",
+   "hub_type": "rail",
+   "name_zh": "上海站",
+   "name_en": "Shanghai Railway Station",
+   "code": null,
+   "terminals": null,
+   "to_city_zh": [
+    "可乘地铁1号线、3号线、4号线。"
+   ],
+   "to_city_en": [
+    "Served by Metro lines 1, 3 and 4."
+   ],
+   "foreigner_tips_zh": [
+    "票面「上海」一般对应上海站，请以实际订单为准。",
+    "带上购票时使用的护照，闸机读不出证件时走人工通道。"
+   ],
+   "official_url": "https://english.shanghai.gov.cn/en-Transportation/20250126/484b92f86eeb49d7b26086d25010d782.html",
+   "checked_on": "2026-11-27",
+   "confidence": "high"
+  },
+  {
+   "id": "pl_sh_songjiang",
+   "city": "shanghai",
+   "hub_type": "rail",
+   "name_zh": "上海松江站",
+   "name_en": "Shanghai Songjiang Railway Station",
+   "code": null,
+   "terminals": null,
+   "to_city_zh": [
+    "可乘地铁9号线。"
+   ],
+   "to_city_en": [
+    "Served by Metro Line 9."
+   ],
+   "foreigner_tips_zh": [
+    "在地图上选「上海松江站」，预留从市中心前往松江区的时间。",
+    "带上购票时使用的护照，闸机读不出证件时走人工通道。"
+   ],
+   "official_url": "https://english.shanghai.gov.cn/en-Transportation/20250126/484b92f86eeb49d7b26086d25010d782.html",
+   "checked_on": "2026-11-27",
+   "confidence": "high"
+  },
+  {
+   "id": "pl_sz_futian",
+   "city": "shenzhen",
+   "hub_type": "rail",
+   "name_zh": "福田站",
+   "name_en": "Futian Railway Station",
+   "code": null,
+   "terminals": null,
+   "to_city_zh": [
+    "地铁接驳：2号线、3号线、11号线。"
+   ],
+   "to_city_en": [
+    "Metro connection: lines 2, 3 and 11."
+   ],
+   "foreigner_tips_zh": [
+    "去香港西九龙时，确认票面进站点是国铁福田站。",
+    "带上购票时使用的护照，闸机读不出证件时走人工通道。"
+   ],
+   "official_url": "https://jtys.sz.gov.cn/ydmh/jtcx/hccx/hczfb/",
+   "checked_on": "2026-11-27",
+   "confidence": "high"
+  },
+  {
+   "id": "pl_sz_guangmingcheng",
+   "city": "shenzhen",
+   "hub_type": "rail",
+   "name_zh": "光明城站",
+   "name_en": "Guangmingcheng Railway Station",
+   "code": null,
+   "terminals": null,
+   "to_city_zh": [
+    "地铁接驳：13号线光明城站。"
+   ],
+   "to_city_en": [
+    "Metro connection: Line 13 at Guangmingcheng."
+   ],
+   "foreigner_tips_zh": [
+    "从地铁站跟随铁路进站导向，核对票面「光明城」。",
+    "带上购票时使用的护照，闸机读不出证件时走人工通道。"
+   ],
+   "official_url": "https://jtys.sz.gov.cn/ydmh/jtcx/hccx/hczfb/",
+   "checked_on": "2026-11-27",
+   "confidence": "high"
+  },
+  {
+   "id": "pl_sz_pinghu",
+   "city": "shenzhen",
+   "hub_type": "rail",
+   "name_zh": "平湖站",
+   "name_en": "Pinghu Railway Station",
+   "code": null,
+   "terminals": null,
+   "to_city_zh": [
+    "地铁接驳：10号线平湖站。"
+   ],
+   "to_city_en": [
+    "Metro connection: Line 10 at Pinghu."
+   ],
+   "foreigner_tips_zh": [
+    "乘广深方向列车前核对是否停靠平湖。",
+    "带上购票时使用的护照，闸机读不出证件时走人工通道。"
+   ],
+   "official_url": "https://jtys.sz.gov.cn/ydmh/jtcx/hccx/hczfb/",
+   "checked_on": "2026-11-27",
+   "confidence": "high"
+  },
+  {
+   "id": "pl_sz_shenzhenbei",
+   "city": "shenzhen",
+   "hub_type": "rail",
+   "name_zh": "深圳北站",
+   "name_en": "Shenzhen North Railway Station",
+   "code": null,
+   "terminals": null,
+   "to_city_zh": [
+    "地铁接驳：4号线、5号线、6号线。"
+   ],
+   "to_city_en": [
+    "Metro connection: lines 4, 5 and 6."
+   ],
+   "foreigner_tips_zh": [
+    "换乘高铁时核对票面是深圳北还是福田。",
+    "带上购票时使用的护照，闸机读不出证件时走人工通道。"
+   ],
+   "official_url": "https://jtys.sz.gov.cn/ydmh/jtcx/hccx/hczfb/",
+   "checked_on": "2026-11-27",
+   "confidence": "high"
+  },
+  {
+   "id": "pl_sz_shenzhendong",
+   "city": "shenzhen",
+   "hub_type": "rail",
+   "name_zh": "深圳东站",
+   "name_en": "Shenzhen East Railway Station",
+   "code": null,
+   "terminals": null,
+   "to_city_zh": [
+    "地铁接驳：3号线、5号线，均在布吉站换乘。"
+   ],
+   "to_city_en": [
+    "Metro connection: lines 3 and 5 at Buji."
+   ],
+   "foreigner_tips_zh": [
+    "地铁抵达布吉后，按导向步行到深圳东站。",
+    "带上购票时使用的护照，闸机读不出证件时走人工通道。"
+   ],
+   "official_url": "https://jtys.sz.gov.cn/ydmh/jtcx/hccx/hczfb/",
+   "checked_on": "2026-11-27",
+   "confidence": "high"
+  },
+  {
+   "id": "pl_sz_shenzhenpingshan",
+   "city": "shenzhen",
+   "hub_type": "rail",
+   "name_zh": "深圳坪山站",
+   "name_en": "Shenzhen Pingshan Railway Station",
+   "code": null,
+   "terminals": null,
+   "to_city_zh": [
+    "地铁接驳：16号线坪山站。"
+   ],
+   "to_city_en": [
+    "Metro connection: Line 16 at Pingshan."
+   ],
+   "foreigner_tips_zh": [
+    "从中心城区前往坪山应预留地铁换乘时间。",
+    "带上购票时使用的护照，闸机读不出证件时走人工通道。"
+   ],
+   "official_url": "https://jtys.sz.gov.cn/ydmh/jtcx/hccx/hczfb/",
+   "checked_on": "2026-11-27",
+   "confidence": "high"
+  },
+  {
+   "id": "pl_sz_shenzhenzhan",
+   "city": "shenzhen",
+   "hub_type": "rail",
+   "name_zh": "深圳站",
+   "name_en": "Shenzhen Railway Station",
+   "code": null,
+   "terminals": null,
+   "to_city_zh": [
+    "地铁接驳：1号线罗湖站。"
+   ],
+   "to_city_en": [
+    "Metro connection: Line 1 at Luohu."
+   ],
+   "foreigner_tips_zh": [
+    "票面「深圳」对应罗湖的深圳站。",
+    "带上购票时使用的护照，闸机读不出证件时走人工通道。"
+   ],
+   "official_url": "https://jtys.sz.gov.cn/ydmh/jtcx/hccx/hczfb/",
+   "checked_on": "2026-11-27",
+   "confidence": "high"
+  },
+  {
+   "id": "pl_sz_szx",
+   "city": "shenzhen",
+   "hub_type": "airport",
+   "name_zh": "深圳宝安国际机场",
+   "name_en": "Shenzhen Bao'an International Airport",
+   "code": "SZX",
+   "terminals": [
+    {
+     "name": "T3",
+     "note_zh": "公共交通入口在地面交通中心。"
+    },
+    {
+     "name": "卫星厅",
+     "note_zh": "从 T3 安检后按登机口信息乘机场捷运。"
+    }
+   ],
+   "to_city_zh": [
+    "从地面交通中心坐地铁11号线，可到福田。"
+   ],
+   "to_city_en": [
+    "Take Metro Line 11 from the ground transport center to Futian."
+   ],
+   "foreigner_tips_zh": [
+    "去 T3 坐11号线，在「机场」站下车。看清地铁站名，福永方向另有「机场北」站。"
+   ],
+   "official_url": "https://www.sz.gov.cn/en_szgov/news/infocus/SZCitywalk/Explore/Plan/content/post_11908152.html",
+   "checked_on": "2026-11-27",
+   "confidence": "high"
+  }
+ ]
+}

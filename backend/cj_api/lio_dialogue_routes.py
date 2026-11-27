@@ -15,6 +15,8 @@ from cj_agent.run_timing import accepted
 from cj_run.display_snapshot import SnapshotTooLarge
 
 from cj_message.lio_followups import VERSION as FOLLOWUPS_VERSION, wire_followups
+from cj_message import lio_entities
+from cj_message.lio_entities import ENTITIES_EFFECT
 
 from .local_lio_planning import ITINERARY_PREVIEW_VERSION,read_itinerary_preview
 from .lio_weather import CITY_EFFECT,reference as city_weather_reference
@@ -25,6 +27,8 @@ from .message_routes import BodyError, _read_body, _token, message_failure
 TIMELINE_VERSION = 'LIO-timeline.1'
 RECEIPT_VERSION = 'LIO-message-receipt.1'
 BEIJING_PUBLIC_FORECAST = 'https://www.weather.com.cn/weather/101010100.shtml'
+RICH_VERSION = 'LIO-answer-rich.1'   # #1984; `accepts` takes exactly one of FOLLOWUPS_VERSION, RICH_VERSION
+MAX_RICH_BYTES = 16384
 
 
 def _json(value, status=200):
@@ -58,6 +62,7 @@ def _message(item, state, *, expired=False, trip=None, memory=None, identity=Tru
     sources = []
     layout = None
     followups = None
+    entities = None
     amap_weather = False
     weather_city = None
     activity = None
@@ -70,6 +75,8 @@ def _message(item, state, *, expired=False, trip=None, memory=None, identity=Tru
                 amap_weather |= citation['title'] in ('高德天气', 'Amap Weather') and citation['url'] is None
             elif effect.startswith(LAYOUT_EFFECT):
                 layout = effect.removeprefix(LAYOUT_EFFECT)
+            elif effect.startswith(ENTITIES_EFFECT):
+                entities = effect   # the last one counts
             elif effect.startswith(FOLLOWUPS_EFFECT):
                 try:
                     followups = wire_followups(json.loads(effect.removeprefix(FOLLOWUPS_EFFECT)))
@@ -109,7 +116,35 @@ def _message(item, state, *, expired=False, trip=None, memory=None, identity=Tru
             row['layout'] = layout
         if status == 'completed' and answer and followups is not None and trip is None and layout == 'split':
             row['followups'] = followups
+        if declared == 'rich' and status == 'completed' and answer:
+            rich = _rich(answer, entities)
+            if rich is not None:
+                row['rich'] = rich
     return row
+
+
+def _rich(answer, entities):
+    """`rich` for a row of a poll that declared LIO-answer-rich.1, or None. Every part fails alone and quietly:
+    a bad or missing part is left out, `rich` never fails the page. Parts are added here as their tickets land
+    (entities D-1 #1989; cards D-2 #1990; receipt T-1 #1994; memory M-1/M-3)."""
+    try:
+        if not lio_entities.rich_enabled():
+            return None   # off: a rich declaration reads exactly like followups.1, not a 400
+        value = {}
+        if entities is not None:
+            rows = lio_entities.wire(entities, answer, lio_entities.approved_ids().__contains__)
+            if rows:
+                value['entities'] = rows
+        if not value:
+            return None
+        value = dict(version=RICH_VERSION, **value)
+        if len(json.dumps(value, ensure_ascii=False, separators=(',', ':')).encode('utf-8')) > MAX_RICH_BYTES:
+            value.pop('entities', None)   # the drop order of the contract: entities, then cards; never the receipt
+            if len(value) == 1:
+                return None
+        return value
+    except Exception:
+        return None
 
 
 def _timeline(boundary, resolve_runs, trip_cards, memory_cards, token, conversation_id, before, multiple=False,calendar=False,declared=False):
@@ -212,7 +247,7 @@ def register_lio_dialogue_routes(app, boundary, resolve_runs, trip_cards, *, pre
         try:
             params = _query(request, (), ('conversation_id', 'before', 'accepts'))
             # W2-1 (#1727): only the v2 conversation timeline knows this declaration; any other value is refused.
-            if 'accepts' in params and (not multiple or calendar or params['accepts'] != FOLLOWUPS_VERSION):
+            if 'accepts' in params and (not multiple or calendar or params['accepts'] not in (FOLLOWUPS_VERSION, RICH_VERSION)):
                 raise ValueError('unsupported accepts')
             conversation = params.get('conversation_id')
             if conversation is not None and not LIO_CHAT_PATTERN.fullmatch(conversation):
@@ -223,7 +258,8 @@ def register_lio_dialogue_routes(app, boundary, resolve_runs, trip_cards, *, pre
         try:
             return await run_in_threadpool(_timeline, calendar_boundary if calendar else boundary, resolve_runs,
                                            calendar_cards if calendar else trip_cards, memory_cards, token,
-                                           conversation, before, multiple,calendar, 'accepts' in params)
+                                           conversation, before, multiple,calendar,
+                                           'rich' if params.get('accepts') == RICH_VERSION else 'accepts' in params)
         except Exception as exc:
             return _failure(message_failure(request, exc, False).status_code)
 

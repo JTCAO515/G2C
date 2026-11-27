@@ -55,6 +55,15 @@ import Testing
                 && LioNearbyPlace.Category.essentials.contains(.luggage))
     }
 
+    @Test func aServerThatDoesNotKnowCommunityServicesIsNotACrash() {
+        // The server answers 400 invalid_request for a kind it does not know; the page says so in plain words.
+        let refused = LioNearbyWire.failure(status: 400, body: Data(#"{"error":"invalid_request"}"#.utf8))
+        #expect(refused == .unavailable)
+        #expect(LioNearbyPlace.unavailableText(.chinese, community: true) == "本版本暂不可用。")
+        #expect(LioNearbyPlace.unavailableText(.english, community: true) == "Not available in this version yet.")
+        #expect(LioNearbyPlace.unavailableText(.chinese, community: false) == "附近暂时不可用，请重试。")
+    }
+
     @Test func theGroupIsCalledConvenienceNotEssentials() {
         #expect(LioNearbyPlace.convenienceTitle(.chinese) == "便利")
         #expect(LioNearbyPlace.convenienceTitle(.english) == "Convenience")

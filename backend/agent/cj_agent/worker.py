@@ -604,6 +604,17 @@ class RunWorker:
                 missing = supplement(text, answered, locale)
                 if missing:
                     state = self._event(binding, state, 'text_delta', missing)
+            if split_layout and state.text.strip():
+                # #1989 (D-1, LIO-answer-rich.1): the library places this answer names, bound to its final text.
+                # Off unless CJ_LIO_ENTITIES=on; a failure here never touches the answer.
+                try:
+                    from cj_message.lio_entities import entity_effect
+                    city = self.lio_city_context
+                    linked = entity_effect(state.text, getattr(city, 'adcode', None))
+                    if linked is not None:
+                        state = self._event(binding, state, 'effect_committed', linked)
+                except Exception as error:
+                    logging.getLogger('cj_usage.audit').info('LIO_ENTITIES_UNAVAILABLE run_id=%s error=%s', binding.run_id, type(error).__name__)
             if split_layout and (answered or state.text).strip():
                 # W2-1 (#1727): fixed action buttons for a two-bubble answer; none when nothing applies.
                 from cj_message.lio_followups import allowed_actions, chips_for, followups_payload
