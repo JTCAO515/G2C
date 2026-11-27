@@ -84,6 +84,10 @@
     {
       "setting": "G2C_CHAT_TRIP_PLACES_ENABLED",
       "plist": "G2CChatTripPlacesEnabled"
+    },
+    {
+      "setting": "G2C_TRIP_CANVAS_ENABLED",
+      "plist": "G2CTripCanvasEnabled"
     }
   ],
   "release": {
