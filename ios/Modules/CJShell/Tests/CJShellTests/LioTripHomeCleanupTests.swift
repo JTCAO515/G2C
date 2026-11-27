@@ -49,6 +49,30 @@ import Testing
         try LioTripHomeCleanup.erase(in: otherAccount)
     }
 
+    /// #1994: the one-time autosave notice's record lives in the trip home's folder and goes with it on account cleanup.
+    @Test func erasesTheAutosaveNoticeRecordTogetherWithTheTripHome() throws {
+        let root = try temporaryRoot()
+        defer { try? FileManager.default.removeItem(at: root) }
+        let selected = try seedAccount("selected", at: root, bytes: Data([1]))
+        let adjacent = try seedAccount("adjacent", at: root, bytes: Data([2]))
+        let folder = tripHomeFile(in: selected).deletingLastPathComponent()
+        let record = folder.appendingPathComponent(LioAutosaveNoticeStore.fileName)
+        try Data([6]).write(to: record)
+        let account = try DeviceCleanupDirectory(existingPrivateDirectory: selected)
+        try LioTripHomeCleanup.erase(in: account)
+        try account.requireEmpty()
+        #expect(!FileManager.default.fileExists(atPath: record.path))
+        try LioTripHomeCleanup.erase(in: account)
+        #expect(try Data(contentsOf: tripHomeFile(in: adjacent)) == Data([2]), "another account keeps its own")
+        // With only the record (the trip home never started) it is removed too.
+        let other = try seedAccount("other", at: root, bytes: Data([1]))
+        try FileManager.default.removeItem(at: tripHomeFile(in: other))
+        try Data([7]).write(to: tripHomeFile(in: other).deletingLastPathComponent().appendingPathComponent(LioAutosaveNoticeStore.fileName))
+        let otherAccount = try DeviceCleanupDirectory(existingPrivateDirectory: other)
+        try LioTripHomeCleanup.erase(in: otherAccount)
+        try otherAccount.requireEmpty()
+    }
+
     @Test func unknownRecordsKeepCleanupIncompleteAndArePreserved() throws {
         let root = try temporaryRoot()
         defer { try? FileManager.default.removeItem(at: root) }

@@ -311,12 +311,17 @@ public enum LioTimelineWire {
         public let memoryPrompt: Bool
         /// `memory.used` (#2001): which of the traveller's remembered preferences the server gave the model for this answer.
         public let memoryUsed: MemoryUsed?
+        /// `trip_receipt` (#1994): what the automatic save of this answer did. Unlike the other parts it can ride on a
+        /// failed row too (a save that committed before the answer failed still has its undo).
+        public let tripReceipt: TripReceipt?
 
-        public init(entities: [Entity] = [], cards: [Card] = [], memoryPrompt: Bool = false, memoryUsed: MemoryUsed? = nil) {
+        public init(entities: [Entity] = [], cards: [Card] = [], memoryPrompt: Bool = false, memoryUsed: MemoryUsed? = nil,
+                    tripReceipt: TripReceipt? = nil) {
             self.entities = entities
             self.cards = cards
             self.memoryPrompt = memoryPrompt
             self.memoryUsed = memoryUsed
+            self.tripReceipt = tripReceipt
         }
     }
 
@@ -494,19 +499,31 @@ public enum LioTimelineWire {
         let layout = wire.layout.flatMap(AnswerLayout.init(rawValue:))
         // A layout the App does not know is read as no layout: the row is still shown as before.
         let shown = (state == .completed && layout == .split) ? validFollowups(wire.followups) : ([], [])
-        // `rich` only rides on a completed row that has an answer; anywhere else it is ignored.
-        var rich = (state == .completed && !wire.answer.isEmpty) ? validRich(wire.rich) : nil
-        // A plan reply carries no cards (contract: `cards` needs `trip = null`).
-        if trip != nil, let kept = rich { rich = kept.entities.isEmpty ? nil : Rich(entities: kept.entities) }
+        // Entities, cards and memory only ride on a completed row that has an answer. The receipt may also ride on a
+        // failed row (`.serviceLimit`, `.unavailable`); a row still being answered carries no `rich`.
+        var rich: Rich?
+        switch state {
+        case .completed: rich = validRich(wire.rich, answerShown: !wire.answer.isEmpty)
+        case .serviceLimit, .unavailable: rich = validRich(wire.rich, answerShown: false)
+        case .waiting, .answering: rich = nil
+        }
+        // A plan reply carries no cards (contract: `cards` needs `trip = null`); the receipt is what a plan reply is for.
+        if trip != nil, let kept = rich {
+            rich = kept.entities.isEmpty && kept.tripReceipt == nil ? nil
+                : Rich(entities: kept.entities, tripReceipt: kept.tripReceipt)
+        }
         return Message(id: wire.messageID, question: wire.text, answer: wire.answer, state: state,
                        activity: wire.activity, sources: sources, trip: trip, memoryTags: tags,
                        layout: layout, followups: shown.0, chips: shown.1, rich: rich)
     }
 
     /// Each part is read on its own. An entity or card that fails its rule is dropped alone; a list over its limit is
-    /// dropped whole; another version of `rich` is ignored; nothing left means no `rich`.
-    private static func validRich(_ wire: Snapshot.Row.RichWire?) -> Rich? {
+    /// dropped whole; another version of `rich` is ignored; nothing left means no `rich`. `answerShown` is false on a row
+    /// without an answer to point into: only the receipt is read there.
+    private static func validRich(_ wire: Snapshot.Row.RichWire?, answerShown: Bool) -> Rich? {
         guard let wire, wire.version == answerRichVersion else { return nil }
+        let receipt = validTripReceipt(wire.tripReceipt)
+        guard answerShown else { return receipt.map { Rich(tripReceipt: $0) } }
         var entities: [Entity] = []
         if let items = wire.entities, items.count <= maximumEntities {
             entities = items.compactMap { item -> Entity? in
@@ -523,8 +540,8 @@ public enum LioTimelineWire {
         }
         let prompt = wire.memory?.prompt == "consent"
         let used = validMemoryUsed(wire.memory)
-        return entities.isEmpty && cards.isEmpty && !prompt && used == nil ? nil
-            : Rich(entities: entities, cards: cards, memoryPrompt: prompt, memoryUsed: used)
+        return entities.isEmpty && cards.isEmpty && !prompt && used == nil && receipt == nil ? nil
+            : Rich(entities: entities, cards: cards, memoryPrompt: prompt, memoryUsed: used, tripReceipt: receipt)
     }
 
     /// `used` and `used_total` come together. More than three items, a total outside 1...99 or below the number listed,
@@ -746,6 +763,8 @@ public enum LioTimelineWire {
             struct RichWire: Decodable {
                 let version: String
                 let entities: [LossyEntity]?
+                /// `trip_receipt` (#1994), as sent; `LioTimelineWire.validTripReceipt` applies the rules.
+                let tripReceipt: TripReceiptWire?
                 /// `memory.prompt` (#1999) and `memory.used` with `used_total` (#2001).
                 let memory: MemoryWire?
                 struct MemoryWire: Decodable {
@@ -792,8 +811,9 @@ public enum LioTimelineWire {
                     entities = (try? c.decodeIfPresent([LossyEntity].self, forKey: .entities)) ?? nil
                     cards = (try? c.decodeIfPresent([LossyCard].self, forKey: .cards)) ?? nil
                     memory = (try? c.decodeIfPresent(MemoryWire.self, forKey: .memory)) ?? nil
+                    tripReceipt = (try? c.decodeIfPresent(TripReceiptWire.self, forKey: .tripReceipt)) ?? nil
                 }
-                enum CodingKeys: String, CodingKey { case version, entities, cards, memory }
+                enum CodingKeys: String, CodingKey { case version, entities, cards, memory, tripReceipt = "trip_receipt" }
             }
             struct CardWire: Decodable {
                 let type: String

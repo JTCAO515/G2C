@@ -112,6 +112,10 @@
     {
       "setting": "G2C_MEMORY_NOTE_ENABLED",
       "plist": "G2CMemoryNoteEnabled"
+    },
+    {
+      "setting": "G2C_AUTOSAVE_NOTICE_ENABLED",
+      "plist": "G2CAutosaveNoticeEnabled"
     }
   ],
   "release": {

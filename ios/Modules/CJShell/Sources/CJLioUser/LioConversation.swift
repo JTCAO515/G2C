@@ -105,6 +105,8 @@ struct LioTurn: Identifiable {
     var cards: [LioTimelineWire.Card] = []
     /// #2001: the line "based on what you asked me to remember" under the answer.
     var memoryNote: LioMemoryUsedNote?
+    /// #1994: what the automatic save of this answer did.
+    var tripReceipt: LioTimelineWire.TripReceipt?
     var fromTimeline = false
     var readFailure: LioRequestProblem?
     var id: Data { question.id }
@@ -367,6 +369,6 @@ final class LioConversation {
                        sources: row.sources, itinerary: row.itinerary, memoryTags: row.memoryTags,
                        exploration: row.exploration, layout: row.layout, followups: row.followups, chips: row.chips,
                        places: row.places, memoryPrompt: row.memoryPrompt, cards: row.cards,
-                       memoryNote: row.memoryNote, fromTimeline: true)
+                       memoryNote: row.memoryNote, tripReceipt: row.tripReceipt, fromTimeline: true)
     }
 }
