@@ -1,4 +1,5 @@
 """#1970: memory suggestions need the account's consent, behind CJ_LIO_MEMORY_CONSENT_REQUIRED (default off)."""
+import json
 import os
 import unittest
 from types import SimpleNamespace
@@ -114,6 +115,14 @@ class Delivery(unittest.TestCase):
             self.assertEqual(calls, ['message', 'read'])
             self.assertEqual(store.asked, ['scope-a'])
 
+    def test_an_invalid_switch_value_makes_the_projection_raise(self):
+        for value in ('', 'true', 'on', ' 1'):
+            with self.subTest(value=value), switch(value):
+                shown, context, calls = cards(Store(True))
+                with self.assertRaises(ValueError):
+                    shown.project(context, 't', 'm')
+                self.assertEqual(calls, [])
+
     def test_remember_and_dismiss_are_refused_without_consent(self):
         def apply(*args):
             raise AssertionError('a suggestion was applied without consent')
@@ -154,6 +163,60 @@ class Generation(unittest.TestCase):
         with switch('1'), mock.patch.object(consent.ConsentStore, 'granted', lambda self, scope: True):
             with self.assertRaises(Reached):
                 self.extraction(prepare).extract(SimpleNamespace(), binding)
+
+    def _prepared(self, consent_answers, transitions):
+        """An extraction whose collaborators are fakes, and the `publish` it hands back (the model call is a fake stream)."""
+        text = json.dumps(dict(slots=[], max_entries=1, max_text_bytes=200, messages=[dict(text='随便聊聊', ref='r1')]))
+        model_input = json.dumps(dict(system='s', messages=[dict(role='user', content=text)])).encode()
+
+        class Candidates:
+            published = []
+            collection = SimpleNamespace(boundary=SimpleNamespace(with_history_context=lambda token, operation: operation(context)))
+
+            def prepare(self, token, **options):
+                return json.dumps(dict(prepared_input_utf8='{}', job_id='j', attempt_id='a', source=dict(
+                    conversation_id='c', generation='g', epoch=1, after=0, through=1, source_version=1, withdrawal_epoch=1)))
+
+            def processing_policy(self, *args, **options):
+                return SimpleNamespace(with_input=lambda snapshot, fn: model_input)
+
+            def transition_original_in_context(self, ctx, token, job, attempt, target, **coordinates):
+                transitions.append(target)
+
+            def publication_policy(self, *args, **options):
+                self.published.append('policy')
+                raise AssertionError('published')
+
+        context = SimpleNamespace(with_enabled_source=lambda source, policy, fn: fn(None))
+        answers = iter(consent_answers)
+        worker = SimpleNamespace(_registered_stream=lambda *args: ['{}'], provider=None,
+                                 budget_exit=SimpleNamespace(prepare_publication=lambda binding: (lambda: None)))
+        binding = SimpleNamespace(scope='scope-a', message_id='m', run_id='r')
+        candidates = Candidates()
+        extraction = LioMemoryExtraction(database=SimpleNamespace(), candidates=candidates, credential=lambda: 'token')
+        with mock.patch.object(consent.ConsentStore, 'granted', lambda self, scope: next(answers)):
+            publish = extraction.extract(worker, binding)
+        return publish, candidates, answers
+
+    def test_a_consent_withdrawn_while_the_suggestion_was_prepared_publishes_nothing(self):
+        transitions = []
+        with switch('1'):
+            publish, candidates, answers = self._prepared([True, False], transitions)
+            self.assertTrue(callable(publish))
+            with mock.patch.object(consent.ConsentStore, 'granted', lambda self, scope: next(answers)):
+                publish()
+        self.assertEqual(transitions, ['failed'])                         # the original is held, never published
+        self.assertEqual(candidates.published, [])
+
+    def test_a_consent_still_granted_at_publication_goes_on_to_publish(self):
+        transitions = []
+        with switch('1'):
+            publish, candidates, answers = self._prepared([True, True], transitions)
+            with mock.patch.object(consent.ConsentStore, 'granted', lambda self, scope: next(answers)):
+                with self.assertRaises(AssertionError):                     # the fake policy refuses to write: the step was reached
+                    publish()
+        self.assertEqual(candidates.published, ['policy'])
+        self.assertEqual(transitions, [])
 
     def test_a_consent_that_cannot_be_read_counts_as_none(self):
         store = consent.ConsentStore(SimpleNamespace(connect=Boom()))
