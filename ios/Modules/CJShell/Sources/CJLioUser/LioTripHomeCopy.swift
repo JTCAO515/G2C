@@ -54,13 +54,16 @@ enum LioTripHomeCopy {
 
     // MARK: - Tasks
 
+    /// The six steps of going to China (#1979) are one line each: the line is the whole row, with no heading above
+    /// it and no explanation under it (`detail` is empty for them).
     static func title(_ task: LioTripTask, _ language: LioLanguage) -> String {
         switch task.kind {
-        case .entry: language.text("Check how you can enter China", "确认入境方式")
-        case .arrivalCard: language.text("Fill in the arrival card", "填入境卡")
+        case .entry: language.text("Visa-free or visa: use the official channels", "免签或签证，走官方渠道")
+        case .arrival(let day, let number): arrival(day: day, number: number, language)
+        case .hotel: language.text("Pick a hotel", "选一家酒店")
         case .payment: language.text("Set up Alipay or Weixin Pay", "开通支付宝或微信支付")
-        case .internet: language.text("Sort out mobile data", "准备上网")
-        case .hotel: language.text("Save your hotel’s Chinese name and address", "保存酒店中文名和地址")
+        case .internet: language.text("Get an eSIM or roaming", "买好 eSIM 或开漫游")
+        case .local: language.text("Set up ride codes and taxis", "设好乘车码和打车")
         case .booking(let id, _, _, _):
             LioAttractionBookingRule.all.first { $0.id == id }.map { rule in
                 language.text("Book \(rule.nameEN)", "预约\(rule.nameZH)")
@@ -72,15 +75,10 @@ enum LioTripHomeCopy {
         }
     }
 
+    /// Empty for the six steps: their line is `title`.
     static func detail(_ task: LioTripTask, _ language: LioLanguage) -> String {
         switch task.kind {
-        case .entry(let status): entry(status, language)
-        case .arrivalCard:
-            language.text("Fill it in online before you fly. The official service is free; avoid sites that charge.",
-                          "出发前网上填写，官方服务免费，谨防收费的假网站。")
-        case .payment: language.text("Link your bank card before you fly.", "出发前绑好境外银行卡。")
-        case .internet: language.text("Roaming, a travel eSIM or a Chinese SIM card.", "漫游、旅行 eSIM 或当地 SIM 卡。")
-        case .hotel: language.text("For taxis, directions and getting back.", "打车、问路、回酒店都用得上。")
+        case .entry, .arrival, .payment, .internet, .hotel, .local: ""
         case .booking(let id, let visit, let timing, _):
             booking(id: id, visit: visit, timing: timing, language)
         case .medicalCard:
@@ -135,27 +133,11 @@ enum LioTripHomeCopy {
         return language.text("Official notices apply · checked \(checked)", "以官方为准 · 核对于 \(checked)")
     }
 
-    static func entry(_ status: LioTripEntryStatus, _ language: LioLanguage) -> String {
-        switch status {
-        case .missingDetails:
-            language.text("Add your passport and dates to see what the official rules allow.",
-                          "填护照国籍和到达日期，按官方规则看能否免签。")
-        case .visaFree(let days, let checked):
-            language.text("Visa-free for up to \(days) days. Rules checked \(checkedText(checked, language)); official rules apply.",
-                          "可免签入境，停留不超过 \(days) 天。规则核对于 \(checkedText(checked, language))，以官方为准。")
-        case .transit(_, let checked, let summary?):
-            summary.text(language) + language.text(" Rules checked \(checkedText(checked, language)); official rules apply.",
-                                                   "规则核对于 \(checkedText(checked, language))，以官方为准。")
-        case .transit(let days, let checked, nil):
-            language.text("Transit visa-free for up to \(days) days, with an onward ticket to a third country or region. Rules checked \(checkedText(checked, language)); official rules apply.",
-                          "过境免签最多停留 \(days) 天，需有去第三国或地区的联程客票。规则核对于 \(checkedText(checked, language))，以官方为准。")
-        case .visaRequired(let checked):
-            language.text("The official rules say you need a Chinese visa; apply early. Rules checked \(checkedText(checked, language)).",
-                          "按官方规则需要办理中国签证，请尽早办理。规则核对于 \(checkedText(checked, language))。")
-        case .officialOnly:
-            language.text("Go by the latest official notice; the official sources are one tap away.",
-                          "以官方最新通知为准，官方来源点开就能看。")
-        }
+    /// "Arriving 8 Dec · CA1234", or the ask while the day is not given.
+    static func arrival(day: LioTripDay?, number: String?, _ language: LioLanguage) -> String {
+        guard let day else { return language.text("Add your arrival day and flight or train", "填到达日期和航班或车次") }
+        let when = language.text("Arriving \(dayText(day, language))", "\(dayText(day, language))到达")
+        return [when, number].compactMap { $0 }.joined(separator: " · ")
     }
 
     static func booking(id: String, visit: LioTripDay?, timing: LioTripBookingTiming, _ language: LioLanguage) -> String {
