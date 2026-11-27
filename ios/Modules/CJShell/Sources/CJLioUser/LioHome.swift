@@ -77,6 +77,10 @@ public struct LioHome<MenuContent: View>: View {
     @State private var feedbackDetails: FeedbackDetails?
     /// #1748: the account's in-app location choice, when the build asks for it (`G2CLocationConsentEnabled`).
     @State private var locationConsent: LioLocationConsent?
+    /// #1747: the first-launch consent and the AI processing choice, when the build asks for it (`G2CConsentEnabled`).
+    @State private var consent: LioConsent?
+    /// Leaves for the sign-in page; the consent page's "Leave".
+    private let leaveToSignIn: (@MainActor () -> Void)?
     private var tab: LioTab {
         get { router.tab }
         nonmutating set { router.tab = newValue }
@@ -161,8 +165,10 @@ public struct LioHome<MenuContent: View>: View {
                 toolsDraftStorage: LocalSupportDraftStorage? = nil,
                 toolsSessionIsCurrent: @escaping @MainActor () -> Bool = { true },
                 answerFeedback: (any LioAnswerFeedbackSending)? = nil,
+                leaveToSignIn: (@MainActor () -> Void)? = nil,
                 @ViewBuilder menu: () -> MenuContent) {
         self.language = language
+        self.leaveToSignIn = leaveToSignIn
         self.isDemo = isDemo
         self.showsTools = showsTools
         _router = State(initialValue: LioRouter(toolsShown: showsTools))
@@ -195,6 +201,10 @@ public struct LioHome<MenuContent: View>: View {
             store: messageDirectory.map {
                 LioLocationConsentStore(directory: LioLocationConsentStore.storageDirectory(inMessageDirectory: $0),
                                         isCurrent: toolsSessionIsCurrent)
+            }, isCurrent: toolsSessionIsCurrent) : nil)
+        _consent = State(initialValue: LioConsentFeature.enabledInBuild ? LioConsent(
+            store: messageDirectory.map {
+                LioConsentStore(directory: LioConsentStore.storageDirectory(inMessageDirectory: $0), isCurrent: toolsSessionIsCurrent)
             }, isCurrent: toolsSessionIsCurrent) : nil)
         _savedPlans = State(initialValue: LioSavedPlansModel(store: plans))
         self.toolsSessionIsCurrent = toolsSessionIsCurrent
@@ -297,11 +307,13 @@ public struct LioHome<MenuContent: View>: View {
         }
         .environment(\.lioTaxiEntry, taxiEntry)
         .environment(\.lioLocationConsent, locationConsent)
+        .environment(\.lioConsent, consent)
         .environment(\.lioNearbyService, nearbyService)
         .environment(\.lioMetroNearby, metroNearby)
         .environment(\.lioHotelFinder, hotelRelay.map { .internalBeta(relay: $0) })
         .environment(\.lioTransportRelay, transportRelay)
-        .lioRoadbookEnricher(roadbookRelay.map { LioRoadbookEnricher.internalBeta(relay: $0) })
+        // #1747: with AI processing off nothing is sent to the model, so the roadbook's extra place details are not asked for.
+        .lioRoadbookEnricher((consent.allowsAIProcessing ? roadbookRelay : nil).map { LioRoadbookEnricher.internalBeta(relay: $0) })
         // Menu ordering (#1606): the signed-in relay when the build enables it, or Debug's `--lio-menu-preview`.
         .environment(\.lioMenuService, menuService)
         .tint(LioTheme.vermilion)
@@ -637,10 +649,16 @@ public struct LioHome<MenuContent: View>: View {
                 if let continuity = chatLibrary?.continuity, continuity.positionIssue != nil {
                     positionSaveNotice(continuity)
                 }
+                if !consent.allowsAIProcessing { LioAIOffNotice(language: language) }
                 composer
             }
         }
         .background(LioTheme.paper)
+        .fullScreenCover(isPresented: Binding(get: { consent.map { !$0.storageAgreed } ?? false }, set: { _ in })) {
+            if let consent {
+                LioConsentView(language: language, consent: consent) { leaveToSignIn?() }
+            }
+        }
         .sheet(isPresented: $menuOpen) {
             NavigationStack {
                 List {
@@ -993,7 +1011,7 @@ public struct LioHome<MenuContent: View>: View {
     }
 
     private func sendQuestion(_ text: String, chipTicket: String? = nil) -> Bool {
-        guard !chatFading, scenePhase == .active else { return false }
+        guard !chatFading, scenePhase == .active, consent.allowsAIProcessing else { return false }
         let showedWelcome = opening == .beforeNext && conversation.turns.isEmpty && conversation.hasLoadedTimeline
         guard conversation.send(text, language: language, chipTicket: chipTicket) else { return false }
         followsAnswer = true
@@ -1038,7 +1056,7 @@ public struct LioHome<MenuContent: View>: View {
     private var composer: some View {
         let placeholder = language.text("Start chatting", "开始聊天")
         let canSend = !draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && conversation.pending == nil
-            && !chatFading
+            && !chatFading && consent.allowsAIProcessing
         let showsJump = !followsAnswer && !conversation.turns.isEmpty
         return HStack(alignment: .center, spacing: 10) {
             TextField(placeholder, text: Binding(get: { draft }, set: { setDraft($0) }), prompt: Text(placeholder).foregroundStyle(LioTheme.inkSecondary), axis: .vertical)
@@ -1172,7 +1190,7 @@ public struct LioHome<MenuContent: View>: View {
         return VStack(alignment: .leading, spacing: 10) {
             HStack(alignment: .top, spacing: 4) {
                 Spacer(minLength: dynamicTypeSize.isAccessibilitySize ? 12 : 64)
-                if turn.status == .failed(.notSent) {
+                if turn.status == .failed(.notSent), consent.allowsAIProcessing {
                     Button {
                         if turn.id == conversation.turns.last?.id { followsAnswer = true }
                         conversation.resend(turn.id)

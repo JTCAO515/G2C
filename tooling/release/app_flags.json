@@ -76,6 +76,10 @@
     {
       "setting": "G2C_ANSWER_LAYOUT_ENABLED",
       "plist": "G2CAnswerLayoutEnabled"
+    },
+    {
+      "setting": "G2C_CONSENT_ENABLED",
+      "plist": "G2CConsentEnabled"
     }
   ],
   "release": {
