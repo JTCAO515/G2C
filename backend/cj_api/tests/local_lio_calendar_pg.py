@@ -314,7 +314,7 @@ def exercise(root,conninfo):
                                             (trip_scope_for(scope),trip_id)).fetchone()
                 return head[0],bytes(head[1]),mark
             version,first_bytes,mark=record();assert (version,mark)==(1,None)
-            outside=dict(autosave_env,CJ_LIO_ANSWER_LAYOUT_SUBJECTS_JSON=json.dumps(['m4-synthetic-demo-ffffffffffff']))
+            outside=dict(autosave_env,CJ_LIO_TRIP_AUTOSAVE_SUBJECTS_JSON=json.dumps(['m4-synthetic-demo-ffffffffffff']))
             with TestClient(undo_application(autosave_env)) as undo_api:
                 with patch.dict(os.environ,outside):   # #2051 P2-1: switch on, account off the list
                     assert undo_api.post('/v4/lio/trip-undos',headers=headers,content=body).status_code==403
@@ -485,7 +485,8 @@ def exercise(root,conninfo):
             legacy_text=('规划成都三天，节奏轻松，2026-12-01出发'if locale=='zh'else
                          'Plan three days in Chengdu at a relaxed pace, starting 2026-12-01.')
             # #1994: the English legacy (LIO-message.2) conversation runs with CJ_LIO_TRIP_AUTOSAVE on.
-            autosave_env=dict(CJ_LIO_TRIP_AUTOSAVE='on',CJ_LIO_ANSWER_LAYOUT='one-screen',
+            autosave_env=dict(CJ_LIO_TRIP_AUTOSAVE='on',CJ_LIO_TRIP_AUTOSAVE_SUBJECTS_JSON=json.dumps([SUBJECT]),
+                              CJ_LIO_ANSWER_LAYOUT='one-screen',
                               CJ_LIO_ANSWER_LAYOUT_SUBJECTS_JSON=json.dumps([SUBJECT]))if locale=='en'else{}
             with patch.dict(os.environ,autosave_env):
                 legacy_cid,_=send('legacy-'+locale+'-rejected-base',legacy_text,calendar=False)

@@ -1,15 +1,18 @@
-"""Chat autosave switch (ADR-0012, #1994 T-1), behind CJ_LIO_TRIP_AUTOSAVE.
+"""Chat autosave switch (ADR-0012, #1994 T-1; own account list #2127), behind CJ_LIO_TRIP_AUTOSAVE.
 
 `off` (the default) changes nothing: no Lio write is compared, no receipt effect is written and the
 v4 undo routes stay unregistered in the Hong Kong host. `on` turns autosave on only for the accounts in
-CJ_LIO_ANSWER_LAYOUT_SUBJECTS_JSON (LIO-answer-rich.1 "Switch": no new list variable), read through the
-layout switch's own validation, so the list is in force only while CJ_LIO_ANSWER_LAYOUT is `one-screen`.
-Any other value of either variable reads as off and writes one audit line; it never fails a worker.
+CJ_LIO_TRIP_AUTOSAVE_SUBJECTS_JSON, a list of its own: the one-screen layout list no longer turns autosave
+on (putting a real person on the layout list must not start saving for them). Not set, empty or `[]`: closed
+for everybody. Not valid (not JSON, not a list, a name that is not an invite-cohort account, a repeated name):
+closed for everybody and one audit line. Neither it nor the layout switch can fail a worker.
 """
+import json
 import logging
 import os
 
 SWITCH = 'CJ_LIO_TRIP_AUTOSAVE'
+SUBJECTS = 'CJ_LIO_TRIP_AUTOSAVE_SUBJECTS_JSON'
 MODES = ('off', 'on')
 _audit = logging.getLogger('cj_usage.audit')
 
@@ -23,15 +26,22 @@ def autosave_mode():
 
 
 def autosave_subjects():
-    """The accounts autosave is on for; empty while the switch is off or the list is unusable."""
+    """The accounts autosave is on for; empty while the switch is off, the list is not set or empty, or it is unusable."""
     if autosave_mode() != 'on':
         return frozenset()
-    from .lio_answer_layout import subjects
+    raw = os.environ.get(SUBJECTS)
+    if raw is None or not raw.strip():
+        return frozenset()
+    from .lio_answer_layout import _SUBJECT   # the same invite-cohort account names as the layout list
     try:
-        return subjects()
+        values = json.loads(raw)
+        if (type(values) is not list or len(set(map(repr, values))) != len(values)
+                or any(type(value) is not str or _SUBJECT.fullmatch(value) is None for value in values)):
+            raise ValueError('autosave subjects must be distinct invite-cohort account names')
     except ValueError as error:
         _audit.warning('LIO_TRIP_AUTOSAVE_SUBJECTS_INVALID error=%s mode=off', type(error).__name__)
         return frozenset()
+    return frozenset(values)
 
 
 def autosave_for(scope):

@@ -199,7 +199,7 @@ def test_lio_switches_are_optional_keys_of_both_api_and_worker_secret_files(tmp_
     process; absent stays the default; an unregistered CJ_LIO_ name is still refused; and none may also arrive
     through the container environment."""
     assert configuration.LIO_SWITCHES>={'CJ_LIO_ANSWER_LAYOUT','CJ_LIO_ANSWER_LAYOUT_SUBJECTS_JSON',
-        'CJ_LIO_PLAN_DEGRADED_SAVE','CJ_LIO_TRIP_AUTOSAVE','CJ_LIO_ANSWER_RICH','CJ_LIO_MEMORY_CONSENT_REQUIRED'}
+        'CJ_LIO_PLAN_DEGRADED_SAVE','CJ_LIO_TRIP_AUTOSAVE','CJ_LIO_TRIP_AUTOSAVE_SUBJECTS_JSON','CJ_LIO_ANSWER_RICH','CJ_LIO_MEMORY_CONSENT_REQUIRED'}
     for role in ('api','worker'):
         base=''.join(name+'=fixture-only\n'for name in sorted(configuration.SECRET_FILES[role][role]))
         path=tmp_path/(role+'.env')

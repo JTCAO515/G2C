@@ -22,8 +22,9 @@ import check_lio_answer_rich as rich_check  # noqa: E402
 
 ON = 'm4-synthetic-demo-aaaaaaaaaaaa'
 OTHER = 'm4-synthetic-demo-bbbbbbbbbbbb'
-NAMES = ('CJ_LIO_TRIP_AUTOSAVE', 'CJ_LIO_ANSWER_LAYOUT', 'CJ_LIO_ANSWER_LAYOUT_SUBJECTS_JSON')
-LISTED = dict(CJ_LIO_ANSWER_LAYOUT='one-screen', CJ_LIO_ANSWER_LAYOUT_SUBJECTS_JSON=json.dumps([ON]))
+NAMES = ('CJ_LIO_TRIP_AUTOSAVE', 'CJ_LIO_TRIP_AUTOSAVE_SUBJECTS_JSON', 'CJ_LIO_ANSWER_LAYOUT', 'CJ_LIO_ANSWER_LAYOUT_SUBJECTS_JSON')
+LISTED = dict(CJ_LIO_TRIP_AUTOSAVE_SUBJECTS_JSON=json.dumps([ON]))
+LAYOUT_ONLY = dict(CJ_LIO_ANSWER_LAYOUT='one-screen', CJ_LIO_ANSWER_LAYOUT_SUBJECTS_JSON=json.dumps([ON]))
 
 
 def environment(**values):
@@ -42,9 +43,38 @@ class Switch(unittest.TestCase):
         with environment(CJ_LIO_TRIP_AUTOSAVE='on', **LISTED):
             self.assertIs(autosave_for(scope_for(ISSUER, ON)), True)
             self.assertIsNone(autosave_for(scope_for(ISSUER, OTHER)))
-        with environment(CJ_LIO_TRIP_AUTOSAVE='on', CJ_LIO_ANSWER_LAYOUT='flat',
-                         CJ_LIO_ANSWER_LAYOUT_SUBJECTS_JSON=json.dumps([ON])):
-            self.assertIsNone(autosave_for(scope_for(ISSUER, ON)))   # the list counts only with one-screen
+        # #2127: the list is the autosave list alone; the layout switch and the layout list have nothing to do with it.
+        with environment(CJ_LIO_TRIP_AUTOSAVE='on', CJ_LIO_ANSWER_LAYOUT='flat', **LISTED):
+            self.assertIs(autosave_for(scope_for(ISSUER, ON)), True)
+
+    def test_an_account_on_the_layout_list_only_gets_no_autosave(self):
+        # The case of 58.1 batch 1: a real person goes on the one-screen layout list, autosave stays closed for them.
+        with environment(CJ_LIO_TRIP_AUTOSAVE='on', **LAYOUT_ONLY):
+            self.assertEqual(autosave_subjects(), frozenset())
+            self.assertIsNone(autosave_for(scope_for(ISSUER, ON)))
+        with environment(CJ_LIO_TRIP_AUTOSAVE='on', CJ_LIO_TRIP_AUTOSAVE_SUBJECTS_JSON=json.dumps([OTHER]), **LAYOUT_ONLY):
+            self.assertIsNone(autosave_for(scope_for(ISSUER, ON)))           # on the layout list, not on the autosave list
+            self.assertIs(autosave_for(scope_for(ISSUER, OTHER)), True)      # the other way round
+
+    def test_not_set_or_empty_closes_autosave_for_everybody_without_noise(self):
+        for raw in (None, '', '   ', '[]'):
+            with self.subTest(raw=raw), environment(CJ_LIO_TRIP_AUTOSAVE='on', **({} if raw is None else dict(CJ_LIO_TRIP_AUTOSAVE_SUBJECTS_JSON=raw))):
+                self.assertEqual(autosave_subjects(), frozenset())
+                self.assertIsNone(autosave_for(scope_for(ISSUER, ON)))
+
+    def test_the_undo_routes_answer_only_the_accounts_on_the_autosave_list(self):
+        from cj_api.lio_rich_undo_routes import _admitted
+        from cj_trip.domain import Denied
+
+        def context(subject):
+            return SimpleNamespace(metadata=SimpleNamespace(principal=SimpleNamespace(issuer=ISSUER, subject=subject)))
+        with environment(CJ_LIO_TRIP_AUTOSAVE='on', CJ_LIO_TRIP_AUTOSAVE_SUBJECTS_JSON=json.dumps([ON]), **LAYOUT_ONLY):
+            _admitted(context(ON))                                           # on the autosave list: admitted
+            with self.assertRaises(Denied):
+                _admitted(context(OTHER))
+        with environment(CJ_LIO_TRIP_AUTOSAVE='on', **LAYOUT_ONLY):          # layout list only: no undo route for the scope
+            with self.assertRaises(Denied):
+                _admitted(context(ON))
 
     def test_any_other_switch_value_is_off_with_an_audit_line(self):
         for value in ('ON', '1', 'true', ' on', 'on ', ''):
@@ -55,13 +85,12 @@ class Switch(unittest.TestCase):
                 self.assertIn('LIO_TRIP_AUTOSAVE_INVALID', logs.output[0])
 
     def test_an_unusable_account_list_is_off_not_an_error(self):
-        for layout, subjects in (('one-screen', 'not json'), ('one-screen', '[]'), ('one-screen', '["x"]'),
-                                 ('sideways', json.dumps([ON]))):
-            with self.subTest(layout=layout, subjects=subjects), \
-                    environment(CJ_LIO_TRIP_AUTOSAVE='on', CJ_LIO_ANSWER_LAYOUT=layout,
-                                CJ_LIO_ANSWER_LAYOUT_SUBJECTS_JSON=subjects), \
+        for subjects in ('not json', '{}', '"x"', '["x"]', '[1]', '[null]', json.dumps([ON, ON]), json.dumps([ON, 'x'])):
+            with self.subTest(subjects=subjects), \
+                    environment(CJ_LIO_TRIP_AUTOSAVE='on', CJ_LIO_TRIP_AUTOSAVE_SUBJECTS_JSON=subjects), \
                     self.assertLogs('cj_usage.audit', 'WARNING') as logs:
                 self.assertIsNone(autosave_for(scope_for(ISSUER, ON)))
+                self.assertEqual(autosave_subjects(), frozenset())
                 self.assertIn('LIO_TRIP_AUTOSAVE_SUBJECTS_INVALID', logs.output[0])
 
 
